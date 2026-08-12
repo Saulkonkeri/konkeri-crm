@@ -17,9 +17,9 @@ interface Cliente {
   ingresado_por?: string;
   notas: string;
   temperatura?: string; 
-  proximo_contacto?: string; 
+  proximo_contacto?: string | null; 
   tipo_accion?: string;
-  detalle_accion?: string;
+  detalle_accion?: string | null;
   tipo?: string; 
 }
 
@@ -277,7 +277,7 @@ export default function CRMPage() {
       const { error } = await supabase.from('clientes').update(updates).eq('id', clienteSeleccionado.id);
       if (error) throw error;
 
-      setClientes(prev => prev.map(c => c.id === clienteSeleccionado.id ? { ...c, ...updates } as any : c));
+      setClientes(prev => prev.map(c => c.id === clienteSeleccionado.id ? { ...c, ...updates } : c));
       setClienteSeleccionado(prev => prev ? { ...prev, ...updates } : prev);
       
       const btn = document.getElementById('btn-guardar-tarea');
@@ -371,7 +371,7 @@ export default function CRMPage() {
     });
   }, [clientes, busqueda, filtroCiudad, filtroTipologia, filtroOrigen]);
 
-  const esFechaVencida = (fecha?: string) => {
+  const esFechaVencida = (fecha?: string | null) => {
     if (!fecha) return false;
     const hoy = new Date(); hoy.setHours(0,0,0,0);
     return new Date(fecha + 'T00:00:00') <= hoy;
