@@ -1,3 +1,4 @@
+// Actualizacion forzada para Vercel
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -277,7 +278,7 @@ export default function CRMPage() {
       const { error } = await supabase.from('clientes').update(updates).eq('id', clienteSeleccionado.id);
       if (error) throw error;
 
-      setClientes(prev => prev.map(c => c.id === clienteSeleccionado.id ? { ...c, ...updates } as unknown as Cliente : c));
+     setClientes(prev => prev.map(c => c.id === clienteSeleccionado.id ? { ...c, ...updates } as any : c));
       setClienteSeleccionado(prev => prev ? { ...prev, ...updates } : prev);
       
       const btn = document.getElementById('btn-guardar-tarea');
