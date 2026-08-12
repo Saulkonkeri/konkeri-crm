@@ -27,17 +27,19 @@ export default function LoginPage() {
       }
 
       if (data.user) {
-        router.push('/crm'); 
+        router.refresh();
+        setTimeout(() => {
+          window.location.href = '/crm';
+        }, 300);
       }
       
     } catch (error: any) {
       console.error(error);
-      if (error.message.includes('Invalid login credentials')) {
+      if (error.message && error.message.includes('Invalid login credentials')) {
         setErrorMensaje('Correo o contraseña incorrectos.');
       } else {
         setErrorMensaje('Ocurrió un error al intentar acceder.');
       }
-    } finally {
       setCargando(false);
     }
   };
