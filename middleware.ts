@@ -1,6 +1,6 @@
 import { type NextRequest } from 'next/server';
-// Cambiamos @/ por ./ para que use una ruta relativa exacta
-import { updateSession } from './utils/supabase/middleware';
+// Apuntamos directamente a la carpeta supabase que está en la raíz
+import { updateSession } from './supabase/middleware';
 
 export async function middleware(request: NextRequest) {
   return await updateSession(request);
