@@ -29,7 +29,7 @@ export default function LoginPage() {
       if (data.user) {
         router.refresh();
         setTimeout(() => {
-          window.location.href = '/crm';
+          window.location.href = '/';
         }, 300);
       }
       
