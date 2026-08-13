@@ -1,4 +1,4 @@
-// Actualizacion forzada para Vercel - CRM con Bitácora de Llamadas
+// Actualizacion forzada para Vercel - CRM con Bitácora de Llamadas (Buscador + Sincronización)
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -33,7 +33,7 @@ interface Cotizacion {
   motivo_descuento: string;
 }
 
-// NUEVA INTERFAZ PARA LLAMADAS
+// INTERFAZ PARA LLAMADAS
 interface Llamada {
   id?: string;
   cliente_id: string;
@@ -53,7 +53,6 @@ export default function CRMPage() {
   const [filtroTipologia, setFiltroTipologia] = useState('Todas');
   const [filtroOrigen, setFiltroOrigen] = useState('Todos');
 
-  // AGREGADA LA TERCERA VISTA: 'llamadas'
   const [vista, setVista] = useState<'lista' | 'kanban' | 'llamadas'>('kanban');
 
   const [mostrarModalNuevo, setMostrarModalNuevo] = useState(false);
@@ -83,13 +82,17 @@ export default function CRMPage() {
   const [cotizacionesCliente, setCotizacionesCliente] = useState<Cotizacion[]>([]);
   const [cargandoHistorial, setCargandoHistorial] = useState(false);
 
-  // --- NUEVOS ESTADOS PARA LA BITÁCORA DE LLAMADAS ---
+  // --- ESTADOS PARA LA BITÁCORA DE LLAMADAS ---
   const [llamadasDelDia, setLlamadasDelDia] = useState<Llamada[]>([]);
   const [llamadaClienteId, setLlamadaClienteId] = useState('');
   const [llamadaAgente, setLlamadaAgente] = useState('Saúl Intriago');
   const [llamadaResultado, setLlamadaResultado] = useState('Contestó');
   const [llamadaNota, setLlamadaNota] = useState('');
   const [guardandoLlamadaRapida, setGuardandoLlamadaRapida] = useState(false);
+
+  // --- NUEVOS ESTADOS PARA EL BUSCADOR DE LLAMADAS ---
+  const [busquedaLlamada, setBusquedaLlamada] = useState('');
+  const [mostrarOpcionesLlamada, setMostrarOpcionesLlamada] = useState(false);
 
   const [plantillaMensaje, setPlantillaMensaje] = useState(
     "Hola {nombre}, le saluda Saúl Intriago de Arienzo Boutique Living. Recibí su solicitud de información y le comparto el brochure del proyecto. ¿A qué hora le viene bien que conversemos unos minutos?"
@@ -107,7 +110,7 @@ export default function CRMPage() {
 
   useEffect(() => {
     cargarClientes();
-    cargarLlamadasHoy(); // Cargar historial de llamadas del día
+    cargarLlamadasHoy();
     const plantillaGuardada = localStorage.getItem('plantilla_bienvenida_arienzo');
     const campanaGuardada = localStorage.getItem('plantilla_campana_arienzo');
     
@@ -139,7 +142,6 @@ export default function CRMPage() {
     }
   };
 
-  // --- NUEVA FUNCIÓN: CARGAR LLAMADAS DEL DÍA ---
   const cargarLlamadasHoy = async () => {
     try {
       const start = new Date(); 
@@ -156,13 +158,14 @@ export default function CRMPage() {
     }
   };
 
-  // --- NUEVA FUNCIÓN: REGISTRAR LLAMADA RÁPIDA ---
+  // --- FUNCIÓN REGISTRAR LLAMADA (CON SINCRONIZACIÓN) ---
   const registrarLlamadaRapida = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!llamadaClienteId) { alert("Selecciona un cliente de la lista"); return; }
+    if (!llamadaClienteId) { alert("Selecciona un prospecto de la lista usando el buscador."); return; }
     
     setGuardandoLlamadaRapida(true);
     try {
+      // 1. Guardar en la tabla de bitácora de llamadas
       const payload = {
         cliente_id: llamadaClienteId,
         agente: llamadaAgente,
@@ -176,9 +179,26 @@ export default function CRMPage() {
       if (data) {
         setLlamadasDelDia([data[0], ...llamadasDelDia]);
       }
+
+      // 2. Sincronizar nota en el perfil general del cliente
+      const clienteActual = clientes.find(c => c.id === llamadaClienteId);
+      if (clienteActual) {
+        const fechaStr = new Date().toLocaleString('es-EC', { dateStyle: 'short', timeStyle: 'short' });
+        const prefijo = `[${fechaStr}] Llamada (${llamadaResultado}) por ${llamadaAgente}`;
+        const textoNota = llamadaNota ? `: ${llamadaNota}` : '';
+        const notaSincronizada = `${prefijo}${textoNota}\n\n${clienteActual.notas || ''}`;
+
+        await supabase.from('clientes').update({ notas: notaSincronizada }).eq('id', llamadaClienteId);
+        
+        setClientes(prev => prev.map(c => c.id === llamadaClienteId ? { ...c, notas: notaSincronizada } : c));
+        if (clienteSeleccionado?.id === llamadaClienteId) {
+          setClienteSeleccionado(prev => prev ? { ...prev, notas: notaSincronizada } : prev);
+        }
+      }
       
-      // Limpiar formulario
+      // 3. Limpiar formulario
       setLlamadaClienteId('');
+      setBusquedaLlamada('');
       setLlamadaNota('');
       
     } catch (error: any) {
@@ -187,6 +207,16 @@ export default function CRMPage() {
       setGuardandoLlamadaRapida(false);
     }
   };
+
+  // --- FILTRO EN VIVO PARA EL BUSCADOR DE LLAMADAS ---
+  const prospectosFiltradosParaLlamada = useMemo(() => {
+    if (!busquedaLlamada) return clientes.slice(0, 50);
+    const b = busquedaLlamada.toLowerCase();
+    return clientes.filter(c => 
+      `${c.nombres} ${c.apellidos}`.toLowerCase().includes(b) ||
+      (c.telefono && c.telefono.includes(b))
+    ).slice(0, 50);
+  }, [clientes, busquedaLlamada]);
 
   const ciudadesDisponibles = useMemo(() => {
     const setCiudades = new Set<string>();
@@ -212,9 +242,7 @@ export default function CRMPage() {
     return Array.from(setOrigenes).sort();
   }, [clientes]);
 
-  const handleDragStart = (e: React.DragEvent, clienteId: string) => {
-    e.dataTransfer.setData('clienteId', clienteId);
-  };
+  const handleDragStart = (e: React.DragEvent, clienteId: string) => { e.dataTransfer.setData('clienteId', clienteId); };
   const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); };
 
   const handleDrop = async (e: React.DragEvent, nuevoEstado: string) => {
@@ -257,7 +285,6 @@ export default function CRMPage() {
     setGuardandoCliente(true);
     try {
       const notaInicial = `[${new Date().toLocaleDateString('es-EC')}] Cliente ingresado por ${nuevoIngresadoPor || 'Sistema'}.`;
-      
       const payload: any = {
         nombres: nuevoNombre.trim(), apellidos: nuevoApellido.trim(), telefono: nuevoTelefono.trim(),
         email: nuevoEmail ? nuevoEmail.trim().toLowerCase() : null, ciudad_residencia: nuevaCiudad.trim() || null, 
@@ -402,7 +429,6 @@ export default function CRMPage() {
             </select>
           </div>
 
-          {/* BOTONES DE VISTA (Tablero, Lista, Bitácora) */}
           <div className="flex bg-neutral-100 p-1 rounded-lg border border-neutral-200 flex-shrink-0 ml-auto">
             <button onClick={() => setVista('kanban')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors ${vista === 'kanban' ? 'bg-white text-neutral-900 shadow-xs' : 'text-neutral-500'}`}>📋 Tablero</button>
             <button onClick={() => setVista('lista')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors ${vista === 'lista' ? 'bg-white text-neutral-900 shadow-xs' : 'text-neutral-500'}`}>🗄️ Lista</button>
@@ -414,7 +440,6 @@ export default function CRMPage() {
       {/* ÁREA DE TRABAJO DINÁMICA */}
       <div className="w-full flex-1 min-h-0 overflow-hidden relative">
         
-        {/* === VISTA 1: KANBAN === */}
         {vista === 'kanban' && (
           <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-7 gap-2 h-full overflow-y-auto pb-4 custom-scrollbar px-1">
             {estados.map(estado => {
@@ -445,7 +470,6 @@ export default function CRMPage() {
           </div>
         )}
 
-        {/* === VISTA 2: LISTA === */}
         {vista === 'lista' && (
           <div className="bg-white rounded-xl border border-neutral-200 shadow-sm h-full overflow-auto w-full">
             <table className="w-full text-left text-sm border-collapse min-w-[800px]">
@@ -478,11 +502,10 @@ export default function CRMPage() {
           </div>
         )}
 
-        {/* === VISTA 3: BITÁCORA DE LLAMADAS (NUEVO) === */}
+        {/* === VISTA 3: BITÁCORA DE LLAMADAS === */}
         {vista === 'llamadas' && (
           <div className="flex flex-col h-full gap-4">
             
-            {/* Métricas del Día */}
             <div className="grid grid-cols-3 gap-4 flex-shrink-0">
               <div className="bg-white p-4 rounded-xl border border-neutral-200 shadow-sm">
                 <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Total Llamadas Hoy</p>
@@ -508,17 +531,50 @@ export default function CRMPage() {
 
             <div className="flex flex-col md:flex-row gap-4 flex-1 min-h-0">
               
-              {/* Formulario Ingreso Rápido */}
               <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-5 w-full md:w-1/3 flex flex-col flex-shrink-0">
                 <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wide border-b border-neutral-100 pb-3 mb-4">📞 Registrar Nueva Llamada</h3>
                 <form onSubmit={registrarLlamadaRapida} className="space-y-4 flex-1">
-                  <div>
+                  
+                  {/* BUSCADOR DE PROSPECTO (Autocomplete) */}
+                  <div className="relative">
                     <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Prospecto Marcado</label>
-                    <select required value={llamadaClienteId} onChange={(e) => setLlamadaClienteId(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]">
-                      <option value="">-- Buscar en la base --</option>
-                      {clientes.map(c => <option key={c.id} value={c.id}>{c.nombres} {c.apellidos}</option>)}
-                    </select>
+                    <input 
+                      type="text" 
+                      placeholder="🔍 Escribe nombre o teléfono..."
+                      value={busquedaLlamada}
+                      onChange={(e) => {
+                        setBusquedaLlamada(e.target.value);
+                        setMostrarOpcionesLlamada(true);
+                        setLlamadaClienteId(''); 
+                      }}
+                      onFocus={() => setMostrarOpcionesLlamada(true)}
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]"
+                    />
+                    
+                    {mostrarOpcionesLlamada && !llamadaClienteId && (
+                      <ul className="absolute z-10 w-full mt-1 bg-white border border-neutral-200 rounded-md shadow-lg max-h-48 overflow-y-auto custom-scrollbar">
+                        {prospectosFiltradosParaLlamada.length > 0 ? (
+                          prospectosFiltradosParaLlamada.map(c => (
+                            <li 
+                              key={c.id} 
+                              className="p-2 text-xs hover:bg-neutral-50 cursor-pointer border-b border-neutral-100 last:border-0 flex flex-col"
+                              onClick={() => {
+                                setLlamadaClienteId(c.id);
+                                setBusquedaLlamada(`${c.nombres} ${c.apellidos}`);
+                                setMostrarOpcionesLlamada(false);
+                              }}
+                            >
+                              <span className="font-bold text-neutral-800">{c.nombres} {c.apellidos}</span>
+                              <span className="text-[10px] text-neutral-500 font-mono">{c.telefono}</span>
+                            </li>
+                          ))
+                        ) : (
+                          <li className="p-2 text-xs text-neutral-400 text-center">No se encontraron resultados</li>
+                        )}
+                      </ul>
+                    )}
                   </div>
+
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Agente</label>
@@ -546,7 +602,6 @@ export default function CRMPage() {
                 </form>
               </div>
 
-              {/* Lista Cronológica del Día */}
               <div className="bg-white rounded-xl border border-neutral-200 shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
                 <div className="p-4 border-b border-neutral-100 bg-neutral-50">
                   <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wide">📋 Actividad en Tiempo Real</h3>
@@ -583,36 +638,232 @@ export default function CRMPage() {
         )}
       </div>
 
-      {/* --- PANELES LATERALES Y MODALES QUE YA TENÍAS (Sin cambios) --- */}
-      {/* ... aquí sigue el código de modales que está en el archivo principal (Panel lateral de cliente seleccionado, nuevo prospecto, etc) ... */}
-      
+      {/* --- MODALES Y PANEL LATERAL (INFERIOR) --- */}
       {clienteSeleccionado && (
         <div className="fixed inset-0 bg-neutral-900/40 z-40 transition-opacity backdrop-blur-[2px]" onClick={() => setClienteSeleccionado(null)}></div>
       )}
 
-      {clienteSeleccionado && (
-        <div className={`fixed top-0 right-0 h-full w-full max-w-[360px] bg-white shadow-2xl border-l border-neutral-200 transform transition-transform duration-300 z-50 flex flex-col translate-x-0`}>
-           <div className="p-5 border-b border-neutral-100 bg-neutral-50 relative flex-shrink-0">
+      <div className={`fixed top-0 right-0 h-full w-full max-w-[360px] bg-white shadow-2xl border-l border-neutral-200 transform transition-transform duration-300 z-50 flex flex-col ${clienteSeleccionado ? 'translate-x-0' : 'translate-x-full'}`}>
+        {clienteSeleccionado && (
+          <>
+            <div className="p-5 border-b border-neutral-100 bg-neutral-50 relative flex-shrink-0">
               <button onClick={() => setClienteSeleccionado(null)} className="absolute top-3 right-4 text-neutral-400 hover:text-neutral-900 text-xl font-bold">&times;</button>
               <h2 className="text-lg font-bold text-neutral-900 pr-6 leading-tight">
                 {clienteSeleccionado.tipo === 'cliente' && <span className="text-[#B94A36] mr-1" title="Inversionista Formal">👑</span>}
                 {clienteSeleccionado.nombres} {clienteSeleccionado.apellidos}
               </h2>
-           </div>
-           {/* Formulario interno lateral del cliente (se mantiene idéntico) */}
-           <div className="flex-1 overflow-y-auto p-5 space-y-6">
+              <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                <span className="bg-white border border-neutral-200 text-neutral-600 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">{clienteSeleccionado.origen_captacion || 'Sin origen'}</span>
+                {clienteSeleccionado.ciudad_residencia && (
+                  <span className="bg-neutral-100 text-neutral-700 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">📍 {clienteSeleccionado.ciudad_residencia}</span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5 space-y-6">
               <div className="space-y-2">
                 <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1">Acciones de Contacto</p>
                 <div className="flex gap-2">
-                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'bienvenida')} className="flex-1 flex flex-col items-center justify-center gap-1 bg-[#25D366] hover:bg-[#1DA851] text-white py-2 rounded-lg transition shadow-sm border border-transparent"><span className="text-xs font-bold leading-none mt-1">👋 Welcome</span></button>
-                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'campana')} className="flex-1 flex flex-col items-center justify-center gap-1 bg-[#128C7E] hover:bg-[#075E54] text-white py-2 rounded-lg transition shadow-sm border border-transparent"><span className="text-xs font-bold leading-none mt-1">📢 Campaña</span></button>
-                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'libre')} className="flex-1 flex flex-col items-center justify-center gap-1 bg-white hover:bg-neutral-50 text-neutral-700 py-2 rounded-lg transition shadow-sm border border-neutral-200"><span className="text-xs font-bold leading-none mt-1">💬 Chat</span></button>
+                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'bienvenida')} className="flex-1 flex flex-col items-center justify-center gap-1 bg-[#25D366] hover:bg-[#1DA851] text-white py-2 rounded-lg transition shadow-sm border border-transparent">
+                    <span className="text-xs font-bold leading-none mt-1">👋 Welcome</span>
+                  </button>
+                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'campana')} className="flex-1 flex flex-col items-center justify-center gap-1 bg-[#128C7E] hover:bg-[#075E54] text-white py-2 rounded-lg transition shadow-sm border border-transparent">
+                    <span className="text-xs font-bold leading-none mt-1">📢 Campaña</span>
+                  </button>
+                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'libre')} className="flex-1 flex flex-col items-center justify-center gap-1 bg-white hover:bg-neutral-50 text-neutral-700 py-2 rounded-lg transition shadow-sm border border-neutral-200">
+                    <span className="text-xs font-bold leading-none mt-1">💬 Chat</span>
+                  </button>
                 </div>
               </div>
-           </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Fase Embudo</label>
+                  <select value={clienteSeleccionado.estado} onChange={(e) => actualizarCampoRapido(clienteSeleccionado.id, 'estado', e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-1.5 text-[11px] font-bold text-neutral-800 outline-none focus:border-[#B94A36]">
+                    {estados.map(est => <option key={est} value={est}>{est}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Termómetro</label>
+                  <select value={clienteSeleccionado.temperatura || '❄️ Frío'} onChange={(e) => actualizarCampoRapido(clienteSeleccionado.id, 'temperatura', e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-1.5 text-[11px] font-bold text-neutral-800 outline-none focus:border-[#B94A36]">
+                    <option value="🔥 Caliente">🔥 Caliente</option>
+                    <option value="☀️ Tibio">☀️ Tibio</option>
+                    <option value="❄️ Frío">❄️ Frío</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="bg-blue-50/50 border border-blue-100 p-4 rounded-xl space-y-3">
+                <h3 className="text-[11px] font-bold text-blue-800 flex items-center gap-1.5 uppercase tracking-wider mb-2">
+                  📅 Agendar Siguiente Paso
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[9px] font-bold text-neutral-500 uppercase mb-1">Fecha</label>
+                    <input type="date" value={fechaAccion} onChange={(e) => setFechaAccion(e.target.value)} className="w-full bg-white border border-neutral-200 rounded-md p-1.5 text-[11px] font-medium outline-none focus:border-blue-400" />
+                  </div>
+                  <div>
+                    <label className="block text-[9px] font-bold text-neutral-500 uppercase mb-1">Tipo de Acción</label>
+                    <select value={tipoAccion} onChange={(e) => setTipoAccion(e.target.value)} className="w-full bg-white border border-neutral-200 rounded-md p-1.5 text-[11px] font-medium outline-none focus:border-blue-400">
+                      {tiposAccion.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[9px] font-bold text-neutral-500 uppercase mb-1">Objetivo / Detalles</label>
+                  <input type="text" value={detalleAccion} onChange={(e) => setDetalleAccion(e.target.value)} placeholder="Ej: Preguntar qué opinó la mamá..." className="w-full bg-white border border-neutral-200 rounded-md p-2 text-[11px] outline-none focus:border-blue-400" />
+                </div>
+                <div className="flex justify-end pt-1">
+                  <button id="btn-guardar-tarea" onClick={guardarProximaTarea} disabled={guardandoTarea} className="px-3 py-1.5 bg-blue-600 text-white text-[10px] font-bold rounded-md hover:bg-blue-700 transition shadow-sm">
+                    {guardandoTarea ? 'Guardando...' : '💾 Guardar Tarea'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <label className="block text-[11px] font-bold text-neutral-900 tracking-wider mb-2 uppercase">Log de Seguimiento</label>
+                <div className="flex flex-col gap-2 mb-3">
+                  <textarea rows={2} value={nuevaNotaTexto} onChange={(e) => setNuevaNotaTexto(e.target.value)} placeholder="¿Qué ocurrió en el contacto de hoy?" className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-2 text-xs focus:outline-none focus:border-neutral-400 resize-none" />
+                  <button onClick={agregarNotaBitacora} disabled={!nuevaNotaTexto.trim() || guardandoNota} className="self-end px-3 py-1 bg-neutral-800 text-white text-[10px] font-bold rounded-md disabled:opacity-50 hover:bg-black transition">
+                    {guardandoNota ? 'Registrando...' : '+ Agregar Registro'}
+                  </button>
+                </div>
+                <div className="bg-neutral-50 p-3 rounded-xl border border-neutral-200 h-[150px] overflow-y-auto custom-scrollbar shadow-inner">
+                  {clienteSeleccionado.notas ? (
+                    <div className="text-[11px] text-neutral-700 whitespace-pre-wrap leading-relaxed">{clienteSeleccionado.notas}</div>
+                  ) : (
+                    <p className="text-[11px] text-neutral-400 text-center italic mt-10">Sin actividad registrada aún.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-neutral-100 pb-6">
+                <button onClick={() => verHistorialCotizaciones(clienteSeleccionado)} className="w-full py-2 bg-neutral-100 text-neutral-700 rounded-lg text-[11px] font-bold hover:bg-neutral-200 transition">
+                  📄 Ver Cotizaciones Generadas
+                </button>
+              </div>
+
+            </div>
+          </>
+        )}
+      </div>
+
+      {mostrarModalNuevo && (
+        <div className="fixed inset-0 bg-neutral-900/60 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl p-6">
+            <div className="flex justify-between items-center mb-4 border-b border-neutral-100 pb-3">
+              <h2 className="text-lg font-bold text-neutral-900">Registro de Prospecto</h2>
+              <button onClick={() => setMostrarModalNuevo(false)} className="text-neutral-400 hover:text-neutral-900 text-xl font-bold">&times;</button>
+            </div>
+            <form onSubmit={guardarNuevoCliente} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Nombres <span className="text-[#B94A36]">*</span></label>
+                  <input required type="text" value={nuevoNombre} onChange={e => setNuevoNombre(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Apellidos</label>
+                  <input type="text" value={nuevoApellido} onChange={e => setNuevoApellido(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Teléfono <span className="text-[#B94A36]">*</span></label>
+                  <input required type="tel" value={nuevoTelefono} onChange={e => setNuevoTelefono(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Email</label>
+                  <input type="email" value={nuevoEmail} onChange={e => setNuevoEmail(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Ciudad Residencia</label>
+                  <input type="text" value={nuevaCiudad} onChange={e => setNuevaCiudad(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Ingresado Por (Asesor)</label>
+                  <input type="text" value={nuevoIngresadoPor} onChange={e => setNuevoIngresadoPor(e.target.value)} placeholder="Ej: Saúl Intriago" className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs font-semibold focus:outline-none focus:border-[#B94A36]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Origen</label>
+                  <select value={nuevoOrigen} onChange={e => setNuevoOrigen(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]">
+                    {origenes.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Motivo Compra</label>
+                  <select value={nuevoMotivo} onChange={e => setNuevoMotivo(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]">
+                    {motivos.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Interés</label>
+                  <select value={nuevoInteres} onChange={e => setNuevoInteres(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]">
+                    {intereses.map(i => <option key={i} value={i}>{i}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="pt-4 flex justify-end gap-3">
+                <button type="button" onClick={() => setMostrarModalNuevo(false)} className="px-4 py-2 text-xs font-semibold text-neutral-500">Cancelar</button>
+                <button type="submit" disabled={guardandoCliente} className="px-5 py-2 bg-[#B94A36] text-white rounded-md text-xs font-bold uppercase tracking-wider hover:bg-[#9B3B2B] disabled:opacity-50">Guardar</button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
+      {mostrarModalPlantilla && (
+        <div className="fixed inset-0 bg-neutral-900/60 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6">
+            <h2 className="text-lg font-bold text-neutral-900 mb-2">Configuración de Plantillas WhatsApp</h2>
+            <p className="text-[10px] text-neutral-500 mb-4">Usa <strong className="text-neutral-800">{`{nombre}`}</strong> donde deba aparecer el prospecto.</p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-neutral-700 mb-1">👋 Mensaje Inicial / Bienvenida</label>
+                <textarea rows={3} value={plantillaMensaje} onChange={e => setPlantillaMensaje(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-sm focus:outline-none focus:border-[#B94A36]" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-[#128C7E] mb-1">📢 Mensaje de Campaña / Seguimiento Masivo</label>
+                <textarea rows={3} value={plantillaCampana} onChange={e => setPlantillaCampana(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-sm focus:outline-none focus:border-[#128C7E]" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-4">
+              <button onClick={() => setMostrarModalPlantilla(false)} className="px-4 py-2 text-xs font-semibold text-neutral-600">Cancelar</button>
+              <button onClick={guardarPlantilla} className="px-5 py-2 bg-neutral-900 text-white text-xs font-bold rounded-lg hover:bg-neutral-800">Guardar Plantillas</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {mostrarModalHistorial && clienteSeleccionado && (
+        <div className="fixed inset-0 bg-neutral-900/60 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl p-6">
+            <div className="flex justify-between items-center mb-4 border-b border-neutral-100 pb-3">
+              <h2 className="text-lg font-bold text-neutral-900">Cotizaciones Emitidas</h2>
+              <button onClick={() => setMostrarModalHistorial(false)} className="text-neutral-400 hover:text-neutral-900 text-xl font-bold">&times;</button>
+            </div>
+            <div className="min-h-[150px] max-h-[400px] overflow-y-auto">
+              {cargandoHistorial ? (
+                <p className="text-center text-xs text-neutral-400 mt-10">Buscando...</p>
+              ) : cotizacionesCliente.length === 0 ? (
+                <p className="text-center text-xs text-neutral-400 mt-10">Sin cotizaciones generadas.</p>
+              ) : (
+                <div className="space-y-3">
+                  {cotizacionesCliente.map((cot, i) => (
+                    <div key={i} className="flex justify-between items-center bg-neutral-50 p-3 rounded-lg border border-neutral-200">
+                      <div>
+                        <p className="text-sm font-bold text-neutral-900">Unidad {cot.unidad_numero}</p>
+                        <p className="text-[10px] text-neutral-500 mt-0.5">{new Date(cot.created_at).toLocaleDateString('es-EC')}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] text-neutral-400 uppercase tracking-wider mb-0.5">Precio Cierre</p>
+                        <p className="text-sm font-mono font-bold text-[#B94A36]">${cot.precio_total.toLocaleString('en-US')}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
