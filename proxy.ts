@@ -2,7 +2,8 @@ import { type NextRequest } from 'next/server';
 // Apuntamos directamente a la carpeta supabase que está en la raíz
 import { updateSession } from './supabase/middleware';
 
-export async function middleware(request: NextRequest) {
+// ¡AQUÍ ESTÁ EL CAMBIO CLAVE! Se llama a la función "proxy"
+export async function proxy(request: NextRequest) {
   return await updateSession(request);
 }
 
