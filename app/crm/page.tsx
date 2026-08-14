@@ -1,4 +1,4 @@
-// Actualizacion forzada para Vercel - CRM con Bitácora Multicanal e Historial (Ajuste nombre Debbi)
+// Actualizacion forzada para Vercel - CRM con Filtros de Tiempo Inteligentes (SaaS UI)
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -33,12 +33,11 @@ interface Cotizacion {
   motivo_descuento: string;
 }
 
-// INTERFAZ ACTUALIZADA PARA ACTIVIDADES MULTICANAL
 interface Actividad {
   id?: string;
   cliente_id: string;
   agente: string;
-  tipo_contacto: string; // Llamada, WhatsApp, etc.
+  tipo_contacto: string; 
   resultado: string;
   notas: string;
   created_at: string;
@@ -83,9 +82,10 @@ export default function CRMPage() {
   const [cotizacionesCliente, setCotizacionesCliente] = useState<Cotizacion[]>([]);
   const [cargandoHistorial, setCargandoHistorial] = useState(false);
 
-  // --- ESTADOS PARA LA BITÁCORA DE ACTIVIDAD ---
-  const [fechaFiltroBitacora, setFechaFiltroBitacora] = useState(new Date().toISOString().split('T')[0]);
+  // --- FILTROS DE TIEMPO INTELIGENTES ---
+  const [filtroTiempo, setFiltroTiempo] = useState<'hoy' | 'ayer' | 'semana' | 'mes'>('hoy');
   const [actividadesDia, setActividadesDia] = useState<Actividad[]>([]);
+  
   const [llamadaClienteId, setLlamadaClienteId] = useState('');
   const [llamadaAgente, setLlamadaAgente] = useState('Saúl Intriago');
   const [tipoContacto, setTipoContacto] = useState('Llamada');
@@ -118,9 +118,10 @@ export default function CRMPage() {
     if (campanaGuardada) setPlantillaCampana(campanaGuardada);
   }, []);
 
+  // Recarga automática al cambiar el filtro de tiempo
   useEffect(() => {
-    cargarBitacoraDiaria();
-  }, [fechaFiltroBitacora]);
+    cargarBitacoraRango();
+  }, [filtroTiempo]);
 
   useEffect(() => {
     if (clienteSeleccionado) {
@@ -143,10 +144,28 @@ export default function CRMPage() {
     }
   };
 
-  const cargarBitacoraDiaria = async () => {
+  const cargarBitacoraRango = async () => {
     try {
-      const start = new Date(`${fechaFiltroBitacora}T00:00:00`);
-      const end = new Date(`${fechaFiltroBitacora}T23:59:59`);
+      const start = new Date();
+      const end = new Date();
+
+      if (filtroTiempo === 'hoy') {
+        start.setHours(0,0,0,0);
+        end.setHours(23,59,59,999);
+      } else if (filtroTiempo === 'ayer') {
+        start.setDate(start.getDate() - 1);
+        start.setHours(0,0,0,0);
+        end.setDate(end.getDate() - 1);
+        end.setHours(23,59,59,999);
+      } else if (filtroTiempo === 'semana') {
+        start.setDate(start.getDate() - 7);
+        start.setHours(0,0,0,0);
+        end.setHours(23,59,59,999);
+      } else if (filtroTiempo === 'mes') {
+        start.setDate(start.getDate() - 30);
+        start.setHours(0,0,0,0);
+        end.setHours(23,59,59,999);
+      }
       
       const { data, error } = await supabase
         .from('registro_llamadas')
@@ -178,15 +197,15 @@ export default function CRMPage() {
       const { data, error } = await supabase.from('registro_llamadas').insert([payload]).select('*, clientes(nombres, apellidos)');
       if (error) throw error;
 
-      const hoy = new Date().toISOString().split('T')[0];
-      if (fechaFiltroBitacora === hoy && data) {
+      // Solo lo agregamos en vivo si el usuario está viendo "Hoy"
+      if (filtroTiempo === 'hoy' && data) {
         setActividadesDia([data[0], ...actividadesDia]);
       }
 
       const clienteActual = clientes.find(c => c.id === llamadaClienteId);
       if (clienteActual) {
         const fechaStr = new Date().toLocaleString('es-EC', { dateStyle: 'short', timeStyle: 'short' });
-        const icono = tipoContacto === 'WhatsApp' ? '💬' : tipoContacto === 'Email' ? '📧' : '📞';
+        const icono = tipoContacto === 'WhatsApp' ? '💬' : tipoContacto === 'Email' ? '📧' : tipoContacto === 'Reunión' ? '🤝' : '📞';
         const prefijo = `[${fechaStr}] ${icono} ${tipoContacto} (${llamadaResultado}) por ${llamadaAgente}`;
         const textoNota = llamadaNota ? `: ${llamadaNota}` : '';
         const notaSincronizada = `${prefijo}${textoNota}\n\n${clienteActual.notas || ''}`;
@@ -384,6 +403,13 @@ export default function CRMPage() {
     return new Date(fecha + 'T00:00:00') <= hoy;
   };
 
+  const tituloActividad = {
+    hoy: 'Actividad de Hoy',
+    ayer: 'Actividad de Ayer',
+    semana: 'Últimos 7 Días',
+    mes: 'Últimos 30 Días'
+  };
+
   if (cargando) return <div className="flex min-h-screen items-center justify-center bg-[#F4F4F4]"><p className="text-sm font-light tracking-widest text-[#B94A36] uppercase animate-pulse">Sincronizando...</p></div>;
 
   return (
@@ -496,41 +522,40 @@ export default function CRMPage() {
           </div>
         )}
 
-        {/* === VISTA 3: BITÁCORA MULTICANAL === */}
+        {/* === VISTA 3: BITÁCORA MULTICANAL CON PÍLDORAS DE TIEMPO === */}
         {vista === 'actividad' && (
           <div className="flex flex-col h-full gap-4">
             
-            {/* Cabecera con Filtro de Fecha Global */}
+            {/* Cabecera Inteligente y Botones Rápidos */}
             <div className="bg-white p-3 rounded-xl border border-neutral-200 shadow-sm flex items-center justify-between flex-shrink-0">
                <div>
                  <h2 className="text-sm font-bold text-neutral-900 tracking-wide">Reporte de Productividad</h2>
-                 <p className="text-[10px] text-neutral-500 mt-0.5">Mide el esfuerzo diario de llamadas y mensajes</p>
+                 <p className="text-[10px] text-neutral-500 mt-0.5">Analiza el rendimiento sin saturar la vista</p>
                </div>
-               <div className="flex items-center gap-2">
-                 <span className="text-[10px] font-bold text-neutral-400 uppercase">Consultar Fecha:</span>
-                 <input 
-                   type="date" 
-                   value={fechaFiltroBitacora}
-                   onChange={(e) => setFechaFiltroBitacora(e.target.value)}
-                   className="bg-neutral-50 border border-neutral-200 rounded-lg p-2 text-xs font-bold outline-none focus:border-[#B94A36]"
-                 />
+               
+               {/* Píldoras de Filtro Temporal (Reemplazo del calendario) */}
+               <div className="flex bg-neutral-100 p-1 rounded-lg border border-neutral-200">
+                 <button onClick={() => setFiltroTiempo('hoy')} className={`px-4 py-1.5 rounded-md text-[11px] font-bold transition-all ${filtroTiempo === 'hoy' ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'}`}>Hoy</button>
+                 <button onClick={() => setFiltroTiempo('ayer')} className={`px-4 py-1.5 rounded-md text-[11px] font-bold transition-all ${filtroTiempo === 'ayer' ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'}`}>Ayer</button>
+                 <button onClick={() => setFiltroTiempo('semana')} className={`px-4 py-1.5 rounded-md text-[11px] font-bold transition-all ${filtroTiempo === 'semana' ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'}`}>7 Días</button>
+                 <button onClick={() => setFiltroTiempo('mes')} className={`px-4 py-1.5 rounded-md text-[11px] font-bold transition-all ${filtroTiempo === 'mes' ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'}`}>30 Días</button>
                </div>
             </div>
 
-            {/* Dashboard de Métricas Filtradas por la fecha */}
+            {/* Dashboard de Métricas */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-shrink-0">
-              <div className="bg-white p-4 rounded-xl border border-neutral-200 shadow-sm text-center">
+              <div className="bg-white p-4 rounded-xl border border-neutral-200 shadow-sm text-center transition-all hover:border-[#B94A36]/30">
                 <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Total Acciones</p>
                 <p className="text-3xl font-light text-neutral-900 mt-1">{actividadesDia.length}</p>
               </div>
-              <div className="bg-white p-4 rounded-xl border border-neutral-200 shadow-sm text-center">
-                <p className="text-[10px] font-bold text-green-600 uppercase tracking-widest">Respuestas Positivas</p>
+              <div className="bg-white p-4 rounded-xl border border-neutral-200 shadow-sm text-center transition-all hover:border-green-300">
+                <p className="text-[10px] font-bold text-green-600 uppercase tracking-widest">Éxito / Efectivas</p>
                 <p className="text-3xl font-light text-green-600 mt-1">
-                  {actividadesDia.filter(a => a.resultado === 'Contestó' || a.resultado === 'Respondio').length}
+                  {actividadesDia.filter(a => a.resultado === 'Contestó' || a.resultado === 'Respondio' || a.resultado === 'Efectivo').length}
                 </p>
               </div>
               <div className="bg-white p-4 rounded-xl border border-neutral-200 shadow-sm flex flex-col justify-center space-y-1">
-                <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest text-center border-b border-neutral-100 pb-1 mb-1">Por Canal</p>
+                <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest text-center border-b border-neutral-100 pb-1 mb-1">Impacto Por Canal</p>
                 <div className="flex justify-between items-center">
                   <span className="text-[11px] font-bold text-neutral-600">📞 Llamadas</span>
                   <span className="text-sm font-bold text-neutral-900">{actividadesDia.filter(a => a.tipo_contacto === 'Llamada').length}</span>
@@ -541,7 +566,7 @@ export default function CRMPage() {
                 </div>
               </div>
               <div className="bg-white p-4 rounded-xl border border-neutral-200 shadow-sm flex flex-col justify-center space-y-1">
-                <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest text-center border-b border-neutral-100 pb-1 mb-1">Por Agente</p>
+                <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest text-center border-b border-neutral-100 pb-1 mb-1">Rendimiento Agente</p>
                 <div className="flex justify-between items-center">
                   <span className="text-[11px] font-bold text-neutral-600">Saúl</span>
                   <span className="text-sm font-bold text-neutral-900">{actividadesDia.filter(a => a.agente.includes('Saúl')).length}</span>
@@ -556,15 +581,15 @@ export default function CRMPage() {
             <div className="flex flex-col md:flex-row gap-4 flex-1 min-h-0">
               
               <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-5 w-full md:w-1/3 flex flex-col flex-shrink-0">
-                <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wide border-b border-neutral-100 pb-3 mb-4">⚡ Registrar Interacción</h3>
+                <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wide border-b border-neutral-100 pb-3 mb-4">⚡ Registrar Acción Rápida</h3>
                 <form onSubmit={registrarActividadRapida} className="space-y-4 flex-1">
                   
                   {/* BUSCADOR DE PROSPECTO */}
                   <div className="relative">
-                    <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Prospecto</label>
+                    <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Buscar Cliente</label>
                     <input 
                       type="text" 
-                      placeholder="🔍 Escribe nombre o teléfono..."
+                      placeholder="🔍 Nombre o teléfono..."
                       value={busquedaLlamada}
                       onChange={(e) => {
                         setBusquedaLlamada(e.target.value);
@@ -593,7 +618,7 @@ export default function CRMPage() {
                             </li>
                           ))
                         ) : (
-                          <li className="p-2 text-xs text-neutral-400 text-center">No se encontraron resultados</li>
+                          <li className="p-2 text-xs text-neutral-400 text-center">No encontrado</li>
                         )}
                       </ul>
                     )}
@@ -601,14 +626,14 @@ export default function CRMPage() {
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Agente</label>
+                      <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Asesor</label>
                       <select value={llamadaAgente} onChange={(e) => setLlamadaAgente(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none">
                         <option value="Saúl Intriago">Saúl</option>
                         <option value="Debbi Mera">Debbi</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Canal</label>
+                      <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Vía</label>
                       <select value={tipoContacto} onChange={(e) => setTipoContacto(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs font-bold focus:outline-none">
                         <option value="Llamada">📞 Llamada</option>
                         <option value="WhatsApp">💬 WhatsApp</option>
@@ -619,7 +644,7 @@ export default function CRMPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Resultado</label>
+                    <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Status / Resultado</label>
                     <select value={llamadaResultado} onChange={(e) => setLlamadaResultado(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs font-bold focus:outline-none">
                       {tipoContacto === 'Llamada' ? (
                         <>
@@ -636,47 +661,54 @@ export default function CRMPage() {
                       ) : (
                         <>
                           <option value="Efectivo">✅ Efectivo / Realizado</option>
-                          <option value="Fallido">❌ Fallido / Cancelado</option>
+                          <option value="Fallido">❌ Cancelado</option>
                         </>
                       )}
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Nota Rápida</label>
-                    <textarea rows={3} value={llamadaNota} onChange={(e) => setLlamadaNota(e.target.value)} placeholder="¿Qué pasó?..." className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none resize-none"></textarea>
+                    <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Detalle / Próximo paso</label>
+                    <textarea rows={3} value={llamadaNota} onChange={(e) => setLlamadaNota(e.target.value)} placeholder="Anota el progreso..." className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none resize-none"></textarea>
                   </div>
                   
-                  <button type="submit" disabled={guardandoActividadRapida} className="w-full py-3 mt-4 bg-[#B94A36] hover:bg-[#9B3B2B] text-white text-[11px] font-bold uppercase tracking-widest rounded-lg transition disabled:opacity-50">
-                    {guardandoActividadRapida ? 'Guardando...' : '💾 Guardar Registro'}
+                  <button type="submit" disabled={guardandoActividadRapida} className="w-full py-3 mt-4 bg-[#B94A36] hover:bg-[#9B3B2B] text-white text-[11px] font-bold uppercase tracking-widest rounded-lg transition disabled:opacity-50 shadow-sm">
+                    {guardandoActividadRapida ? 'Procesando...' : '💾 Registrar Ahora'}
                   </button>
                 </form>
               </div>
 
               <div className="bg-white rounded-xl border border-neutral-200 shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
-                <div className="p-4 border-b border-neutral-100 bg-neutral-50">
-                  <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wide">📋 Actividad del {new Date(fechaFiltroBitacora + 'T12:00:00').toLocaleDateString('es-EC')}</h3>
+                <div className="p-4 border-b border-neutral-100 bg-neutral-50 flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wide">📋 {tituloActividad[filtroTiempo]}</h3>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
                   {actividadesDia.length === 0 ? (
                     <div className="h-full flex items-center justify-center">
-                      <p className="text-neutral-400 text-xs text-center">No hay registros para esta fecha.<br/>Si es hoy, ¡empieza a marcar!</p>
+                      <p className="text-neutral-400 text-xs text-center">No hay flujo registrado para este periodo.<br/>¡A encender los motores!</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
                       {actividadesDia.map((act) => (
-                        <div key={act.id} className="flex gap-4 p-3 bg-neutral-50 border border-neutral-100 rounded-lg">
-                          <div className="text-center pt-1">
-                            <span className="text-[10px] font-mono text-neutral-400">{new Date(act.created_at).toLocaleTimeString('es-EC', {hour: '2-digit', minute:'2-digit'})}</span>
+                        <div key={act.id} className="flex gap-4 p-3 bg-neutral-50 border border-neutral-100 rounded-lg hover:border-neutral-200 transition-colors">
+                          <div className="text-center pt-1 min-w-[50px]">
+                            {filtroTiempo !== 'hoy' && filtroTiempo !== 'ayer' ? (
+                              <>
+                                <span className="block text-[9px] font-bold text-neutral-500 mb-0.5">{new Date(act.created_at).toLocaleDateString('es-EC', {day:'2-digit', month:'short'})}</span>
+                                <span className="text-[9px] font-mono text-neutral-400">{new Date(act.created_at).toLocaleTimeString('es-EC', {hour: '2-digit', minute:'2-digit'})}</span>
+                              </>
+                            ) : (
+                              <span className="text-[10px] font-mono text-neutral-400">{new Date(act.created_at).toLocaleTimeString('es-EC', {hour: '2-digit', minute:'2-digit'})}</span>
+                            )}
                           </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
+                          <div className="flex-1 border-l border-neutral-200 pl-4">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
                               <span className="text-xs font-bold text-neutral-900">{act.clientes?.nombres} {act.clientes?.apellidos}</span>
                               <span className="text-[12px]">{act.tipo_contacto === 'WhatsApp' ? '💬' : act.tipo_contacto === 'Email' ? '📧' : act.tipo_contacto === 'Reunión' ? '🤝' : '📞'}</span>
                               <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${act.resultado.includes('Contestó') || act.resultado.includes('Respondio') || act.resultado.includes('Efectivo') ? 'bg-green-100 text-green-700' : 'bg-neutral-200 text-neutral-600'}`}>{act.resultado}</span>
                             </div>
-                            <p className="text-[11px] text-neutral-600">{act.notas || 'Sin notas adicionales'}</p>
-                            <p className="text-[9px] font-bold text-neutral-400 mt-1 uppercase">Por: {act.agente}</p>
+                            <p className="text-[11px] text-neutral-600 leading-relaxed">{act.notas || 'Sin notas adicionales'}</p>
+                            <p className="text-[9px] font-bold text-neutral-400 mt-1 uppercase tracking-wider">Agente: {act.agente}</p>
                           </div>
                         </div>
                       ))}
@@ -690,7 +722,7 @@ export default function CRMPage() {
         )}
       </div>
 
-      {/* --- MODALES Y PANEL LATERAL (INFERIOR) --- */}
+      {/* --- MODALES Y PANEL LATERAL --- */}
       {clienteSeleccionado && (
         <div className="fixed inset-0 bg-neutral-900/40 z-40 transition-opacity backdrop-blur-[2px]" onClick={() => setClienteSeleccionado(null)}></div>
       )}
