@@ -1,4 +1,4 @@
-// Actualizacion forzada para Vercel - CRM con Filtros de Tiempo Inteligentes (SaaS UI)
+// Actualizacion forzada para Vercel - CRM con Scroll en Panel y Botón Seguro
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -82,7 +82,6 @@ export default function CRMPage() {
   const [cotizacionesCliente, setCotizacionesCliente] = useState<Cotizacion[]>([]);
   const [cargandoHistorial, setCargandoHistorial] = useState(false);
 
-  // --- FILTROS DE TIEMPO INTELIGENTES ---
   const [filtroTiempo, setFiltroTiempo] = useState<'hoy' | 'ayer' | 'semana' | 'mes'>('hoy');
   const [actividadesDia, setActividadesDia] = useState<Actividad[]>([]);
   
@@ -118,7 +117,6 @@ export default function CRMPage() {
     if (campanaGuardada) setPlantillaCampana(campanaGuardada);
   }, []);
 
-  // Recarga automática al cambiar el filtro de tiempo
   useEffect(() => {
     cargarBitacoraRango();
   }, [filtroTiempo]);
@@ -197,7 +195,6 @@ export default function CRMPage() {
       const { data, error } = await supabase.from('registro_llamadas').insert([payload]).select('*, clientes(nombres, apellidos)');
       if (error) throw error;
 
-      // Solo lo agregamos en vivo si el usuario está viendo "Hoy"
       if (filtroTiempo === 'hoy' && data) {
         setActividadesDia([data[0], ...actividadesDia]);
       }
@@ -580,16 +577,17 @@ export default function CRMPage() {
 
             <div className="flex flex-col md:flex-row gap-4 flex-1 min-h-0">
               
-              <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-5 w-full md:w-1/3 flex flex-col flex-shrink-0">
+              {/* === AQUÍ ESTÁ EL SCROLL Y EL BOTÓN CORREGIDO === */}
+              <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-5 w-full md:w-1/3 flex flex-col flex-shrink-0 overflow-y-auto custom-scrollbar">
                 <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wide border-b border-neutral-100 pb-3 mb-4">⚡ Registrar Acción Rápida</h3>
-                <form onSubmit={registrarActividadRapida} className="space-y-4 flex-1">
+                <form onSubmit={registrarActividadRapida} className="flex-1 flex flex-col space-y-4">
                   
                   {/* BUSCADOR DE PROSPECTO */}
                   <div className="relative">
                     <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Buscar Cliente</label>
                     <input 
                       type="text" 
-                      placeholder="🔍 Nombre o teléfono..."
+                      placeholder="🔍 Escribe nombre o teléfono..."
                       value={busquedaLlamada}
                       onChange={(e) => {
                         setBusquedaLlamada(e.target.value);
@@ -599,6 +597,11 @@ export default function CRMPage() {
                       onFocus={() => setMostrarOpcionesLlamada(true)}
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]"
                     />
+                    
+                    {/* Alerta si escribes pero no seleccionas a nadie */}
+                    {busquedaLlamada && !llamadaClienteId && (
+                      <p className="text-[9px] text-[#B94A36] mt-1 font-bold">⚠️ Haz clic en un prospecto de la lista abajo</p>
+                    )}
                     
                     {mostrarOpcionesLlamada && !llamadaClienteId && (
                       <ul className="absolute z-10 w-full mt-1 bg-white border border-neutral-200 rounded-md shadow-lg max-h-48 overflow-y-auto custom-scrollbar">
@@ -672,8 +675,9 @@ export default function CRMPage() {
                     <textarea rows={3} value={llamadaNota} onChange={(e) => setLlamadaNota(e.target.value)} placeholder="Anota el progreso..." className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none resize-none"></textarea>
                   </div>
                   
-                  <button type="submit" disabled={guardandoActividadRapida} className="w-full py-3 mt-4 bg-[#B94A36] hover:bg-[#9B3B2B] text-white text-[11px] font-bold uppercase tracking-widest rounded-lg transition disabled:opacity-50 shadow-sm">
-                    {guardandoActividadRapida ? 'Procesando...' : '💾 Registrar Ahora'}
+                  {/* BOTÓN PROTEGIDO (No deja dar clic si no se seleccionó cliente) */}
+                  <button type="submit" disabled={guardandoActividadRapida || !llamadaClienteId} className={`w-full py-3 mt-auto text-white text-[11px] font-bold uppercase tracking-widest rounded-lg transition shadow-sm ${!llamadaClienteId ? 'bg-neutral-400 cursor-not-allowed' : 'bg-[#B94A36] hover:bg-[#9B3B2B]'}`}>
+                    {guardandoActividadRapida ? 'Procesando...' : '💾 Guardar Registro'}
                   </button>
                 </form>
               </div>
