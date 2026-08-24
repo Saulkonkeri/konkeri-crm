@@ -1,3 +1,4 @@
+// Actualizacion para Vercel - Cotizador con Climatización Opcional (Solo Texto, sin costo)
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -28,10 +29,13 @@ export default function CotizadorPage() {
   // --- CONTROL DE MODALIDAD TEMPORAL (CON/SIN FECHAS) ---
   const [incluirFechas, setIncluirFechas] = useState<boolean>(true);
 
-  // --- CONTROL DE DESCUENTOS ADICIONALES (OPCIONALES) ---
+  // --- CONTROL DE DESCUENTOS ADICIONALES ---
   const [tipoDescuento, setTipoDescuento] = useState<'porcentaje' | 'valor'>('porcentaje');
   const [valorDescuento, setValorDescuento] = useState<number>(0);
   const [motivoDescuento, setMotivoDescuento] = useState<string>('');
+
+  // --- CONTROL TEXTUAL DE CLIMATIZACIÓN (No afecta precios) ---
+  const [incluirClima, setIncluirClima] = useState<boolean>(false);
 
   // --- PARÁMETROS FINANCIEROS Y DE FECHA ---
   
@@ -137,7 +141,6 @@ export default function CotizadorPage() {
     const asignadoText = propiedadSeleccionada?.parqueadero_asignado || '';
     const bodegaText = propiedadSeleccionada?.bodega_asignada || 'Ninguna';
     
-    // Identificar si es Local Comercial
     const isLocalComercial = 
       (propiedadSeleccionada?.categoria || '').toLowerCase().includes('local') || 
       (propiedadSeleccionada?.tipologia || '').toLowerCase().includes('local');
@@ -168,6 +171,7 @@ export default function CotizadorPage() {
       descuentoMonto = valorDescuento;
     }
 
+    // El precio final incluye el valor original menos el descuento (Sin costos adicionales)
     const precioFin = Math.max(0, listaOriginal - descuentoMonto);
     
     // --- LÓGICA DE CASCADA MATEMÁTICA ---
@@ -701,9 +705,11 @@ export default function CotizadorPage() {
                         <li><span className="font-semibold text-neutral-800">Complementos Inmobiliarios:</span> El Valor Total de Venta ya contempla la asignación de los parqueos y la bodega detallados en la ficha técnica.</li>
                       )}
                       
-                      {!esLocal && (
+                      {/* MOSTRAR PÁRRAFO DE CLIMATIZACIÓN SOLO SI SE SELECCIONÓ EL TOGGLE */}
+                      {!esLocal && incluirClima && (
                         <li><span className="font-semibold text-neutral-800">Climatización Estética:</span> Sistema de aire acondicionado integral empotrado en el tumbado para todos los ambientes del departamento.</li>
                       )}
+
                       {!esLocal && (
                         <li><span className="font-semibold text-neutral-800">Equipamiento:</span> La unidad incluye calentador de agua.</li>
                       )}
@@ -729,18 +735,26 @@ export default function CotizadorPage() {
             </div>
           ) : (
             <>
-              {/* MODALIDAD TEMPORAL */}
-              <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm">
-                <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">Modalidad del Plan Temporal</h2>
-                <div className="grid grid-cols-2 gap-3 bg-neutral-100 p-1 rounded-lg">
-                  <button type="button" onClick={() => setIncluirFechas(true)} className={`py-2.5 text-xs font-semibold rounded-md transition-all ${incluirFechas ? 'bg-[#B94A36] text-white shadow-xs' : 'text-neutral-600 hover:text-neutral-900'}`}>
-                    📅 Incluir Fechas de Hitos
-                  </button>
-                  <button type="button" onClick={() => setIncluirFechas(false)} className={`py-2.5 text-xs font-semibold rounded-md transition-all ${!incluirFechas ? 'bg-[#B94A36] text-white shadow-xs' : 'text-neutral-600 hover:text-neutral-900'}`}>
-                    🚫 Cotizar Sin Fechas (Solo Valores)
-                  </button>
+              {/* OPCIONALES PARA EL PDF (Solo visible para Departamentos) */}
+              {!esLocal && propiedadSeleccionada && (
+                <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm space-y-3">
+                  <h2 className="text-xs font-semibold text-[#B94A36] uppercase tracking-wider">Presentación de Extras (PDF)</h2>
+                  <div className="flex items-center justify-between bg-neutral-50 border border-neutral-200 p-3 rounded-lg transition-colors hover:border-[#B94A36]/30">
+                    <div className="flex items-center gap-3">
+                      <input 
+                        type="checkbox" 
+                        checked={incluirClima} 
+                        onChange={(e) => setIncluirClima(e.target.checked)} 
+                        className="w-4 h-4 text-[#B94A36] border-gray-300 rounded focus:ring-[#B94A36] cursor-pointer" 
+                      />
+                      <div className="cursor-pointer select-none" onClick={() => setIncluirClima(!incluirClima)}>
+                        <p className="text-xs font-bold text-neutral-800">Mostrar Climatización Estética en el PDF</p>
+                        <p className="text-[10px] text-neutral-500">Agrega el texto descriptivo del aire acondicionado en los Valores Agregados.</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* MÓDULO DE DESCUENTOS ADICIONALES */}
               <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm space-y-4">
@@ -770,11 +784,24 @@ export default function CotizadorPage() {
                 </div>
               </div>
 
+              {/* MODALIDAD TEMPORAL */}
+              <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm">
+                <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">Modalidad del Plan Temporal</h2>
+                <div className="grid grid-cols-2 gap-3 bg-neutral-100 p-1 rounded-lg">
+                  <button type="button" onClick={() => setIncluirFechas(true)} className={`py-2.5 text-xs font-semibold rounded-md transition-all ${incluirFechas ? 'bg-[#B94A36] text-white shadow-xs' : 'text-neutral-600 hover:text-neutral-900'}`}>
+                    📅 Incluir Fechas de Hitos
+                  </button>
+                  <button type="button" onClick={() => setIncluirFechas(false)} className={`py-2.5 text-xs font-semibold rounded-md transition-all ${!incluirFechas ? 'bg-[#B94A36] text-white shadow-xs' : 'text-neutral-600 hover:text-neutral-900'}`}>
+                    🚫 Cotizar Sin Fechas (Solo Valores)
+                  </button>
+                </div>
+              </div>
+
               {/* 2. HITOS TEMPORALES */}
               {incluirFechas && (
                 <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm space-y-6">
                   <div>
-                    <h2 className="text-xs font-semibold text-[#B94A36] uppercase tracking-wider mb-3">2. Fechas de Hitos Iniciales</h2>
+                    <h2 className="text-xs font-semibold text-[#B94A36] uppercase tracking-wider mb-3">Fechas de Hitos Iniciales</h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-medium text-neutral-500 uppercase mb-1">Fecha Cuota de Reserva</label>
@@ -813,7 +840,7 @@ export default function CotizadorPage() {
 
               {/* CONTROL DE VALORES DEL PLAN */}
               <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm space-y-4">
-                <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">3. Control de Valores del Plan</h2>
+                <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Control de Valores del Plan</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                   
                   {/* RESERVA */}
@@ -863,7 +890,7 @@ export default function CotizadorPage() {
               {/* VISTA Y AJUSTE DE CUOTAS */}
               {entradaDiferirTotal > 0 && (
                 <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm">
-                  <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">4. Vista y Ajuste de Cuotas de Obra</h2>
+                  <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">Vista y Ajuste de Cuotas de Obra</h2>
                   <div className="max-h-80 overflow-y-auto border border-neutral-100 rounded-lg divide-y divide-neutral-100">
                     {cronogramaCuotas.map((cuota) => (
                       <div key={cuota.numeroCuota} className={`flex justify-between items-center p-3 ${cuota.esEditable ? 'bg-[#B94A36] text-white' : 'bg-white'}`}>
