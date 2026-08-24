@@ -1,4 +1,4 @@
-// Actualizacion forzada para Vercel - CRM con Scroll en Panel y Botón Seguro
+// Actualizacion forzada para Vercel - CRM con Radar Visual (Modo Cacería y Alertas)
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -52,6 +52,9 @@ export default function CRMPage() {
   const [filtroCiudad, setFiltroCiudad] = useState('Todas');
   const [filtroTipologia, setFiltroTipologia] = useState('Todas');
   const [filtroOrigen, setFiltroOrigen] = useState('Todos');
+  
+  // NUEVO: ESTADO PARA EL MODO CACERÍA
+  const [filtroPendientes, setFiltroPendientes] = useState(false);
 
   const [vista, setVista] = useState<'lista' | 'kanban' | 'actividad'>('kanban');
 
@@ -226,6 +229,61 @@ export default function CRMPage() {
     }
   };
 
+  // --- LÓGICA DE FECHAS PARA LAS ALERTAS VISUALES ---
+  const extraerFechaUltimaNota = (notas: string | null) => {
+    if (!notas) return null;
+    const match = notas.match(/\[(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (match) {
+      const day = parseInt(match[1], 10);
+      const month = parseInt(match[2], 10) - 1;
+      const year = parseInt(match[3], 10);
+      return new Date(year, month, day);
+    }
+    return null;
+  };
+
+  const obtenerDiasInactivos = (notas: string | null) => {
+    const ultimaFecha = extraerFechaUltimaNota(notas);
+    if (!ultimaFecha) return 999; // Si no hay notas, es totalmente nuevo/abandonado
+    const hoy = new Date();
+    hoy.setHours(0,0,0,0);
+    ultimaFecha.setHours(0,0,0,0);
+    const diffTime = hoy.getTime() - ultimaFecha.getTime();
+    return Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+  };
+
+  const esFechaVencida = (fecha?: string | null) => {
+    if (!fecha) return false;
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    return new Date(fecha + 'T00:00:00') <= hoy;
+  };
+
+  // --- FILTRO INTELIGENTE (ACTUALIZADO CON MODO CACERÍA) ---
+  const clientesFiltrados = useMemo(() => {
+    return clientes.filter(c => {
+      const b = busqueda.toLowerCase();
+      const coincideBusqueda = !b || `${c.nombres || ''} ${c.apellidos || ''}`.toLowerCase().includes(b) || (c.telefono && c.telefono.includes(b));
+      const coincideCiudad = filtroCiudad === 'Todas' || (c.ciudad_residencia && c.ciudad_residencia.toLowerCase().trim() === filtroCiudad.toLowerCase().trim());
+      const coincideTipologia = filtroTipologia === 'Todas' || (c.tipologia_interes && c.tipologia_interes.toLowerCase().trim() === filtroTipologia.toLowerCase().trim());
+      const coincideOrigen = filtroOrigen === 'Todos' || (c.origen_captacion && c.origen_captacion.toLowerCase().trim() === filtroOrigen.toLowerCase().trim());
+      
+      let coincidePendiente = true;
+      if (filtroPendientes) {
+        if (!c.proximo_contacto) {
+          coincidePendiente = false;
+        } else {
+          const hoy = new Date();
+          hoy.setHours(23, 59, 59, 999);
+          const fechaContacto = new Date(c.proximo_contacto + 'T00:00:00');
+          coincidePendiente = fechaContacto <= hoy;
+        }
+      }
+
+      return coincideBusqueda && coincideCiudad && coincideTipologia && coincideOrigen && coincidePendiente;
+    });
+  }, [clientes, busqueda, filtroCiudad, filtroTipologia, filtroOrigen, filtroPendientes]);
+
+
   const prospectosFiltradosParaLlamada = useMemo(() => {
     if (!busquedaLlamada) return clientes.slice(0, 50);
     const b = busquedaLlamada.toLowerCase();
@@ -383,23 +441,6 @@ export default function CRMPage() {
     } catch (error) { console.error(error); } finally { setCargandoHistorial(false); }
   };
 
-  const clientesFiltrados = useMemo(() => {
-    return clientes.filter(c => {
-      const b = busqueda.toLowerCase();
-      const coincideBusqueda = !b || `${c.nombres || ''} ${c.apellidos || ''}`.toLowerCase().includes(b) || (c.telefono && c.telefono.includes(b));
-      const coincideCiudad = filtroCiudad === 'Todas' || (c.ciudad_residencia && c.ciudad_residencia.toLowerCase().trim() === filtroCiudad.toLowerCase().trim());
-      const coincideTipologia = filtroTipologia === 'Todas' || (c.tipologia_interes && c.tipologia_interes.toLowerCase().trim() === filtroTipologia.toLowerCase().trim());
-      const coincideOrigen = filtroOrigen === 'Todos' || (c.origen_captacion && c.origen_captacion.toLowerCase().trim() === filtroOrigen.toLowerCase().trim());
-      return coincideBusqueda && coincideCiudad && coincideTipologia && coincideOrigen;
-    });
-  }, [clientes, busqueda, filtroCiudad, filtroTipologia, filtroOrigen]);
-
-  const esFechaVencida = (fecha?: string | null) => {
-    if (!fecha) return false;
-    const hoy = new Date(); hoy.setHours(0,0,0,0);
-    return new Date(fecha + 'T00:00:00') <= hoy;
-  };
-
   const tituloActividad = {
     hoy: 'Actividad de Hoy',
     ayer: 'Actividad de Ayer',
@@ -446,6 +487,17 @@ export default function CRMPage() {
             </select>
           </div>
 
+          {/* BOTÓN MODO CACERÍA */}
+          <div className="flex items-center ml-2 border-l border-neutral-200 pl-4">
+            <button 
+              onClick={() => setFiltroPendientes(!filtroPendientes)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all border ${filtroPendientes ? 'bg-red-50 text-red-700 border-red-200 shadow-sm' : 'bg-white text-neutral-500 border-neutral-200 hover:bg-neutral-50'}`}
+            >
+              <span className={filtroPendientes ? 'animate-pulse' : ''}>🎯</span>
+              {filtroPendientes ? 'Viendo Pendientes' : 'Modo Cacería'}
+            </button>
+          </div>
+
           <div className="flex bg-neutral-100 p-1 rounded-lg border border-neutral-200 flex-shrink-0 ml-auto">
             <button onClick={() => setVista('kanban')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors ${vista === 'kanban' ? 'bg-white text-neutral-900 shadow-xs' : 'text-neutral-500'}`}>📋 Tablero</button>
             <button onClick={() => setVista('lista')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors ${vista === 'lista' ? 'bg-white text-neutral-900 shadow-xs' : 'text-neutral-500'}`}>🗄️ Lista</button>
@@ -468,18 +520,46 @@ export default function CRMPage() {
                     <span className="bg-white text-neutral-500 text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">{leads.length}</span>
                   </div>
                   <div className="space-y-2 overflow-y-auto flex-1 pr-1 custom-scrollbar">
-                    {leads.map(cliente => (
-                      <div key={cliente.id} draggable onDragStart={(e) => handleDragStart(e, cliente.id)} onClick={() => setClienteSeleccionado(cliente)} className={`bg-white p-2.5 rounded-lg shadow-sm border ${cliente.tipo === 'cliente' ? 'border-[#B94A36]/40' : 'border-neutral-200'} hover:border-[#B94A36] cursor-pointer transition-all relative cursor-grab`}>
-                        {cliente.temperatura && <span className="absolute top-2 right-2 text-[10px]">{cliente.temperatura.split(' ')[0]}</span>}
-                        <h4 className="font-bold text-neutral-900 text-[11px] pr-4 leading-tight">{cliente.nombres} {cliente.apellidos}</h4>
-                        <p className="text-[9px] text-neutral-500 font-mono mt-0.5">{cliente.telefono || 'Sin celular'}</p>
-                        {cliente.proximo_contacto && (
-                          <div className={`mt-1.5 text-[8px] font-bold px-1.5 py-0.5 inline-block rounded border ${esFechaVencida(cliente.proximo_contacto) ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700'}`}>
-                            📅 {new Date(cliente.proximo_contacto).toLocaleDateString('es-EC', {day:'2-digit', month:'short'})}
+                    {leads.map(cliente => {
+                      const diasInactivos = obtenerDiasInactivos(cliente.notas);
+                      const abandonado = diasInactivos > 4 && cliente.estado !== 'Descartado' && cliente.estado !== 'Cierre (Ganado)';
+                      const agendadoVencido = esFechaVencida(cliente.proximo_contacto);
+
+                      return (
+                        <div 
+                          key={cliente.id} 
+                          draggable 
+                          onDragStart={(e) => handleDragStart(e, cliente.id)} 
+                          onClick={() => setClienteSeleccionado(cliente)} 
+                          className={`bg-white p-2.5 rounded-lg shadow-sm cursor-pointer transition-all relative cursor-grab border-[1.5px] ${agendadoVencido ? 'border-red-500' : abandonado ? 'border-orange-400' : 'border-transparent'} hover:border-[#B94A36]`}
+                        >
+                          {cliente.temperatura && <span className="absolute top-2 right-2 text-[10px]">{cliente.temperatura.split(' ')[0]}</span>}
+                          <h4 className="font-bold text-neutral-900 text-[11px] pr-4 leading-tight">{cliente.nombres} {cliente.apellidos}</h4>
+                          <p className="text-[9px] text-neutral-500 font-mono mt-0.5 mb-1">{cliente.telefono || 'Sin celular'}</p>
+                          
+                          {/* ETIQUETA VISUAL DE INTERÉS */}
+                          {cliente.tipologia_interes && cliente.tipologia_interes !== 'Por definir' && (
+                            <span className="inline-block mt-1 bg-purple-50 text-purple-700 border border-purple-200 text-[8px] font-bold px-1.5 py-0.5 rounded mr-1">
+                              {cliente.tipologia_interes.includes('Suite') ? '🏢' : '🛏️'} {cliente.tipologia_interes}
+                            </span>
+                          )}
+
+                          {cliente.proximo_contacto && (
+                            <div className={`mt-1 text-[8px] font-bold px-1.5 py-0.5 inline-block rounded border ${agendadoVencido ? 'bg-red-50 text-red-700 border-red-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                              📅 Agendado: {new Date(cliente.proximo_contacto).toLocaleDateString('es-EC', {day:'2-digit', month:'short'})}
+                            </div>
+                          )}
+
+                          {/* RASTRO DE INACTIVIDAD */}
+                          <div className="mt-1.5 pt-1.5 border-t border-neutral-100 flex justify-between items-center">
+                            <span className={`text-[8px] font-bold ${abandonado ? 'text-orange-600' : 'text-neutral-400'}`}>
+                              {diasInactivos === 0 ? 'Última acción: Hoy' : diasInactivos === 1 ? 'Última acción: Ayer' : diasInactivos > 300 ? 'Sin registros recientes' : `Inactivo: ${diasInactivos} días`}
+                            </span>
+                            {abandonado && <span className="text-[10px] animate-pulse" title="Lead enfriándose">⚠️</span>}
                           </div>
-                        )}
-                      </div>
-                    ))}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               );
@@ -493,6 +573,7 @@ export default function CRMPage() {
               <thead className="sticky top-0 bg-neutral-900 z-10">
                 <tr className="text-white text-[10px] uppercase tracking-wider">
                   <th className="px-4 py-3 font-semibold">Prospecto</th>
+                  <th className="px-4 py-3 font-semibold">Interés</th>
                   <th className="px-4 py-3 font-semibold">Estado</th>
                   <th className="px-4 py-3 font-semibold">Tarea Pendiente</th>
                 </tr>
@@ -504,6 +585,7 @@ export default function CRMPage() {
                       <div className="font-bold text-neutral-900 text-xs">{cliente.nombres} {cliente.apellidos}</div>
                       <div className="text-[10px] text-neutral-400 font-mono">{cliente.telefono}</div>
                     </td>
+                    <td className="px-4 py-3 text-xs font-semibold text-purple-700">{cliente.tipologia_interes}</td>
                     <td className="px-4 py-3"><div className="text-[10px] font-bold text-neutral-700 bg-neutral-100 inline-block px-1.5 py-0.5 rounded">{cliente.estado}</div></td>
                     <td className="px-4 py-3">
                       {cliente.proximo_contacto ? (
@@ -530,7 +612,7 @@ export default function CRMPage() {
                  <p className="text-[10px] text-neutral-500 mt-0.5">Analiza el rendimiento sin saturar la vista</p>
                </div>
                
-               {/* Píldoras de Filtro Temporal (Reemplazo del calendario) */}
+               {/* Píldoras de Filtro Temporal */}
                <div className="flex bg-neutral-100 p-1 rounded-lg border border-neutral-200">
                  <button onClick={() => setFiltroTiempo('hoy')} className={`px-4 py-1.5 rounded-md text-[11px] font-bold transition-all ${filtroTiempo === 'hoy' ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'}`}>Hoy</button>
                  <button onClick={() => setFiltroTiempo('ayer')} className={`px-4 py-1.5 rounded-md text-[11px] font-bold transition-all ${filtroTiempo === 'ayer' ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'}`}>Ayer</button>
@@ -577,7 +659,6 @@ export default function CRMPage() {
 
             <div className="flex flex-col md:flex-row gap-4 flex-1 min-h-0">
               
-              {/* === AQUÍ ESTÁ EL SCROLL Y EL BOTÓN CORREGIDO === */}
               <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-5 w-full md:w-1/3 flex flex-col flex-shrink-0 overflow-y-auto custom-scrollbar">
                 <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wide border-b border-neutral-100 pb-3 mb-4">⚡ Registrar Acción Rápida</h3>
                 <form onSubmit={registrarActividadRapida} className="flex-1 flex flex-col space-y-4">
@@ -598,7 +679,6 @@ export default function CRMPage() {
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]"
                     />
                     
-                    {/* Alerta si escribes pero no seleccionas a nadie */}
                     {busquedaLlamada && !llamadaClienteId && (
                       <p className="text-[9px] text-[#B94A36] mt-1 font-bold">⚠️ Haz clic en un prospecto de la lista abajo</p>
                     )}
@@ -675,7 +755,6 @@ export default function CRMPage() {
                     <textarea rows={3} value={llamadaNota} onChange={(e) => setLlamadaNota(e.target.value)} placeholder="Anota el progreso..." className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none resize-none"></textarea>
                   </div>
                   
-                  {/* BOTÓN PROTEGIDO (No deja dar clic si no se seleccionó cliente) */}
                   <button type="submit" disabled={guardandoActividadRapida || !llamadaClienteId} className={`w-full py-3 mt-auto text-white text-[11px] font-bold uppercase tracking-widest rounded-lg transition shadow-sm ${!llamadaClienteId ? 'bg-neutral-400 cursor-not-allowed' : 'bg-[#B94A36] hover:bg-[#9B3B2B]'}`}>
                     {guardandoActividadRapida ? 'Procesando...' : '💾 Guardar Registro'}
                   </button>
