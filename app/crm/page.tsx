@@ -1,4 +1,4 @@
-// Actualizacion forzada para Vercel - CRM con Radar Visual (Modo Cacería y Alertas)
+// Actualizacion forzada para Vercel - CRM con Nueva Jerarquía y Agendamiento Rápido
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -52,8 +52,6 @@ export default function CRMPage() {
   const [filtroCiudad, setFiltroCiudad] = useState('Todas');
   const [filtroTipologia, setFiltroTipologia] = useState('Todas');
   const [filtroOrigen, setFiltroOrigen] = useState('Todos');
-  
-  // NUEVO: ESTADO PARA EL MODO CACERÍA
   const [filtroPendientes, setFiltroPendientes] = useState(false);
 
   const [vista, setVista] = useState<'lista' | 'kanban' | 'actividad'>('kanban');
@@ -94,6 +92,10 @@ export default function CRMPage() {
   const [llamadaResultado, setLlamadaResultado] = useState('Contestó');
   const [llamadaNota, setLlamadaNota] = useState('');
   const [guardandoActividadRapida, setGuardandoActividadRapida] = useState(false);
+
+  // NUEVOS ESTADOS PARA AGENDAR LA PRÓXIMA ACCIÓN DESDE EL PANEL RÁPIDO
+  const [proximaFechaRapida, setProximaFechaRapida] = useState('');
+  const [proximaAccionRapida, setProximaAccionRapida] = useState('');
 
   const [busquedaLlamada, setBusquedaLlamada] = useState('');
   const [mostrarOpcionesLlamada, setMostrarOpcionesLlamada] = useState(false);
@@ -187,6 +189,7 @@ export default function CRMPage() {
     
     setGuardandoActividadRapida(true);
     try {
+      // 1. Guardar la actividad de hoy
       const payload = {
         cliente_id: llamadaClienteId,
         agente: llamadaAgente,
@@ -202,25 +205,37 @@ export default function CRMPage() {
         setActividadesDia([data[0], ...actividadesDia]);
       }
 
+      // 2. Actualizar el perfil del cliente (Notas + Próxima Acción)
       const clienteActual = clientes.find(c => c.id === llamadaClienteId);
       if (clienteActual) {
         const fechaStr = new Date().toLocaleString('es-EC', { dateStyle: 'short', timeStyle: 'short' });
-        const icono = tipoContacto === 'WhatsApp' ? '💬' : tipoContacto === 'Email' ? '📧' : tipoContacto === 'Reunión' ? '🤝' : '📞';
+        const icono = tipoContacto === 'WhatsApp' ? '💬' : tipoContacto === 'Email' ? '📧' : tipoContacto === 'Zoom' ? '📹' : tipoContacto === 'Reunión' ? '🤝' : '📞';
         const prefijo = `[${fechaStr}] ${icono} ${tipoContacto} (${llamadaResultado}) por ${llamadaAgente}`;
         const textoNota = llamadaNota ? `: ${llamadaNota}` : '';
         const notaSincronizada = `${prefijo}${textoNota}\n\n${clienteActual.notas || ''}`;
 
-        await supabase.from('clientes').update({ notas: notaSincronizada }).eq('id', llamadaClienteId);
+        const updates: any = { notas: notaSincronizada };
+
+        // Si el usuario decidió agendar un próximo paso en este mismo formulario
+        if (proximaFechaRapida) {
+          updates.proximo_contacto = proximaFechaRapida;
+          updates.tipo_accion = proximaAccionRapida || 'Seguimiento';
+        }
+
+        await supabase.from('clientes').update(updates).eq('id', llamadaClienteId);
         
-        setClientes(prev => prev.map(c => c.id === llamadaClienteId ? { ...c, notas: notaSincronizada } : c));
+        setClientes(prev => prev.map(c => c.id === llamadaClienteId ? { ...c, ...updates } : c));
         if (clienteSeleccionado?.id === llamadaClienteId) {
-          setClienteSeleccionado(prev => prev ? { ...prev, notas: notaSincronizada } : prev);
+          setClienteSeleccionado(prev => prev ? { ...prev, ...updates } : prev);
         }
       }
       
+      // Limpiar el formulario
       setLlamadaClienteId('');
       setBusquedaLlamada('');
       setLlamadaNota('');
+      setProximaFechaRapida('');
+      setProximaAccionRapida('');
       
     } catch (error: any) {
       alert(`Error al registrar actividad: ${error.message}`);
@@ -229,7 +244,6 @@ export default function CRMPage() {
     }
   };
 
-  // --- LÓGICA DE FECHAS PARA LAS ALERTAS VISUALES ---
   const extraerFechaUltimaNota = (notas: string | null) => {
     if (!notas) return null;
     const match = notas.match(/\[(\d{1,2})\/(\d{1,2})\/(\d{4})/);
@@ -244,7 +258,7 @@ export default function CRMPage() {
 
   const obtenerDiasInactivos = (notas: string | null) => {
     const ultimaFecha = extraerFechaUltimaNota(notas);
-    if (!ultimaFecha) return 999; // Si no hay notas, es totalmente nuevo/abandonado
+    if (!ultimaFecha) return 999;
     const hoy = new Date();
     hoy.setHours(0,0,0,0);
     ultimaFecha.setHours(0,0,0,0);
@@ -258,7 +272,6 @@ export default function CRMPage() {
     return new Date(fecha + 'T00:00:00') <= hoy;
   };
 
-  // --- FILTRO INTELIGENTE (ACTUALIZADO CON MODO CACERÍA) ---
   const clientesFiltrados = useMemo(() => {
     return clientes.filter(c => {
       const b = busqueda.toLowerCase();
@@ -296,18 +309,6 @@ export default function CRMPage() {
     const setCiudades = new Set<string>();
     clientes.forEach(c => { if (c.ciudad_residencia) setCiudades.add(c.ciudad_residencia.trim()); });
     return Array.from(setCiudades).sort();
-  }, [clientes]);
-
-  const tipologiasDisponibles = useMemo(() => {
-    const setTipos = new Set<string>();
-    clientes.forEach(c => { if (c.tipologia_interes) setTipos.add(c.tipologia_interes.trim()); });
-    return Array.from(setTipos).sort();
-  }, [clientes]);
-
-  const origenesDisponibles = useMemo(() => {
-    const setOrigenes = new Set<string>();
-    clientes.forEach(c => { if (c.origen_captacion) setOrigenes.add(c.origen_captacion.trim()); });
-    return Array.from(setOrigenes).sort();
   }, [clientes]);
 
   const handleDragStart = (e: React.DragEvent, clienteId: string) => { e.dataTransfer.setData('clienteId', clienteId); };
@@ -453,26 +454,34 @@ export default function CRMPage() {
   return (
     <div className="min-h-screen bg-[#F4F4F4] px-4 md:px-6 py-6 font-sans text-neutral-800 flex flex-col h-screen overflow-hidden">
       
-      {/* HEADER PRINCIPAL */}
-      <div className="w-full flex-shrink-0 mb-4 space-y-3">
+      {/* 1. HEADER PRINCIPAL Y VISTAS (NUEVA JERARQUÍA) */}
+      <div className="w-full flex-shrink-0 mb-3 space-y-3">
         <div className="bg-white rounded-xl border border-neutral-200 p-4 shadow-sm flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <span className="text-[10px] font-bold tracking-widest text-[#B94A36] uppercase">Gestión Comercial Arienzo</span>
             <h1 className="text-xl font-medium tracking-tight text-neutral-900 mt-1">Pipeline de Prospectos</h1>
           </div>
+          
+          {/* AQUÍ ESTÁN LAS VISTAS SEPARADAS */}
+          <div className="flex bg-neutral-100 p-1 rounded-lg border border-neutral-200">
+            <button onClick={() => setVista('kanban')} className={`px-4 py-2 rounded-md text-xs font-bold transition-colors ${vista === 'kanban' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}>📋 Tablero</button>
+            <button onClick={() => setVista('lista')} className={`px-4 py-2 rounded-md text-xs font-bold transition-colors ${vista === 'lista' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}>🗄️ Lista</button>
+            <button onClick={() => setVista('actividad')} className={`px-4 py-2 rounded-md text-xs font-bold transition-colors ${vista === 'actividad' ? 'bg-[#B94A36] text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}>⚡ Actividad</button>
+          </div>
+
           <div className="flex gap-2">
-            <button onClick={() => setMostrarModalPlantilla(true)} className="px-3 py-2 bg-neutral-100 text-neutral-700 text-xs font-bold rounded-lg hover:bg-neutral-200 transition">⚙️ Plantillas WhatsApp</button>
-            <button onClick={() => setMostrarModalNuevo(true)} className="px-4 py-2 bg-[#B94A36] text-white text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-[#9B3B2B] transition shadow-md">+ Prospecto</button>
+            <button onClick={() => setMostrarModalPlantilla(true)} className="px-3 py-2 bg-neutral-100 text-neutral-700 text-xs font-bold rounded-lg hover:bg-neutral-200 transition">⚙️ Mensajes</button>
+            <button onClick={() => setMostrarModalNuevo(true)} className="px-4 py-2 bg-neutral-900 text-white text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-black transition shadow-md">+ Prospecto</button>
           </div>
         </div>
 
-        {/* BARRA DE BÚSQUEDA Y FILTROS ESTRUCTURADOS */}
+        {/* 2. BARRA DE FILTROS (SEGUNDO PISO) */}
         <div className="bg-white p-3 rounded-xl border border-neutral-200 shadow-sm flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[220px]">
             <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-neutral-400">🔍</span>
             <input 
               type="text" 
-              placeholder="Buscar prospecto..." 
+              placeholder="Buscar prospecto por nombre, ciudad o teléfono..." 
               value={busqueda} 
               onChange={(e) => setBusqueda(e.target.value)} 
               className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-2 pl-9 pr-3 text-xs focus:outline-none focus:border-[#B94A36]" 
@@ -487,21 +496,15 @@ export default function CRMPage() {
             </select>
           </div>
 
-          {/* BOTÓN MODO CACERÍA */}
-          <div className="flex items-center ml-2 border-l border-neutral-200 pl-4">
+          {/* BOTÓN MODO CACERÍA MEJORADO VISUALMENTE COMO FILTRO */}
+          <div className="flex items-center border-l border-neutral-200 pl-3">
             <button 
               onClick={() => setFiltroPendientes(!filtroPendientes)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all border ${filtroPendientes ? 'bg-red-50 text-red-700 border-red-200 shadow-sm' : 'bg-white text-neutral-500 border-neutral-200 hover:bg-neutral-50'}`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all border ${filtroPendientes ? 'bg-red-50 text-red-700 border-red-200 shadow-sm' : 'bg-white text-neutral-500 border-neutral-200 hover:bg-neutral-50'}`}
             >
-              <span className={filtroPendientes ? 'animate-pulse' : ''}>🎯</span>
-              {filtroPendientes ? 'Viendo Pendientes' : 'Modo Cacería'}
+              <span className={`text-[14px] ${filtroPendientes ? 'animate-pulse' : ''}`}>🎯</span>
+              {filtroPendientes ? 'Filtro: Tareas de Hoy' : 'Modo Cacería (Off)'}
             </button>
-          </div>
-
-          <div className="flex bg-neutral-100 p-1 rounded-lg border border-neutral-200 flex-shrink-0 ml-auto">
-            <button onClick={() => setVista('kanban')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors ${vista === 'kanban' ? 'bg-white text-neutral-900 shadow-xs' : 'text-neutral-500'}`}>📋 Tablero</button>
-            <button onClick={() => setVista('lista')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors ${vista === 'lista' ? 'bg-white text-neutral-900 shadow-xs' : 'text-neutral-500'}`}>🗄️ Lista</button>
-            <button onClick={() => setVista('actividad')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors ${vista === 'actividad' ? 'bg-[#B94A36] text-white shadow-xs' : 'text-neutral-500 hover:text-neutral-700'}`}>⚡ Actividad</button>
           </div>
         </div>
       </div>
@@ -537,7 +540,6 @@ export default function CRMPage() {
                           <h4 className="font-bold text-neutral-900 text-[11px] pr-4 leading-tight">{cliente.nombres} {cliente.apellidos}</h4>
                           <p className="text-[9px] text-neutral-500 font-mono mt-0.5 mb-1">{cliente.telefono || 'Sin celular'}</p>
                           
-                          {/* ETIQUETA VISUAL DE INTERÉS */}
                           {cliente.tipologia_interes && cliente.tipologia_interes !== 'Por definir' && (
                             <span className="inline-block mt-1 bg-purple-50 text-purple-700 border border-purple-200 text-[8px] font-bold px-1.5 py-0.5 rounded mr-1">
                               {cliente.tipologia_interes.includes('Suite') ? '🏢' : '🛏️'} {cliente.tipologia_interes}
@@ -550,7 +552,6 @@ export default function CRMPage() {
                             </div>
                           )}
 
-                          {/* RASTRO DE INACTIVIDAD */}
                           <div className="mt-1.5 pt-1.5 border-t border-neutral-100 flex justify-between items-center">
                             <span className={`text-[8px] font-bold ${abandonado ? 'text-orange-600' : 'text-neutral-400'}`}>
                               {diasInactivos === 0 ? 'Última acción: Hoy' : diasInactivos === 1 ? 'Última acción: Ayer' : diasInactivos > 300 ? 'Sin registros recientes' : `Inactivo: ${diasInactivos} días`}
@@ -601,18 +602,16 @@ export default function CRMPage() {
           </div>
         )}
 
-        {/* === VISTA 3: BITÁCORA MULTICANAL CON PÍLDORAS DE TIEMPO === */}
+        {/* === VISTA 3: BITÁCORA MULTICANAL CON AGENDAMIENTO === */}
         {vista === 'actividad' && (
           <div className="flex flex-col h-full gap-4">
             
-            {/* Cabecera Inteligente y Botones Rápidos */}
             <div className="bg-white p-3 rounded-xl border border-neutral-200 shadow-sm flex items-center justify-between flex-shrink-0">
                <div>
                  <h2 className="text-sm font-bold text-neutral-900 tracking-wide">Reporte de Productividad</h2>
                  <p className="text-[10px] text-neutral-500 mt-0.5">Analiza el rendimiento sin saturar la vista</p>
                </div>
                
-               {/* Píldoras de Filtro Temporal */}
                <div className="flex bg-neutral-100 p-1 rounded-lg border border-neutral-200">
                  <button onClick={() => setFiltroTiempo('hoy')} className={`px-4 py-1.5 rounded-md text-[11px] font-bold transition-all ${filtroTiempo === 'hoy' ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'}`}>Hoy</button>
                  <button onClick={() => setFiltroTiempo('ayer')} className={`px-4 py-1.5 rounded-md text-[11px] font-bold transition-all ${filtroTiempo === 'ayer' ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'}`}>Ayer</button>
@@ -621,7 +620,6 @@ export default function CRMPage() {
                </div>
             </div>
 
-            {/* Dashboard de Métricas */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-shrink-0">
               <div className="bg-white p-4 rounded-xl border border-neutral-200 shadow-sm text-center transition-all hover:border-[#B94A36]/30">
                 <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Total Acciones</p>
@@ -636,8 +634,8 @@ export default function CRMPage() {
               <div className="bg-white p-4 rounded-xl border border-neutral-200 shadow-sm flex flex-col justify-center space-y-1">
                 <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest text-center border-b border-neutral-100 pb-1 mb-1">Impacto Por Canal</p>
                 <div className="flex justify-between items-center">
-                  <span className="text-[11px] font-bold text-neutral-600">📞 Llamadas</span>
-                  <span className="text-sm font-bold text-neutral-900">{actividadesDia.filter(a => a.tipo_contacto === 'Llamada').length}</span>
+                  <span className="text-[11px] font-bold text-neutral-600">📞 / 📹 Llamadas y Zoom</span>
+                  <span className="text-sm font-bold text-neutral-900">{actividadesDia.filter(a => a.tipo_contacto === 'Llamada' || a.tipo_contacto === 'Zoom').length}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[11px] font-bold text-neutral-600">💬 WhatsApps</span>
@@ -660,10 +658,9 @@ export default function CRMPage() {
             <div className="flex flex-col md:flex-row gap-4 flex-1 min-h-0">
               
               <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-5 w-full md:w-1/3 flex flex-col flex-shrink-0 overflow-y-auto custom-scrollbar">
-                <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wide border-b border-neutral-100 pb-3 mb-4">⚡ Registrar Acción Rápida</h3>
-                <form onSubmit={registrarActividadRapida} className="flex-1 flex flex-col space-y-4">
+                <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wide border-b border-neutral-100 pb-3 mb-4">⚡ Acción y Agendamiento</h3>
+                <form onSubmit={registrarActividadRapida} className="flex-1 flex flex-col space-y-3">
                   
-                  {/* BUSCADOR DE PROSPECTO */}
                   <div className="relative">
                     <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Buscar Cliente</label>
                     <input 
@@ -678,11 +675,7 @@ export default function CRMPage() {
                       onFocus={() => setMostrarOpcionesLlamada(true)}
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]"
                     />
-                    
-                    {busquedaLlamada && !llamadaClienteId && (
-                      <p className="text-[9px] text-[#B94A36] mt-1 font-bold">⚠️ Haz clic en un prospecto de la lista abajo</p>
-                    )}
-                    
+                    {busquedaLlamada && !llamadaClienteId && <p className="text-[9px] text-[#B94A36] mt-1 font-bold">⚠️ Haz clic en un prospecto abajo</p>}
                     {mostrarOpcionesLlamada && !llamadaClienteId && (
                       <ul className="absolute z-10 w-full mt-1 bg-white border border-neutral-200 rounded-md shadow-lg max-h-48 overflow-y-auto custom-scrollbar">
                         {prospectosFiltradosParaLlamada.length > 0 ? (
@@ -716,23 +709,24 @@ export default function CRMPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Vía</label>
+                      <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Vía (Incluye Zoom)</label>
                       <select value={tipoContacto} onChange={(e) => setTipoContacto(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs font-bold focus:outline-none">
                         <option value="Llamada">📞 Llamada</option>
                         <option value="WhatsApp">💬 WhatsApp</option>
+                        <option value="Zoom">📹 Videollamada Zoom</option>
                         <option value="Email">📧 Email</option>
-                        <option value="Reunión">🤝 Reunión</option>
+                        <option value="Reunión">🤝 Presencial</option>
                       </select>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Status / Resultado</label>
+                    <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Resultado</label>
                     <select value={llamadaResultado} onChange={(e) => setLlamadaResultado(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs font-bold focus:outline-none">
-                      {tipoContacto === 'Llamada' ? (
+                      {tipoContacto === 'Llamada' || tipoContacto === 'Zoom' ? (
                         <>
-                          <option value="Contestó">✅ Contestó</option>
-                          <option value="No contestó">❌ No contestó</option>
+                          <option value="Contestó">✅ Contestó / Asistió</option>
+                          <option value="No contestó">❌ No contestó / Faltó</option>
                           <option value="Equivocado">🚫 Número Erróneo</option>
                         </>
                       ) : tipoContacto === 'WhatsApp' ? (
@@ -751,12 +745,36 @@ export default function CRMPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Detalle / Próximo paso</label>
-                    <textarea rows={3} value={llamadaNota} onChange={(e) => setLlamadaNota(e.target.value)} placeholder="Anota el progreso..." className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none resize-none"></textarea>
+                    <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">¿Qué pasó hoy?</label>
+                    <textarea rows={2} value={llamadaNota} onChange={(e) => setLlamadaNota(e.target.value)} placeholder="Ej: Le gustó la suite, pide descuento..." className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none resize-none"></textarea>
                   </div>
                   
+                  {/* SECCIÓN NUEVA: AGENDAMIENTO AUTOMÁTICO EN EL MISMO PASO */}
+                  <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg mt-2">
+                    <label className="block text-[10px] font-bold text-blue-700 uppercase mb-2">📅 ¿Agendar Siguiente Paso?</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input 
+                        type="date" 
+                        value={proximaFechaRapida} 
+                        onChange={(e) => setProximaFechaRapida(e.target.value)} 
+                        className="w-full bg-white border border-blue-200 rounded-md p-1.5 text-xs text-neutral-700 outline-none focus:border-blue-400" 
+                      />
+                      <select 
+                        value={proximaAccionRapida} 
+                        onChange={(e) => setProximaAccionRapida(e.target.value)} 
+                        className="w-full bg-white border border-blue-200 rounded-md p-1.5 text-xs text-neutral-700 outline-none focus:border-blue-400"
+                      >
+                        <option value="">-- Qué hacer --</option>
+                        <option value="Llamar">Llamar</option>
+                        <option value="WhatsApp">Escribir WhatsApp</option>
+                        <option value="Reunión">Reunión / Zoom</option>
+                        <option value="Cotización">Enviar Cotización</option>
+                      </select>
+                    </div>
+                  </div>
+
                   <button type="submit" disabled={guardandoActividadRapida || !llamadaClienteId} className={`w-full py-3 mt-auto text-white text-[11px] font-bold uppercase tracking-widest rounded-lg transition shadow-sm ${!llamadaClienteId ? 'bg-neutral-400 cursor-not-allowed' : 'bg-[#B94A36] hover:bg-[#9B3B2B]'}`}>
-                    {guardandoActividadRapida ? 'Procesando...' : '💾 Guardar Registro'}
+                    {guardandoActividadRapida ? 'Procesando...' : '💾 Guardar y Actualizar'}
                   </button>
                 </form>
               </div>
@@ -787,7 +805,7 @@ export default function CRMPage() {
                           <div className="flex-1 border-l border-neutral-200 pl-4">
                             <div className="flex items-center gap-2 mb-1 flex-wrap">
                               <span className="text-xs font-bold text-neutral-900">{act.clientes?.nombres} {act.clientes?.apellidos}</span>
-                              <span className="text-[12px]">{act.tipo_contacto === 'WhatsApp' ? '💬' : act.tipo_contacto === 'Email' ? '📧' : act.tipo_contacto === 'Reunión' ? '🤝' : '📞'}</span>
+                              <span className="text-[12px]">{act.tipo_contacto === 'WhatsApp' ? '💬' : act.tipo_contacto === 'Email' ? '📧' : act.tipo_contacto === 'Zoom' ? '📹' : act.tipo_contacto === 'Reunión' ? '🤝' : '📞'}</span>
                               <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${act.resultado.includes('Contestó') || act.resultado.includes('Respondio') || act.resultado.includes('Efectivo') ? 'bg-green-100 text-green-700' : 'bg-neutral-200 text-neutral-600'}`}>{act.resultado}</span>
                             </div>
                             <p className="text-[11px] text-neutral-600 leading-relaxed">{act.notas || 'Sin notas adicionales'}</p>
