@@ -1,4 +1,4 @@
-// Actualizacion forzada para Vercel - CRM con Nueva Jerarquía y Agendamiento Rápido
+// Actualizacion forzada para Vercel - CRM con Origen Web y Autocompletado de Campañas
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -15,6 +15,7 @@ interface Cliente {
   tipologia_interes?: string;
   estado: string;
   origen_captacion?: string;
+  campana?: string; // NUEVO: Campo de Campaña
   ingresado_por?: string;
   notas: string;
   temperatura?: string; 
@@ -67,6 +68,7 @@ export default function CRMPage() {
   const [nuevoEmail, setNuevoEmail] = useState('');
   const [nuevaCiudad, setNuevaCiudad] = useState('');
   const [nuevoOrigen, setNuevoOrigen] = useState('Meta Ads');
+  const [nuevoCampana, setNuevoCampana] = useState(''); // NUEVO: Estado para campaña
   const [nuevoMotivo, setNuevoMotivo] = useState('Para Invertir');
   const [nuevoInteres, setNuevoInteres] = useState('Suite');
   const [nuevoIngresadoPor, setNuevoIngresadoPor] = useState('Saúl Intriago / Debbi Mera'); 
@@ -93,7 +95,6 @@ export default function CRMPage() {
   const [llamadaNota, setLlamadaNota] = useState('');
   const [guardandoActividadRapida, setGuardandoActividadRapida] = useState(false);
 
-  // NUEVOS ESTADOS PARA AGENDAR LA PRÓXIMA ACCIÓN DESDE EL PANEL RÁPIDO
   const [proximaFechaRapida, setProximaFechaRapida] = useState('');
   const [proximaAccionRapida, setProximaAccionRapida] = useState('');
 
@@ -109,7 +110,8 @@ export default function CRMPage() {
   );
 
   const estados = ['Interesado', 'Contactado', 'Cotizado', 'En Negociación', 'Reserva', 'Cierre (Ganado)', 'Descartado'];
-  const origenes = ['Referido / Directo', 'Llamada Telefónica', 'WhatsApp Orgánico', 'Instagram / Facebook', 'Meta Ads', 'Feria / Evento', 'Otro'];
+  // ACTUALIZADO: Orígenes incluye Landing Page
+  const origenes = ['Página Web / Landing Page', 'Referido / Directo', 'Llamada Telefónica', 'WhatsApp Orgánico', 'Instagram / Facebook', 'Meta Ads', 'Feria / Evento', 'Otro'];
   const motivos = ['Por definir', 'Para Vivir', 'Para Invertir', 'Segunda Residencia'];
   const intereses = ['Por definir', 'Suite', '2 Dormitorios', '3 Dormitorios', 'Local Comercial', 'Penthouse'];
   const tiposAccion = ['Llamada Telefónica', 'Reunión Presencial', 'Mensaje WhatsApp', 'Enviar Cotización'];
@@ -189,7 +191,6 @@ export default function CRMPage() {
     
     setGuardandoActividadRapida(true);
     try {
-      // 1. Guardar la actividad de hoy
       const payload = {
         cliente_id: llamadaClienteId,
         agente: llamadaAgente,
@@ -205,7 +206,6 @@ export default function CRMPage() {
         setActividadesDia([data[0], ...actividadesDia]);
       }
 
-      // 2. Actualizar el perfil del cliente (Notas + Próxima Acción)
       const clienteActual = clientes.find(c => c.id === llamadaClienteId);
       if (clienteActual) {
         const fechaStr = new Date().toLocaleString('es-EC', { dateStyle: 'short', timeStyle: 'short' });
@@ -216,7 +216,6 @@ export default function CRMPage() {
 
         const updates: any = { notas: notaSincronizada };
 
-        // Si el usuario decidió agendar un próximo paso en este mismo formulario
         if (proximaFechaRapida) {
           updates.proximo_contacto = proximaFechaRapida;
           updates.tipo_accion = proximaAccionRapida || 'Seguimiento';
@@ -230,7 +229,6 @@ export default function CRMPage() {
         }
       }
       
-      // Limpiar el formulario
       setLlamadaClienteId('');
       setBusquedaLlamada('');
       setLlamadaNota('');
@@ -296,7 +294,6 @@ export default function CRMPage() {
     });
   }, [clientes, busqueda, filtroCiudad, filtroTipologia, filtroOrigen, filtroPendientes]);
 
-
   const prospectosFiltradosParaLlamada = useMemo(() => {
     if (!busquedaLlamada) return clientes.slice(0, 50);
     const b = busquedaLlamada.toLowerCase();
@@ -309,6 +306,19 @@ export default function CRMPage() {
     const setCiudades = new Set<string>();
     clientes.forEach(c => { if (c.ciudad_residencia) setCiudades.add(c.ciudad_residencia.trim()); });
     return Array.from(setCiudades).sort();
+  }, [clientes]);
+
+  const tipologiasDisponibles = useMemo(() => {
+    const setTipos = new Set<string>();
+    clientes.forEach(c => { if (c.tipologia_interes) setTipos.add(c.tipologia_interes.trim()); });
+    return Array.from(setTipos).sort();
+  }, [clientes]);
+
+  // NUEVO: Extraer campañas dinámicas para el autocompletado inteligente
+  const campanasDisponibles = useMemo(() => {
+    const setCampanas = new Set<string>();
+    clientes.forEach(c => { if (c.campana) setCampanas.add(c.campana.trim()); });
+    return Array.from(setCampanas).sort();
   }, [clientes]);
 
   const handleDragStart = (e: React.DragEvent, clienteId: string) => { e.dataTransfer.setData('clienteId', clienteId); };
@@ -357,7 +367,8 @@ export default function CRMPage() {
       const payload: any = {
         nombres: nuevoNombre.trim(), apellidos: nuevoApellido.trim(), telefono: nuevoTelefono.trim(),
         email: nuevoEmail ? nuevoEmail.trim().toLowerCase() : null, ciudad_residencia: nuevaCiudad.trim() || null, 
-        motivo_compra: nuevoMotivo, tipologia_interes: nuevoInteres, origen_captacion: nuevoOrigen, 
+        motivo_compra: nuevoMotivo, tipologia_interes: nuevoInteres, origen_captacion: nuevoOrigen,
+        campana: nuevoCampana.trim() || null, // Se guarda la campaña
         notas: notaInicial, estado: 'Interesado', tipo: 'prospecto', temperatura: '❄️ Frío'
       };
       if (nuevoIngresadoPor.trim()) payload.ingresado_por = nuevoIngresadoPor.trim();
@@ -367,7 +378,7 @@ export default function CRMPage() {
       if (data && data.length > 0) {
         setClientes([data[0], ...clientes]);
         setMostrarModalNuevo(false);
-        setNuevoNombre(''); setNuevoApellido(''); setNuevoTelefono(''); setNuevoEmail(''); setNuevaCiudad(''); 
+        setNuevoNombre(''); setNuevoApellido(''); setNuevoTelefono(''); setNuevoEmail(''); setNuevaCiudad(''); setNuevoCampana('');
       }
     } catch (error: any) { alert(`Error al guardar: ${error.message}`); } finally { setGuardandoCliente(false); }
   };
@@ -454,7 +465,7 @@ export default function CRMPage() {
   return (
     <div className="min-h-screen bg-[#F4F4F4] px-4 md:px-6 py-6 font-sans text-neutral-800 flex flex-col h-screen overflow-hidden">
       
-      {/* 1. HEADER PRINCIPAL Y VISTAS (NUEVA JERARQUÍA) */}
+      {/* 1. HEADER PRINCIPAL Y VISTAS */}
       <div className="w-full flex-shrink-0 mb-3 space-y-3">
         <div className="bg-white rounded-xl border border-neutral-200 p-4 shadow-sm flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
@@ -462,7 +473,6 @@ export default function CRMPage() {
             <h1 className="text-xl font-medium tracking-tight text-neutral-900 mt-1">Pipeline de Prospectos</h1>
           </div>
           
-          {/* AQUÍ ESTÁN LAS VISTAS SEPARADAS */}
           <div className="flex bg-neutral-100 p-1 rounded-lg border border-neutral-200">
             <button onClick={() => setVista('kanban')} className={`px-4 py-2 rounded-md text-xs font-bold transition-colors ${vista === 'kanban' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}>📋 Tablero</button>
             <button onClick={() => setVista('lista')} className={`px-4 py-2 rounded-md text-xs font-bold transition-colors ${vista === 'lista' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}>🗄️ Lista</button>
@@ -475,7 +485,7 @@ export default function CRMPage() {
           </div>
         </div>
 
-        {/* 2. BARRA DE FILTROS (SEGUNDO PISO) */}
+        {/* 2. BARRA DE FILTROS */}
         <div className="bg-white p-3 rounded-xl border border-neutral-200 shadow-sm flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[220px]">
             <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-neutral-400">🔍</span>
@@ -496,7 +506,6 @@ export default function CRMPage() {
             </select>
           </div>
 
-          {/* BOTÓN MODO CACERÍA MEJORADO VISUALMENTE COMO FILTRO */}
           <div className="flex items-center border-l border-neutral-200 pl-3">
             <button 
               onClick={() => setFiltroPendientes(!filtroPendientes)}
@@ -749,7 +758,6 @@ export default function CRMPage() {
                     <textarea rows={2} value={llamadaNota} onChange={(e) => setLlamadaNota(e.target.value)} placeholder="Ej: Le gustó la suite, pide descuento..." className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none resize-none"></textarea>
                   </div>
                   
-                  {/* SECCIÓN NUEVA: AGENDAMIENTO AUTOMÁTICO EN EL MISMO PASO */}
                   <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg mt-2">
                     <label className="block text-[10px] font-bold text-blue-700 uppercase mb-2">📅 ¿Agendar Siguiente Paso?</label>
                     <div className="grid grid-cols-2 gap-2">
@@ -842,6 +850,10 @@ export default function CRMPage() {
                 {clienteSeleccionado.ciudad_residencia && (
                   <span className="bg-neutral-100 text-neutral-700 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">📍 {clienteSeleccionado.ciudad_residencia}</span>
                 )}
+                {/* MOSTRAR ETIQUETA DE CAMPAÑA SI EXISTE */}
+                {clienteSeleccionado.campana && (
+                  <span className="bg-purple-50 border border-purple-200 text-purple-700 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">📢 {clienteSeleccionado.campana}</span>
+                )}
               </div>
             </div>
 
@@ -875,6 +887,22 @@ export default function CRMPage() {
                     <option value="☀️ Tibio">☀️ Tibio</option>
                     <option value="❄️ Frío">❄️ Frío</option>
                   </select>
+                </div>
+                {/* CAMPO DE EDICIÓN RÁPIDA DE CAMPAÑA EN EL PANEL */}
+                <div className="col-span-2">
+                  <label className="block text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Campaña Asociada</label>
+                  <input 
+                    type="text" 
+                    list="lista-campanas" 
+                    defaultValue={clienteSeleccionado.campana || ''} 
+                    onBlur={(e) => {
+                      if (e.target.value !== clienteSeleccionado.campana) {
+                        actualizarCampoRapido(clienteSeleccionado.id, 'campana', e.target.value);
+                      }
+                    }}
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-1.5 text-[11px] font-bold text-neutral-800 outline-none focus:border-[#B94A36]" 
+                    placeholder="Escribe o selecciona de la lista..." 
+                  />
                 </div>
               </div>
 
@@ -972,13 +1000,25 @@ export default function CRMPage() {
                     {origenes.map(o => <option key={o} value={o}>{o}</option>)}
                   </select>
                 </div>
+                {/* CAMPO NUEVO DE CAMPAÑA CON AUTOCOMPLETADO */}
+                <div>
+                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Campaña (Opcional)</label>
+                  <input 
+                    type="text" 
+                    list="lista-campanas" 
+                    value={nuevoCampana} 
+                    onChange={e => setNuevoCampana(e.target.value)} 
+                    placeholder="Ej: Lanzamiento Fase 1" 
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]" 
+                  />
+                </div>
                 <div>
                   <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Motivo Compra</label>
                   <select value={nuevoMotivo} onChange={e => setNuevoMotivo(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]">
                     {motivos.map(m => <option key={m} value={m}>{m}</option>)}
                   </select>
                 </div>
-                <div className="sm:col-span-2">
+                <div>
                   <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Interés</label>
                   <select value={nuevoInteres} onChange={e => setNuevoInteres(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]">
                     {intereses.map(i => <option key={i} value={i}>{i}</option>)}
@@ -1049,6 +1089,12 @@ export default function CRMPage() {
           </div>
         </div>
       )}
+
+      {/* COMPONENTE INVISIBLE: DATALIST PARA AUTOCOMPLETAR CAMPAÑAS */}
+      <datalist id="lista-campanas">
+        {campanasDisponibles.map(c => <option key={c} value={c} />)}
+      </datalist>
+
     </div>
   );
 }
