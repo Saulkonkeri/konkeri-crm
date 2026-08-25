@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Cotizador con Climatización Opcional (Solo Texto, sin costo)
+// Actualizacion para Vercel - Cotizador con Fecha de Caducidad (Sentido de Urgencia)
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -39,23 +39,24 @@ export default function CotizadorPage() {
 
   // --- PARÁMETROS FINANCIEROS Y DE FECHA ---
   
-  // Control de Reserva Editable
+  // Fechas Base
+  const hoyStr = new Date().toISOString().split('T')[0];
+  const sieteDiasDespuesStr = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+  // NUEVO: Fecha de Caducidad de la Cotización
+  const [fechaCaducidad, setFechaCaducidad] = useState<string>(sieteDiasDespuesStr);
+  
   const [reservaValor, setReservaValor] = useState<number>(2500);
 
-  // Control de Abono Inicial (Porcentaje o Valor Fijo) y Diferimiento
   const [tipoInicial, setTipoInicial] = useState<'porcentaje' | 'valor'>('porcentaje');
   const [valorInicial, setValorInicial] = useState<number>(15); 
   const [mesesInicial, setMesesInicial] = useState<number>(1); 
   
-  // Control de Cuotas Obra (Porcentaje o Valor Fijo)
   const [tipoEntrada, setTipoEntrada] = useState<'porcentaje' | 'valor'>('porcentaje');
   const [valorEntrada, setValorEntrada] = useState<number>(25); 
   
   const [mesesConstruccion, setMesesConstruccion] = useState(24);
   
-  const hoyStr = new Date().toISOString().split('T')[0];
-  const sieteDiasDespuesStr = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
   const [fechaReserva, setFechaReserva] = useState(hoyStr);
   const [fechaFirmaPromesa, setFechaFirmaPromesa] = useState(sieteDiasDespuesStr);
 
@@ -64,6 +65,12 @@ export default function CotizadorPage() {
   const [anioInicio, setAnioInicio] = useState(new Date().getFullYear());
 
   const [cronogramaCuotas, setCronogramaCuotas] = useState<CuotaMes[]>([]);
+
+  // Función Auxiliar para los botones rápidos de caducidad
+  const setDiasCaducidad = (dias: number) => {
+    const nuevaFecha = new Date(Date.now() + dias * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    setFechaCaducidad(nuevaFecha);
+  };
 
   const formatearFechaLegible = (fechaIso: string) => {
     if (!fechaIso) return '---';
@@ -171,7 +178,6 @@ export default function CotizadorPage() {
       descuentoMonto = valorDescuento;
     }
 
-    // El precio final incluye el valor original menos el descuento (Sin costos adicionales)
     const precioFin = Math.max(0, listaOriginal - descuentoMonto);
     
     // --- LÓGICA DE CASCADA MATEMÁTICA ---
@@ -449,6 +455,24 @@ export default function CotizadorPage() {
             />
           </div>
 
+          {/* VALIDEZ DE LA COTIZACIÓN (CADUCIDAD) */}
+          <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm space-y-3">
+            <h2 className="text-xs font-semibold text-[#B94A36] uppercase tracking-wider">Validez de la Cotización (Caducidad)</h2>
+            <div className="flex flex-col sm:flex-row gap-3 items-center">
+              <input 
+                type="date" 
+                value={fechaCaducidad} 
+                onChange={(e) => setFechaCaducidad(e.target.value)} 
+                className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-2.5 text-sm font-semibold outline-none focus:border-[#B94A36]" 
+              />
+              <div className="flex bg-neutral-100 p-1 rounded-lg text-[11px] font-medium w-full sm:w-auto flex-shrink-0">
+                <button type="button" onClick={() => setDiasCaducidad(7)} className="px-3 py-1.5 rounded hover:bg-white hover:shadow-sm transition text-neutral-700 font-semibold">7 Días</button>
+                <button type="button" onClick={() => setDiasCaducidad(15)} className="px-3 py-1.5 rounded hover:bg-white hover:shadow-sm transition text-neutral-700 font-semibold">15 Días</button>
+              </div>
+            </div>
+            <p className="text-[10px] text-neutral-400">Esta fecha aparecerá en el documento impreso para generar urgencia de compra.</p>
+          </div>
+
           {/* ASOCIAR INVERSIONISTA CON BUSCADOR RÁPIDO */}
           <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm space-y-3">
             <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Asociar Inversionista</h2>
@@ -545,6 +569,8 @@ export default function CotizadorPage() {
                     <div className="text-right text-white">
                       <h3 className="text-[10px] font-semibold tracking-wider uppercase opacity-90">Propuesta de Inversión</h3>
                       <p className="text-[9px] mt-0.5 font-light opacity-75">Emisión: {new Date().toLocaleDateString('es-EC')}</p>
+                      {/* ETIQUETA DE CADUCIDAD EN EL PDF */}
+                      <p className="text-[9px] mt-0.5 font-bold text-red-200">Válida hasta: {formatearFechaLegible(fechaCaducidad)}</p>
                     </div>
                   </div>
 
