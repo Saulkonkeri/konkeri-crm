@@ -1,3 +1,4 @@
+// Actualizacion forzada para Vercel - Reportes con Inteligencia de Campañas y Landing Page
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -19,8 +20,9 @@ export default function ReportesPage() {
   });
 
   const [datosMarketing, setDatosMarketing] = useState<any[]>([]);
-  const [datosCiudades, setDatosCiudades] = useState<any[]>([]);       // NUEVO: Ciudades de origen
-  const [datosPreferencias, setDatosPreferencias] = useState<any[]>([]); // NUEVO: Tipologías preferidas
+  const [datosCampanas, setDatosCampanas] = useState<any[]>([]);       // NUEVO: Inteligencia de Campañas
+  const [datosCiudades, setDatosCiudades] = useState<any[]>([]);       
+  const [datosPreferencias, setDatosPreferencias] = useState<any[]>([]); 
   const [datosTipologia, setDatosTipologia] = useState<any[]>([]);
   const [topCotizadas, setTopCotizadas] = useState<any[]>([]);
 
@@ -28,10 +30,10 @@ export default function ReportesPage() {
     async function cargarInteligenciaComercial() {
       setCargando(true);
       try {
-        // 1. Extraer toda la información en crudo
+        // 1. Extraer toda la información en crudo (AHORA INCLUYE CAMPAÑA)
         const [propsRes, clientesRes, cotizacionesRes] = await Promise.all([
           supabase.from('propiedades').select('*'),
-          supabase.from('clientes').select('id, origen_captacion, estado, tipo, ciudad_residencia, tipologia_interes'),
+          supabase.from('clientes').select('id, origen_captacion, campana, estado, tipo, ciudad_residencia, tipologia_interes'),
           supabase.from('cotizaciones').select('id, unidad_numero')
         ]);
 
@@ -56,7 +58,7 @@ export default function ReportesPage() {
           montoInventario: inventarioTotal
         });
 
-        // 3. Procesar Marketing (Agrupación de Orígenes)
+        // 3. Procesar Marketing (Agrupación de Canales / Orígenes)
         const origenesMap = clientes.reduce((acc: any, c) => {
           const origen = c.origen_captacion || 'No Definido / Otro';
           acc[origen] = (acc[origen] || 0) + 1;
@@ -72,7 +74,22 @@ export default function ReportesPage() {
         
         setDatosMarketing(arrayMarketing);
 
-        // NUEVO 3.1: Procesar Ciudades de Origen
+        // NUEVO 3.1: Procesar Rendimiento de Campañas
+        const campanasMap = clientes.reduce((acc: any, c) => {
+          const campana = c.campana ? c.campana.toUpperCase().trim() : 'TRÁFICO ORGÁNICO / BASE';
+          acc[campana] = (acc[campana] || 0) + 1;
+          return acc;
+        }, {});
+
+        const arrayCampanas = Object.keys(campanasMap).map(key => ({
+          campana: key,
+          leads: campanasMap[key],
+          porcentaje: Math.round((campanasMap[key] / (clientes.length || 1)) * 100)
+        })).sort((a, b) => b.leads - a.leads);
+
+        setDatosCampanas(arrayCampanas);
+
+        // 3.2: Procesar Ciudades de Origen
         const ciudadesMap = clientes.reduce((acc: any, c) => {
           const ciudad = c.ciudad_residencia ? c.ciudad_residencia.toUpperCase().trim() : 'NO ESPECIFICADA';
           acc[ciudad] = (acc[ciudad] || 0) + 1;
@@ -87,7 +104,7 @@ export default function ReportesPage() {
 
         setDatosCiudades(arrayCiudades);
 
-        // NUEVO 3.2: Procesar Preferencias de Tipología (según el CRM de Clientes)
+        // 3.3: Procesar Preferencias de Tipología
         const preferenciasMap = clientes.reduce((acc: any, c) => {
           const pref = c.tipologia_interes || 'Por definir';
           acc[pref] = (acc[pref] || 0) + 1;
@@ -243,24 +260,28 @@ export default function ReportesPage() {
         {/* CONTENIDO DINÁMICO */}
         <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-6">
           
-          {/* TAB 1: MARKETING, ORIGEN Y PERFIL (AMPLIADO) */}
+          {/* TAB 1: MARKETING, ORIGEN Y PERFIL (NUEVO DISEÑO 2x2) */}
           {tabActiva === 'marketing' && (
             <div className="space-y-8 animate-in fade-in duration-300">
               <div>
                 <h2 className="text-sm font-bold text-neutral-800 uppercase tracking-wider">Inteligencia de Audiencia y Tráfico</h2>
-                <p className="text-xs text-neutral-400 mt-0.5">Analiza de dónde provienen los prospectos y qué tipología de inmueble buscan con mayor frecuencia.</p>
+                <p className="text-xs text-neutral-400 mt-0.5">Mide el impacto de tus canales digitales, campañas específicas y la demografía de tus leads.</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* GRID 2x2 PARA ACOMODAR LAS CAMPAÑAS */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 
-                {/* 1. Origen del Tráfico */}
-                <div className="space-y-4 bg-neutral-50/50 p-4 rounded-xl border border-neutral-200/60">
-                  <h4 className="font-bold text-neutral-800 uppercase tracking-wider text-[11px] border-b pb-2">Canal de Captación</h4>
+                {/* 1. Origen del Tráfico (Canales) */}
+                <div className="space-y-4 bg-neutral-50/50 p-5 rounded-xl border border-neutral-200/60 shadow-sm hover:border-neutral-300 transition-colors">
+                  <h4 className="font-bold text-neutral-800 uppercase tracking-wider text-[11px] border-b pb-2 flex justify-between items-center">
+                    <span>Canal de Captación</span>
+                    <span className="text-[14px]">📱</span>
+                  </h4>
                   {datosMarketing.length > 0 ? datosMarketing.map((item, idx) => (
                     <div key={idx} className="text-xs space-y-1">
                       <div className="flex justify-between font-medium">
-                        <span className="text-neutral-700 uppercase">{item.medio}</span>
-                        <span className="text-neutral-900 font-bold">{item.leads} ({item.porcentaje}%)</span>
+                        <span className="text-neutral-700 uppercase truncate pr-2">{item.medio}</span>
+                        <span className="text-neutral-900 font-bold whitespace-nowrap">{item.leads} ({item.porcentaje}%)</span>
                       </div>
                       <div className="w-full bg-neutral-200 h-1.5 rounded-full overflow-hidden">
                         <div className={`h-full ${item.color}`} style={{ width: `${item.porcentaje}%`, opacity: 1 - (idx * 0.15) }}></div>
@@ -271,14 +292,38 @@ export default function ReportesPage() {
                   )}
                 </div>
 
-                {/* 2. Ciudades de Origen */}
-                <div className="space-y-4 bg-neutral-50/50 p-4 rounded-xl border border-neutral-200/60">
-                  <h4 className="font-bold text-neutral-800 uppercase tracking-wider text-[11px] border-b pb-2">Ciudad de Residencia</h4>
+                {/* 2. Rendimiento de Campañas (NUEVO) */}
+                <div className="space-y-4 bg-purple-50/20 p-5 rounded-xl border border-purple-100 shadow-sm hover:border-purple-200 transition-colors">
+                  <h4 className="font-bold text-purple-900 uppercase tracking-wider text-[11px] border-b border-purple-100 pb-2 flex justify-between items-center">
+                    <span>Rendimiento por Campaña</span>
+                    <span className="text-[14px]">📢</span>
+                  </h4>
+                  {datosCampanas.length > 0 ? datosCampanas.map((item, idx) => (
+                    <div key={idx} className="text-xs space-y-1">
+                      <div className="flex justify-between font-medium">
+                        <span className="text-purple-800 uppercase truncate pr-2">{item.campana}</span>
+                        <span className="text-purple-950 font-bold whitespace-nowrap">{item.leads} ({item.porcentaje}%)</span>
+                      </div>
+                      <div className="w-full bg-purple-100 h-1.5 rounded-full overflow-hidden">
+                        <div className="h-full bg-purple-600" style={{ width: `${item.porcentaje}%`, opacity: 1 - (idx * 0.15) }}></div>
+                      </div>
+                    </div>
+                  )) : (
+                     <p className="text-xs text-purple-400 italic">No hay campañas registradas.</p>
+                  )}
+                </div>
+
+                {/* 3. Ciudades de Origen */}
+                <div className="space-y-4 bg-neutral-50/50 p-5 rounded-xl border border-neutral-200/60 shadow-sm hover:border-neutral-300 transition-colors">
+                  <h4 className="font-bold text-neutral-800 uppercase tracking-wider text-[11px] border-b pb-2 flex justify-between items-center">
+                    <span>Ciudad de Residencia</span>
+                    <span className="text-[14px]">📍</span>
+                  </h4>
                   {datosCiudades.length > 0 ? datosCiudades.map((item, idx) => (
                     <div key={idx} className="text-xs space-y-1">
                       <div className="flex justify-between font-medium">
-                        <span className="text-neutral-700 uppercase">{item.ciudad}</span>
-                        <span className="text-neutral-900 font-bold">{item.leads} ({item.porcentaje}%)</span>
+                        <span className="text-neutral-700 uppercase truncate pr-2">{item.ciudad}</span>
+                        <span className="text-neutral-900 font-bold whitespace-nowrap">{item.leads} ({item.porcentaje}%)</span>
                       </div>
                       <div className="w-full bg-neutral-200 h-1.5 rounded-full overflow-hidden">
                         <div className="h-full bg-neutral-800" style={{ width: `${item.porcentaje}%` }}></div>
@@ -289,21 +334,24 @@ export default function ReportesPage() {
                   )}
                 </div>
 
-                {/* 3. Tipología de Interés */}
-                <div className="space-y-4 bg-neutral-50/50 p-4 rounded-xl border border-neutral-200/60">
-                  <h4 className="font-bold text-neutral-800 uppercase tracking-wider text-[11px] border-b pb-2">Tipología Solicitada</h4>
+                {/* 4. Tipología de Interés */}
+                <div className="space-y-4 bg-amber-50/20 p-5 rounded-xl border border-amber-100 shadow-sm hover:border-amber-200 transition-colors">
+                  <h4 className="font-bold text-amber-900 uppercase tracking-wider text-[11px] border-b border-amber-100 pb-2 flex justify-between items-center">
+                    <span>Tipología Solicitada</span>
+                    <span className="text-[14px]">🏢</span>
+                  </h4>
                   {datosPreferencias.length > 0 ? datosPreferencias.map((item, idx) => (
                     <div key={idx} className="text-xs space-y-1">
                       <div className="flex justify-between font-medium">
-                        <span className="text-neutral-700 uppercase">{item.tipologia}</span>
-                        <span className="text-neutral-900 font-bold">{item.leads} ({item.porcentaje}%)</span>
+                        <span className="text-amber-800 uppercase truncate pr-2">{item.tipologia}</span>
+                        <span className="text-amber-950 font-bold whitespace-nowrap">{item.leads} ({item.porcentaje}%)</span>
                       </div>
-                      <div className="w-full bg-neutral-200 h-1.5 rounded-full overflow-hidden">
+                      <div className="w-full bg-amber-100 h-1.5 rounded-full overflow-hidden">
                         <div className="h-full bg-amber-600" style={{ width: `${item.porcentaje}%` }}></div>
                       </div>
                     </div>
                   )) : (
-                     <p className="text-xs text-neutral-400 italic">Sin preferencias registradas.</p>
+                     <p className="text-xs text-amber-500 italic">Sin preferencias registradas.</p>
                   )}
                 </div>
 
