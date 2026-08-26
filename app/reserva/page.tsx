@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Reserva Express (Orientacion en columnas y Planta Baja robusta)
+// Actualizacion para Vercel - Reserva Express (Minimalismo puro, vistas unificadas y márgenes corregidos)
 'use client';
 
 import { useState } from 'react';
@@ -7,29 +7,29 @@ import { useState } from 'react';
 const INVENTARIO = [
   // PISO 6
   { id: '604', piso: 6, tipo: '2 Dormitorios', vista: 'Wyndham Poseidón / Mar', precio: 205865, area: 106.65, estado: 'RESERVADO' },
-  { id: '603', piso: 6, tipo: '3 Dorms (Esquinero)', vista: 'Panorámica a La Quadra / Umiña / Mar', precio: 293967, area: 152.72, estado: 'DISPONIBLE' },
+  { id: '603', piso: 6, tipo: '3 Dorms (Esquinero)', vista: 'La Quadra / Umiña / Mar', precio: 293967, area: 152.72, estado: 'DISPONIBLE' },
   { id: '602', piso: 6, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 169369, area: 86.60, estado: 'DISPONIBLE' },
   { id: '601', piso: 6, tipo: '3 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 308760, area: 158.54, estado: 'RESERVADO' },
   // PISO 5
   { id: '504', piso: 5, tipo: '2 Dormitorios', vista: 'Wyndham Poseidón / Mar', precio: 201794, area: 106.65, estado: 'RESERVADO' },
-  { id: '503', piso: 5, tipo: '3 Dorms (Esquinero)', vista: 'Panorámica a La Quadra / Umiña / Mar', precio: 290840, area: 152.72, estado: 'DISPONIBLE' },
+  { id: '503', piso: 5, tipo: '3 Dorms (Esquinero)', vista: 'La Quadra / Umiña / Mar', precio: 290840, area: 152.72, estado: 'DISPONIBLE' },
   { id: '502', piso: 5, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 165702, area: 86.60, estado: 'DISPONIBLE' },
   { id: '501', piso: 5, tipo: '3 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 303228, area: 158.54, estado: 'DISPONIBLE' },
   // PISO 4
   { id: '404', piso: 4, tipo: '2 Dormitorios', vista: 'Wyndham Poseidón / Mar', precio: 199677, area: 106.65, estado: 'DISPONIBLE' },
-  { id: '403', piso: 4, tipo: '3 Dorms (Esquinero)', vista: 'Panorámica a La Quadra / Umiña / Mar', precio: 287042, area: 152.72, estado: 'DISPONIBLE' },
+  { id: '403', piso: 4, tipo: '3 Dorms (Esquinero)', vista: 'La Quadra / Umiña / Mar', precio: 287042, area: 152.72, estado: 'DISPONIBLE' },
   { id: '402', piso: 4, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 163257, area: 86.60, estado: 'DISPONIBLE' },
   { id: '401', piso: 4, tipo: '3 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 299079, area: 158.54, estado: 'RESERVADO' },
   // PISO 3
   { id: '301', piso: 3, tipo: '1 Dormitorio', vista: 'Urbanización (Posterior)', precio: 131529, area: 70.25, estado: 'DISPONIBLE' },
   { id: '305', piso: 3, tipo: '1 Dormitorio', vista: 'Wyndham Poseidón / Mar', precio: 152779, area: 78.87, estado: 'DISPONIBLE' },
-  { id: '304', piso: 3, tipo: '3 Dorms (Esquinero)', vista: 'Panorámica a La Quadra / Umiña / Mar', precio: 284732, area: 152.68, estado: 'DISPONIBLE' },
+  { id: '304', piso: 3, tipo: '3 Dorms (Esquinero)', vista: 'La Quadra / Umiña / Mar', precio: 284732, area: 152.68, estado: 'DISPONIBLE' },
   { id: '303', piso: 3, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 161128, area: 86.76, estado: 'DISPONIBLE' },
   { id: '302', piso: 3, tipo: '2 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 221487, area: 121.61, estado: 'DISPONIBLE' },
   // PISO 2
   { id: '201', piso: 2, tipo: '1 Dormitorio', vista: 'Urbanización (Posterior)', precio: 130981, area: 70.25, estado: 'DISPONIBLE' },
   { id: '205', piso: 2, tipo: '1 Dormitorio', vista: 'Wyndham Poseidón / Mar', precio: 151259, area: 78.87, estado: 'DISPONIBLE' },
-  { id: '204', piso: 2, tipo: '3 Dorms (Esquinero)', vista: 'Panorámica a La Quadra / Umiña / Mar', precio: 281458, area: 152.72, estado: 'DISPONIBLE' },
+  { id: '204', piso: 2, tipo: '3 Dorms (Esquinero)', vista: 'La Quadra / Umiña / Mar', precio: 281458, area: 152.72, estado: 'DISPONIBLE' },
   { id: '203', piso: 2, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 159095, area: 86.66, estado: 'RESERVADO' },
   { id: '202', piso: 2, tipo: '2 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 218918, area: 121.61, estado: 'DISPONIBLE' },
 ];
@@ -131,7 +131,7 @@ export default function ReservaExpressPage() {
               {/* LEYENDA (NOMENCLATURA VISUAL) */}
               <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-xl border border-neutral-200 shadow-sm w-full md:w-auto justify-center">
                 <div className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 md:w-4 md:h-4 bg-white border-2 border-[#B94A36] rounded inline-block shadow-sm"></span>
+                  <span className="w-3 h-3 md:w-4 md:h-4 bg-white border-[1.5px] border-[#B94A36] rounded inline-block shadow-sm"></span>
                   <span className="text-[9px] md:text-[10px] font-bold text-neutral-700 uppercase tracking-wider">Disponible</span>
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -145,33 +145,11 @@ export default function ReservaExpressPage() {
               
               {/* EDIFICIO */}
               <div className="flex flex-col w-full">
-                
-                {/* FILA DE ORIENTACIÓN (CABECERAS DE COLUMNA) */}
-                <div className="flex items-stretch gap-1 md:gap-2 mb-2 md:mb-3 w-full">
-                  <div className="w-6 md:w-10 flex items-center justify-end pr-1 md:pr-2">
-                    <span className="text-[5px] md:text-[8px] font-bold text-neutral-400 uppercase text-right leading-tight tracking-widest">
-                      Orientación
-                    </span>
-                  </div>
-                  <div className="flex-1 grid grid-cols-[1fr_1fr_1.5fr_1fr_1.5fr] gap-1 md:gap-2">
-                    <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-1 md:p-2 flex items-center justify-center shadow-sm text-center">
-                      <span className="text-[5px] md:text-[7px] uppercase tracking-widest text-neutral-500 leading-tight">Vista a la<br/>Urbanización</span>
-                    </div>
-                    <div className="bg-sky-50/50 border border-sky-100 rounded-lg p-1 md:p-2 flex items-center justify-center shadow-sm text-center">
-                      <span className="text-[5px] md:text-[7px] uppercase tracking-widest text-sky-700 leading-tight">Vista al<br/>Wyndham / Mar</span>
-                    </div>
-                    <div className="bg-amber-50/30 border border-amber-100 rounded-lg p-1 md:p-2 flex items-center justify-center shadow-sm text-center">
-                      <span className="text-[5px] md:text-[7px] font-bold uppercase tracking-widest text-amber-700 leading-tight">Esquinero<br/>(Vista Amplia)</span>
-                    </div>
-                    <div className="col-span-2 bg-teal-50/30 border border-teal-100 rounded-lg p-1 md:p-2 flex items-center justify-center shadow-sm text-center">
-                      <span className="text-[5px] md:text-[7px] font-bold uppercase tracking-widest text-teal-700 leading-tight">Vista Panorámica Frontal<br/>La Quadra / Umiña / Mar</span>
-                    </div>
-                  </div>
-                </div>
 
                 {/* ROOFTOP */}
-                <div className="flex items-stretch gap-1 md:gap-2 mb-1 md:mb-2 w-full">
-                  <div className="w-6 md:w-10 text-[7px] md:text-[9px] font-bold text-neutral-400 uppercase flex items-center justify-end pr-1 md:pr-2">
+                <div className="flex items-stretch gap-1 md:gap-2 mb-2 w-full">
+                  <div className="w-12 md:w-20 text-[7px] md:text-[9px] font-bold text-neutral-400 uppercase flex items-center justify-end pr-2 md:pr-4">
+                    {/* Espacio para la etiqueta del Rooftop, alineado con los pisos */}
                     Cima
                   </div>
                   <div className="flex-1 bg-[#D1C292]/30 border border-[#D1C292]/50 p-2 md:p-3 rounded-t-xl text-center flex items-center justify-center">
@@ -181,11 +159,32 @@ export default function ReservaExpressPage() {
                   </div>
                 </div>
 
+                {/* FILA SUTIL DE ORIENTACIÓN (Justo debajo del Rooftop) */}
+                <div className="flex items-end gap-1 md:gap-2 mb-2 w-full">
+                  <div className="w-12 md:w-20 flex items-center justify-end pr-2 md:pr-4">
+                    {/* Espacio vacío deliberado para que no ensucie los pisos */}
+                  </div>
+                  <div className="flex-1 grid grid-cols-[1fr_1fr_1.5fr_1fr_1.5fr] gap-1 md:gap-2">
+                    <div className="col-span-1 text-center pb-1 border-b-[2px] border-neutral-200">
+                      <span className="text-[5px] md:text-[8px] uppercase tracking-widest text-neutral-400 block leading-tight">Urb. (Atrás)</span>
+                    </div>
+                    <div className="col-span-1 text-center pb-1 border-b-[2px] border-neutral-300">
+                      <span className="text-[5px] md:text-[8px] uppercase tracking-widest text-neutral-500 block leading-tight">Wyndham / Mar</span>
+                    </div>
+                    {/* ESTA ES LA MAGIA: 3 COLUMNAS UNIFICADAS BAJO UNA SOLA VISTA */}
+                    <div className="col-span-3 text-center pb-1 border-b-[2px] border-[#B94A36]/40">
+                      <span className="text-[5px] md:text-[8px] font-bold uppercase tracking-widest text-[#B94A36] block leading-tight">
+                        Panorámica Frontal: La Quadra / Umiña / Mar
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
                 {/* FILAS DE PISOS RESIDENCIALES */}
                 {PISOS_EDIFICIO.map(piso => (
                   <div key={piso} className="flex items-stretch gap-1 md:gap-2 mb-1 md:mb-2 w-full">
-                    {/* Número de Piso */}
-                    <div className="w-6 md:w-10 flex items-center justify-end pr-1 md:pr-2 text-[8px] md:text-[10px] font-medium text-neutral-400 uppercase">
+                    {/* Número de Piso con mayor margen (w-12) */}
+                    <div className="w-12 md:w-20 flex items-center justify-end pr-2 md:pr-4 text-[8px] md:text-[10px] font-medium text-neutral-400 uppercase">
                       P{piso}
                     </div>
                     
@@ -217,7 +216,7 @@ export default function ReservaExpressPage() {
                           textoIdEstilo = "text-neutral-600";
                           textoTipoEstilo = "text-neutral-400";
                         } else {
-                          botonEstilo = "bg-white border-[2px] border-[#B94A36] shadow-md cursor-pointer transform hover:-translate-y-1 hover:shadow-lg hover:bg-orange-50/20";
+                          botonEstilo = "bg-white border-[1.5px] border-[#B94A36] shadow-sm cursor-pointer transform hover:-translate-y-1 hover:shadow-md hover:bg-orange-50/20";
                           textoIdEstilo = "text-[#B94A36] font-bold";
                           textoTipoEstilo = "text-neutral-800 font-medium";
                         }
@@ -247,9 +246,9 @@ export default function ReservaExpressPage() {
                   </div>
                 ))}
 
-                {/* PLANTA BAJA CON MAYOR PESO VISUAL */}
+                {/* PLANTA BAJA CON MAYOR PESO VISUAL Y MARGEN CORREGIDO */}
                 <div className="flex items-stretch gap-1 md:gap-2 mt-1 w-full">
-                  <div className="w-6 md:w-10 text-[8px] md:text-[10px] font-bold text-neutral-400 uppercase flex items-center justify-end pr-1 md:pr-2">
+                  <div className="w-12 md:w-20 text-[8px] md:text-[10px] font-bold text-neutral-400 uppercase flex items-center justify-end pr-2 md:pr-4">
                     PB
                   </div>
                   <div className="flex-1 bg-neutral-800 text-neutral-300 p-3 md:p-5 rounded-b-2xl text-center flex flex-col justify-center shadow-md">
