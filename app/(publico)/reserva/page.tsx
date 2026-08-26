@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Reserva Express (Con Notificaciones Silenciosas Internas a la API)
+// Actualizacion para Vercel - Reserva Express (Con Notificaciones y Ajuste de Fachada col-span-2)
 'use client';
 
 import { useState } from 'react';
@@ -37,10 +37,11 @@ const INVENTARIO = [
 
 const PISOS_EDIFICIO = [6, 5, 4, 3, 2];
 
-const LAYOUT_FACHADA: Record<number, (string | null)[]> = {
-  6: [null, '604', '603', '602', '601'],
-  5: [null, '504', '503', '502', '501'],
-  4: [null, '404', '403', '402', '401'],
+// FACHADA AJUSTADA: Se eliminó el "null" inicial en pisos 6, 5 y 4
+const LAYOUT_FACHADA: Record<number, string[]> = {
+  6: ['604', '603', '602', '601'],
+  5: ['504', '503', '502', '501'],
+  4: ['404', '403', '402', '401'],
   3: ['301', '305', '304', '303', '302'],
   2: ['201', '205', '204', '203', '202'],
 };
@@ -332,6 +333,12 @@ export default function ReservaExpressPage() {
                         const desactivado = noCoincide || reservado;
                         
                         let botonEstilo = desactivado ? "bg-neutral-50 border border-neutral-200 cursor-not-allowed opacity-90" : "bg-white border-[1.5px] border-[#B94A36] shadow-sm cursor-pointer transform hover:-translate-y-1 hover:shadow-md hover:bg-orange-50/20";
+                        
+                        // LÓGICA DE EXPANSIÓN DE ANCHO: 604, 504 y 404 ocupan 2 columnas
+                        if (['604', '504', '404'].includes(unidad.id)) {
+                          botonEstilo += " col-span-2";
+                        }
+
                         let textoIdEstilo = desactivado ? "text-neutral-400" : "text-[#B94A36] font-bold";
                         let textoTipoEstilo = desactivado ? "text-neutral-400" : "text-neutral-800 font-medium";
 
