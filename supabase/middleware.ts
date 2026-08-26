@@ -31,11 +31,12 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Si no hay usuario y no está en /login, mándalo al login
+  // EXCEPCIÓN AÑADIDA: Si no hay usuario, mándalo al login EXCEPTO si va a /login, /auth o /reserva
   if (
     !user &&
     !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/auth')
+    !request.nextUrl.pathname.startsWith('/auth') &&
+    !request.nextUrl.pathname.startsWith('/reserva') // <-- ¡Esta es la llave mágica!
   ) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';

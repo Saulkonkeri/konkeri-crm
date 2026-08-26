@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Reserva Express (Cuadrícula visible y pisos claros)
+// Actualizacion para Vercel - Reserva Express (Con Puerta de Acceso VIP por Correo)
 'use client';
 
 import { useState } from 'react';
@@ -44,36 +44,54 @@ const LAYOUT_FACHADA: Record<number, (string | null)[]> = {
   2: ['201', '205', '204', '203', '202'],
 };
 
-// GALERÍA DE VISTAS (Enlaces de Supabase optimizados)
+// GALERÍA DE VISTAS 
 const FOTOS_VISTAS: Record<string, { titulo: string, url: string }> = {
-  'urb': {
-    titulo: 'Vista a la Urbanización',
-    url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/vistas%20arienzo/vista%20a%20la%20urbanizacion%20(1).jpg'
-  },
-  'wyndham': {
-    titulo: 'Vista Lateral',
-    url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/vistas%20arienzo/vista%20a%20mikonos.jpg'
-  },
-  'panoramica': {
-    titulo: 'Vista Panorámica Frontal',
-    url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/vistas%20arienzo/vista%20principal%20(1).jpg'
-  }
+  'urb': { titulo: 'Vista a la Urbanización', url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/vistas%20arienzo/vista%20a%20la%20urbanizacion%20(1).jpg' },
+  'wyndham': { titulo: 'Vista Lateral', url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/vistas%20arienzo/vista%20a%20mikonos.jpg' },
+  'panoramica': { titulo: 'Vista Panorámica Frontal', url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/vistas%20arienzo/vista%20principal%20(1).jpg' }
 };
 
 export default function ReservaExpressPage() {
-  const [paso, setPaso] = useState<'filtro' | 'mapa' | 'formulario' | 'exito'>('filtro');
+  // AHORA EL PASO INICIAL ES "acceso" (La puerta VIP)
+  const [paso, setPaso] = useState<'acceso' | 'filtro' | 'mapa' | 'formulario' | 'exito'>('acceso');
+  
+  // ESTADOS DE ACCESO
+  const [emailAcceso, setEmailAcceso] = useState('');
+  const [cargandoAcceso, setCargandoAcceso] = useState(false);
+  const [errorAcceso, setErrorAcceso] = useState('');
+
+  // ESTADOS DEL INVENTARIO
   const [filtroTipo, setFiltroTipo] = useState<string | null>(null);
   const [unidadSeleccionada, setUnidadSeleccionada] = useState<any>(null);
   const [vistaActiva, setVistaActiva] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({ nombres: '', cedula: '', email: '', telefono: '' });
-  const [cargando, setCargando] = useState(false);
+  const [cargandoReserva, setCargandoReserva] = useState(false);
+
+  // SIMULACIÓN DE VALIDACIÓN DE CORREO
+  const verificarAcceso = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCargandoAcceso(true);
+    setErrorAcceso('');
+
+    // AQUI CONECTAREMOS CON SUPABASE PRONTO
+    // Por ahora, simulamos una carga de 1.5s y lo dejamos pasar
+    setTimeout(() => {
+      setCargandoAcceso(false);
+      if (emailAcceso.includes('@')) {
+        setFormData({ ...formData, email: emailAcceso }); // Autocompletamos el email para la reserva
+        setPaso('filtro');
+      } else {
+        setErrorAcceso('Ingresa un correo válido.');
+      }
+    }, 1500);
+  };
 
   const procesarReserva = (e: React.FormEvent) => {
     e.preventDefault();
-    setCargando(true);
+    setCargandoReserva(true);
     setTimeout(() => {
-      setCargando(false);
+      setCargandoReserva(false);
       setPaso('exito');
     }, 2000);
   };
@@ -91,16 +109,59 @@ export default function ReservaExpressPage() {
   return (
     <div className="min-h-screen bg-[#F9F7F5] font-sans pb-20 relative">
       
-      {/* HEADER PÚBLICO */}
-      <header className="bg-white border-b border-[#EAE3DC] px-6 py-4 sticky top-0 z-40 flex justify-center shadow-sm">
-        <div className="text-center cursor-pointer" onClick={() => setPaso('filtro')}>
-          <h1 className="text-lg font-light tracking-[0.2em] text-neutral-900 uppercase">Arienzo</h1>
-          <p className="text-[9px] font-bold tracking-widest text-[#B94A36] uppercase mt-0.5">Boutique Living</p>
-        </div>
-      </header>
+      {/* HEADER PÚBLICO - Se oculta en el paso de acceso para mayor intriga */}
+      {paso !== 'acceso' && (
+        <header className="bg-white border-b border-[#EAE3DC] px-6 py-4 sticky top-0 z-40 flex justify-center shadow-sm">
+          <div className="text-center cursor-pointer" onClick={() => setPaso('filtro')}>
+            <h1 className="text-lg font-light tracking-[0.2em] text-neutral-900 uppercase">Arienzo</h1>
+            <p className="text-[9px] font-bold tracking-widest text-[#B94A36] uppercase mt-0.5">Boutique Living</p>
+          </div>
+        </header>
+      )}
 
       <main className="max-w-5xl mx-auto px-3 md:px-4 mt-6">
         
+        {/* PASO 0: LA PUERTA VIP (ACCESO POR CORREO) */}
+        {paso === 'acceso' && (
+          <div className="min-h-[80vh] flex flex-col items-center justify-center animate-in fade-in duration-700 px-4">
+            <div className="bg-white p-8 md:p-12 rounded-3xl border border-[#EAE3DC] shadow-xl max-w-md w-full text-center relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-[#B94A36]"></div>
+              
+              <h1 className="text-3xl font-light tracking-[0.2em] text-neutral-900 uppercase mt-4">Arienzo</h1>
+              <p className="text-[9px] font-bold tracking-widest text-[#B94A36] uppercase mt-1 mb-8">Boutique Living</p>
+
+              <h2 className="text-xl font-light text-neutral-800 mb-2">Acceso Exclusivo</h2>
+              <p className="text-xs text-neutral-500 mb-8 px-2">Ingresa tu correo electrónico autorizado para visualizar el inventario y lista de precios en tiempo real.</p>
+              
+              <form onSubmit={verificarAcceso} className="space-y-4">
+                <div>
+                  <input 
+                    type="email" 
+                    required 
+                    value={emailAcceso} 
+                    onChange={(e) => setEmailAcceso(e.target.value)}
+                    placeholder="tucorreo@ejemplo.com" 
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm text-center focus:outline-none focus:border-[#B94A36] focus:ring-1 focus:ring-[#B94A36] transition-all"
+                  />
+                </div>
+                {errorAcceso && <p className="text-xs text-red-500">{errorAcceso}</p>}
+                
+                <button 
+                  type="submit" 
+                  disabled={cargandoAcceso} 
+                  className="w-full bg-neutral-900 text-white font-bold uppercase tracking-widest text-xs py-4 rounded-xl hover:bg-black transition-all shadow-lg shadow-neutral-900/20 disabled:opacity-70 flex justify-center items-center"
+                >
+                  {cargandoAcceso ? <span className="animate-pulse">Verificando...</span> : 'Acceder al Inventario'}
+                </button>
+              </form>
+              
+              <div className="mt-8 pt-6 border-t border-neutral-100">
+                <p className="text-[10px] text-neutral-400">Si no tienes acceso, solicita una invitación a tu asesor Konkeri.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* PASO 1: EL FILTRO INICIAL */}
         {paso === 'filtro' && (
           <div className="max-w-lg mx-auto text-center space-y-8 animate-in zoom-in-95 duration-500 mt-10 md:mt-20">
@@ -144,7 +205,7 @@ export default function ReservaExpressPage() {
                 <p className="text-[10px] md:text-xs text-neutral-500 mt-1">Navega por la fachada. Toca una unidad para ver su detalle.</p>
               </div>
 
-              {/* LEYENDA SIMPLIFICADA (Solo muestra Disponible) */}
+              {/* LEYENDA SIMPLIFICADA */}
               <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-xl border border-neutral-200 shadow-sm w-full md:w-auto justify-center">
                 <div className="flex items-center gap-1.5">
                   <span className="w-3 h-3 md:w-4 md:h-4 bg-white border-[1.5px] border-[#B94A36] rounded inline-block shadow-sm"></span>
@@ -201,7 +262,7 @@ export default function ReservaExpressPage() {
                 {/* FILAS DE PISOS RESIDENCIALES */}
                 {PISOS_EDIFICIO.map(piso => (
                   <div key={piso} className="flex items-stretch gap-1 md:gap-2 mb-1 md:mb-2 w-full">
-                    {/* Número de Piso - Más claro y oscuro */}
+                    {/* Número de Piso */}
                     <div className="w-12 md:w-20 flex items-center justify-end pr-2 md:pr-4 text-[9px] md:text-[11px] font-bold text-neutral-500 uppercase">
                       P{piso}
                     </div>
@@ -221,7 +282,6 @@ export default function ReservaExpressPage() {
                         const noCoincide = tipoBase !== filtroTipo;
                         const reservado = unidad.estado === 'RESERVADO';
                         
-                        // LÓGICA DE VISIBILIDAD: Inaccesible pero visible como cuadrícula
                         const desactivado = noCoincide || reservado;
                         
                         let botonEstilo = "";
@@ -248,7 +308,6 @@ export default function ReservaExpressPage() {
                             <span className={`text-[12px] md:text-lg font-light leading-none ${textoIdEstilo}`}>
                               {unidad.id}
                             </span>
-                            {/* Las unidades inactivas ya no dicen su tipo, solo muestran su número para mantener la grilla limpia */}
                             {!desactivado && (
                               <span className={`mt-0.5 md:mt-1 text-[5px] md:text-[8px] text-center leading-tight ${textoTipoEstilo}`}>
                                 {unidad.tipo}
@@ -285,24 +344,13 @@ export default function ReservaExpressPage() {
         {vistaActiva && (
           <div className="fixed inset-0 bg-neutral-900/60 z-[60] flex flex-col items-center justify-center p-4 sm:p-6 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setVistaActiva(null)}>
             <div className="relative w-full max-w-3xl bg-white p-2 md:p-4 rounded-2xl shadow-2xl flex flex-col items-center animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
-              
               <button onClick={() => setVistaActiva(null)} className="absolute top-4 right-4 bg-white/80 backdrop-blur text-neutral-800 w-8 h-8 rounded-full flex items-center justify-center font-bold hover:bg-neutral-200 z-10 shadow-sm">&times;</button>
-              
               <div className="w-full rounded-xl overflow-hidden relative bg-neutral-100">
-                <img 
-                  src={FOTOS_VISTAS[vistaActiva].url} 
-                  alt={FOTOS_VISTAS[vistaActiva].titulo}
-                  className="w-full max-h-[60vh] object-contain"
-                />
+                <img src={FOTOS_VISTAS[vistaActiva].url} alt={FOTOS_VISTAS[vistaActiva].titulo} className="w-full max-h-[60vh] object-contain" />
               </div>
-              
               <div className="mt-4 text-center pb-2 w-full">
-                <h3 className="text-sm md:text-base font-bold text-neutral-800 uppercase tracking-wide">
-                  {FOTOS_VISTAS[vistaActiva].titulo}
-                </h3>
-                <span className="text-[9px] md:text-[10px] text-neutral-400 uppercase tracking-widest mt-1 block">
-                  Toma de Dron - Arienzo Boutique Living
-                </span>
+                <h3 className="text-sm md:text-base font-bold text-neutral-800 uppercase tracking-wide">{FOTOS_VISTAS[vistaActiva].titulo}</h3>
+                <span className="text-[9px] md:text-[10px] text-neutral-400 uppercase tracking-widest mt-1 block">Toma de Dron - Arienzo Boutique Living</span>
               </div>
             </div>
           </div>
@@ -376,13 +424,14 @@ export default function ReservaExpressPage() {
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Correo Electrónico</label>
-                  <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-sm focus:outline-none focus:border-[#B94A36]" placeholder="tucorreo@email.com" />
+                  {/* El input del email viene autocompletado y bloqueado desde el login VIP */}
+                  <input required type="email" value={formData.email} readOnly className="w-full bg-neutral-100 border border-neutral-200 rounded-lg p-3 text-sm text-neutral-500 cursor-not-allowed" />
                 </div>
               </div>
 
               <div className="pt-6 mt-2 border-t border-neutral-100">
-                <button type="submit" disabled={cargando} className="w-full bg-[#B94A36] text-white font-bold uppercase tracking-widest text-xs py-4 rounded-xl hover:bg-[#9B3B2B] transition-colors shadow-lg shadow-[#B94A36]/20 disabled:opacity-70 flex justify-center items-center">
-                  {cargando ? <span className="animate-pulse">Asegurando Unidad...</span> : 'Confirmar Reserva Oficial'}
+                <button type="submit" disabled={cargandoReserva} className="w-full bg-[#B94A36] text-white font-bold uppercase tracking-widest text-xs py-4 rounded-xl hover:bg-[#9B3B2B] transition-colors shadow-lg shadow-[#B94A36]/20 disabled:opacity-70 flex justify-center items-center">
+                  {cargandoReserva ? <span className="animate-pulse">Asegurando Unidad...</span> : 'Confirmar Reserva Oficial'}
                 </button>
               </div>
             </form>
