@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Reserva Express (Orientación perfecta: bloques sutiles con sombra y sin borde)
+// Actualizacion para Vercel - Reserva Express (Vistas renombradas, sin iconos y sin modal temporalmente)
 'use client';
 
 import { useState } from 'react';
@@ -36,7 +36,6 @@ const INVENTARIO = [
 
 const PISOS_EDIFICIO = [6, 5, 4, 3, 2];
 
-// Mapeo exacto de posiciones para la grilla de 5 columnas
 const LAYOUT_FACHADA: Record<number, (string | null)[]> = {
   6: [null, '604', '603', '602', '601'],
   5: [null, '504', '503', '502', '501'],
@@ -73,10 +72,10 @@ export default function ReservaExpressPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F9F7F5] font-sans pb-20">
+    <div className="min-h-screen bg-[#F9F7F5] font-sans pb-20 relative">
       
       {/* HEADER PÚBLICO */}
-      <header className="bg-white border-b border-[#EAE3DC] px-6 py-4 sticky top-0 z-50 flex justify-center shadow-sm">
+      <header className="bg-white border-b border-[#EAE3DC] px-6 py-4 sticky top-0 z-40 flex justify-center shadow-sm">
         <div className="text-center cursor-pointer" onClick={() => setPaso('filtro')}>
           <h1 className="text-lg font-light tracking-[0.2em] text-neutral-900 uppercase">Arienzo</h1>
           <p className="text-[9px] font-bold tracking-widest text-[#B94A36] uppercase mt-0.5">Boutique Living</p>
@@ -128,7 +127,7 @@ export default function ReservaExpressPage() {
                 <p className="text-[10px] md:text-xs text-neutral-500 mt-1">Navega por la fachada. Toca una unidad para ver su precio.</p>
               </div>
 
-              {/* LEYENDA (NOMENCLATURA VISUAL) */}
+              {/* LEYENDA */}
               <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-xl border border-neutral-200 shadow-sm w-full md:w-auto justify-center">
                 <div className="flex items-center gap-1.5">
                   <span className="w-3 h-3 md:w-4 md:h-4 bg-white border-[1.5px] border-[#B94A36] rounded inline-block shadow-sm"></span>
@@ -143,7 +142,6 @@ export default function ReservaExpressPage() {
 
             <div className="bg-white p-3 md:p-8 rounded-2xl md:rounded-3xl border border-[#EAE3DC] shadow-sm relative w-full">
               
-              {/* EDIFICIO */}
               <div className="flex flex-col w-full">
 
                 {/* ROOFTOP */}
@@ -158,27 +156,28 @@ export default function ReservaExpressPage() {
                   </div>
                 </div>
 
-                {/* FILA DE ORIENTACIÓN MEJORADA (Con bloques de color y sombra sutil) */}
+                {/* FILA DE VISTAS (BLOQUES ELEGANTES, SIN ÍCONOS, ESPERANDO FUNCIONALIDAD FUTURA) */}
                 <div className="flex items-stretch gap-1 md:gap-2 mb-2 w-full">
-                  <div className="w-12 md:w-20 flex items-center justify-end pr-2 md:pr-4">
-                    {/* MARCA CLARA DE ORIENTACIÓN AQUÍ */}
+                  <div className="w-12 md:w-20 flex flex-col justify-center pr-2 md:pr-4">
                     <span className="text-[7px] md:text-[9px] font-bold text-neutral-400 uppercase tracking-widest text-right leading-tight">
-                      Orientación
+                      Vistas
                     </span>
                   </div>
                   <div className="flex-1 grid grid-cols-[1fr_1fr_1.5fr_1fr_1.5fr] gap-1 md:gap-2">
-                    <div className="col-span-1 bg-neutral-100/80 shadow-sm rounded-md py-1.5 md:py-2 px-1 flex items-center justify-center">
+                    
+                    <div className="col-span-1 bg-neutral-100/80 shadow-sm rounded-md py-1.5 px-1 flex flex-col items-center justify-center border border-neutral-200">
                       <span className="text-[5px] md:text-[7px] font-bold uppercase tracking-widest text-neutral-500 text-center leading-tight">
-                        Urb.<br/>(Atrás)
+                        A la<br/>Urbanización
                       </span>
                     </div>
-                    <div className="col-span-1 bg-sky-50 shadow-sm rounded-md py-1.5 md:py-2 px-1 flex items-center justify-center">
+                    
+                    <div className="col-span-1 bg-sky-50 shadow-sm rounded-md py-1.5 px-1 flex flex-col items-center justify-center border border-sky-100">
                       <span className="text-[5px] md:text-[7px] font-bold uppercase tracking-widest text-sky-700 text-center leading-tight">
-                        Wyndham /<br/>Mar
+                        Al Wyndham /<br/>Mar
                       </span>
                     </div>
-                    {/* 3 COLUMNAS UNIFICADAS BAJO LA VISTA PANORÁMICA */}
-                    <div className="col-span-3 bg-[#B94A36]/5 shadow-sm rounded-md py-1.5 md:py-2 px-1 flex items-center justify-center">
+                    
+                    <div className="col-span-3 bg-[#B94A36]/5 shadow-sm rounded-md py-1.5 px-1 flex flex-col items-center justify-center border border-[#B94A36]/20">
                       <span className="text-[5px] md:text-[7px] font-bold uppercase tracking-widest text-[#B94A36] text-center leading-tight">
                         Panorámica Frontal: La Quadra / Umiña / Mar
                       </span>
@@ -189,7 +188,7 @@ export default function ReservaExpressPage() {
                 {/* FILAS DE PISOS RESIDENCIALES */}
                 {PISOS_EDIFICIO.map(piso => (
                   <div key={piso} className="flex items-stretch gap-1 md:gap-2 mb-1 md:mb-2 w-full">
-                    {/* Número de Piso con mayor margen (w-12) */}
+                    {/* Número de Piso */}
                     <div className="w-12 md:w-20 flex items-center justify-end pr-2 md:pr-4 text-[8px] md:text-[10px] font-medium text-neutral-400 uppercase">
                       P{piso}
                     </div>
@@ -252,7 +251,7 @@ export default function ReservaExpressPage() {
                   </div>
                 ))}
 
-                {/* PLANTA BAJA CON MAYOR PESO VISUAL Y MARGEN CORREGIDO */}
+                {/* PLANTA BAJA */}
                 <div className="flex items-stretch gap-1 md:gap-2 mt-1 w-full">
                   <div className="w-12 md:w-20 text-[8px] md:text-[10px] font-bold text-neutral-400 uppercase flex items-center justify-end pr-2 md:pr-4">
                     PB
@@ -272,7 +271,7 @@ export default function ReservaExpressPage() {
           </div>
         )}
 
-        {/* 3. MODAL FLOTANTE (LA FICHA EXPRESS) */}
+        {/* MODAL FLOTANTE (LA FICHA EXPRESS) */}
         {unidadSeleccionada && paso === 'mapa' && (
           <div className="fixed inset-0 bg-neutral-900/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-in fade-in">
             <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl p-6 transform transition-transform animate-in slide-in-from-bottom-8">
