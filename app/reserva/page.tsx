@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Reserva Express (Sin Emojis, Contraste Mejorado y Adaptable a Móvil)
+// Actualizacion para Vercel - Reserva Express (Vistas Claras a prueba de niños y Planta Baja exacta)
 'use client';
 
 import { useState } from 'react';
@@ -7,29 +7,29 @@ import { useState } from 'react';
 const INVENTARIO = [
   // PISO 6
   { id: '604', piso: 6, tipo: '2 Dormitorios', vista: 'Wyndham Poseidón / Mar', precio: 205865, area: 106.65, estado: 'RESERVADO' },
-  { id: '603', piso: 6, tipo: '3 Dormitorios', vista: 'Esquinero (La Quadra / Umiña / Mar)', precio: 293967, area: 152.72, estado: 'DISPONIBLE' },
+  { id: '603', piso: 6, tipo: '3 Dormitorios', vista: 'Esquinero (Vista Amplia: La Quadra / Umiña / Mar)', precio: 293967, area: 152.72, estado: 'DISPONIBLE' },
   { id: '602', piso: 6, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 169369, area: 86.60, estado: 'DISPONIBLE' },
   { id: '601', piso: 6, tipo: '3 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 308760, area: 158.54, estado: 'RESERVADO' },
   // PISO 5
   { id: '504', piso: 5, tipo: '2 Dormitorios', vista: 'Wyndham Poseidón / Mar', precio: 201794, area: 106.65, estado: 'RESERVADO' },
-  { id: '503', piso: 5, tipo: '3 Dormitorios', vista: 'Esquinero (La Quadra / Umiña / Mar)', precio: 290840, area: 152.72, estado: 'DISPONIBLE' },
+  { id: '503', piso: 5, tipo: '3 Dormitorios', vista: 'Esquinero (Vista Amplia: La Quadra / Umiña / Mar)', precio: 290840, area: 152.72, estado: 'DISPONIBLE' },
   { id: '502', piso: 5, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 165702, area: 86.60, estado: 'DISPONIBLE' },
   { id: '501', piso: 5, tipo: '3 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 303228, area: 158.54, estado: 'DISPONIBLE' },
   // PISO 4
   { id: '404', piso: 4, tipo: '2 Dormitorios', vista: 'Wyndham Poseidón / Mar', precio: 199677, area: 106.65, estado: 'DISPONIBLE' },
-  { id: '403', piso: 4, tipo: '3 Dormitorios', vista: 'Esquinero (La Quadra / Umiña / Mar)', precio: 287042, area: 152.72, estado: 'DISPONIBLE' },
+  { id: '403', piso: 4, tipo: '3 Dormitorios', vista: 'Esquinero (Vista Amplia: La Quadra / Umiña / Mar)', precio: 287042, area: 152.72, estado: 'DISPONIBLE' },
   { id: '402', piso: 4, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 163257, area: 86.60, estado: 'DISPONIBLE' },
   { id: '401', piso: 4, tipo: '3 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 299079, area: 158.54, estado: 'RESERVADO' },
   // PISO 3
   { id: '301', piso: 3, tipo: '1 Dormitorio', vista: 'Urbanización (Posterior)', precio: 131529, area: 70.25, estado: 'DISPONIBLE' },
   { id: '305', piso: 3, tipo: '1 Dormitorio', vista: 'Wyndham Poseidón / Mar', precio: 152779, area: 78.87, estado: 'DISPONIBLE' },
-  { id: '304', piso: 3, tipo: '3 Dormitorios', vista: 'Esquinero (La Quadra / Umiña / Mar)', precio: 284732, area: 152.68, estado: 'DISPONIBLE' },
+  { id: '304', piso: 3, tipo: '3 Dormitorios', vista: 'Esquinero (Vista Amplia: La Quadra / Umiña / Mar)', precio: 284732, area: 152.68, estado: 'DISPONIBLE' },
   { id: '303', piso: 3, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 161128, area: 86.76, estado: 'DISPONIBLE' },
   { id: '302', piso: 3, tipo: '2 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 221487, area: 121.61, estado: 'DISPONIBLE' },
   // PISO 2
   { id: '201', piso: 2, tipo: '1 Dormitorio', vista: 'Urbanización (Posterior)', precio: 130981, area: 70.25, estado: 'DISPONIBLE' },
   { id: '205', piso: 2, tipo: '1 Dormitorio', vista: 'Wyndham Poseidón / Mar', precio: 151259, area: 78.87, estado: 'DISPONIBLE' },
-  { id: '204', piso: 2, tipo: '3 Dormitorios', vista: 'Esquinero (La Quadra / Umiña / Mar)', precio: 281458, area: 152.72, estado: 'DISPONIBLE' },
+  { id: '204', piso: 2, tipo: '3 Dormitorios', vista: 'Esquinero (Vista Amplia: La Quadra / Umiña / Mar)', precio: 281458, area: 152.72, estado: 'DISPONIBLE' },
   { id: '203', piso: 2, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 159095, area: 86.66, estado: 'RESERVADO' },
   { id: '202', piso: 2, tipo: '2 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 218918, area: 121.61, estado: 'DISPONIBLE' },
 ];
@@ -109,19 +109,21 @@ export default function ReservaExpressPage() {
               <button onClick={() => seleccionarFiltro('3 Dormitorios')} className="w-full bg-white border border-[#EAE3DC] p-6 rounded-2xl shadow-sm hover:border-[#B94A36] hover:shadow-md transition-all group relative overflow-hidden text-left">
                 <div className="absolute top-0 left-0 w-1 h-full bg-[#B94A36] transform -translate-x-full group-hover:translate-x-0 transition-transform"></div>
                 <h3 className="text-xl font-bold text-neutral-800 uppercase tracking-wide">3 Dormitorios</h3>
-                <p className="text-xs text-neutral-400 mt-1">Amplitud máxima para familias y comodidad total.</p>
+                <p className="text-xs text-neutral-400 mt-1">Amplitud máxima para familias y comodidad total. (Esquineros disponibles)</p>
               </button>
             </div>
           </div>
         )}
 
-        {/* PASO 2: EL MAPA INTERACTIVO (FACHADA ESTRUCTURADA) */}
+        {/* PASO 2: EL MAPA INTERACTIVO (FACHADA ESTRUCTURADA 5 COLUMNAS) */}
         {paso === 'mapa' && (
           <div className="space-y-4 md:space-y-6 animate-in slide-in-from-bottom-8 duration-500 w-full">
             
             <div className="flex justify-between items-end px-2">
               <div>
-                <button onClick={() => setPaso('filtro')} className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-2 hover:text-[#B94A36]">Volver a opciones</button>
+                <button onClick={() => setPaso('filtro')} className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-2 hover:text-[#B94A36]">
+                  ← Volver a opciones
+                </button>
                 <h2 className="text-xl md:text-2xl font-light text-neutral-800 uppercase tracking-wide">Unidades de {filtroTipo}</h2>
                 <p className="text-[10px] md:text-xs text-neutral-500 mt-1">Navega por la fachada. Las opciones destacadas coinciden con tu búsqueda.</p>
               </div>
@@ -130,21 +132,29 @@ export default function ReservaExpressPage() {
             <div className="bg-white p-2 md:p-6 rounded-2xl md:rounded-3xl border border-[#EAE3DC] shadow-sm relative overflow-hidden">
               <div className="w-full">
                 
-                {/* CABECERA SUTIL DE VISTAS (Barritas Superiores) */}
-                <div className="flex items-end gap-1 md:gap-2 mb-2">
-                  <div className="w-6 md:w-14"></div> {/* Espaciador alineado con pisos */}
-                  <div className="flex-1 grid gap-1 md:gap-2 grid-cols-[1fr_1fr_1.5fr_1fr_1.5fr]">
-                    <div className="border-t-[3px] border-neutral-300 pt-1 text-center">
-                      <span className="text-[5px] md:text-[9px] font-bold text-neutral-400 uppercase tracking-widest block leading-tight">Urb. Manta</span>
-                    </div>
-                    <div className="border-t-[3px] border-sky-600/60 pt-1 text-center">
-                      <span className="text-[5px] md:text-[9px] font-bold text-sky-700 uppercase tracking-widest block leading-tight">Wyndham / Mar</span>
-                    </div>
-                    <div className="border-t-[3px] border-amber-500/60 pt-1 text-center">
-                      <span className="text-[5px] md:text-[9px] font-bold text-amber-600 uppercase tracking-widest block leading-tight">Esquinero</span>
-                    </div>
-                    <div className="border-t-[3px] border-teal-500/60 pt-1 text-center col-span-2">
-                      <span className="text-[5px] md:text-[9px] font-bold text-teal-600 uppercase tracking-widest block leading-tight">La Quadra / Umiña / Mar</span>
+                {/* CABECERA MUY CLARA DE VISTAS */}
+                <div className="mb-4">
+                  <div className="bg-neutral-100/80 border border-neutral-200 py-1.5 px-3 rounded-lg mb-2 text-center mx-auto w-full md:w-3/4">
+                    <span className="text-[9px] md:text-[11px] font-bold text-neutral-700 uppercase tracking-widest">
+                      👀 Guía de Vistas (Hacia dónde mira el balcón)
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-end gap-1 md:gap-2">
+                    <div className="w-6 md:w-14"></div> {/* Espaciador alineado con pisos */}
+                    <div className="flex-1 grid gap-1 md:gap-2 grid-cols-[1fr_1fr_1.5fr_1fr_1.5fr]">
+                      <div className="border-t-[3px] border-neutral-400 pt-1 text-center">
+                        <span className="text-[5px] md:text-[9px] font-bold text-neutral-500 uppercase tracking-widest block leading-tight">Urb. Manta (Atrás)</span>
+                      </div>
+                      <div className="border-t-[3px] border-sky-600/60 pt-1 text-center">
+                        <span className="text-[5px] md:text-[9px] font-bold text-sky-700 uppercase tracking-widest block leading-tight">Wyndham / Mar</span>
+                      </div>
+                      <div className="border-t-[3px] border-amber-500/60 pt-1 text-center">
+                        <span className="text-[5px] md:text-[9px] font-bold text-amber-600 uppercase tracking-widest block leading-tight">Esquinero (Vista Amplia)</span>
+                      </div>
+                      <div className="border-t-[3px] border-teal-500/60 pt-1 text-center col-span-2">
+                        <span className="text-[5px] md:text-[9px] font-bold text-teal-600 uppercase tracking-widest block leading-tight">La Quadra / Umiña / Mar</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -167,7 +177,7 @@ export default function ReservaExpressPage() {
                         Piso {piso}
                       </div>
                       
-                      {/* Cuadrícula Proporcional de Departamentos (5 Columnas) */}
+                      {/* Cuadrícula Proporcional de Departamentos */}
                       <div className="flex-1 grid gap-1 md:gap-2 grid-cols-[1fr_1fr_1.5fr_1fr_1.5fr]">
                         {LAYOUT_FACHADA[piso].map((idUnidad, colIndex) => {
                           
@@ -182,9 +192,6 @@ export default function ReservaExpressPage() {
                           const reservado = unidad.estado === 'RESERVADO';
                           
                           // ESTILOS MEJORADOS
-                          // Si reservado: Fondo gris tramado, bloqueado.
-                          // Si no coincide: Fondo gris clarito, texto gris, sin opacidad exagerada.
-                          // Si coincide: Blanco puro, borde terracota, sombra.
                           let botonEstilo = "";
                           let textoIdEstilo = "";
                           let textoTipoEstilo = "";
@@ -228,11 +235,12 @@ export default function ReservaExpressPage() {
                     </div>
                   ))}
 
-                  {/* BLOQUE PLANTA BAJA */}
+                  {/* BLOQUE PLANTA BAJA REFINADO */}
                   <div className="flex items-center gap-1 md:gap-2 mt-1 md:mt-2">
                     <div className="w-6 md:w-14 text-[7px] md:text-[10px] font-bold text-neutral-400 uppercase text-right flex-shrink-0">PB</div>
-                    <div className="flex-1 bg-neutral-900 text-neutral-400 p-2 md:p-4 rounded-b-xl text-center">
+                    <div className="flex-1 bg-neutral-900 text-neutral-400 p-3 md:p-4 rounded-b-xl text-center">
                       <span className="text-[8px] md:text-[11px] font-bold text-white uppercase tracking-widest block">Planta Baja</span>
+                      <span className="text-[6px] md:text-[9px] mt-0.5 block uppercase tracking-widest">Ingreso Parqueos - Locales Comerciales - Lobby</span>
                     </div>
                   </div>
 
@@ -286,9 +294,9 @@ export default function ReservaExpressPage() {
 
         {/* 4. FORMULARIO KYC EXPRESS */}
         {paso === 'formulario' && (
-          <div className="max-w-md mx-auto bg-white p-6 md:p-8 rounded-2xl border border-[#EAE3DC] shadow-sm animate-in slide-in-from-right-8">
-            <button onClick={() => setPaso('mapa')} className="text-xs font-bold text-neutral-400 uppercase hover:text-neutral-800 flex items-center gap-1 mb-6">
-              Volver al plano
+          <div className="max-w-md mx-auto bg-white p-6 md:p-8 rounded-2xl border border-[#EAE3DC] shadow-sm animate-in slide-in-from-right-8 mt-10">
+            <button onClick={() => setPaso('mapa')} className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-6 hover:text-[#B94A36]">
+              ← Volver al plano
             </button>
             
             <h3 className="text-xl font-light text-neutral-900 mb-1">Registro de Inversionista</h3>
