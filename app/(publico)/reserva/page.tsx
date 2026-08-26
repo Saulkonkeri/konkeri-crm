@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Reserva Express (Enfoque en Disponibilidad y Bloqueo de Distracciones)
+// Actualizacion para Vercel - Reserva Express (Cuadrícula visible y pisos claros)
 'use client';
 
 import { useState } from 'react';
@@ -159,7 +159,7 @@ export default function ReservaExpressPage() {
 
                 {/* ROOFTOP */}
                 <div className="flex items-stretch gap-1 md:gap-2 mb-2 w-full">
-                  <div className="w-12 md:w-20 text-[7px] md:text-[9px] font-bold text-neutral-400 uppercase flex items-center justify-end pr-2 md:pr-4">
+                  <div className="w-12 md:w-20 text-[7px] md:text-[9px] font-bold text-neutral-500 uppercase flex items-center justify-end pr-2 md:pr-4">
                     Cima
                   </div>
                   <div className="flex-1 bg-[#D1C292]/30 border border-[#D1C292]/50 p-2 md:p-3 rounded-t-xl text-center flex items-center justify-center">
@@ -172,7 +172,7 @@ export default function ReservaExpressPage() {
                 {/* FILA DE VISTAS */}
                 <div className="flex items-stretch gap-1 md:gap-2 mb-2 w-full">
                   <div className="w-12 md:w-20 flex flex-col justify-center pr-2 md:pr-4">
-                    <span className="text-[7px] md:text-[9px] font-bold text-neutral-400 uppercase tracking-widest text-right leading-tight">
+                    <span className="text-[7px] md:text-[9px] font-bold text-neutral-500 uppercase tracking-widest text-right leading-tight">
                       Vistas
                     </span>
                   </div>
@@ -201,8 +201,8 @@ export default function ReservaExpressPage() {
                 {/* FILAS DE PISOS RESIDENCIALES */}
                 {PISOS_EDIFICIO.map(piso => (
                   <div key={piso} className="flex items-stretch gap-1 md:gap-2 mb-1 md:mb-2 w-full">
-                    {/* Número de Piso */}
-                    <div className="w-12 md:w-20 flex items-center justify-end pr-2 md:pr-4 text-[8px] md:text-[10px] font-medium text-neutral-400 uppercase">
+                    {/* Número de Piso - Más claro y oscuro */}
+                    <div className="w-12 md:w-20 flex items-center justify-end pr-2 md:pr-4 text-[9px] md:text-[11px] font-bold text-neutral-500 uppercase">
                       P{piso}
                     </div>
                     
@@ -221,7 +221,7 @@ export default function ReservaExpressPage() {
                         const noCoincide = tipoBase !== filtroTipo;
                         const reservado = unidad.estado === 'RESERVADO';
                         
-                        // LÓGICA STRICTA DE DEBBI: Si está reservado o no coincide, es inaccesible y mudo.
+                        // LÓGICA DE VISIBILIDAD: Inaccesible pero visible como cuadrícula
                         const desactivado = noCoincide || reservado;
                         
                         let botonEstilo = "";
@@ -229,7 +229,7 @@ export default function ReservaExpressPage() {
                         let textoTipoEstilo = "";
 
                         if (desactivado) {
-                          botonEstilo = "bg-neutral-50/50 border border-neutral-100 cursor-not-allowed opacity-60";
+                          botonEstilo = "bg-neutral-50 border border-neutral-200 cursor-not-allowed opacity-90";
                           textoIdEstilo = "text-neutral-400";
                           textoTipoEstilo = "text-neutral-400";
                         } else {
@@ -248,9 +248,12 @@ export default function ReservaExpressPage() {
                             <span className={`text-[12px] md:text-lg font-light leading-none ${textoIdEstilo}`}>
                               {unidad.id}
                             </span>
-                            <span className={`mt-0.5 md:mt-1 text-[5px] md:text-[8px] text-center leading-tight ${textoTipoEstilo}`}>
-                              {unidad.tipo}
-                            </span>
+                            {/* Las unidades inactivas ya no dicen su tipo, solo muestran su número para mantener la grilla limpia */}
+                            {!desactivado && (
+                              <span className={`mt-0.5 md:mt-1 text-[5px] md:text-[8px] text-center leading-tight ${textoTipoEstilo}`}>
+                                {unidad.tipo}
+                              </span>
+                            )}
                           </button>
                         );
                       })}
@@ -260,7 +263,7 @@ export default function ReservaExpressPage() {
 
                 {/* PLANTA BAJA */}
                 <div className="flex items-stretch gap-1 md:gap-2 mt-1 w-full">
-                  <div className="w-12 md:w-20 text-[8px] md:text-[10px] font-bold text-neutral-400 uppercase flex items-center justify-end pr-2 md:pr-4">
+                  <div className="w-12 md:w-20 text-[8px] md:text-[10px] font-bold text-neutral-500 uppercase flex items-center justify-end pr-2 md:pr-4">
                     PB
                   </div>
                   <div className="flex-1 bg-neutral-800 text-neutral-300 p-3 md:p-5 rounded-b-2xl text-center flex flex-col justify-center shadow-md">
