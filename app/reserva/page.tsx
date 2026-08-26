@@ -1,8 +1,9 @@
+// Actualizacion para Vercel - Reserva Express (Descubrimiento Guiado y Fachada Proporcional)
 'use client';
 
 import { useState } from 'react';
 
-// INVENTARIO REAL - AGOSTO 2026 (Basado en el PDF Oficial)
+// INVENTARIO REAL - AGOSTO 2026
 const INVENTARIO = [
   // PISO 6
   { id: '604', piso: 6, tipo: '2 Dormitorios', vista: 'Wyndham Poseidón / Mar', precio: 205865, area: 106.65, estado: 'RESERVADO' },
@@ -31,10 +32,13 @@ const INVENTARIO = [
   { id: '202', piso: 2, tipo: '2 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 218918, area: 121.61, estado: 'DISPONIBLE' },
 ];
 
+const PISOS_EDIFICIO = [6, 5, 4, 3, 2];
+
 export default function ReservaExpressPage() {
+  // Ahora iniciamos en el paso 'filtro'
+  const [paso, setPaso] = useState<'filtro' | 'mapa' | 'formulario' | 'exito'>('filtro');
   const [filtroTipo, setFiltroTipo] = useState<string | null>(null);
   const [unidadSeleccionada, setUnidadSeleccionada] = useState<any>(null);
-  const [paso, setPaso] = useState<'mapa' | 'formulario' | 'exito'>('mapa');
 
   // Datos del Cliente (KYC Express)
   const [formData, setFormData] = useState({ nombres: '', cedula: '', email: '', telefono: '' });
@@ -43,11 +47,21 @@ export default function ReservaExpressPage() {
   const procesarReserva = (e: React.FormEvent) => {
     e.preventDefault();
     setCargando(true);
-    // Aquí iría la conexión a Supabase para guardar el lead. Por ahora simulamos 2 segundos.
+    // Simulación de carga a Base de Datos
     setTimeout(() => {
       setCargando(false);
       setPaso('exito');
     }, 2000);
+  };
+
+  const seleccionarFiltro = (tipo: string) => {
+    setFiltroTipo(tipo);
+    setPaso('mapa');
+  };
+
+  // Extrae y ordena las unidades de un piso específico (de izquierda a derecha: x04, x03, x02, x01)
+  const obtenerUnidadesPorPiso = (numeroPiso: number) => {
+    return INVENTARIO.filter(u => u.piso === numeroPiso).sort((a, b) => b.id.localeCompare(a.id));
   };
 
   return (
@@ -55,89 +69,138 @@ export default function ReservaExpressPage() {
       
       {/* HEADER PÚBLICO */}
       <header className="bg-white border-b border-[#EAE3DC] px-6 py-4 sticky top-0 z-50 flex justify-center shadow-sm">
-        <div className="text-center">
+        <div className="text-center cursor-pointer" onClick={() => setPaso('filtro')}>
           <h1 className="text-lg font-light tracking-[0.2em] text-neutral-900 uppercase">Arienzo</h1>
           <p className="text-[9px] font-bold tracking-widest text-[#B94A36] uppercase mt-0.5">Boutique Living</p>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 mt-6">
+      <main className="max-w-5xl mx-auto px-4 mt-6">
         
-        {paso === 'mapa' && (
-          <div className="space-y-8 animate-in fade-in duration-500">
+        {/* PASO 1: EL FILTRO INICIAL */}
+        {paso === 'filtro' && (
+          <div className="max-w-lg mx-auto text-center space-y-8 animate-in zoom-in-95 duration-500 mt-10 md:mt-20">
+            <div>
+              <h2 className="text-3xl font-light text-neutral-900 mb-2">Bienvenido a tu próximo hogar.</h2>
+              <p className="text-sm text-neutral-500">Para comenzar a explorar el edificio, cuéntanos qué espacio se adapta mejor a tu estilo de vida.</p>
+            </div>
             
-            {/* 1. SECCIÓN DE FILTRO GUIADO */}
-            <div className="text-center space-y-4">
-              <h2 className="text-2xl font-light text-neutral-800">¿Qué espacio buscas?</h2>
-              <p className="text-xs text-neutral-500">Selecciona el tamaño ideal para iluminar tus opciones en el edificio.</p>
-              
-              <div className="flex flex-wrap justify-center gap-3 mt-4">
-                <button 
-                  onClick={() => setFiltroTipo(filtroTipo === '1 Dormitorio' ? null : '1 Dormitorio')}
-                  className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all border ${filtroTipo === '1 Dormitorio' ? 'bg-[#B94A36] text-white border-[#B94A36] shadow-md' : 'bg-white text-neutral-600 border-neutral-200 hover:border-[#B94A36]'}`}
-                >
-                  🏢 1 Dormitorio
-                </button>
-                <button 
-                  onClick={() => setFiltroTipo(filtroTipo === '2 Dormitorios' ? null : '2 Dormitorios')}
-                  className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all border ${filtroTipo === '2 Dormitorios' ? 'bg-[#B94A36] text-white border-[#B94A36] shadow-md' : 'bg-white text-neutral-600 border-neutral-200 hover:border-[#B94A36]'}`}
-                >
-                  🛏️ 2 Dormitorios
-                </button>
-                <button 
-                  onClick={() => setFiltroTipo(filtroTipo === '3 Dormitorios' ? null : '3 Dormitorios')}
-                  className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all border ${filtroTipo === '3 Dormitorios' ? 'bg-[#B94A36] text-white border-[#B94A36] shadow-md' : 'bg-white text-neutral-600 border-neutral-200 hover:border-[#B94A36]'}`}
-                >
-                  👑 3 Dormitorios
-                </button>
+            <div className="flex flex-col gap-4">
+              <button 
+                onClick={() => seleccionarFiltro('1 Dormitorio')}
+                className="w-full bg-white border border-[#EAE3DC] p-6 rounded-2xl shadow-sm hover:border-[#B94A36] hover:shadow-md transition-all group relative overflow-hidden"
+              >
+                <div className="absolute top-0 left-0 w-1 h-full bg-[#B94A36] transform -translate-x-full group-hover:translate-x-0 transition-transform"></div>
+                <h3 className="text-xl font-bold text-neutral-800">Suite (1 Dormitorio)</h3>
+                <p className="text-xs text-neutral-400 mt-1">Ideal para solteros o estadías dinámicas.</p>
+              </button>
+
+              <button 
+                onClick={() => seleccionarFiltro('2 Dormitorios')}
+                className="w-full bg-white border border-[#EAE3DC] p-6 rounded-2xl shadow-sm hover:border-[#B94A36] hover:shadow-md transition-all group relative overflow-hidden"
+              >
+                <div className="absolute top-0 left-0 w-1 h-full bg-[#B94A36] transform -translate-x-full group-hover:translate-x-0 transition-transform"></div>
+                <h3 className="text-xl font-bold text-neutral-800">2 Dormitorios</h3>
+                <p className="text-xs text-neutral-400 mt-1">Equilibrio perfecto de espacio y confort.</p>
+              </button>
+
+              <button 
+                onClick={() => seleccionarFiltro('3 Dormitorios')}
+                className="w-full bg-white border border-[#EAE3DC] p-6 rounded-2xl shadow-sm hover:border-[#B94A36] hover:shadow-md transition-all group relative overflow-hidden"
+              >
+                <div className="absolute top-0 left-0 w-1 h-full bg-[#B94A36] transform -translate-x-full group-hover:translate-x-0 transition-transform"></div>
+                <h3 className="text-xl font-bold text-neutral-800">3 Dormitorios</h3>
+                <p className="text-xs text-neutral-400 mt-1">Amplitud máxima para familias y comodidad total.</p>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* PASO 2: EL MAPA INTERACTIVO (FACHADA ESTRUCTURADA) */}
+        {paso === 'mapa' && (
+          <div className="space-y-6 animate-in slide-in-from-bottom-8 duration-500 max-w-4xl mx-auto">
+            
+            <div className="flex justify-between items-end">
+              <div>
+                <button onClick={() => setPaso('filtro')} className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-2 hover:text-[#B94A36]">← Cambiar búsqueda</button>
+                <h2 className="text-2xl font-light text-neutral-800">Unidades de {filtroTipo}</h2>
+                <p className="text-xs text-neutral-500 mt-1">Las opciones iluminadas coinciden con tu búsqueda.</p>
               </div>
             </div>
 
-            {/* 2. MATRIZ INTERACTIVA (LA FACHADA) */}
-            <div className="bg-white p-6 rounded-2xl border border-[#EAE3DC] shadow-sm relative overflow-hidden">
+            <div className="bg-white p-4 md:p-6 rounded-3xl border border-[#EAE3DC] shadow-sm relative overflow-hidden">
               
-              {/* Indicadores de Vistas */}
-              <div className="flex justify-between text-[9px] font-bold text-neutral-400 uppercase tracking-widest mb-6 border-b border-neutral-100 pb-3">
+              {/* Indicadores de Vistas Top */}
+              <div className="flex justify-between text-[9px] font-bold text-neutral-400 uppercase tracking-widest mb-6 border-b border-neutral-100 pb-3 pl-10 md:pl-16">
                 <span>⬅️ Hacia Wyndham Poseidón</span>
                 <span>Hacia La Quadra / Umiña ➡️</span>
               </div>
 
-              {/* Grid del Edificio (4 columnas simulando el plano) */}
-              <div className="grid grid-cols-4 gap-2 md:gap-4 relative z-10">
-                {INVENTARIO.map((unidad) => {
-                  const noCoincide = filtroTipo && unidad.tipo !== filtroTipo;
-                  const reservado = unidad.estado === 'RESERVADO';
-                  
-                  return (
-                    <button
-                      key={unidad.id}
-                      disabled={reservado}
-                      onClick={() => setUnidadSeleccionada(unidad)}
-                      className={`
-                        relative flex flex-col items-center justify-center p-3 md:p-4 rounded-xl border-2 transition-all duration-300
-                        ${reservado ? 'bg-neutral-100 border-neutral-200 opacity-60 cursor-not-allowed' : 
-                          noCoincide ? 'bg-white border-neutral-100 opacity-40 hover:opacity-100' : 
-                          'bg-[#B94A36]/5 border-[#B94A36]/30 hover:border-[#B94A36] hover:bg-[#B94A36]/10 shadow-sm cursor-pointer transform hover:-translate-y-1'}
-                      `}
-                    >
-                      <span className={`text-lg md:text-xl font-light ${reservado ? 'text-neutral-400 line-through' : noCoincide ? 'text-neutral-500' : 'text-[#B94A36] font-bold'}`}>
-                        {unidad.id}
-                      </span>
-                      {reservado ? (
-                        <span className="mt-1 text-[8px] font-bold text-neutral-400 uppercase bg-neutral-200 px-2 py-0.5 rounded">Vendido</span>
-                      ) : (
-                        <span className={`mt-1 text-[8px] md:text-[9px] font-medium text-center ${noCoincide ? 'text-neutral-400' : 'text-[#B94A36]'}`}>
-                          {unidad.tipo}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+              {/* CONTENEDOR PRINCIPAL DEL EDIFICIO */}
+              <div className="flex flex-col">
+                
+                {/* BLOQUE ROOFTOP */}
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-10 md:w-14 text-[9px] md:text-[10px] font-bold text-neutral-400 uppercase text-right leading-tight">Cima</div>
+                  <div className="flex-1 bg-amber-50/50 border border-amber-100 p-3 rounded-t-2xl text-center flex flex-col justify-center shadow-sm">
+                    <span className="text-[10px] md:text-[11px] font-bold text-amber-900 uppercase tracking-widest">Rooftop / Lounge / Piscina</span>
+                    <span className="text-[8px] text-amber-700 mt-0.5">Áreas de uso común y amenidades exclusivas</span>
+                  </div>
+                </div>
 
-              {/* Base del Edificio (Lobby) */}
-              <div className="mt-4 bg-neutral-800 text-neutral-400 text-[10px] font-bold uppercase tracking-widest text-center py-3 rounded-b-xl">
-                Ingreso Parqueos - Locales - Lobby
+                {/* FILAS DE PISOS */}
+                {PISOS_EDIFICIO.map(piso => (
+                  <div key={piso} className="flex items-stretch gap-2 mb-2">
+                    {/* Etiqueta Izquierda */}
+                    <div className="w-10 md:w-14 flex items-center justify-end text-[9px] md:text-[10px] font-bold text-neutral-400 uppercase">
+                      Piso {piso}
+                    </div>
+                    
+                    {/* Cuadrícula Proporcional de Departamentos */}
+                    <div className="flex-1 grid gap-2 grid-cols-[1fr_1.5fr_1fr_1.5fr]">
+                      {obtenerUnidadesPorPiso(piso).map((unidad) => {
+                        const noCoincide = unidad.tipo !== filtroTipo;
+                        const reservado = unidad.estado === 'RESERVADO';
+                        const desactivado = noCoincide || reservado;
+                        
+                        return (
+                          <button
+                            key={unidad.id}
+                            disabled={desactivado}
+                            onClick={() => setUnidadSeleccionada(unidad)}
+                            className={`
+                              relative flex flex-col items-center justify-center p-2 md:p-3 rounded-xl border-2 transition-all duration-300 min-h-[60px] md:min-h-[80px]
+                              ${reservado ? 'bg-neutral-100/50 border-neutral-200/50 opacity-40 cursor-not-allowed' : 
+                                noCoincide ? 'bg-white border-neutral-100 opacity-30 cursor-not-allowed' : 
+                                'bg-white border-[#B94A36] shadow-md cursor-pointer transform hover:-translate-y-1 hover:shadow-lg hover:bg-orange-50/30'}
+                            `}
+                          >
+                            <span className={`text-base md:text-xl font-light ${reservado ? 'text-neutral-400 line-through' : noCoincide ? 'text-neutral-400' : 'text-[#B94A36] font-bold'}`}>
+                              {unidad.id}
+                            </span>
+                            {reservado ? (
+                              <span className="mt-1 text-[7px] font-bold text-neutral-400 uppercase bg-neutral-200 px-1.5 py-0.5 rounded">Vendido</span>
+                            ) : (
+                              <span className={`mt-0.5 md:mt-1 text-[7px] md:text-[8px] font-medium text-center ${noCoincide ? 'text-neutral-400' : 'text-neutral-600'}`}>
+                                {unidad.tipo}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+
+                {/* BLOQUE PLANTA BAJA */}
+                <div className="flex items-center gap-2 mt-2">
+                  <div className="w-10 md:w-14 text-[9px] md:text-[10px] font-bold text-neutral-400 uppercase text-right">PB</div>
+                  <div className="flex-1 bg-neutral-900 text-neutral-400 p-4 rounded-b-2xl text-center shadow-sm">
+                    <span className="text-[10px] md:text-[11px] font-bold text-white uppercase tracking-widest block">Planta Baja</span>
+                    <span className="text-[8px] mt-0.5 block">Ingreso Vehicular - Locales Comerciales - Lobby Design</span>
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>
@@ -226,7 +289,7 @@ export default function ReservaExpressPage() {
 
         {/* 5. PANTALLA DE ÉXITO Y URGENCIA (CRONÓMETRO) */}
         {paso === 'exito' && (
-          <div className="max-w-md mx-auto bg-white p-8 rounded-2xl border-2 border-emerald-500 shadow-xl text-center animate-in zoom-in-95 duration-500">
+          <div className="max-w-md mx-auto bg-white p-8 rounded-2xl border-2 border-emerald-500 shadow-xl text-center animate-in zoom-in-95 duration-500 mb-10">
             <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-3xl">✅</span>
             </div>
