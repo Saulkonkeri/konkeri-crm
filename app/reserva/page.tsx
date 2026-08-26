@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Reserva Express (Vistas Claras a prueba de niños y Planta Baja exacta)
+// Actualizacion para Vercel - Reserva Express (Diseño Minimalista, Arquitectónico y Limpio)
 'use client';
 
 import { useState } from 'react';
@@ -7,29 +7,29 @@ import { useState } from 'react';
 const INVENTARIO = [
   // PISO 6
   { id: '604', piso: 6, tipo: '2 Dormitorios', vista: 'Wyndham Poseidón / Mar', precio: 205865, area: 106.65, estado: 'RESERVADO' },
-  { id: '603', piso: 6, tipo: '3 Dormitorios', vista: 'Esquinero (Vista Amplia: La Quadra / Umiña / Mar)', precio: 293967, area: 152.72, estado: 'DISPONIBLE' },
+  { id: '603', piso: 6, tipo: '3 Dorms (Esquinero)', vista: 'Panorámica a La Quadra / Umiña / Mar', precio: 293967, area: 152.72, estado: 'DISPONIBLE' },
   { id: '602', piso: 6, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 169369, area: 86.60, estado: 'DISPONIBLE' },
   { id: '601', piso: 6, tipo: '3 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 308760, area: 158.54, estado: 'RESERVADO' },
   // PISO 5
   { id: '504', piso: 5, tipo: '2 Dormitorios', vista: 'Wyndham Poseidón / Mar', precio: 201794, area: 106.65, estado: 'RESERVADO' },
-  { id: '503', piso: 5, tipo: '3 Dormitorios', vista: 'Esquinero (Vista Amplia: La Quadra / Umiña / Mar)', precio: 290840, area: 152.72, estado: 'DISPONIBLE' },
+  { id: '503', piso: 5, tipo: '3 Dorms (Esquinero)', vista: 'Panorámica a La Quadra / Umiña / Mar', precio: 290840, area: 152.72, estado: 'DISPONIBLE' },
   { id: '502', piso: 5, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 165702, area: 86.60, estado: 'DISPONIBLE' },
   { id: '501', piso: 5, tipo: '3 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 303228, area: 158.54, estado: 'DISPONIBLE' },
   // PISO 4
   { id: '404', piso: 4, tipo: '2 Dormitorios', vista: 'Wyndham Poseidón / Mar', precio: 199677, area: 106.65, estado: 'DISPONIBLE' },
-  { id: '403', piso: 4, tipo: '3 Dormitorios', vista: 'Esquinero (Vista Amplia: La Quadra / Umiña / Mar)', precio: 287042, area: 152.72, estado: 'DISPONIBLE' },
+  { id: '403', piso: 4, tipo: '3 Dorms (Esquinero)', vista: 'Panorámica a La Quadra / Umiña / Mar', precio: 287042, area: 152.72, estado: 'DISPONIBLE' },
   { id: '402', piso: 4, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 163257, area: 86.60, estado: 'DISPONIBLE' },
   { id: '401', piso: 4, tipo: '3 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 299079, area: 158.54, estado: 'RESERVADO' },
   // PISO 3
   { id: '301', piso: 3, tipo: '1 Dormitorio', vista: 'Urbanización (Posterior)', precio: 131529, area: 70.25, estado: 'DISPONIBLE' },
   { id: '305', piso: 3, tipo: '1 Dormitorio', vista: 'Wyndham Poseidón / Mar', precio: 152779, area: 78.87, estado: 'DISPONIBLE' },
-  { id: '304', piso: 3, tipo: '3 Dormitorios', vista: 'Esquinero (Vista Amplia: La Quadra / Umiña / Mar)', precio: 284732, area: 152.68, estado: 'DISPONIBLE' },
+  { id: '304', piso: 3, tipo: '3 Dorms (Esquinero)', vista: 'Panorámica a La Quadra / Umiña / Mar', precio: 284732, area: 152.68, estado: 'DISPONIBLE' },
   { id: '303', piso: 3, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 161128, area: 86.76, estado: 'DISPONIBLE' },
   { id: '302', piso: 3, tipo: '2 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 221487, area: 121.61, estado: 'DISPONIBLE' },
   // PISO 2
   { id: '201', piso: 2, tipo: '1 Dormitorio', vista: 'Urbanización (Posterior)', precio: 130981, area: 70.25, estado: 'DISPONIBLE' },
   { id: '205', piso: 2, tipo: '1 Dormitorio', vista: 'Wyndham Poseidón / Mar', precio: 151259, area: 78.87, estado: 'DISPONIBLE' },
-  { id: '204', piso: 2, tipo: '3 Dormitorios', vista: 'Esquinero (Vista Amplia: La Quadra / Umiña / Mar)', precio: 281458, area: 152.72, estado: 'DISPONIBLE' },
+  { id: '204', piso: 2, tipo: '3 Dorms (Esquinero)', vista: 'Panorámica a La Quadra / Umiña / Mar', precio: 281458, area: 152.72, estado: 'DISPONIBLE' },
   { id: '203', piso: 2, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 159095, area: 86.66, estado: 'RESERVADO' },
   { id: '202', piso: 2, tipo: '2 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 218918, area: 121.61, estado: 'DISPONIBLE' },
 ];
@@ -83,7 +83,7 @@ export default function ReservaExpressPage() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-2 md:px-4 mt-6">
+      <main className="max-w-5xl mx-auto px-3 md:px-4 mt-6">
         
         {/* PASO 1: EL FILTRO INICIAL */}
         {paso === 'filtro' && (
@@ -93,7 +93,7 @@ export default function ReservaExpressPage() {
               <p className="text-sm text-neutral-500">Para comenzar a explorar el edificio, indícanos qué espacio se adapta mejor a tu estilo de vida.</p>
             </div>
             
-            <div className="flex flex-col gap-4 px-4">
+            <div className="flex flex-col gap-4 px-2">
               <button onClick={() => seleccionarFiltro('1 Dormitorio')} className="w-full bg-white border border-[#EAE3DC] p-6 rounded-2xl shadow-sm hover:border-[#B94A36] hover:shadow-md transition-all group relative overflow-hidden text-left">
                 <div className="absolute top-0 left-0 w-1 h-full bg-[#B94A36] transform -translate-x-full group-hover:translate-x-0 transition-transform"></div>
                 <h3 className="text-xl font-bold text-neutral-800 uppercase tracking-wide">Suite / 1 Dormitorio</h3>
@@ -109,142 +109,141 @@ export default function ReservaExpressPage() {
               <button onClick={() => seleccionarFiltro('3 Dormitorios')} className="w-full bg-white border border-[#EAE3DC] p-6 rounded-2xl shadow-sm hover:border-[#B94A36] hover:shadow-md transition-all group relative overflow-hidden text-left">
                 <div className="absolute top-0 left-0 w-1 h-full bg-[#B94A36] transform -translate-x-full group-hover:translate-x-0 transition-transform"></div>
                 <h3 className="text-xl font-bold text-neutral-800 uppercase tracking-wide">3 Dormitorios</h3>
-                <p className="text-xs text-neutral-400 mt-1">Amplitud máxima para familias y comodidad total. (Esquineros disponibles)</p>
+                <p className="text-xs text-neutral-400 mt-1">Amplitud máxima para familias y comodidad total.</p>
               </button>
             </div>
           </div>
         )}
 
-        {/* PASO 2: EL MAPA INTERACTIVO (FACHADA ESTRUCTURADA 5 COLUMNAS) */}
+        {/* PASO 2: EL MAPA INTERACTIVO (FACHADA ESTRUCTURADA MINIMALISTA) */}
         {paso === 'mapa' && (
-          <div className="space-y-4 md:space-y-6 animate-in slide-in-from-bottom-8 duration-500 w-full">
+          <div className="space-y-4 md:space-y-6 animate-in slide-in-from-bottom-8 duration-500 w-full max-w-4xl mx-auto">
             
-            <div className="flex justify-between items-end px-2">
+            <div className="flex justify-between items-end px-1">
               <div>
-                <button onClick={() => setPaso('filtro')} className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-2 hover:text-[#B94A36]">
+                <button onClick={() => setPaso('filtro')} className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-2 hover:text-[#B94A36] flex items-center gap-1">
                   ← Volver a opciones
                 </button>
-                <h2 className="text-xl md:text-2xl font-light text-neutral-800 uppercase tracking-wide">Unidades de {filtroTipo}</h2>
-                <p className="text-[10px] md:text-xs text-neutral-500 mt-1">Navega por la fachada. Las opciones destacadas coinciden con tu búsqueda.</p>
+                <h2 className="text-xl md:text-2xl font-light text-neutral-800 uppercase tracking-wide">Unidades de {filtroTipo?.replace('s (Esquinero)', 's')}</h2>
+                <p className="text-[10px] md:text-xs text-neutral-500 mt-1">Navega por la fachada. Las opciones resaltadas coinciden con tu búsqueda.</p>
               </div>
             </div>
 
-            <div className="bg-white p-2 md:p-6 rounded-2xl md:rounded-3xl border border-[#EAE3DC] shadow-sm relative overflow-hidden">
-              <div className="w-full">
-                
-                {/* CABECERA MUY CLARA DE VISTAS */}
-                <div className="mb-4">
-                  <div className="bg-neutral-100/80 border border-neutral-200 py-1.5 px-3 rounded-lg mb-2 text-center mx-auto w-full md:w-3/4">
-                    <span className="text-[9px] md:text-[11px] font-bold text-neutral-700 uppercase tracking-widest">
-                      👀 Guía de Vistas (Hacia dónde mira el balcón)
+            <div className="bg-white p-3 md:p-8 rounded-2xl md:rounded-3xl border border-[#EAE3DC] shadow-sm relative w-full">
+              
+              {/* GUÍA DE VISTAS SUPERIOR (Estilo Arquitectónico Limpio) */}
+              <div className="flex w-full mb-2 md:mb-4">
+                <div className="w-6 md:w-10"></div> {/* Espaciador de pisos */}
+                <div className="flex-1 grid grid-cols-[1fr_1fr_1.5fr_1fr_1.5fr] gap-1 md:gap-2">
+                  <div className="text-center pb-1 border-b-[2px] border-neutral-200">
+                    <span className="text-[5px] md:text-[8px] uppercase tracking-widest text-neutral-400 block leading-tight">Atrás (Urb)</span>
+                  </div>
+                  <div className="text-center pb-1 border-b-[2px] border-neutral-300">
+                    <span className="text-[5px] md:text-[8px] uppercase tracking-widest text-neutral-500 block leading-tight">Wyndham / Mar</span>
+                  </div>
+                  <div className="col-span-3 text-center pb-1 border-b-[2px] border-neutral-400">
+                    <span className="text-[5px] md:text-[8px] font-bold uppercase tracking-widest text-neutral-600 block leading-tight">
+                      Panorámica Frontal: La Quadra / Umiña / Mar
                     </span>
                   </div>
-                  
-                  <div className="flex items-end gap-1 md:gap-2">
-                    <div className="w-6 md:w-14"></div> {/* Espaciador alineado con pisos */}
+                </div>
+              </div>
+
+              {/* EDIFICIO */}
+              <div className="flex flex-col w-full">
+                
+                {/* ROOFTOP (Color Distintivo) */}
+                <div className="flex items-stretch gap-1 md:gap-2 mb-1 md:mb-2 w-full">
+                  <div className="w-6 md:w-10 text-[7px] md:text-[9px] font-bold text-neutral-400 uppercase flex items-center justify-end pr-1 md:pr-2">
+                    Cima
+                  </div>
+                  <div className="flex-1 bg-[#D1C292]/30 border border-[#D1C292]/50 p-2 md:p-3 rounded-t-xl text-center flex items-center justify-center">
+                    <span className="text-[8px] md:text-[10px] font-bold text-[#8A7A55] uppercase tracking-widest">
+                      Rooftop & Amenidades
+                    </span>
+                  </div>
+                </div>
+
+                {/* FILAS DE PISOS RESIDENCIALES */}
+                {PISOS_EDIFICIO.map(piso => (
+                  <div key={piso} className="flex items-stretch gap-1 md:gap-2 mb-1 md:mb-2 w-full">
+                    {/* Número de Piso */}
+                    <div className="w-6 md:w-10 flex items-center justify-end pr-1 md:pr-2 text-[8px] md:text-[10px] font-medium text-neutral-400 uppercase">
+                      P{piso}
+                    </div>
+                    
+                    {/* Departamentos */}
                     <div className="flex-1 grid gap-1 md:gap-2 grid-cols-[1fr_1fr_1.5fr_1fr_1.5fr]">
-                      <div className="border-t-[3px] border-neutral-400 pt-1 text-center">
-                        <span className="text-[5px] md:text-[9px] font-bold text-neutral-500 uppercase tracking-widest block leading-tight">Urb. Manta (Atrás)</span>
-                      </div>
-                      <div className="border-t-[3px] border-sky-600/60 pt-1 text-center">
-                        <span className="text-[5px] md:text-[9px] font-bold text-sky-700 uppercase tracking-widest block leading-tight">Wyndham / Mar</span>
-                      </div>
-                      <div className="border-t-[3px] border-amber-500/60 pt-1 text-center">
-                        <span className="text-[5px] md:text-[9px] font-bold text-amber-600 uppercase tracking-widest block leading-tight">Esquinero (Vista Amplia)</span>
-                      </div>
-                      <div className="border-t-[3px] border-teal-500/60 pt-1 text-center col-span-2">
-                        <span className="text-[5px] md:text-[9px] font-bold text-teal-600 uppercase tracking-widest block leading-tight">La Quadra / Umiña / Mar</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                      {LAYOUT_FACHADA[piso].map((idUnidad, colIndex) => {
+                        
+                        if (!idUnidad) {
+                          return <div key={`empty-${piso}-${colIndex}`} className="invisible"></div>;
+                        }
 
-                <div className="flex flex-col">
-                  
-                  {/* BLOQUE ROOFTOP */}
-                  <div className="flex items-center gap-1 md:gap-2 mb-1 md:mb-2">
-                    <div className="w-6 md:w-14 text-[7px] md:text-[10px] font-bold text-neutral-400 uppercase text-right leading-tight flex-shrink-0">Cima</div>
-                    <div className="flex-1 bg-neutral-50 border border-neutral-200 p-2 md:p-3 rounded-t-xl text-center flex flex-col justify-center">
-                      <span className="text-[8px] md:text-[11px] font-bold text-neutral-700 uppercase tracking-widest">Rooftop / Lounge / Piscina</span>
-                    </div>
-                  </div>
+                        const unidad = obtenerDatosUnidad(idUnidad);
+                        if (!unidad) return null;
 
-                  {/* FILAS DE PISOS */}
-                  {PISOS_EDIFICIO.map(piso => (
-                    <div key={piso} className="flex items-stretch gap-1 md:gap-2 mb-1 md:mb-2">
-                      {/* Indicador Izquierdo */}
-                      <div className="w-6 md:w-14 flex items-center justify-end text-[7px] md:text-[10px] font-bold text-neutral-400 uppercase flex-shrink-0">
-                        Piso {piso}
-                      </div>
-                      
-                      {/* Cuadrícula Proporcional de Departamentos */}
-                      <div className="flex-1 grid gap-1 md:gap-2 grid-cols-[1fr_1fr_1.5fr_1fr_1.5fr]">
-                        {LAYOUT_FACHADA[piso].map((idUnidad, colIndex) => {
-                          
-                          if (!idUnidad) {
-                            return <div key={`empty-${piso}-${colIndex}`} className="invisible"></div>;
-                          }
+                        // Determinar si coincide con la búsqueda base (ignorando la palabra "Esquinero" para el match)
+                        const tipoBase = unidad.tipo.includes('3 Dorms') ? '3 Dormitorios' : unidad.tipo;
+                        const noCoincide = tipoBase !== filtroTipo;
+                        const reservado = unidad.estado === 'RESERVADO';
+                        
+                        // LÓGICA DE ESTILOS MINIMALISTA
+                        let botonEstilo = "";
+                        let textoIdEstilo = "";
+                        let textoTipoEstilo = "";
 
-                          const unidad = obtenerDatosUnidad(idUnidad);
-                          if (!unidad) return null;
+                        if (reservado) {
+                          botonEstilo = "bg-neutral-100 border border-neutral-200 cursor-not-allowed";
+                          textoIdEstilo = "text-neutral-400 line-through";
+                          textoTipoEstilo = "text-neutral-400";
+                        } else if (noCoincide) {
+                          botonEstilo = "bg-neutral-50 border border-neutral-100 cursor-pointer hover:bg-neutral-100";
+                          textoIdEstilo = "text-neutral-600";
+                          textoTipoEstilo = "text-neutral-400";
+                        } else {
+                          botonEstilo = "bg-white border-[1.5px] border-[#B94A36] shadow-sm cursor-pointer transform hover:-translate-y-1 hover:shadow-md";
+                          textoIdEstilo = "text-[#B94A36] font-bold";
+                          textoTipoEstilo = "text-neutral-800 font-medium";
+                        }
 
-                          const noCoincide = unidad.tipo !== filtroTipo;
-                          const reservado = unidad.estado === 'RESERVADO';
-                          
-                          // ESTILOS MEJORADOS
-                          let botonEstilo = "";
-                          let textoIdEstilo = "";
-                          let textoTipoEstilo = "";
-
-                          if (reservado) {
-                            botonEstilo = "bg-neutral-100 border-dashed border-neutral-300 cursor-not-allowed";
-                            textoIdEstilo = "text-neutral-400 line-through";
-                            textoTipoEstilo = "text-neutral-400";
-                          } else if (noCoincide) {
-                            botonEstilo = "bg-neutral-50 border-neutral-200 cursor-pointer hover:bg-neutral-100";
-                            textoIdEstilo = "text-neutral-400";
-                            textoTipoEstilo = "text-neutral-400";
-                          } else {
-                            botonEstilo = "bg-white border-[#B94A36] shadow-sm cursor-pointer transform hover:-translate-y-1 hover:shadow-md hover:bg-orange-50/20";
-                            textoIdEstilo = "text-[#B94A36] font-bold";
-                            textoTipoEstilo = "text-neutral-700 font-medium";
-                          }
-
-                          return (
-                            <button
-                              key={unidad.id}
-                              disabled={reservado}
-                              onClick={() => { if(!reservado) setUnidadSeleccionada(unidad) }}
-                              className={`relative flex flex-col items-center justify-center p-1 md:p-3 rounded-lg md:rounded-xl border-[1.5px] md:border-2 transition-all duration-300 min-h-[45px] md:min-h-[80px] ${botonEstilo}`}
-                            >
-                              <span className={`text-[11px] md:text-xl font-light ${textoIdEstilo}`}>
-                                {unidad.id}
+                        return (
+                          <button
+                            key={unidad.id}
+                            disabled={reservado}
+                            onClick={() => { if(!reservado) setUnidadSeleccionada(unidad) }}
+                            className={`flex flex-col items-center justify-center p-1 md:p-2 rounded-lg transition-all duration-300 min-h-[45px] md:min-h-[70px] ${botonEstilo}`}
+                          >
+                            <span className={`text-[12px] md:text-lg font-light leading-none ${textoIdEstilo}`}>
+                              {unidad.id}
+                            </span>
+                            
+                            {reservado ? (
+                              <span className="mt-1 text-[5px] md:text-[7px] font-bold text-neutral-400 uppercase tracking-widest">Vendido</span>
+                            ) : (
+                              <span className={`mt-0.5 md:mt-1 text-[5px] md:text-[8px] text-center leading-tight ${textoTipoEstilo}`}>
+                                {unidad.tipo}
                               </span>
-                              
-                              {reservado ? (
-                                <span className="mt-0.5 md:mt-1 text-[5px] md:text-[8px] font-bold text-neutral-500 uppercase bg-neutral-200 px-1 md:px-1.5 py-0.5 rounded tracking-widest">Vendido</span>
-                              ) : (
-                                <span className={`mt-0 md:mt-1 text-[5px] md:text-[8px] text-center leading-tight ${textoTipoEstilo}`}>
-                                  {unidad.tipo}
-                                </span>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* BLOQUE PLANTA BAJA REFINADO */}
-                  <div className="flex items-center gap-1 md:gap-2 mt-1 md:mt-2">
-                    <div className="w-6 md:w-14 text-[7px] md:text-[10px] font-bold text-neutral-400 uppercase text-right flex-shrink-0">PB</div>
-                    <div className="flex-1 bg-neutral-900 text-neutral-400 p-3 md:p-4 rounded-b-xl text-center">
-                      <span className="text-[8px] md:text-[11px] font-bold text-white uppercase tracking-widest block">Planta Baja</span>
-                      <span className="text-[6px] md:text-[9px] mt-0.5 block uppercase tracking-widest">Ingreso Parqueos - Locales Comerciales - Lobby</span>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
+                ))}
 
+                {/* PLANTA BAJA */}
+                <div className="flex items-stretch gap-1 md:gap-2 mt-1 w-full">
+                  <div className="w-6 md:w-10 text-[8px] md:text-[10px] font-medium text-neutral-400 uppercase flex items-center justify-end pr-1 md:pr-2">
+                    PB
+                  </div>
+                  <div className="flex-1 border-t-[3px] border-neutral-800 pt-2 pb-1 text-center">
+                    <span className="text-[6px] md:text-[9px] font-bold text-neutral-600 uppercase tracking-widest block">
+                      Ingreso Parqueos - Locales Comerciales - Lobby
+                    </span>
+                  </div>
                 </div>
+
               </div>
             </div>
           </div>
@@ -273,7 +272,7 @@ export default function ReservaExpressPage() {
                   <span className="font-bold text-neutral-800">{unidadSeleccionada.area} m²</span>
                 </div>
                 <div className="flex justify-between border-b border-neutral-200/60 pb-2">
-                  <span className="text-neutral-500">Vista / Orientación</span>
+                  <span className="text-neutral-500">Orientación</span>
                   <span className="font-bold text-neutral-800 text-right w-1/2 leading-tight">{unidadSeleccionada.vista}</span>
                 </div>
                 <div className="flex justify-between pt-1">
@@ -295,7 +294,7 @@ export default function ReservaExpressPage() {
         {/* 4. FORMULARIO KYC EXPRESS */}
         {paso === 'formulario' && (
           <div className="max-w-md mx-auto bg-white p-6 md:p-8 rounded-2xl border border-[#EAE3DC] shadow-sm animate-in slide-in-from-right-8 mt-10">
-            <button onClick={() => setPaso('mapa')} className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-6 hover:text-[#B94A36]">
+            <button onClick={() => setPaso('mapa')} className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-6 hover:text-[#B94A36] flex items-center gap-1">
               ← Volver al plano
             </button>
             
