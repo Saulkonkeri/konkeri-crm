@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Reserva Express (Nomenclatura intuitiva y Vistas Explícitas)
+// Actualizacion para Vercel - Reserva Express (Orientacion en columnas y Planta Baja robusta)
 'use client';
 
 import { useState } from 'react';
@@ -115,7 +115,7 @@ export default function ReservaExpressPage() {
           </div>
         )}
 
-        {/* PASO 2: EL MAPA INTERACTIVO (FACHADA ESTRUCTURADA MINIMALISTA) */}
+        {/* PASO 2: EL MAPA INTERACTIVO */}
         {paso === 'mapa' && (
           <div className="space-y-4 md:space-y-6 animate-in slide-in-from-bottom-8 duration-500 w-full max-w-4xl mx-auto">
             
@@ -143,32 +143,32 @@ export default function ReservaExpressPage() {
 
             <div className="bg-white p-3 md:p-8 rounded-2xl md:rounded-3xl border border-[#EAE3DC] shadow-sm relative w-full">
               
-              {/* PANEL DE VISTAS EXPLÍCITO */}
-              <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-2 md:p-3 mb-4 md:mb-6 w-full shadow-inner">
-                <div className="text-[8px] md:text-[10px] font-bold text-neutral-400 uppercase tracking-widest text-center mb-2">
-                  🧭 Orientación: Hacia dónde mira el balcón
-                </div>
-                <div className="flex w-full">
-                  <div className="w-6 md:w-10"></div> {/* Espaciador alineado */}
-                  <div className="flex-1 grid grid-cols-[1fr_1fr_1.5fr_1fr_1.5fr] gap-1 md:gap-2">
-                    <div className="text-center bg-white border border-neutral-200 rounded py-1">
-                      <span className="text-[5px] md:text-[8px] uppercase tracking-widest text-neutral-500 block leading-tight">Vista a la<br/>Urbanización</span>
-                    </div>
-                    <div className="text-center bg-sky-50/50 border border-sky-100 rounded py-1">
-                      <span className="text-[5px] md:text-[8px] uppercase tracking-widest text-sky-700 block leading-tight">Vista al<br/>Wyndham / Mar</span>
-                    </div>
-                    <div className="col-span-3 text-center bg-teal-50/30 border border-teal-100 rounded py-1">
-                      <span className="text-[5px] md:text-[8px] font-bold uppercase tracking-widest text-teal-700 block leading-tight">
-                        Vista Panorámica Frontal:<br/>La Quadra / Umiña / Mar
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
               {/* EDIFICIO */}
               <div className="flex flex-col w-full">
                 
+                {/* FILA DE ORIENTACIÓN (CABECERAS DE COLUMNA) */}
+                <div className="flex items-stretch gap-1 md:gap-2 mb-2 md:mb-3 w-full">
+                  <div className="w-6 md:w-10 flex items-center justify-end pr-1 md:pr-2">
+                    <span className="text-[5px] md:text-[8px] font-bold text-neutral-400 uppercase text-right leading-tight tracking-widest">
+                      Orientación
+                    </span>
+                  </div>
+                  <div className="flex-1 grid grid-cols-[1fr_1fr_1.5fr_1fr_1.5fr] gap-1 md:gap-2">
+                    <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-1 md:p-2 flex items-center justify-center shadow-sm text-center">
+                      <span className="text-[5px] md:text-[7px] uppercase tracking-widest text-neutral-500 leading-tight">Vista a la<br/>Urbanización</span>
+                    </div>
+                    <div className="bg-sky-50/50 border border-sky-100 rounded-lg p-1 md:p-2 flex items-center justify-center shadow-sm text-center">
+                      <span className="text-[5px] md:text-[7px] uppercase tracking-widest text-sky-700 leading-tight">Vista al<br/>Wyndham / Mar</span>
+                    </div>
+                    <div className="bg-amber-50/30 border border-amber-100 rounded-lg p-1 md:p-2 flex items-center justify-center shadow-sm text-center">
+                      <span className="text-[5px] md:text-[7px] font-bold uppercase tracking-widest text-amber-700 leading-tight">Esquinero<br/>(Vista Amplia)</span>
+                    </div>
+                    <div className="col-span-2 bg-teal-50/30 border border-teal-100 rounded-lg p-1 md:p-2 flex items-center justify-center shadow-sm text-center">
+                      <span className="text-[5px] md:text-[7px] font-bold uppercase tracking-widest text-teal-700 leading-tight">Vista Panorámica Frontal<br/>La Quadra / Umiña / Mar</span>
+                    </div>
+                  </div>
+                </div>
+
                 {/* ROOFTOP */}
                 <div className="flex items-stretch gap-1 md:gap-2 mb-1 md:mb-2 w-full">
                   <div className="w-6 md:w-10 text-[7px] md:text-[9px] font-bold text-neutral-400 uppercase flex items-center justify-end pr-1 md:pr-2">
@@ -176,7 +176,7 @@ export default function ReservaExpressPage() {
                   </div>
                   <div className="flex-1 bg-[#D1C292]/30 border border-[#D1C292]/50 p-2 md:p-3 rounded-t-xl text-center flex items-center justify-center">
                     <span className="text-[8px] md:text-[10px] font-bold text-[#8A7A55] uppercase tracking-widest">
-                      Rooftop & Amenidades
+                      Rooftop & Amenidades Exclusivas
                     </span>
                   </div>
                 </div>
@@ -247,14 +247,17 @@ export default function ReservaExpressPage() {
                   </div>
                 ))}
 
-                {/* PLANTA BAJA */}
+                {/* PLANTA BAJA CON MAYOR PESO VISUAL */}
                 <div className="flex items-stretch gap-1 md:gap-2 mt-1 w-full">
-                  <div className="w-6 md:w-10 text-[8px] md:text-[10px] font-medium text-neutral-400 uppercase flex items-center justify-end pr-1 md:pr-2">
+                  <div className="w-6 md:w-10 text-[8px] md:text-[10px] font-bold text-neutral-400 uppercase flex items-center justify-end pr-1 md:pr-2">
                     PB
                   </div>
-                  <div className="flex-1 border-t-[3px] border-neutral-800 pt-2 pb-1 text-center">
-                    <span className="text-[6px] md:text-[9px] font-bold text-neutral-600 uppercase tracking-widest block">
-                      Ingreso Parqueos - Locales Comerciales - Lobby
+                  <div className="flex-1 bg-neutral-800 text-neutral-300 p-3 md:p-5 rounded-b-2xl text-center flex flex-col justify-center shadow-md">
+                    <span className="text-[8px] md:text-[11px] font-bold text-white uppercase tracking-widest">
+                      Planta Baja
+                    </span>
+                    <span className="text-[6px] md:text-[8px] mt-1 md:mt-1.5 uppercase tracking-widest opacity-80">
+                      Ingreso Vehicular • Locales Comerciales • Lobby Design
                     </span>
                   </div>
                 </div>
