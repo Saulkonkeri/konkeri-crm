@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Reserva Express (Con Notificaciones y Ajuste de Fachada col-span-2)
+// Actualizacion para Vercel - Reserva Express (Fachada con proporciones arquitectónicas calibradas)
 'use client';
 
 import { useState } from 'react';
@@ -304,7 +304,8 @@ export default function ReservaExpressPage() {
                   <div className="w-12 md:w-20 flex flex-col justify-center pr-2 md:pr-4">
                     <span className="text-[7px] md:text-[9px] font-bold text-neutral-500 uppercase tracking-widest text-right leading-tight">Vistas</span>
                   </div>
-                  <div className="flex-1 grid grid-cols-[1fr_1fr_1.5fr_1fr_1.5fr] gap-1 md:gap-2">
+                  {/* GRID RECALIBRADO MATEMÁTICAMENTE: 4fr 4fr 10fr 5fr 9fr */}
+                  <div className="flex-1 grid grid-cols-[4fr_4fr_10fr_5fr_9fr] gap-1 md:gap-2">
                     <button onClick={() => setVistaActiva('urb')} className="col-span-1 bg-neutral-50 hover:bg-neutral-100 shadow-sm rounded-md py-1.5 px-1 flex flex-col items-center justify-center border border-neutral-200 cursor-pointer">
                       <span className="text-[5px] md:text-[7px] font-bold uppercase tracking-widest text-neutral-500 text-center leading-tight">A la<br/>Urbanización</span>
                     </button>
@@ -321,7 +322,8 @@ export default function ReservaExpressPage() {
                 {PISOS_EDIFICIO.map(piso => (
                   <div key={piso} className="flex items-stretch gap-1 md:gap-2 mb-1 md:mb-2 w-full">
                     <div className="w-12 md:w-20 flex items-center justify-end pr-2 md:pr-4 text-[9px] md:text-[11px] font-bold text-neutral-500 uppercase">P{piso}</div>
-                    <div className="flex-1 grid gap-1 md:gap-2 grid-cols-[1fr_1fr_1.5fr_1fr_1.5fr]">
+                    {/* GRID RECALIBRADO MATEMÁTICAMENTE: 4fr 4fr 10fr 5fr 9fr */}
+                    <div className="flex-1 grid gap-1 md:gap-2 grid-cols-[4fr_4fr_10fr_5fr_9fr]">
                       {LAYOUT_FACHADA[piso].map((idUnidad, colIndex) => {
                         if (!idUnidad) return <div key={`empty-${piso}-${colIndex}`} className="invisible"></div>;
                         const unidad = obtenerDatosUnidad(idUnidad);
@@ -334,7 +336,7 @@ export default function ReservaExpressPage() {
                         
                         let botonEstilo = desactivado ? "bg-neutral-50 border border-neutral-200 cursor-not-allowed opacity-90" : "bg-white border-[1.5px] border-[#B94A36] shadow-sm cursor-pointer transform hover:-translate-y-1 hover:shadow-md hover:bg-orange-50/20";
                         
-                        // LÓGICA DE EXPANSIÓN DE ANCHO: 604, 504 y 404 ocupan 2 columnas
+                        // LÓGICA DE EXPANSIÓN: Ocupan las 2 columnas pero equilibradas por el grid
                         if (['604', '504', '404'].includes(unidad.id)) {
                           botonEstilo += " col-span-2";
                         }
