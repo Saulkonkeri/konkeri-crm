@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Reserva Express (Vistas renombradas, sin iconos y sin modal temporalmente)
+// Actualizacion para Vercel - Reserva Express (Con Visor de Fotografías Integrado y Diseño Minimalista)
 'use client';
 
 import { useState } from 'react';
@@ -21,13 +21,13 @@ const INVENTARIO = [
   { id: '402', piso: 4, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 163257, area: 86.60, estado: 'DISPONIBLE' },
   { id: '401', piso: 4, tipo: '3 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 299079, area: 158.54, estado: 'RESERVADO' },
   // PISO 3
-  { id: '301', piso: 3, tipo: '1 Dormitorio', vista: 'Urbanización (Posterior)', precio: 131529, area: 70.25, estado: 'DISPONIBLE' },
+  { id: '301', piso: 3, tipo: '1 Dormitorio', vista: 'Urbanización', precio: 131529, area: 70.25, estado: 'DISPONIBLE' },
   { id: '305', piso: 3, tipo: '1 Dormitorio', vista: 'Wyndham Poseidón / Mar', precio: 152779, area: 78.87, estado: 'DISPONIBLE' },
   { id: '304', piso: 3, tipo: '3 Dorms (Esquinero)', vista: 'Panorámica a La Quadra / Umiña / Mar', precio: 284732, area: 152.68, estado: 'DISPONIBLE' },
   { id: '303', piso: 3, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 161128, area: 86.76, estado: 'DISPONIBLE' },
   { id: '302', piso: 3, tipo: '2 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 221487, area: 121.61, estado: 'DISPONIBLE' },
   // PISO 2
-  { id: '201', piso: 2, tipo: '1 Dormitorio', vista: 'Urbanización (Posterior)', precio: 130981, area: 70.25, estado: 'DISPONIBLE' },
+  { id: '201', piso: 2, tipo: '1 Dormitorio', vista: 'Urbanización', precio: 130981, area: 70.25, estado: 'DISPONIBLE' },
   { id: '205', piso: 2, tipo: '1 Dormitorio', vista: 'Wyndham Poseidón / Mar', precio: 151259, area: 78.87, estado: 'DISPONIBLE' },
   { id: '204', piso: 2, tipo: '3 Dorms (Esquinero)', vista: 'Panorámica a La Quadra / Umiña / Mar', precio: 281458, area: 152.72, estado: 'DISPONIBLE' },
   { id: '203', piso: 2, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 159095, area: 86.66, estado: 'RESERVADO' },
@@ -44,10 +44,27 @@ const LAYOUT_FACHADA: Record<number, (string | null)[]> = {
   2: ['201', '205', '204', '203', '202'],
 };
 
+// GALERÍA DE VISTAS (Enlaces de Supabase)
+const FOTOS_VISTAS: Record<string, { titulo: string, url: string }> = {
+  'urb': {
+    titulo: 'Vista a la Urbanización',
+    url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/vistas%20arienzo/vista%20a%20la%20urbanizacion.jpg'
+  },
+  'wyndham': {
+    titulo: 'Vista al Wyndham / Mar',
+    url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/vistas%20arienzo/vista%20al%20hotel.jpg'
+  },
+  'panoramica': {
+    titulo: 'Vista Panorámica Frontal: La Quadra / Umiña / Mar',
+    url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/vistas%20arienzo/vista%20principal.jpg'
+  }
+};
+
 export default function ReservaExpressPage() {
   const [paso, setPaso] = useState<'filtro' | 'mapa' | 'formulario' | 'exito'>('filtro');
   const [filtroTipo, setFiltroTipo] = useState<string | null>(null);
   const [unidadSeleccionada, setUnidadSeleccionada] = useState<any>(null);
+  const [vistaActiva, setVistaActiva] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({ nombres: '', cedula: '', email: '', telefono: '' });
   const [cargando, setCargando] = useState(false);
@@ -156,7 +173,7 @@ export default function ReservaExpressPage() {
                   </div>
                 </div>
 
-                {/* FILA DE VISTAS (BLOQUES ELEGANTES, SIN ÍCONOS, ESPERANDO FUNCIONALIDAD FUTURA) */}
+                {/* FILA DE VISTAS (AHORA SON BOTONES SUTILES SIN ÍCONO) */}
                 <div className="flex items-stretch gap-1 md:gap-2 mb-2 w-full">
                   <div className="w-12 md:w-20 flex flex-col justify-center pr-2 md:pr-4">
                     <span className="text-[7px] md:text-[9px] font-bold text-neutral-400 uppercase tracking-widest text-right leading-tight">
@@ -165,23 +182,23 @@ export default function ReservaExpressPage() {
                   </div>
                   <div className="flex-1 grid grid-cols-[1fr_1fr_1.5fr_1fr_1.5fr] gap-1 md:gap-2">
                     
-                    <div className="col-span-1 bg-neutral-100/80 shadow-sm rounded-md py-1.5 px-1 flex flex-col items-center justify-center border border-neutral-200">
+                    <button onClick={() => setVistaActiva('urb')} className="col-span-1 bg-neutral-50 hover:bg-neutral-100 shadow-sm hover:shadow-md rounded-md py-1.5 px-1 flex flex-col items-center justify-center border border-neutral-200 transition-all cursor-pointer">
                       <span className="text-[5px] md:text-[7px] font-bold uppercase tracking-widest text-neutral-500 text-center leading-tight">
                         A la<br/>Urbanización
                       </span>
-                    </div>
+                    </button>
                     
-                    <div className="col-span-1 bg-sky-50 shadow-sm rounded-md py-1.5 px-1 flex flex-col items-center justify-center border border-sky-100">
+                    <button onClick={() => setVistaActiva('wyndham')} className="col-span-1 bg-sky-50/50 hover:bg-sky-50 shadow-sm hover:shadow-md rounded-md py-1.5 px-1 flex flex-col items-center justify-center border border-sky-100 transition-all cursor-pointer">
                       <span className="text-[5px] md:text-[7px] font-bold uppercase tracking-widest text-sky-700 text-center leading-tight">
                         Al Wyndham /<br/>Mar
                       </span>
-                    </div>
+                    </button>
                     
-                    <div className="col-span-3 bg-[#B94A36]/5 shadow-sm rounded-md py-1.5 px-1 flex flex-col items-center justify-center border border-[#B94A36]/20">
+                    <button onClick={() => setVistaActiva('panoramica')} className="col-span-3 bg-[#B94A36]/5 hover:bg-[#B94A36]/10 shadow-sm hover:shadow-md rounded-md py-1.5 px-1 flex flex-col items-center justify-center border border-[#B94A36]/20 transition-all cursor-pointer">
                       <span className="text-[5px] md:text-[7px] font-bold uppercase tracking-widest text-[#B94A36] text-center leading-tight">
                         Panorámica Frontal: La Quadra / Umiña / Mar
                       </span>
-                    </div>
+                    </button>
                   </div>
                 </div>
 
@@ -271,8 +288,32 @@ export default function ReservaExpressPage() {
           </div>
         )}
 
+        {/* MODAL DEL VISOR DE VISTAS */}
+        {vistaActiva && (
+          <div className="fixed inset-0 bg-neutral-900/90 z-[60] flex flex-col items-center justify-center p-4 sm:p-8 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setVistaActiva(null)}>
+            <div className="relative w-full max-w-5xl flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => setVistaActiva(null)} className="absolute -top-10 right-0 text-white text-3xl hover:text-neutral-300 transition-colors">&times;</button>
+              
+              <img 
+                src={FOTOS_VISTAS[vistaActiva].url} 
+                alt={FOTOS_VISTAS[vistaActiva].titulo}
+                className="w-full max-h-[75vh] object-contain rounded-xl shadow-2xl bg-black"
+              />
+              
+              <div className="mt-6 text-center">
+                <span className="text-[10px] md:text-xs font-bold tracking-widest text-[#B94A36] uppercase bg-white/10 px-3 py-1.5 rounded-full backdrop-blur-md">
+                  Arienzo Boutique Living
+                </span>
+                <h3 className="text-xl md:text-2xl font-light text-white mt-3 uppercase tracking-wide">
+                  {FOTOS_VISTAS[vistaActiva].titulo}
+                </h3>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* MODAL FLOTANTE (LA FICHA EXPRESS) */}
-        {unidadSeleccionada && paso === 'mapa' && (
+        {unidadSeleccionada && paso === 'mapa' && !vistaActiva && (
           <div className="fixed inset-0 bg-neutral-900/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-in fade-in">
             <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl p-6 transform transition-transform animate-in slide-in-from-bottom-8">
               
@@ -294,7 +335,7 @@ export default function ReservaExpressPage() {
                   <span className="font-bold text-neutral-800">{unidadSeleccionada.area} m²</span>
                 </div>
                 <div className="flex justify-between border-b border-neutral-200/60 pb-2">
-                  <span className="text-neutral-500">Orientación</span>
+                  <span className="text-neutral-500">Vista / Orientación</span>
                   <span className="font-bold text-neutral-800 text-right w-1/2 leading-tight">{unidadSeleccionada.vista}</span>
                 </div>
                 <div className="flex justify-between pt-1">
