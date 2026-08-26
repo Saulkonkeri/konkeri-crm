@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Reserva Express (Con Datos Bancarios Reales y WhatsApp de Debbi)
+// Actualizacion para Vercel - Reserva Express (Con Notificaciones Silenciosas Internas a la API)
 'use client';
 
 import { useState } from 'react';
@@ -45,7 +45,7 @@ const LAYOUT_FACHADA: Record<number, (string | null)[]> = {
   2: ['201', '205', '204', '203', '202'],
 };
 
-// GALERÍA DE VISTAS
+// GALERÍA DE VISTAS (Supabase)
 const FOTOS_VISTAS: Record<string, { titulo: string, url: string }> = {
   'urb': { titulo: 'Vista a la Urbanización', url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/vistas%20arienzo/vista%20a%20la%20urbanizacion%20(1).jpg' },
   'wyndham': { titulo: 'Vista Lateral', url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/vistas%20arienzo/vista%20a%20mikonos.jpg' },
@@ -66,25 +66,23 @@ export default function ReservaExpressPage() {
   const [formData, setFormData] = useState({ nombres: '', cedula: '', email: '', telefono: '' });
   const [cargandoReserva, setCargandoReserva] = useState(false);
 
-  // ALERTA SILENCIOSA DE INGRESO (Webhook para Make/Zapier)
+  // 1. DISPARO SILENCIOSO AL SERVIDOR: INGRESO VIP
   const notificarIngresoSilencioso = async (email: string) => {
     try {
-      const webhookMake = "https://hook.us1.make.com/TU-WEBHOOK-AQUI"; 
-      fetch(webhookMake, {
+      fetch('/api/notificar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          evento: "ingreso_vip",
-          cliente_email: email,
-          fecha: new Date().toLocaleString('es-EC')
+          tipo: "ingreso_vip",
+          datos: { email: email, fecha: new Date().toLocaleString('es-EC') }
         })
       }).catch(() => {});
     } catch (e) {
-      console.log("Alerta omitida temporalmente");
+      console.log("Notificación silenciosa omitida");
     }
   };
 
-  // VALIDACIÓN REAL DE ACCESO VIP
+  // VALIDACIÓN DE ACCESO VIP CON SUPABASE
   const verificarAcceso = async (e: React.FormEvent) => {
     e.preventDefault();
     setCargandoAcceso(true);
@@ -114,10 +112,11 @@ export default function ReservaExpressPage() {
         return;
       }
 
-      // ¡ACCESO CONCEDIDO!
+      // Conceder acceso
       setFormData({ ...formData, email: correoLimpio });
       setPaso('filtro');
       
+      // Enviar correo de notificación a Saul en silencio
       notificarIngresoSilencioso(correoLimpio);
 
     } catch (err) {
@@ -127,13 +126,35 @@ export default function ReservaExpressPage() {
     setCargandoAcceso(false);
   };
 
-  const procesarReserva = (e: React.FormEvent) => {
+  // 2. DISPARO SILENCIOSO AL SERVIDOR: RESERVA CONFIRMADA
+  const procesarReserva = async (e: React.FormEvent) => {
     e.preventDefault();
     setCargandoReserva(true);
-    setTimeout(() => {
-      setCargandoReserva(false);
-      setPaso('exito');
-    }, 2000);
+
+    try {
+      // Disparamos el correo automático de reserva
+      await fetch('/api/notificar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tipo: "reserva",
+          datos: {
+            nombres: formData.nombres,
+            cedula: formData.cedula,
+            telefono: formData.telefono,
+            email: formData.email,
+            unidadId: unidadSeleccionada.id,
+            tipoUnidad: unidadSeleccionada.tipo,
+            precio: unidadSeleccionada.precio.toLocaleString('en-US')
+          }
+        })
+      });
+    } catch (error) {
+      console.error("Error notificando reserva:", error);
+    }
+
+    setCargandoReserva(false);
+    setPaso('exito');
   };
 
   const seleccionarFiltro = (tipo: string) => {
@@ -146,19 +167,18 @@ export default function ReservaExpressPage() {
     return INVENTARIO.find(u => u.id === id) || null;
   };
 
-  // FUNCIÓN PARA CONTACTAR A DEBBI DIRECTAMENTE
+  // CONTACTO DIRECTO POR WHATSAPP CON DEBBI
   const contactarAsesor = () => {
     const telefonoDebbi = "593979469472"; 
     const mensaje = `Hola Debbi, estoy revisando el inventario VIP y me interesa cotizar la *Unidad ${unidadSeleccionada?.id}* (${unidadSeleccionada?.tipo}). ¿Podemos conversar?`;
-    
     window.open(`https://wa.me/${telefonoDebbi}?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
 
-  // GENERADOR DE ENLACE DE WHATSAPP PARA NOTIFICAR RESERVA CERRADA A DEBBI
+  // REPORTE WHATSAPP MANUAL DE RESPALDO AL FINAL
   const enviarNotificacionReservaWhatsApp = () => {
-    const telefonoAsesor = "593979469472"; 
+    const telefonoDebbi = "593979469472"; 
     const mensaje = `🚨 *¡NUEVA RESERVA EN LÍNEA!* 🚨\n\nEl cliente *${formData.nombres}* acaba de bloquear la unidad:\n\n🏢 *Unidad:* ${unidadSeleccionada?.id} (${unidadSeleccionada?.tipo})\n💵 *Precio:* $${unidadSeleccionada?.precio.toLocaleString('en-US')}\n🆔 *Cédula:* ${formData.cedula}\n📱 *WhatsApp:* ${formData.telefono}\n📧 *Email:* ${formData.email}\n\n¡Entra al CRM para validar la transferencia de $2,500!`;
-    window.open(`https://wa.me/${telefonoAsesor}?text=${encodeURIComponent(mensaje)}`, '_blank');
+    window.open(`https://wa.me/${telefonoDebbi}?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
 
   return (
@@ -175,7 +195,7 @@ export default function ReservaExpressPage() {
 
       <main className="max-w-5xl mx-auto px-3 md:px-4 mt-6">
         
-        {/* PASO 0: LA PUERTA VIP */}
+        {/* PASO 0: PUERTA VIP */}
         {paso === 'acceso' && (
           <div className="min-h-[80vh] flex flex-col items-center justify-center animate-in fade-in duration-700 px-4">
             <div className="bg-white p-8 md:p-12 rounded-3xl border border-[#EAE3DC] shadow-xl max-w-md w-full text-center relative overflow-hidden">
@@ -216,7 +236,7 @@ export default function ReservaExpressPage() {
           </div>
         )}
 
-        {/* PASO 1: FILTRO */}
+        {/* PASO 1: FILTRO DE TIPOLOGÍA */}
         {paso === 'filtro' && (
           <div className="max-w-lg mx-auto text-center space-y-8 animate-in zoom-in-95 duration-500 mt-10 md:mt-20">
             <div>
@@ -246,7 +266,7 @@ export default function ReservaExpressPage() {
           </div>
         )}
 
-        {/* PASO 2: MAPA */}
+        {/* PASO 2: MAPA DE FACHADA */}
         {paso === 'mapa' && (
           <div className="space-y-4 md:space-y-6 animate-in slide-in-from-bottom-8 duration-500 w-full max-w-4xl mx-auto">
             
@@ -345,7 +365,7 @@ export default function ReservaExpressPage() {
           </div>
         )}
 
-        {/* MODAL VISTA */}
+        {/* MODAL VISOR DE VISTA CON FOTO */}
         {vistaActiva && (
           <div className="fixed inset-0 bg-neutral-900/60 z-[60] flex flex-col items-center justify-center p-4 sm:p-6 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setVistaActiva(null)}>
             <div className="relative w-full max-w-3xl bg-white p-2 md:p-4 rounded-2xl shadow-2xl flex flex-col items-center animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
@@ -380,13 +400,11 @@ export default function ReservaExpressPage() {
                 <div className="flex justify-between pt-1"><span className="text-neutral-500 font-medium mt-1">Inversión Total</span><span className="text-2xl font-bold text-[#B94A36] font-mono">${unidadSeleccionada.precio.toLocaleString('en-US')}</span></div>
               </div>
 
-              {/* BOTONERA ACTUALIZADA */}
               <div className="mt-6 space-y-3">
                 <button onClick={() => setPaso('formulario')} className="w-full bg-neutral-900 text-white font-bold uppercase tracking-widest text-xs py-4 rounded-xl hover:bg-black transition-colors shadow-lg shadow-neutral-900/20">
                   Bloquear Unidad por $2,500
                 </button>
                 
-                {/* NUEVO BOTÓN: COTIZAR CON ASESOR */}
                 <button onClick={contactarAsesor} className="w-full bg-white border border-[#25D366] text-[#25D366] font-bold uppercase tracking-widest text-xs py-3.5 rounded-xl hover:bg-green-50 transition-colors flex items-center justify-center gap-2">
                   <span>💬 Cotizar con Asesor</span>
                 </button>
@@ -397,7 +415,7 @@ export default function ReservaExpressPage() {
           </div>
         )}
 
-        {/* FORMULARIO KYC */}
+        {/* FORMULARIO KYC EXPRESS */}
         {paso === 'formulario' && (
           <div className="max-w-md mx-auto bg-white p-6 md:p-8 rounded-2xl border border-[#EAE3DC] shadow-sm animate-in slide-in-from-right-8 mt-10">
             <button onClick={() => setPaso('mapa')} className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-6 hover:text-[#B94A36] flex items-center gap-1">← Volver al plano</button>
@@ -433,7 +451,7 @@ export default function ReservaExpressPage() {
           </div>
         )}
 
-        {/* PANTALLA DE ÉXITO CON BOTÓN DE ALERTA WHATSAPP */}
+        {/* PANTALLA DE ÉXITO */}
         {paso === 'exito' && (
           <div className="max-w-md mx-auto bg-white p-8 rounded-2xl border-2 border-emerald-500 shadow-xl text-center animate-in zoom-in-95 duration-500 mb-10 mt-10">
             <h2 className="text-2xl font-light text-neutral-900 mb-2">¡Unidad Asegurada!</h2>
@@ -446,7 +464,7 @@ export default function ReservaExpressPage() {
               >
                 <span>📲 Notificar Reserva a Asesores</span>
               </button>
-              <p className="text-[9px] text-neutral-400 mt-1.5">Haz clic aquí para enviar el reporte automático a WhatsApp de Konkeri.</p>
+              <p className="text-[9px] text-neutral-400 mt-1.5">Haz clic aquí para enviar el reporte a WhatsApp de Konkeri.</p>
             </div>
 
             <div className="bg-red-50 border border-red-200 rounded-xl p-5 mb-6 relative overflow-hidden">
