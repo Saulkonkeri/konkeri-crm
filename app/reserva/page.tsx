@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Reserva Express (Diseño Minimalista, Arquitectónico y Limpio)
+// Actualizacion para Vercel - Reserva Express (Nomenclatura intuitiva y Vistas Explícitas)
 'use client';
 
 import { useState } from 'react';
@@ -119,32 +119,49 @@ export default function ReservaExpressPage() {
         {paso === 'mapa' && (
           <div className="space-y-4 md:space-y-6 animate-in slide-in-from-bottom-8 duration-500 w-full max-w-4xl mx-auto">
             
-            <div className="flex justify-between items-end px-1">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-end px-1 gap-4">
               <div>
                 <button onClick={() => setPaso('filtro')} className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-2 hover:text-[#B94A36] flex items-center gap-1">
                   ← Volver a opciones
                 </button>
                 <h2 className="text-xl md:text-2xl font-light text-neutral-800 uppercase tracking-wide">Unidades de {filtroTipo?.replace('s (Esquinero)', 's')}</h2>
-                <p className="text-[10px] md:text-xs text-neutral-500 mt-1">Navega por la fachada. Las opciones resaltadas coinciden con tu búsqueda.</p>
+                <p className="text-[10px] md:text-xs text-neutral-500 mt-1">Navega por la fachada. Toca una unidad para ver su precio.</p>
+              </div>
+
+              {/* LEYENDA (NOMENCLATURA VISUAL) */}
+              <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-xl border border-neutral-200 shadow-sm w-full md:w-auto justify-center">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 md:w-4 md:h-4 bg-white border-2 border-[#B94A36] rounded inline-block shadow-sm"></span>
+                  <span className="text-[9px] md:text-[10px] font-bold text-neutral-700 uppercase tracking-wider">Disponible</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 md:w-4 md:h-4 bg-neutral-100 border border-neutral-200 rounded inline-block"></span>
+                  <span className="text-[9px] md:text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Vendido</span>
+                </div>
               </div>
             </div>
 
             <div className="bg-white p-3 md:p-8 rounded-2xl md:rounded-3xl border border-[#EAE3DC] shadow-sm relative w-full">
               
-              {/* GUÍA DE VISTAS SUPERIOR (Estilo Arquitectónico Limpio) */}
-              <div className="flex w-full mb-2 md:mb-4">
-                <div className="w-6 md:w-10"></div> {/* Espaciador de pisos */}
-                <div className="flex-1 grid grid-cols-[1fr_1fr_1.5fr_1fr_1.5fr] gap-1 md:gap-2">
-                  <div className="text-center pb-1 border-b-[2px] border-neutral-200">
-                    <span className="text-[5px] md:text-[8px] uppercase tracking-widest text-neutral-400 block leading-tight">Atrás (Urb)</span>
-                  </div>
-                  <div className="text-center pb-1 border-b-[2px] border-neutral-300">
-                    <span className="text-[5px] md:text-[8px] uppercase tracking-widest text-neutral-500 block leading-tight">Wyndham / Mar</span>
-                  </div>
-                  <div className="col-span-3 text-center pb-1 border-b-[2px] border-neutral-400">
-                    <span className="text-[5px] md:text-[8px] font-bold uppercase tracking-widest text-neutral-600 block leading-tight">
-                      Panorámica Frontal: La Quadra / Umiña / Mar
-                    </span>
+              {/* PANEL DE VISTAS EXPLÍCITO */}
+              <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-2 md:p-3 mb-4 md:mb-6 w-full shadow-inner">
+                <div className="text-[8px] md:text-[10px] font-bold text-neutral-400 uppercase tracking-widest text-center mb-2">
+                  🧭 Orientación: Hacia dónde mira el balcón
+                </div>
+                <div className="flex w-full">
+                  <div className="w-6 md:w-10"></div> {/* Espaciador alineado */}
+                  <div className="flex-1 grid grid-cols-[1fr_1fr_1.5fr_1fr_1.5fr] gap-1 md:gap-2">
+                    <div className="text-center bg-white border border-neutral-200 rounded py-1">
+                      <span className="text-[5px] md:text-[8px] uppercase tracking-widest text-neutral-500 block leading-tight">Vista a la<br/>Urbanización</span>
+                    </div>
+                    <div className="text-center bg-sky-50/50 border border-sky-100 rounded py-1">
+                      <span className="text-[5px] md:text-[8px] uppercase tracking-widest text-sky-700 block leading-tight">Vista al<br/>Wyndham / Mar</span>
+                    </div>
+                    <div className="col-span-3 text-center bg-teal-50/30 border border-teal-100 rounded py-1">
+                      <span className="text-[5px] md:text-[8px] font-bold uppercase tracking-widest text-teal-700 block leading-tight">
+                        Vista Panorámica Frontal:<br/>La Quadra / Umiña / Mar
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -152,7 +169,7 @@ export default function ReservaExpressPage() {
               {/* EDIFICIO */}
               <div className="flex flex-col w-full">
                 
-                {/* ROOFTOP (Color Distintivo) */}
+                {/* ROOFTOP */}
                 <div className="flex items-stretch gap-1 md:gap-2 mb-1 md:mb-2 w-full">
                   <div className="w-6 md:w-10 text-[7px] md:text-[9px] font-bold text-neutral-400 uppercase flex items-center justify-end pr-1 md:pr-2">
                     Cima
@@ -183,12 +200,10 @@ export default function ReservaExpressPage() {
                         const unidad = obtenerDatosUnidad(idUnidad);
                         if (!unidad) return null;
 
-                        // Determinar si coincide con la búsqueda base (ignorando la palabra "Esquinero" para el match)
                         const tipoBase = unidad.tipo.includes('3 Dorms') ? '3 Dormitorios' : unidad.tipo;
                         const noCoincide = tipoBase !== filtroTipo;
                         const reservado = unidad.estado === 'RESERVADO';
                         
-                        // LÓGICA DE ESTILOS MINIMALISTA
                         let botonEstilo = "";
                         let textoIdEstilo = "";
                         let textoTipoEstilo = "";
@@ -202,7 +217,7 @@ export default function ReservaExpressPage() {
                           textoIdEstilo = "text-neutral-600";
                           textoTipoEstilo = "text-neutral-400";
                         } else {
-                          botonEstilo = "bg-white border-[1.5px] border-[#B94A36] shadow-sm cursor-pointer transform hover:-translate-y-1 hover:shadow-md";
+                          botonEstilo = "bg-white border-[2px] border-[#B94A36] shadow-md cursor-pointer transform hover:-translate-y-1 hover:shadow-lg hover:bg-orange-50/20";
                           textoIdEstilo = "text-[#B94A36] font-bold";
                           textoTipoEstilo = "text-neutral-800 font-medium";
                         }
