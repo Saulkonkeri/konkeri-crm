@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Reserva Express (Con Visor de Fotografías Integrado y Diseño Minimalista)
+// Actualizacion para Vercel - Reserva Express (Imágenes Optimizadas y Visor de Galería Elegante)
 'use client';
 
 import { useState } from 'react';
@@ -21,13 +21,13 @@ const INVENTARIO = [
   { id: '402', piso: 4, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 163257, area: 86.60, estado: 'DISPONIBLE' },
   { id: '401', piso: 4, tipo: '3 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 299079, area: 158.54, estado: 'RESERVADO' },
   // PISO 3
-  { id: '301', piso: 3, tipo: '1 Dormitorio', vista: 'Urbanización', precio: 131529, area: 70.25, estado: 'DISPONIBLE' },
+  { id: '301', piso: 3, tipo: '1 Dormitorio', vista: 'Urbanización (Posterior)', precio: 131529, area: 70.25, estado: 'DISPONIBLE' },
   { id: '305', piso: 3, tipo: '1 Dormitorio', vista: 'Wyndham Poseidón / Mar', precio: 152779, area: 78.87, estado: 'DISPONIBLE' },
   { id: '304', piso: 3, tipo: '3 Dorms (Esquinero)', vista: 'Panorámica a La Quadra / Umiña / Mar', precio: 284732, area: 152.68, estado: 'DISPONIBLE' },
   { id: '303', piso: 3, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 161128, area: 86.76, estado: 'DISPONIBLE' },
   { id: '302', piso: 3, tipo: '2 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 221487, area: 121.61, estado: 'DISPONIBLE' },
   // PISO 2
-  { id: '201', piso: 2, tipo: '1 Dormitorio', vista: 'Urbanización', precio: 130981, area: 70.25, estado: 'DISPONIBLE' },
+  { id: '201', piso: 2, tipo: '1 Dormitorio', vista: 'Urbanización (Posterior)', precio: 130981, area: 70.25, estado: 'DISPONIBLE' },
   { id: '205', piso: 2, tipo: '1 Dormitorio', vista: 'Wyndham Poseidón / Mar', precio: 151259, area: 78.87, estado: 'DISPONIBLE' },
   { id: '204', piso: 2, tipo: '3 Dorms (Esquinero)', vista: 'Panorámica a La Quadra / Umiña / Mar', precio: 281458, area: 152.72, estado: 'DISPONIBLE' },
   { id: '203', piso: 2, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 159095, area: 86.66, estado: 'RESERVADO' },
@@ -44,19 +44,19 @@ const LAYOUT_FACHADA: Record<number, (string | null)[]> = {
   2: ['201', '205', '204', '203', '202'],
 };
 
-// GALERÍA DE VISTAS (Enlaces de Supabase)
+// GALERÍA DE VISTAS (Enlaces optimizados de Supabase)
 const FOTOS_VISTAS: Record<string, { titulo: string, url: string }> = {
   'urb': {
     titulo: 'Vista a la Urbanización',
-    url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/vistas%20arienzo/vista%20a%20la%20urbanizacion.jpg'
+    url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/vistas%20arienzo/vista%20a%20la%20urbanizacion%20(1).jpg'
   },
   'wyndham': {
-    titulo: 'Vista al Wyndham / Mar',
-    url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/vistas%20arienzo/vista%20al%20hotel.jpg'
+    titulo: 'Vista Lateral',
+    url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/vistas%20arienzo/vista%20a%20mikonos.jpg'
   },
   'panoramica': {
-    titulo: 'Vista Panorámica Frontal: La Quadra / Umiña / Mar',
-    url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/vistas%20arienzo/vista%20principal.jpg'
+    titulo: 'Vista Panorámica Frontal',
+    url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/vistas%20arienzo/vista%20principal%20(1).jpg'
   }
 };
 
@@ -173,7 +173,7 @@ export default function ReservaExpressPage() {
                   </div>
                 </div>
 
-                {/* FILA DE VISTAS (AHORA SON BOTONES SUTILES SIN ÍCONO) */}
+                {/* FILA DE VISTAS (BOTONES SUTILES SIN ÍCONO) */}
                 <div className="flex items-stretch gap-1 md:gap-2 mb-2 w-full">
                   <div className="w-12 md:w-20 flex flex-col justify-center pr-2 md:pr-4">
                     <span className="text-[7px] md:text-[9px] font-bold text-neutral-400 uppercase tracking-widest text-right leading-tight">
@@ -288,25 +288,28 @@ export default function ReservaExpressPage() {
           </div>
         )}
 
-        {/* MODAL DEL VISOR DE VISTAS */}
+        {/* MODAL DEL VISOR DE VISTAS (DISEÑO TARJETA / GALERÍA ELEGANTE) */}
         {vistaActiva && (
-          <div className="fixed inset-0 bg-neutral-900/90 z-[60] flex flex-col items-center justify-center p-4 sm:p-8 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setVistaActiva(null)}>
-            <div className="relative w-full max-w-5xl flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
-              <button onClick={() => setVistaActiva(null)} className="absolute -top-10 right-0 text-white text-3xl hover:text-neutral-300 transition-colors">&times;</button>
+          <div className="fixed inset-0 bg-neutral-900/60 z-[60] flex flex-col items-center justify-center p-4 sm:p-6 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setVistaActiva(null)}>
+            <div className="relative w-full max-w-3xl bg-white p-2 md:p-4 rounded-2xl shadow-2xl flex flex-col items-center animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
               
-              <img 
-                src={FOTOS_VISTAS[vistaActiva].url} 
-                alt={FOTOS_VISTAS[vistaActiva].titulo}
-                className="w-full max-h-[75vh] object-contain rounded-xl shadow-2xl bg-black"
-              />
+              <button onClick={() => setVistaActiva(null)} className="absolute top-4 right-4 bg-white/80 backdrop-blur text-neutral-800 w-8 h-8 rounded-full flex items-center justify-center font-bold hover:bg-neutral-200 z-10 shadow-sm">&times;</button>
               
-              <div className="mt-6 text-center">
-                <span className="text-[10px] md:text-xs font-bold tracking-widest text-[#B94A36] uppercase bg-white/10 px-3 py-1.5 rounded-full backdrop-blur-md">
-                  Arienzo Boutique Living
-                </span>
-                <h3 className="text-xl md:text-2xl font-light text-white mt-3 uppercase tracking-wide">
+              <div className="w-full rounded-xl overflow-hidden relative bg-neutral-100">
+                <img 
+                  src={FOTOS_VISTAS[vistaActiva].url} 
+                  alt={FOTOS_VISTAS[vistaActiva].titulo}
+                  className="w-full max-h-[60vh] object-contain"
+                />
+              </div>
+              
+              <div className="mt-4 text-center pb-2 w-full">
+                <h3 className="text-sm md:text-base font-bold text-neutral-800 uppercase tracking-wide">
                   {FOTOS_VISTAS[vistaActiva].titulo}
                 </h3>
+                <span className="text-[9px] md:text-[10px] text-neutral-400 uppercase tracking-widest mt-1 block">
+                  Toma de Dron - Arienzo Boutique Living
+                </span>
               </div>
             </div>
           </div>
