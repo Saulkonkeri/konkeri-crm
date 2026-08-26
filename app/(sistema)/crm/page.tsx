@@ -1,4 +1,4 @@
-// Actualizacion forzada para Vercel - CRM con Origen Web y Autocompletado de Campañas
+// Actualizacion forzada para Vercel - CRM con Pases VIP para Inventario
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -15,7 +15,7 @@ interface Cliente {
   tipologia_interes?: string;
   estado: string;
   origen_captacion?: string;
-  campana?: string; // NUEVO: Campo de Campaña
+  campana?: string;
   ingresado_por?: string;
   notas: string;
   temperatura?: string; 
@@ -68,7 +68,7 @@ export default function CRMPage() {
   const [nuevoEmail, setNuevoEmail] = useState('');
   const [nuevaCiudad, setNuevaCiudad] = useState('');
   const [nuevoOrigen, setNuevoOrigen] = useState('Meta Ads');
-  const [nuevoCampana, setNuevoCampana] = useState(''); // NUEVO: Estado para campaña
+  const [nuevoCampana, setNuevoCampana] = useState(''); 
   const [nuevoMotivo, setNuevoMotivo] = useState('Para Invertir');
   const [nuevoInteres, setNuevoInteres] = useState('Suite');
   const [nuevoIngresadoPor, setNuevoIngresadoPor] = useState('Saúl Intriago / Debbi Mera'); 
@@ -109,8 +109,10 @@ export default function CRMPage() {
     "Hola {nombre}, le escribo de Arienzo Boutique Living. Hoy lanzamos un beneficio especial para elegir las mejores unidades. ¿Le gustaría que le envíe el inventario actualizado?"
   );
 
+  // NUEVO ESTADO: Botón de Pase VIP
+  const [activandoVIP, setActivandoVIP] = useState(false);
+
   const estados = ['Interesado', 'Contactado', 'Cotizado', 'En Negociación', 'Reserva', 'Cierre (Ganado)', 'Descartado'];
-  // ACTUALIZADO: Orígenes incluye Landing Page
   const origenes = ['Página Web / Landing Page', 'Referido / Directo', 'Llamada Telefónica', 'WhatsApp Orgánico', 'Instagram / Facebook', 'Meta Ads', 'Feria / Evento', 'Otro'];
   const motivos = ['Por definir', 'Para Vivir', 'Para Invertir', 'Segunda Residencia'];
   const intereses = ['Por definir', 'Suite', '2 Dormitorios', '3 Dormitorios', 'Local Comercial', 'Penthouse'];
@@ -136,6 +138,38 @@ export default function CRMPage() {
       setNuevaNotaTexto('');
     }
   }, [clienteSeleccionado]);
+
+  // === NUEVA FUNCIÓN: OTORGAR ACCESO VIP ===
+  const otorgarAccesoVIP = async (emailCliente?: string) => {
+    if (!emailCliente) {
+      alert("El cliente no tiene un correo electrónico registrado. Actualiza sus datos primero.");
+      return;
+    }
+    setActivandoVIP(true);
+    try {
+      // 3 días de vigencia
+      const fechaExpiracion = new Date();
+      fechaExpiracion.setDate(fechaExpiracion.getDate() + 3); 
+
+      const { error } = await supabase
+        .from('accesos_inventario')
+        .upsert({ 
+          email: emailCliente.toLowerCase().trim(), 
+          expira_en: fechaExpiracion.toISOString() 
+        });
+
+      if (error) throw error;
+      
+      // Abrir WhatsApp con un mensaje predeterminado y el enlace
+      const enlace = "https://sistema.konkeri.com/reserva";
+      alert(`¡Acceso VIP otorgado por 72 horas!\n\nEl correo autorizado es: ${emailCliente}`);
+      
+    } catch (error: any) {
+      alert(`Error al generar el pase: ${error.message}`);
+    } finally {
+      setActivandoVIP(false);
+    }
+  };
 
   const cargarClientes = async () => {
     try {
@@ -314,7 +348,6 @@ export default function CRMPage() {
     return Array.from(setTipos).sort();
   }, [clientes]);
 
-  // NUEVO: Extraer campañas dinámicas para el autocompletado inteligente
   const campanasDisponibles = useMemo(() => {
     const setCampanas = new Set<string>();
     clientes.forEach(c => { if (c.campana) setCampanas.add(c.campana.trim()); });
@@ -368,7 +401,7 @@ export default function CRMPage() {
         nombres: nuevoNombre.trim(), apellidos: nuevoApellido.trim(), telefono: nuevoTelefono.trim(),
         email: nuevoEmail ? nuevoEmail.trim().toLowerCase() : null, ciudad_residencia: nuevaCiudad.trim() || null, 
         motivo_compra: nuevoMotivo, tipologia_interes: nuevoInteres, origen_captacion: nuevoOrigen,
-        campana: nuevoCampana.trim() || null, // Se guarda la campaña
+        campana: nuevoCampana.trim() || null,
         notas: notaInicial, estado: 'Interesado', tipo: 'prospecto', temperatura: '❄️ Frío'
       };
       if (nuevoIngresadoPor.trim()) payload.ingresado_por = nuevoIngresadoPor.trim();
@@ -850,7 +883,6 @@ export default function CRMPage() {
                 {clienteSeleccionado.ciudad_residencia && (
                   <span className="bg-neutral-100 text-neutral-700 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">📍 {clienteSeleccionado.ciudad_residencia}</span>
                 )}
-                {/* MOSTRAR ETIQUETA DE CAMPAÑA SI EXISTE */}
                 {clienteSeleccionado.campana && (
                   <span className="bg-purple-50 border border-purple-200 text-purple-700 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">📢 {clienteSeleccionado.campana}</span>
                 )}
@@ -888,7 +920,6 @@ export default function CRMPage() {
                     <option value="❄️ Frío">❄️ Frío</option>
                   </select>
                 </div>
-                {/* CAMPO DE EDICIÓN RÁPIDA DE CAMPAÑA EN EL PANEL */}
                 <div className="col-span-2">
                   <label className="block text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Campaña Asociada</label>
                   <input 
@@ -906,7 +937,25 @@ export default function CRMPage() {
                 </div>
               </div>
 
-              <div className="bg-blue-50/50 border border-blue-100 p-4 rounded-xl space-y-3">
+              {/* === NUEVO BLOQUE: PASE VIP === */}
+              <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl mt-4 space-y-2 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-500"></div>
+                <h3 className="text-[11px] font-bold text-amber-900 flex items-center gap-1.5 uppercase tracking-wider">
+                  🔑 Pase VIP: Inventario
+                </h3>
+                <p className="text-[9px] text-amber-700 leading-tight">Autoriza el email de este cliente para ver precios y disponibilidad web por 72 horas.</p>
+                <div className="pt-1">
+                  <button 
+                    onClick={() => otorgarAccesoVIP(clienteSeleccionado.email)}
+                    disabled={activandoVIP || !clienteSeleccionado.email}
+                    className={`w-full py-2.5 text-white rounded-lg text-[10px] font-bold transition shadow-sm uppercase tracking-wider ${!clienteSeleccionado.email ? 'bg-neutral-400 cursor-not-allowed' : 'bg-amber-600 hover:bg-amber-700'}`}
+                  >
+                    {activandoVIP ? 'Generando...' : !clienteSeleccionado.email ? '❌ Requiere Email en Perfil' : 'Generar Pase de 3 Días'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-blue-50/50 border border-blue-100 p-4 rounded-xl space-y-3 mt-4">
                 <h3 className="text-[11px] font-bold text-blue-800 flex items-center gap-1.5 uppercase tracking-wider mb-2">
                   📅 Agendar Siguiente Paso
                 </h3>
@@ -1000,7 +1049,6 @@ export default function CRMPage() {
                     {origenes.map(o => <option key={o} value={o}>{o}</option>)}
                   </select>
                 </div>
-                {/* CAMPO NUEVO DE CAMPAÑA CON AUTOCOMPLETADO */}
                 <div>
                   <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Campaña (Opcional)</label>
                   <input 
@@ -1090,7 +1138,6 @@ export default function CRMPage() {
         </div>
       )}
 
-      {/* COMPONENTE INVISIBLE: DATALIST PARA AUTOCOMPLETAR CAMPAÑAS */}
       <datalist id="lista-campanas">
         {campanasDisponibles.map(c => <option key={c} value={c} />)}
       </datalist>
