@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Reserva Express (Imágenes Optimizadas y Visor de Galería Elegante)
+// Actualizacion para Vercel - Reserva Express (Enfoque en Disponibilidad y Bloqueo de Distracciones)
 'use client';
 
 import { useState } from 'react';
@@ -21,13 +21,13 @@ const INVENTARIO = [
   { id: '402', piso: 4, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 163257, area: 86.60, estado: 'DISPONIBLE' },
   { id: '401', piso: 4, tipo: '3 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 299079, area: 158.54, estado: 'RESERVADO' },
   // PISO 3
-  { id: '301', piso: 3, tipo: '1 Dormitorio', vista: 'Urbanización (Posterior)', precio: 131529, area: 70.25, estado: 'DISPONIBLE' },
+  { id: '301', piso: 3, tipo: '1 Dormitorio', vista: 'Urbanización', precio: 131529, area: 70.25, estado: 'DISPONIBLE' },
   { id: '305', piso: 3, tipo: '1 Dormitorio', vista: 'Wyndham Poseidón / Mar', precio: 152779, area: 78.87, estado: 'DISPONIBLE' },
   { id: '304', piso: 3, tipo: '3 Dorms (Esquinero)', vista: 'Panorámica a La Quadra / Umiña / Mar', precio: 284732, area: 152.68, estado: 'DISPONIBLE' },
   { id: '303', piso: 3, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 161128, area: 86.76, estado: 'DISPONIBLE' },
   { id: '302', piso: 3, tipo: '2 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 221487, area: 121.61, estado: 'DISPONIBLE' },
   // PISO 2
-  { id: '201', piso: 2, tipo: '1 Dormitorio', vista: 'Urbanización (Posterior)', precio: 130981, area: 70.25, estado: 'DISPONIBLE' },
+  { id: '201', piso: 2, tipo: '1 Dormitorio', vista: 'Urbanización', precio: 130981, area: 70.25, estado: 'DISPONIBLE' },
   { id: '205', piso: 2, tipo: '1 Dormitorio', vista: 'Wyndham Poseidón / Mar', precio: 151259, area: 78.87, estado: 'DISPONIBLE' },
   { id: '204', piso: 2, tipo: '3 Dorms (Esquinero)', vista: 'Panorámica a La Quadra / Umiña / Mar', precio: 281458, area: 152.72, estado: 'DISPONIBLE' },
   { id: '203', piso: 2, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 159095, area: 86.66, estado: 'RESERVADO' },
@@ -44,7 +44,7 @@ const LAYOUT_FACHADA: Record<number, (string | null)[]> = {
   2: ['201', '205', '204', '203', '202'],
 };
 
-// GALERÍA DE VISTAS (Enlaces optimizados de Supabase)
+// GALERÍA DE VISTAS (Enlaces de Supabase optimizados)
 const FOTOS_VISTAS: Record<string, { titulo: string, url: string }> = {
   'urb': {
     titulo: 'Vista a la Urbanización',
@@ -141,18 +141,14 @@ export default function ReservaExpressPage() {
                   ← Volver a opciones
                 </button>
                 <h2 className="text-xl md:text-2xl font-light text-neutral-800 uppercase tracking-wide">Unidades de {filtroTipo?.replace('s (Esquinero)', 's')}</h2>
-                <p className="text-[10px] md:text-xs text-neutral-500 mt-1">Navega por la fachada. Toca una unidad para ver su precio.</p>
+                <p className="text-[10px] md:text-xs text-neutral-500 mt-1">Navega por la fachada. Toca una unidad para ver su detalle.</p>
               </div>
 
-              {/* LEYENDA */}
+              {/* LEYENDA SIMPLIFICADA (Solo muestra Disponible) */}
               <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-xl border border-neutral-200 shadow-sm w-full md:w-auto justify-center">
                 <div className="flex items-center gap-1.5">
                   <span className="w-3 h-3 md:w-4 md:h-4 bg-white border-[1.5px] border-[#B94A36] rounded inline-block shadow-sm"></span>
-                  <span className="text-[9px] md:text-[10px] font-bold text-neutral-700 uppercase tracking-wider">Disponible</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 md:w-4 md:h-4 bg-neutral-100 border border-neutral-200 rounded inline-block"></span>
-                  <span className="text-[9px] md:text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Vendido</span>
+                  <span className="text-[9px] md:text-[10px] font-bold text-neutral-700 uppercase tracking-wider">Unidad Disponible</span>
                 </div>
               </div>
             </div>
@@ -173,7 +169,7 @@ export default function ReservaExpressPage() {
                   </div>
                 </div>
 
-                {/* FILA DE VISTAS (BOTONES SUTILES SIN ÍCONO) */}
+                {/* FILA DE VISTAS */}
                 <div className="flex items-stretch gap-1 md:gap-2 mb-2 w-full">
                   <div className="w-12 md:w-20 flex flex-col justify-center pr-2 md:pr-4">
                     <span className="text-[7px] md:text-[9px] font-bold text-neutral-400 uppercase tracking-widest text-right leading-tight">
@@ -225,17 +221,16 @@ export default function ReservaExpressPage() {
                         const noCoincide = tipoBase !== filtroTipo;
                         const reservado = unidad.estado === 'RESERVADO';
                         
+                        // LÓGICA STRICTA DE DEBBI: Si está reservado o no coincide, es inaccesible y mudo.
+                        const desactivado = noCoincide || reservado;
+                        
                         let botonEstilo = "";
                         let textoIdEstilo = "";
                         let textoTipoEstilo = "";
 
-                        if (reservado) {
-                          botonEstilo = "bg-neutral-100 border border-neutral-200 cursor-not-allowed";
-                          textoIdEstilo = "text-neutral-400 line-through";
-                          textoTipoEstilo = "text-neutral-400";
-                        } else if (noCoincide) {
-                          botonEstilo = "bg-neutral-50 border border-neutral-100 cursor-pointer hover:bg-neutral-100";
-                          textoIdEstilo = "text-neutral-600";
+                        if (desactivado) {
+                          botonEstilo = "bg-neutral-50/50 border border-neutral-100 cursor-not-allowed opacity-60";
+                          textoIdEstilo = "text-neutral-400";
                           textoTipoEstilo = "text-neutral-400";
                         } else {
                           botonEstilo = "bg-white border-[1.5px] border-[#B94A36] shadow-sm cursor-pointer transform hover:-translate-y-1 hover:shadow-md hover:bg-orange-50/20";
@@ -246,21 +241,16 @@ export default function ReservaExpressPage() {
                         return (
                           <button
                             key={unidad.id}
-                            disabled={reservado}
-                            onClick={() => { if(!reservado) setUnidadSeleccionada(unidad) }}
+                            disabled={desactivado}
+                            onClick={() => { if(!desactivado) setUnidadSeleccionada(unidad) }}
                             className={`flex flex-col items-center justify-center p-1 md:p-2 rounded-lg transition-all duration-300 min-h-[45px] md:min-h-[70px] ${botonEstilo}`}
                           >
                             <span className={`text-[12px] md:text-lg font-light leading-none ${textoIdEstilo}`}>
                               {unidad.id}
                             </span>
-                            
-                            {reservado ? (
-                              <span className="mt-1 text-[5px] md:text-[7px] font-bold text-neutral-400 uppercase tracking-widest">Vendido</span>
-                            ) : (
-                              <span className={`mt-0.5 md:mt-1 text-[5px] md:text-[8px] text-center leading-tight ${textoTipoEstilo}`}>
-                                {unidad.tipo}
-                              </span>
-                            )}
+                            <span className={`mt-0.5 md:mt-1 text-[5px] md:text-[8px] text-center leading-tight ${textoTipoEstilo}`}>
+                              {unidad.tipo}
+                            </span>
                           </button>
                         );
                       })}
@@ -288,7 +278,7 @@ export default function ReservaExpressPage() {
           </div>
         )}
 
-        {/* MODAL DEL VISOR DE VISTAS (DISEÑO TARJETA / GALERÍA ELEGANTE) */}
+        {/* MODAL DEL VISOR DE VISTAS (TARJETA) */}
         {vistaActiva && (
           <div className="fixed inset-0 bg-neutral-900/60 z-[60] flex flex-col items-center justify-center p-4 sm:p-6 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setVistaActiva(null)}>
             <div className="relative w-full max-w-3xl bg-white p-2 md:p-4 rounded-2xl shadow-2xl flex flex-col items-center animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
