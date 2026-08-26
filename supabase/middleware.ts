@@ -31,12 +31,13 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // EXCEPCIÓN AÑADIDA: Si no hay usuario, mándalo al login EXCEPTO si va a /login, /auth o /reserva
+  // EXCEPCIÓN AÑADIDA: Permitimos /login, /auth, /reserva y /api (para los correos)
   if (
     !user &&
     !request.nextUrl.pathname.startsWith('/login') &&
     !request.nextUrl.pathname.startsWith('/auth') &&
-    !request.nextUrl.pathname.startsWith('/reserva') // <-- ¡Esta es la llave mágica!
+    !request.nextUrl.pathname.startsWith('/reserva') &&
+    !request.nextUrl.pathname.startsWith('/api') // <-- ¡El pase VIP para el cartero!
   ) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
