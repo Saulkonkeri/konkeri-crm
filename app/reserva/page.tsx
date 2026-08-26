@@ -1,37 +1,37 @@
-// Actualizacion para Vercel - Reserva Express (5 Columnas, Esquineros y Vistas Claras)
+// Actualizacion para Vercel - Reserva Express (Sin Emojis, Contraste Mejorado y Adaptable a Móvil)
 'use client';
 
 import { useState } from 'react';
 
-// INVENTARIO REAL - AGOSTO 2026 (Incluyendo 201 y 301)
+// INVENTARIO REAL - AGOSTO 2026
 const INVENTARIO = [
   // PISO 6
-  { id: '604', piso: 6, tipo: '2 Dormitorios', vista: 'Wyndham Poseidón / Mar', precio: 205865, area: 106.65, estado: 'RESERVADO', etiqueta: '🌊 Wyndham' },
-  { id: '603', piso: 6, tipo: '3 Dormitorios', vista: 'Esquinero (La Quadra / Umiña / Mar)', precio: 293967, area: 152.72, estado: 'DISPONIBLE', etiqueta: '💎 Esquinero' },
-  { id: '602', piso: 6, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 169369, area: 86.60, estado: 'DISPONIBLE', etiqueta: '🏙️ Umiña / Mar' },
-  { id: '601', piso: 6, tipo: '3 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 308760, area: 158.54, estado: 'RESERVADO', etiqueta: '🏙️ Umiña / Mar' },
+  { id: '604', piso: 6, tipo: '2 Dormitorios', vista: 'Wyndham Poseidón / Mar', precio: 205865, area: 106.65, estado: 'RESERVADO' },
+  { id: '603', piso: 6, tipo: '3 Dormitorios', vista: 'Esquinero (La Quadra / Umiña / Mar)', precio: 293967, area: 152.72, estado: 'DISPONIBLE' },
+  { id: '602', piso: 6, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 169369, area: 86.60, estado: 'DISPONIBLE' },
+  { id: '601', piso: 6, tipo: '3 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 308760, area: 158.54, estado: 'RESERVADO' },
   // PISO 5
-  { id: '504', piso: 5, tipo: '2 Dormitorios', vista: 'Wyndham Poseidón / Mar', precio: 201794, area: 106.65, estado: 'RESERVADO', etiqueta: '🌊 Wyndham' },
-  { id: '503', piso: 5, tipo: '3 Dormitorios', vista: 'Esquinero (La Quadra / Umiña / Mar)', precio: 290840, area: 152.72, estado: 'DISPONIBLE', etiqueta: '💎 Esquinero' },
-  { id: '502', piso: 5, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 165702, area: 86.60, estado: 'DISPONIBLE', etiqueta: '🏙️ Umiña / Mar' },
-  { id: '501', piso: 5, tipo: '3 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 303228, area: 158.54, estado: 'DISPONIBLE', etiqueta: '🏙️ Umiña / Mar' },
+  { id: '504', piso: 5, tipo: '2 Dormitorios', vista: 'Wyndham Poseidón / Mar', precio: 201794, area: 106.65, estado: 'RESERVADO' },
+  { id: '503', piso: 5, tipo: '3 Dormitorios', vista: 'Esquinero (La Quadra / Umiña / Mar)', precio: 290840, area: 152.72, estado: 'DISPONIBLE' },
+  { id: '502', piso: 5, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 165702, area: 86.60, estado: 'DISPONIBLE' },
+  { id: '501', piso: 5, tipo: '3 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 303228, area: 158.54, estado: 'DISPONIBLE' },
   // PISO 4
-  { id: '404', piso: 4, tipo: '2 Dormitorios', vista: 'Wyndham Poseidón / Mar', precio: 199677, area: 106.65, estado: 'DISPONIBLE', etiqueta: '🌊 Wyndham' },
-  { id: '403', piso: 4, tipo: '3 Dormitorios', vista: 'Esquinero (La Quadra / Umiña / Mar)', precio: 287042, area: 152.72, estado: 'DISPONIBLE', etiqueta: '💎 Esquinero' },
-  { id: '402', piso: 4, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 163257, area: 86.60, estado: 'DISPONIBLE', etiqueta: '🏙️ Umiña / Mar' },
-  { id: '401', piso: 4, tipo: '3 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 299079, area: 158.54, estado: 'RESERVADO', etiqueta: '🏙️ Umiña / Mar' },
+  { id: '404', piso: 4, tipo: '2 Dormitorios', vista: 'Wyndham Poseidón / Mar', precio: 199677, area: 106.65, estado: 'DISPONIBLE' },
+  { id: '403', piso: 4, tipo: '3 Dormitorios', vista: 'Esquinero (La Quadra / Umiña / Mar)', precio: 287042, area: 152.72, estado: 'DISPONIBLE' },
+  { id: '402', piso: 4, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 163257, area: 86.60, estado: 'DISPONIBLE' },
+  { id: '401', piso: 4, tipo: '3 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 299079, area: 158.54, estado: 'RESERVADO' },
   // PISO 3
-  { id: '301', piso: 3, tipo: '1 Dormitorio', vista: 'Urbanización (Posterior)', precio: 131529, area: 70.25, estado: 'DISPONIBLE', etiqueta: '🏡 Urbanización' },
-  { id: '305', piso: 3, tipo: '1 Dormitorio', vista: 'Wyndham Poseidón / Mar', precio: 152779, area: 78.87, estado: 'DISPONIBLE', etiqueta: '🌊 Wyndham' },
-  { id: '304', piso: 3, tipo: '3 Dormitorios', vista: 'Esquinero (La Quadra / Umiña / Mar)', precio: 284732, area: 152.68, estado: 'DISPONIBLE', etiqueta: '💎 Esquinero' },
-  { id: '303', piso: 3, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 161128, area: 86.76, estado: 'DISPONIBLE', etiqueta: '🏙️ Umiña / Mar' },
-  { id: '302', piso: 3, tipo: '2 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 221487, area: 121.61, estado: 'DISPONIBLE', etiqueta: '🏙️ Umiña / Mar' },
+  { id: '301', piso: 3, tipo: '1 Dormitorio', vista: 'Urbanización (Posterior)', precio: 131529, area: 70.25, estado: 'DISPONIBLE' },
+  { id: '305', piso: 3, tipo: '1 Dormitorio', vista: 'Wyndham Poseidón / Mar', precio: 152779, area: 78.87, estado: 'DISPONIBLE' },
+  { id: '304', piso: 3, tipo: '3 Dormitorios', vista: 'Esquinero (La Quadra / Umiña / Mar)', precio: 284732, area: 152.68, estado: 'DISPONIBLE' },
+  { id: '303', piso: 3, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 161128, area: 86.76, estado: 'DISPONIBLE' },
+  { id: '302', piso: 3, tipo: '2 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 221487, area: 121.61, estado: 'DISPONIBLE' },
   // PISO 2
-  { id: '201', piso: 2, tipo: '1 Dormitorio', vista: 'Urbanización (Posterior)', precio: 130981, area: 70.25, estado: 'DISPONIBLE', etiqueta: '🏡 Urbanización' },
-  { id: '205', piso: 2, tipo: '1 Dormitorio', vista: 'Wyndham Poseidón / Mar', precio: 151259, area: 78.87, estado: 'DISPONIBLE', etiqueta: '🌊 Wyndham' },
-  { id: '204', piso: 2, tipo: '3 Dormitorios', vista: 'Esquinero (La Quadra / Umiña / Mar)', precio: 281458, area: 152.72, estado: 'DISPONIBLE', etiqueta: '💎 Esquinero' },
-  { id: '203', piso: 2, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 159095, area: 86.66, estado: 'RESERVADO', etiqueta: '🏙️ Umiña / Mar' },
-  { id: '202', piso: 2, tipo: '2 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 218918, area: 121.61, estado: 'DISPONIBLE', etiqueta: '🏙️ Umiña / Mar' },
+  { id: '201', piso: 2, tipo: '1 Dormitorio', vista: 'Urbanización (Posterior)', precio: 130981, area: 70.25, estado: 'DISPONIBLE' },
+  { id: '205', piso: 2, tipo: '1 Dormitorio', vista: 'Wyndham Poseidón / Mar', precio: 151259, area: 78.87, estado: 'DISPONIBLE' },
+  { id: '204', piso: 2, tipo: '3 Dormitorios', vista: 'Esquinero (La Quadra / Umiña / Mar)', precio: 281458, area: 152.72, estado: 'DISPONIBLE' },
+  { id: '203', piso: 2, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 159095, area: 86.66, estado: 'RESERVADO' },
+  { id: '202', piso: 2, tipo: '2 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 218918, area: 121.61, estado: 'DISPONIBLE' },
 ];
 
 const PISOS_EDIFICIO = [6, 5, 4, 3, 2];
@@ -83,143 +83,159 @@ export default function ReservaExpressPage() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 mt-6">
+      <main className="max-w-6xl mx-auto px-2 md:px-4 mt-6">
         
         {/* PASO 1: EL FILTRO INICIAL */}
         {paso === 'filtro' && (
           <div className="max-w-lg mx-auto text-center space-y-8 animate-in zoom-in-95 duration-500 mt-10 md:mt-20">
             <div>
               <h2 className="text-3xl font-light text-neutral-900 mb-2">Bienvenido a tu próximo hogar.</h2>
-              <p className="text-sm text-neutral-500">Para comenzar a explorar el edificio, cuéntanos qué espacio se adapta mejor a tu estilo de vida.</p>
+              <p className="text-sm text-neutral-500">Para comenzar a explorar el edificio, indícanos qué espacio se adapta mejor a tu estilo de vida.</p>
             </div>
             
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 px-4">
               <button onClick={() => seleccionarFiltro('1 Dormitorio')} className="w-full bg-white border border-[#EAE3DC] p-6 rounded-2xl shadow-sm hover:border-[#B94A36] hover:shadow-md transition-all group relative overflow-hidden text-left">
                 <div className="absolute top-0 left-0 w-1 h-full bg-[#B94A36] transform -translate-x-full group-hover:translate-x-0 transition-transform"></div>
-                <h3 className="text-xl font-bold text-neutral-800">🏢 Suite (1 Dormitorio)</h3>
-                <p className="text-xs text-neutral-400 mt-1 pl-7">Ideal para solteros, ejecutivos o inversión dinámica.</p>
+                <h3 className="text-xl font-bold text-neutral-800 uppercase tracking-wide">Suite / 1 Dormitorio</h3>
+                <p className="text-xs text-neutral-400 mt-1">Ideal para ejecutivos o inversión dinámica.</p>
               </button>
 
               <button onClick={() => seleccionarFiltro('2 Dormitorios')} className="w-full bg-white border border-[#EAE3DC] p-6 rounded-2xl shadow-sm hover:border-[#B94A36] hover:shadow-md transition-all group relative overflow-hidden text-left">
                 <div className="absolute top-0 left-0 w-1 h-full bg-[#B94A36] transform -translate-x-full group-hover:translate-x-0 transition-transform"></div>
-                <h3 className="text-xl font-bold text-neutral-800">🛏️ 2 Dormitorios</h3>
-                <p className="text-xs text-neutral-400 mt-1 pl-7">Equilibrio perfecto de espacio y confort.</p>
+                <h3 className="text-xl font-bold text-neutral-800 uppercase tracking-wide">2 Dormitorios</h3>
+                <p className="text-xs text-neutral-400 mt-1">Equilibrio perfecto de espacio y confort.</p>
               </button>
 
               <button onClick={() => seleccionarFiltro('3 Dormitorios')} className="w-full bg-white border border-[#EAE3DC] p-6 rounded-2xl shadow-sm hover:border-[#B94A36] hover:shadow-md transition-all group relative overflow-hidden text-left">
                 <div className="absolute top-0 left-0 w-1 h-full bg-[#B94A36] transform -translate-x-full group-hover:translate-x-0 transition-transform"></div>
-                <h3 className="text-xl font-bold text-neutral-800">👑 3 Dormitorios</h3>
-                <p className="text-xs text-neutral-400 mt-1 pl-7">Amplitud máxima para familias y comodidad total. (Esquineros disponibles)</p>
+                <h3 className="text-xl font-bold text-neutral-800 uppercase tracking-wide">3 Dormitorios</h3>
+                <p className="text-xs text-neutral-400 mt-1">Amplitud máxima para familias y comodidad total.</p>
               </button>
             </div>
           </div>
         )}
 
-        {/* PASO 2: EL MAPA INTERACTIVO (FACHADA ESTRUCTURADA 5 COLUMNAS) */}
+        {/* PASO 2: EL MAPA INTERACTIVO (FACHADA ESTRUCTURADA) */}
         {paso === 'mapa' && (
-          <div className="space-y-6 animate-in slide-in-from-bottom-8 duration-500">
+          <div className="space-y-4 md:space-y-6 animate-in slide-in-from-bottom-8 duration-500 w-full">
             
-            <div className="flex justify-between items-end">
+            <div className="flex justify-between items-end px-2">
               <div>
-                <button onClick={() => setPaso('filtro')} className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-2 hover:text-[#B94A36]">← Cambiar búsqueda</button>
-                <h2 className="text-2xl font-light text-neutral-800">Unidades de {filtroTipo}</h2>
-                <p className="text-xs text-neutral-500 mt-1">Navega por la fachada. Las opciones iluminadas coinciden con tu búsqueda.</p>
+                <button onClick={() => setPaso('filtro')} className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-2 hover:text-[#B94A36]">Volver a opciones</button>
+                <h2 className="text-xl md:text-2xl font-light text-neutral-800 uppercase tracking-wide">Unidades de {filtroTipo}</h2>
+                <p className="text-[10px] md:text-xs text-neutral-500 mt-1">Navega por la fachada. Las opciones destacadas coinciden con tu búsqueda.</p>
               </div>
             </div>
 
-            <div className="bg-white p-4 md:p-6 rounded-3xl border border-[#EAE3DC] shadow-sm relative overflow-hidden">
-              
-              {/* CONTENEDOR CON SCROLL PARA MÓVILES */}
-              <div className="overflow-x-auto custom-scrollbar pb-6">
-                <div className="min-w-[800px] lg:min-w-full">
+            <div className="bg-white p-2 md:p-6 rounded-2xl md:rounded-3xl border border-[#EAE3DC] shadow-sm relative overflow-hidden">
+              <div className="w-full">
+                
+                {/* CABECERA SUTIL DE VISTAS (Barritas Superiores) */}
+                <div className="flex items-end gap-1 md:gap-2 mb-2">
+                  <div className="w-6 md:w-14"></div> {/* Espaciador alineado con pisos */}
+                  <div className="flex-1 grid gap-1 md:gap-2 grid-cols-[1fr_1fr_1.5fr_1fr_1.5fr]">
+                    <div className="border-t-[3px] border-neutral-300 pt-1 text-center">
+                      <span className="text-[5px] md:text-[9px] font-bold text-neutral-400 uppercase tracking-widest block leading-tight">Urb. Manta</span>
+                    </div>
+                    <div className="border-t-[3px] border-sky-600/60 pt-1 text-center">
+                      <span className="text-[5px] md:text-[9px] font-bold text-sky-700 uppercase tracking-widest block leading-tight">Wyndham / Mar</span>
+                    </div>
+                    <div className="border-t-[3px] border-amber-500/60 pt-1 text-center">
+                      <span className="text-[5px] md:text-[9px] font-bold text-amber-600 uppercase tracking-widest block leading-tight">Esquinero</span>
+                    </div>
+                    <div className="border-t-[3px] border-teal-500/60 pt-1 text-center col-span-2">
+                      <span className="text-[5px] md:text-[9px] font-bold text-teal-600 uppercase tracking-widest block leading-tight">La Quadra / Umiña / Mar</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col">
                   
-                  {/* Encabezado Orientativo */}
-                  <div className="flex text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-4 pl-12 md:pl-16">
-                    <div className="flex-1 text-left">← Atrás (Urbanización)</div>
-                    <div className="flex-1 text-center">🌊 Wyndham / Poseidón</div>
-                    <div className="flex-[2.5] text-right">La Quadra / Umiña / Mar →</div>
+                  {/* BLOQUE ROOFTOP */}
+                  <div className="flex items-center gap-1 md:gap-2 mb-1 md:mb-2">
+                    <div className="w-6 md:w-14 text-[7px] md:text-[10px] font-bold text-neutral-400 uppercase text-right leading-tight flex-shrink-0">Cima</div>
+                    <div className="flex-1 bg-neutral-50 border border-neutral-200 p-2 md:p-3 rounded-t-xl text-center flex flex-col justify-center">
+                      <span className="text-[8px] md:text-[11px] font-bold text-neutral-700 uppercase tracking-widest">Rooftop / Lounge / Piscina</span>
+                    </div>
                   </div>
 
-                  <div className="flex flex-col">
-                    
-                    {/* BLOQUE ROOFTOP */}
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-10 md:w-14 text-[9px] md:text-[10px] font-bold text-neutral-400 uppercase text-right leading-tight flex-shrink-0">Cima</div>
-                      <div className="flex-1 bg-amber-50/50 border border-amber-100 p-3 rounded-t-2xl text-center flex flex-col justify-center shadow-sm">
-                        <span className="text-[11px] font-bold text-amber-900 uppercase tracking-widest">Rooftop / Lounge / Piscina</span>
-                        <span className="text-[9px] text-amber-700 mt-0.5">Áreas de uso común y amenidades exclusivas</span>
+                  {/* FILAS DE PISOS */}
+                  {PISOS_EDIFICIO.map(piso => (
+                    <div key={piso} className="flex items-stretch gap-1 md:gap-2 mb-1 md:mb-2">
+                      {/* Indicador Izquierdo */}
+                      <div className="w-6 md:w-14 flex items-center justify-end text-[7px] md:text-[10px] font-bold text-neutral-400 uppercase flex-shrink-0">
+                        Piso {piso}
                       </div>
-                    </div>
+                      
+                      {/* Cuadrícula Proporcional de Departamentos (5 Columnas) */}
+                      <div className="flex-1 grid gap-1 md:gap-2 grid-cols-[1fr_1fr_1.5fr_1fr_1.5fr]">
+                        {LAYOUT_FACHADA[piso].map((idUnidad, colIndex) => {
+                          
+                          if (!idUnidad) {
+                            return <div key={`empty-${piso}-${colIndex}`} className="invisible"></div>;
+                          }
 
-                    {/* FILAS DE PISOS */}
-                    {PISOS_EDIFICIO.map(piso => (
-                      <div key={piso} className="flex items-stretch gap-2 mb-2">
-                        {/* Indicador Izquierdo */}
-                        <div className="w-10 md:w-14 flex items-center justify-end text-[9px] md:text-[10px] font-bold text-neutral-400 uppercase flex-shrink-0">
-                          Piso {piso}
-                        </div>
-                        
-                        {/* Cuadrícula Proporcional de Departamentos (5 Columnas) */}
-                        <div className="flex-1 grid gap-2 grid-cols-[1fr_1fr_1.5fr_1fr_1.5fr]">
-                          {LAYOUT_FACHADA[piso].map((idUnidad, colIndex) => {
-                            
-                            if (!idUnidad) {
-                              return <div key={`empty-${piso}-${colIndex}`} className="invisible"></div>;
-                            }
+                          const unidad = obtenerDatosUnidad(idUnidad);
+                          if (!unidad) return null;
 
-                            const unidad = obtenerDatosUnidad(idUnidad);
-                            if (!unidad) return null;
+                          const noCoincide = unidad.tipo !== filtroTipo;
+                          const reservado = unidad.estado === 'RESERVADO';
+                          
+                          // ESTILOS MEJORADOS
+                          // Si reservado: Fondo gris tramado, bloqueado.
+                          // Si no coincide: Fondo gris clarito, texto gris, sin opacidad exagerada.
+                          // Si coincide: Blanco puro, borde terracota, sombra.
+                          let botonEstilo = "";
+                          let textoIdEstilo = "";
+                          let textoTipoEstilo = "";
 
-                            const noCoincide = unidad.tipo !== filtroTipo;
-                            const reservado = unidad.estado === 'RESERVADO';
-                            const desactivado = noCoincide || reservado;
-                            
-                            return (
-                              <button
-                                key={unidad.id}
-                                disabled={desactivado}
-                                onClick={() => setUnidadSeleccionada(unidad)}
-                                className={`
-                                  relative flex flex-col items-center justify-center p-2 md:p-3 rounded-xl border-2 transition-all duration-300 min-h-[80px]
-                                  ${reservado ? 'bg-neutral-100/50 border-neutral-200/50 opacity-40 cursor-not-allowed' : 
-                                    noCoincide ? 'bg-white border-neutral-100 opacity-30 cursor-not-allowed hover:opacity-50' : 
-                                    'bg-white border-[#B94A36] shadow-md cursor-pointer transform hover:-translate-y-1 hover:shadow-lg hover:bg-orange-50/30'}
-                                `}
-                              >
-                                <span className={`text-base md:text-xl font-light ${reservado ? 'text-neutral-400 line-through' : noCoincide ? 'text-neutral-400' : 'text-[#B94A36] font-bold'}`}>
-                                  {unidad.id}
+                          if (reservado) {
+                            botonEstilo = "bg-neutral-100 border-dashed border-neutral-300 cursor-not-allowed";
+                            textoIdEstilo = "text-neutral-400 line-through";
+                            textoTipoEstilo = "text-neutral-400";
+                          } else if (noCoincide) {
+                            botonEstilo = "bg-neutral-50 border-neutral-200 cursor-pointer hover:bg-neutral-100";
+                            textoIdEstilo = "text-neutral-400";
+                            textoTipoEstilo = "text-neutral-400";
+                          } else {
+                            botonEstilo = "bg-white border-[#B94A36] shadow-sm cursor-pointer transform hover:-translate-y-1 hover:shadow-md hover:bg-orange-50/20";
+                            textoIdEstilo = "text-[#B94A36] font-bold";
+                            textoTipoEstilo = "text-neutral-700 font-medium";
+                          }
+
+                          return (
+                            <button
+                              key={unidad.id}
+                              disabled={reservado}
+                              onClick={() => { if(!reservado) setUnidadSeleccionada(unidad) }}
+                              className={`relative flex flex-col items-center justify-center p-1 md:p-3 rounded-lg md:rounded-xl border-[1.5px] md:border-2 transition-all duration-300 min-h-[45px] md:min-h-[80px] ${botonEstilo}`}
+                            >
+                              <span className={`text-[11px] md:text-xl font-light ${textoIdEstilo}`}>
+                                {unidad.id}
+                              </span>
+                              
+                              {reservado ? (
+                                <span className="mt-0.5 md:mt-1 text-[5px] md:text-[8px] font-bold text-neutral-500 uppercase bg-neutral-200 px-1 md:px-1.5 py-0.5 rounded tracking-widest">Vendido</span>
+                              ) : (
+                                <span className={`mt-0 md:mt-1 text-[5px] md:text-[8px] text-center leading-tight ${textoTipoEstilo}`}>
+                                  {unidad.tipo}
                                 </span>
-                                
-                                {reservado ? (
-                                  <span className="mt-1 text-[8px] font-bold text-neutral-500 uppercase bg-neutral-200 px-1.5 py-0.5 rounded">Vendido</span>
-                                ) : (
-                                  <>
-                                    <span className={`mt-0.5 text-[8px] font-medium text-center ${noCoincide ? 'text-neutral-400' : 'text-neutral-600'}`}>
-                                      {unidad.tipo}
-                                    </span>
-                                    {/* ETIQUETA VISUAL DE LA VISTA */}
-                                    <span className={`mt-1 text-[7px] md:text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${noCoincide ? 'bg-neutral-100 text-neutral-400' : 'bg-[#B94A36]/10 text-[#B94A36]'}`}>
-                                      {unidad.etiqueta}
-                                    </span>
-                                  </>
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
-
-                    {/* BLOQUE PLANTA BAJA */}
-                    <div className="flex items-center gap-2 mt-2">
-                      <div className="w-10 md:w-14 text-[9px] md:text-[10px] font-bold text-neutral-400 uppercase text-right flex-shrink-0">PB</div>
-                      <div className="flex-1 bg-neutral-900 text-neutral-400 p-4 rounded-b-2xl text-center shadow-sm">
-                        <span className="text-[11px] font-bold text-white uppercase tracking-widest block">Planta Baja</span>
-                        <span className="text-[9px] mt-0.5 block">Ingreso Vehicular - Locales Comerciales - Lobby Design</span>
+                              )}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
+                  ))}
 
+                  {/* BLOQUE PLANTA BAJA */}
+                  <div className="flex items-center gap-1 md:gap-2 mt-1 md:mt-2">
+                    <div className="w-6 md:w-14 text-[7px] md:text-[10px] font-bold text-neutral-400 uppercase text-right flex-shrink-0">PB</div>
+                    <div className="flex-1 bg-neutral-900 text-neutral-400 p-2 md:p-4 rounded-b-xl text-center">
+                      <span className="text-[8px] md:text-[11px] font-bold text-white uppercase tracking-widest block">Planta Baja</span>
+                    </div>
                   </div>
+
                 </div>
               </div>
             </div>
@@ -250,7 +266,7 @@ export default function ReservaExpressPage() {
                 </div>
                 <div className="flex justify-between border-b border-neutral-200/60 pb-2">
                   <span className="text-neutral-500">Vista / Orientación</span>
-                  <span className="font-bold text-neutral-800 text-right">{unidadSeleccionada.vista}</span>
+                  <span className="font-bold text-neutral-800 text-right w-1/2 leading-tight">{unidadSeleccionada.vista}</span>
                 </div>
                 <div className="flex justify-between pt-1">
                   <span className="text-neutral-500 font-medium mt-1">Inversión Total</span>
@@ -272,7 +288,7 @@ export default function ReservaExpressPage() {
         {paso === 'formulario' && (
           <div className="max-w-md mx-auto bg-white p-6 md:p-8 rounded-2xl border border-[#EAE3DC] shadow-sm animate-in slide-in-from-right-8">
             <button onClick={() => setPaso('mapa')} className="text-xs font-bold text-neutral-400 uppercase hover:text-neutral-800 flex items-center gap-1 mb-6">
-              ← Volver al plano
+              Volver al plano
             </button>
             
             <h3 className="text-xl font-light text-neutral-900 mb-1">Registro de Inversionista</h3>
@@ -310,9 +326,6 @@ export default function ReservaExpressPage() {
         {/* 5. PANTALLA DE ÉXITO Y URGENCIA */}
         {paso === 'exito' && (
           <div className="max-w-md mx-auto bg-white p-8 rounded-2xl border-2 border-emerald-500 shadow-xl text-center animate-in zoom-in-95 duration-500 mb-10 mt-10">
-            <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">✅</span>
-            </div>
             <h2 className="text-2xl font-light text-neutral-900 mb-2">¡Unidad Asegurada!</h2>
             <p className="text-sm text-neutral-600 mb-6">Hola {formData.nombres}, la <strong>Unidad {unidadSeleccionada.id}</strong> ha sido bloqueada exitosamente a tu nombre en nuestro sistema.</p>
             
