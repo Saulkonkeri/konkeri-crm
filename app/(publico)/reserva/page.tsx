@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Reserva Express (Conectada a lectura de 'propiedades' - Bloqueo manual)
+// Actualizacion para Vercel - Reserva Express (Conectada a 'propiedades' - Búsqueda de columnas blindada)
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -47,16 +47,16 @@ export default function ReservaExpressPage() {
   const [cargandoReserva, setCargandoReserva] = useState(false);
 
   // === FUNCIÓN PARA DESCARGAR INVENTARIO DE LA TABLA 'propiedades' ===
-  // Solo lee para mostrar colores, pero no deja que el cliente grabe aquí
   const cargarInventarioEnTiempoReal = async () => {
     try {
       const { data, error } = await supabase.from('propiedades').select('*');
       if (error) throw error;
       if (data) {
+        console.log("✅ Datos descargados de Supabase:", data); // Para depurar en consola
         setInventario(data);
       }
     } catch (err) {
-      console.error("Error al cargar inventario:", err);
+      console.error("❌ Error al cargar inventario:", err);
     }
   };
 
@@ -123,7 +123,7 @@ export default function ReservaExpressPage() {
     setCargandoAcceso(false);
   };
 
-  // 2. PROCESAR RESERVA (SOLO NOTIFICACIONES, BLOQUEO EN DB ES MANUAL)
+  // 2. PROCESAR RESERVA (SOLO NOTIFICACIONES, BLOQUEO EN DB ES MANUAL DESDE CRM)
   const procesarReserva = async (e: React.FormEvent) => {
     e.preventDefault();
     setCargandoReserva(true);
@@ -159,23 +159,29 @@ export default function ReservaExpressPage() {
     setPaso('mapa');
   };
 
-  // === BUSCA EN EL ESTADO DE SUPABASE ('propiedades') ===
-  const obtenerDatosUnidad = (id: string | null) => {
-    if (!id) return null;
-    return inventario.find(u => String(u.id) === id) || null;
+  // === BUSCADOR BLINDADO ===
+  // Busca el número sin importar si la columna se llama 'id', 'numero', o 'unidad'
+  const obtenerDatosUnidad = (idBuscado: string | null) => {
+    if (!idBuscado) return null;
+    return inventario.find(u => 
+      String(u.id) === idBuscado || 
+      String(u.numero) === idBuscado || 
+      String(u.unidad) === idBuscado ||
+      String(u.departamento) === idBuscado
+    ) || null;
   };
 
   // CONTACTO DIRECTO POR WHATSAPP CON DEBBI
   const contactarAsesor = () => {
     const telefonoDebbi = "593979469472"; 
-    const mensaje = `Hola Debbi, estoy revisando el inventario VIP y me interesa cotizar la *Unidad ${unidadSeleccionada?.id}* (${unidadSeleccionada?.tipo}). ¿Podemos conversar?`;
+    const mensaje = `Hola Debbi, estoy revisando el inventario VIP y me interesa cotizar la *Unidad ${unidadSeleccionada?.id || unidadSeleccionada?.numero}* (${unidadSeleccionada?.tipo}). ¿Podemos conversar?`;
     window.open(`https://wa.me/${telefonoDebbi}?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
 
   // REPORTE WHATSAPP MANUAL DE RESPALDO AL FINAL
   const enviarNotificacionReservaWhatsApp = () => {
     const telefonoDebbi = "593979469472"; 
-    const mensaje = `🚨 *¡NUEVA RESERVA EN LÍNEA (Soft Block)!* 🚨\n\nEl cliente *${formData.nombres}* acaba de realizar una solicitud de bloqueo web:\n\n🏢 *Unidad:* ${unidadSeleccionada?.id} (${unidadSeleccionada?.tipo})\n💵 *Precio:* $${unidadSeleccionada?.precio.toLocaleString('en-US')}\n🆔 *Cédula:* ${formData.cedula}\n📱 *WhatsApp:* ${formData.telefono}\n📧 *Email:* ${formData.email}\n\n¡Comunícate con el cliente y valida el pago de $2,500 para bloquear oficialmente la unidad en el CRM!`;
+    const mensaje = `🚨 *¡NUEVA RESERVA EN LÍNEA (Soft Block)!* 🚨\n\nEl cliente *${formData.nombres}* acaba de realizar una solicitud de bloqueo web:\n\n🏢 *Unidad:* ${unidadSeleccionada?.id || unidadSeleccionada?.numero} (${unidadSeleccionada?.tipo})\n💵 *Precio:* $${unidadSeleccionada?.precio.toLocaleString('en-US')}\n🆔 *Cédula:* ${formData.cedula}\n📱 *WhatsApp:* ${formData.telefono}\n📧 *Email:* ${formData.email}\n\n¡Comunícate con el cliente y valida el pago de $2,500 para bloquear oficialmente la unidad en el CRM!`;
     window.open(`https://wa.me/${telefonoDebbi}?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
 
@@ -323,19 +329,25 @@ export default function ReservaExpressPage() {
                         if (!idUnidad) return <div key={`empty-${piso}-${colIndex}`} className="invisible"></div>;
                         const unidad = obtenerDatosUnidad(idUnidad);
                         
-                        // Si no encuentra la unidad en Supabase, muestra un cuadro gris vacío
+                        // Si no encuentra la unidad en Supabase, muestra el cuadro gris vacío
                         if (!unidad) return <div key={`notfound-${idUnidad}`} className="bg-neutral-100 rounded-lg border border-neutral-200 opacity-50 min-h-[45px] md:min-h-[70px]"></div>;
 
-                        const tipoBase = (unidad.tipo || '').includes('3 Dorms') ? '3 Dormitorios' : unidad.tipo;
+                        const tipoBase = (unidad.tipo || '').includes('3 Dorms') ? '3 Dormitorios' : (unidad.tipo || '');
                         const noCoincide = tipoBase !== filtroTipo;
                         
-                        // EVALUAMOS EL ESTADO QUE VIENE DE SUPABASE
-                        const reservado = unidad.estado === 'RESERVADO';
+                        // === LÓGICA BLINDADA PARA DETECTAR CUALQUIER TIPO DE RESERVA ===
+                        const estadoReal = String(unidad.estado || '').toUpperCase().trim();
+                        // Si la base de datos dice Reservado, Vendido, Bloqueado o Separado, lo ocultamos.
+                        const reservado = estadoReal === 'RESERVADO' || estadoReal === 'VENDIDO' || estadoReal === 'BLOQUEADO' || estadoReal === 'SEPARADO';
+                        
                         const desactivado = noCoincide || reservado;
                         
                         let botonEstilo = desactivado ? "bg-neutral-50 border border-neutral-200 cursor-not-allowed opacity-90" : "bg-white border-[1.5px] border-[#B94A36] shadow-sm cursor-pointer transform hover:-translate-y-1 hover:shadow-md hover:bg-orange-50/20";
                         
-                        if (['604', '504', '404'].includes(String(unidad.id))) {
+                        // Identificador que usaremos para mostrar el número (sea id, numero o unidad)
+                        const idVisual = unidad.id || unidad.numero || unidad.unidad || idUnidad;
+
+                        if (['604', '504', '404'].includes(String(idVisual))) {
                           botonEstilo += " col-span-2";
                         }
 
@@ -344,12 +356,12 @@ export default function ReservaExpressPage() {
 
                         return (
                           <button
-                            key={unidad.id}
+                            key={idVisual}
                             disabled={desactivado}
                             onClick={() => { if(!desactivado) setUnidadSeleccionada(unidad) }}
                             className={`flex flex-col items-center justify-center p-1 md:p-2 rounded-lg transition-all duration-300 min-h-[45px] md:min-h-[70px] ${botonEstilo}`}
                           >
-                            <span className={`text-[12px] md:text-lg font-light leading-none ${textoIdEstilo}`}>{unidad.id}</span>
+                            <span className={`text-[12px] md:text-lg font-light leading-none ${textoIdEstilo}`}>{idVisual}</span>
                             {!desactivado && <span className={`mt-0.5 md:mt-1 text-[5px] md:text-[8px] text-center leading-tight ${textoTipoEstilo}`}>{unidad.tipo}</span>}
                           </button>
                         );
@@ -395,7 +407,7 @@ export default function ReservaExpressPage() {
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <span className="text-[10px] font-bold tracking-widest text-[#B94A36] uppercase bg-[#B94A36]/10 px-2 py-1 rounded">Unidad Seleccionada</span>
-                  <h3 className="text-3xl font-light text-neutral-900 mt-2">Dpto. {unidadSeleccionada.id}</h3>
+                  <h3 className="text-3xl font-light text-neutral-900 mt-2">Dpto. {unidadSeleccionada.id || unidadSeleccionada.numero}</h3>
                 </div>
                 <button onClick={() => setUnidadSeleccionada(null)} className="bg-neutral-100 text-neutral-500 w-8 h-8 rounded-full flex items-center justify-center font-bold hover:bg-neutral-200">&times;</button>
               </div>
@@ -459,7 +471,7 @@ export default function ReservaExpressPage() {
           <div className="max-w-md mx-auto bg-white p-6 md:p-8 rounded-2xl border border-[#EAE3DC] shadow-sm animate-in slide-in-from-right-8 mt-10">
             <button onClick={() => setPaso('mapa')} className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-6 hover:text-[#B94A36] flex items-center gap-1">← Volver al plano</button>
             <h3 className="text-xl font-light text-neutral-900 mb-1">Registro de Inversionista</h3>
-            <p className="text-xs text-neutral-500 mb-6 border-b border-neutral-100 pb-4">Ingresa tus datos legales para asignar el bloqueo de la <strong>Unidad {unidadSeleccionada.id}</strong> a tu nombre.</p>
+            <p className="text-xs text-neutral-500 mb-6 border-b border-neutral-100 pb-4">Ingresa tus datos legales para asignar el bloqueo de la <strong>Unidad {unidadSeleccionada.id || unidadSeleccionada.numero}</strong> a tu nombre.</p>
 
             <form onSubmit={procesarReserva} className="space-y-4">
               <div>
@@ -494,7 +506,7 @@ export default function ReservaExpressPage() {
         {paso === 'exito' && (
           <div className="max-w-md mx-auto bg-white p-8 rounded-2xl border-2 border-emerald-500 shadow-xl text-center animate-in zoom-in-95 duration-500 mb-10 mt-10">
             <h2 className="text-2xl font-light text-neutral-900 mb-2">¡Solicitud Recibida!</h2>
-            <p className="text-sm text-neutral-600 mb-6">Hola {formData.nombres}, tu solicitud para la <strong>Unidad {unidadSeleccionada.id}</strong> ha sido enviada con éxito a nuestro equipo comercial.</p>
+            <p className="text-sm text-neutral-600 mb-6">Hola {formData.nombres}, tu solicitud para la <strong>Unidad {unidadSeleccionada.id || unidadSeleccionada.numero}</strong> ha sido enviada con éxito a nuestro equipo comercial.</p>
             
             <div className="mb-6">
               <button 
