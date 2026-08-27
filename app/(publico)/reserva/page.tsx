@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Reserva Express (Con Traductor de Columnas de Supabase y Fallback)
+// Actualizacion para Vercel - Reserva Express (Con Búsqueda Inteligente de Área y Precios)
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -87,15 +87,48 @@ export default function ReservaExpressPage() {
       
       if (data && data.length > 0) {
         // Mapeamos los nombres de columnas de tu Supabase al formato web
-        const inventarioTraducido = data.map(item => ({
-          ...item,
-          id: String(item.unidad || item.id), // Toma 'unidad' si existe, sino 'id'
-          tipo: traducirTipologia(item.tipologia || item.tipo), // Traduce 'Suite' a '1 Dormitorio'
-          estado: item.estado ? String(item.estado).toUpperCase().trim() : 'DISPONIBLE',
-          precio: item.precio || 0,
-          area: item.area || 0,
-          vista: item.vista || 'Por definir'
-        }));
+        const inventarioTraducido = data.map(item => {
+          const idUnidad = String(item.unidad || item.id);
+          const fallbackData = INVENTARIO_FALLBACK.find(f => f.id === idUnidad);
+
+          // Búsqueda inteligente del área
+          const areaEncontrada = 
+            item.area_total || 
+            item.area || 
+            item.area_util || 
+            item.m2 || 
+            item.area_m2 || 
+            item.metraje || 
+            item.superficie ||
+            fallbackData?.area || 
+            0;
+
+          // Búsqueda inteligente de la vista
+          const vistaEncontrada = 
+            item.vista || 
+            item.orientacion || 
+            fallbackData?.vista || 
+            'Por definir';
+
+          // Búsqueda inteligente del precio
+          const precioEncontrado = 
+            item.precio || 
+            item.precio_total || 
+            item.precio_lista || 
+            fallbackData?.precio || 
+            0;
+
+          return {
+            ...item,
+            id: idUnidad,
+            tipo: traducirTipologia(item.tipologia || item.tipo || fallbackData?.tipo || ''),
+            estado: item.estado ? String(item.estado).toUpperCase().trim() : 'DISPONIBLE',
+            precio: Number(precioEncontrado),
+            area: Number(areaEncontrada),
+            vista: vistaEncontrada
+          };
+        });
+        
         setInventario(inventarioTraducido);
       }
     } catch (err) {
