@@ -1,4 +1,4 @@
-// Actualizacion forzada para Vercel - CRM con Pases VIP para Inventario
+// Actualizacion forzada para Vercel - CRM con Pases VIP (Ajustado a 24 horas)
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -109,7 +109,7 @@ export default function CRMPage() {
     "Hola {nombre}, le escribo de Arienzo Boutique Living. Hoy lanzamos un beneficio especial para elegir las mejores unidades. ¿Le gustaría que le envíe el inventario actualizado?"
   );
 
-  // NUEVO ESTADO: Botón de Pase VIP
+  // ESTADO: Botón de Pase VIP
   const [activandoVIP, setActivandoVIP] = useState(false);
 
   const estados = ['Interesado', 'Contactado', 'Cotizado', 'En Negociación', 'Reserva', 'Cierre (Ganado)', 'Descartado'];
@@ -139,7 +139,7 @@ export default function CRMPage() {
     }
   }, [clienteSeleccionado]);
 
-  // === NUEVA FUNCIÓN: OTORGAR ACCESO VIP ===
+  // === FUNCIÓN AJUSTADA: OTORGAR ACCESO VIP POR 24 HORAS ===
   const otorgarAccesoVIP = async (emailCliente?: string) => {
     if (!emailCliente) {
       alert("El cliente no tiene un correo electrónico registrado. Actualiza sus datos primero.");
@@ -147,9 +147,9 @@ export default function CRMPage() {
     }
     setActivandoVIP(true);
     try {
-      // 3 días de vigencia
+      // AJUSTE: 24 horas de vigencia (se suma 1 día)
       const fechaExpiracion = new Date();
-      fechaExpiracion.setDate(fechaExpiracion.getDate() + 3); 
+      fechaExpiracion.setDate(fechaExpiracion.getDate() + 1); 
 
       const { error } = await supabase
         .from('accesos_inventario')
@@ -160,9 +160,7 @@ export default function CRMPage() {
 
       if (error) throw error;
       
-      // Abrir WhatsApp con un mensaje predeterminado y el enlace
-      const enlace = "https://sistema.konkeri.com/reserva";
-      alert(`¡Acceso VIP otorgado por 72 horas!\n\nEl correo autorizado es: ${emailCliente}`);
+      alert(`¡Acceso VIP otorgado por 24 horas!\n\nEl correo autorizado es: ${emailCliente}`);
       
     } catch (error: any) {
       alert(`Error al generar el pase: ${error.message}`);
@@ -937,20 +935,20 @@ export default function CRMPage() {
                 </div>
               </div>
 
-              {/* === NUEVO BLOQUE: PASE VIP === */}
+              {/* === BLOQUE ACTUALIZADO: PASE VIP 24 HORAS === */}
               <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl mt-4 space-y-2 relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-500"></div>
                 <h3 className="text-[11px] font-bold text-amber-900 flex items-center gap-1.5 uppercase tracking-wider">
                   🔑 Pase VIP: Inventario
                 </h3>
-                <p className="text-[9px] text-amber-700 leading-tight">Autoriza el email de este cliente para ver precios y disponibilidad web por 72 horas.</p>
+                <p className="text-[9px] text-amber-700 leading-tight">Autoriza el email de este cliente para ver precios y disponibilidad web por 24 horas.</p>
                 <div className="pt-1">
                   <button 
                     onClick={() => otorgarAccesoVIP(clienteSeleccionado.email)}
                     disabled={activandoVIP || !clienteSeleccionado.email}
                     className={`w-full py-2.5 text-white rounded-lg text-[10px] font-bold transition shadow-sm uppercase tracking-wider ${!clienteSeleccionado.email ? 'bg-neutral-400 cursor-not-allowed' : 'bg-amber-600 hover:bg-amber-700'}`}
                   >
-                    {activandoVIP ? 'Generando...' : !clienteSeleccionado.email ? '❌ Requiere Email en Perfil' : 'Generar Pase de 3 Días'}
+                    {activandoVIP ? 'Generando...' : !clienteSeleccionado.email ? '❌ Requiere Email en Perfil' : 'Generar Pase de 24 Horas'}
                   </button>
                 </div>
               </div>
