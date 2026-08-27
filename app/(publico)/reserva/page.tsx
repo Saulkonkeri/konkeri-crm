@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Reserva Express (Con Búsqueda Inteligente de Área y Precios)
+// Actualizacion para Vercel - Reserva Express (Con Visor Inteligente de Planos por Metraje)
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -40,6 +40,7 @@ const LAYOUT_FACHADA: Record<number, string[]> = {
   2: ['201', '205', '204', '203', '202'],
 };
 
+// GALERÍA DE VISTAS EXTERNAS (Supabase)
 const FOTOS_VISTAS: Record<string, { titulo: string, url: string }> = {
   'urb': { titulo: 'Vista a la Urbanización', url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/vistas%20arienzo/vista%20a%20la%20urbanizacion%20(1).jpg' },
   'wyndham': { titulo: 'Vista Lateral', url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/vistas%20arienzo/vista%20a%20mikonos.jpg' },
@@ -51,6 +52,19 @@ const obtenerKeyVista = (vistaText: string) => {
   if (vistaText.includes('Urbanización')) return 'urb';
   if (vistaText.includes('Wyndham')) return 'wyndham';
   return 'panoramica';
+};
+
+// === ASIGNACIÓN INTELIGENTE DE PLANOS POR METRAJE ===
+// Evalúa el área (m2) para devolver el plano exacto
+const obtenerUrlPlano = (area: number) => {
+  if (area < 75) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/Suite%2070,25m2.png'; // 70.25 m2
+  if (area >= 75 && area < 82) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/Suite%2078,87m2.png'; // 78.87 m2
+  if (area >= 82 && area < 100) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/Suite%2086,60m2.png'; // 86.60 m2
+  if (area >= 100 && area < 115) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/2%20dormitorios%20106,65.png'; // 106.65 m2
+  if (area >= 115 && area < 135) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/2%20dormitorios%20121,61m2.png'; // 121.61 m2
+  if (area >= 135 && area < 155) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/3%20dormitorios%20152,72m2.png'; // 152.72 m2
+  if (area >= 155) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/3%20dormitorios%20158,54m2.png'; // 158.54 m2
+  return null;
 };
 
 // TRADUCTOR DE TIPOLOGÍAS (Para conectar tu base de datos con la web)
@@ -74,7 +88,10 @@ export default function ReservaExpressPage() {
 
   const [filtroTipo, setFiltroTipo] = useState<string | null>(null);
   const [unidadSeleccionada, setUnidadSeleccionada] = useState<any>(null);
+  
+  // Modales
   const [vistaActiva, setVistaActiva] = useState<string | null>(null);
+  const [planoUrlActivo, setPlanoUrlActivo] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({ nombres: '', cedula: '', email: '', telefono: '' });
   const [cargandoReserva, setCargandoReserva] = useState(false);
@@ -86,37 +103,14 @@ export default function ReservaExpressPage() {
       if (error) throw error;
       
       if (data && data.length > 0) {
-        // Mapeamos los nombres de columnas de tu Supabase al formato web
         const inventarioTraducido = data.map(item => {
           const idUnidad = String(item.unidad || item.id);
           const fallbackData = INVENTARIO_FALLBACK.find(f => f.id === idUnidad);
 
-          // Búsqueda inteligente del área
-          const areaEncontrada = 
-            item.area_total || 
-            item.area || 
-            item.area_util || 
-            item.m2 || 
-            item.area_m2 || 
-            item.metraje || 
-            item.superficie ||
-            fallbackData?.area || 
-            0;
-
-          // Búsqueda inteligente de la vista
-          const vistaEncontrada = 
-            item.vista || 
-            item.orientacion || 
-            fallbackData?.vista || 
-            'Por definir';
-
-          // Búsqueda inteligente del precio
-          const precioEncontrado = 
-            item.precio || 
-            item.precio_total || 
-            item.precio_lista || 
-            fallbackData?.precio || 
-            0;
+          // Búsqueda inteligente del área en cualquier nombre de columna
+          const areaEncontrada = item.area_total || item.area || item.area_util || item.m2 || item.area_m2 || item.metraje || item.superficie || fallbackData?.area || 0;
+          const vistaEncontrada = item.vista || item.orientacion || fallbackData?.vista || 'Por definir';
+          const precioEncontrado = item.precio || item.precio_total || item.precio_lista || fallbackData?.precio || 0;
 
           return {
             ...item,
@@ -128,7 +122,6 @@ export default function ReservaExpressPage() {
             vista: vistaEncontrada
           };
         });
-        
         setInventario(inventarioTraducido);
       }
     } catch (err) {
@@ -319,7 +312,7 @@ export default function ReservaExpressPage() {
                         if (!unidad) return <div key={`notfound-${idUnidad}`} className="bg-neutral-100 rounded-lg border border-neutral-200 opacity-50 min-h-[45px] md:min-h-[70px]"></div>;
 
                         const noCoincide = unidad.tipo !== filtroTipo;
-                        const reservado = unidad.estado === 'RESERVADO' || unidad.estado === 'VENDIDO' || unidad.estado === 'BLOQUEADO';
+                        const reservado = unidad.estado === 'RESERVADO' || unidad.estado === 'VENDIDO' || unidad.estado === 'BLOQUEADO' || unidad.estado === 'SEPARADO';
                         const desactivado = noCoincide || reservado;
                         
                         let botonEstilo = desactivado ? "bg-neutral-50 border border-neutral-200 cursor-not-allowed opacity-90" : "bg-white border-[1.5px] border-[#B94A36] shadow-sm cursor-pointer transform hover:-translate-y-1 hover:shadow-md hover:bg-orange-50/20";
@@ -357,11 +350,12 @@ export default function ReservaExpressPage() {
           </div>
         )}
 
+        {/* MODALES DE VISUALIZACIÓN */}
         {vistaActiva && (
           <div className="fixed inset-0 bg-neutral-900/60 z-[60] flex flex-col items-center justify-center p-4 sm:p-6 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setVistaActiva(null)}>
             <div className="relative w-full max-w-3xl bg-white p-2 md:p-4 rounded-2xl shadow-2xl flex flex-col items-center animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
               <button onClick={() => setVistaActiva(null)} className="absolute top-4 right-4 bg-white/80 backdrop-blur text-neutral-800 w-8 h-8 rounded-full flex items-center justify-center font-bold hover:bg-neutral-200 z-10 shadow-sm">&times;</button>
-              <div className="w-full rounded-xl overflow-hidden relative bg-neutral-100">
+              <div className="w-full rounded-xl overflow-hidden relative bg-neutral-100 flex items-center justify-center min-h-[300px]">
                 <img src={FOTOS_VISTAS[vistaActiva]?.url} alt={FOTOS_VISTAS[vistaActiva]?.titulo} className="w-full max-h-[60vh] object-contain" />
               </div>
               <div className="mt-4 text-center pb-2 w-full">
@@ -372,7 +366,23 @@ export default function ReservaExpressPage() {
           </div>
         )}
 
-        {unidadSeleccionada && paso === 'mapa' && !vistaActiva && (
+        {/* === VISOR DEL PLANO DE DISTRIBUCIÓN === */}
+        {planoUrlActivo && (
+          <div className="fixed inset-0 bg-neutral-900/60 z-[60] flex flex-col items-center justify-center p-4 sm:p-6 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setPlanoUrlActivo(null)}>
+            <div className="relative w-full max-w-2xl bg-white p-2 md:p-4 rounded-2xl shadow-2xl flex flex-col items-center animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => setPlanoUrlActivo(null)} className="absolute top-4 right-4 bg-white/80 backdrop-blur text-neutral-800 w-8 h-8 rounded-full flex items-center justify-center font-bold hover:bg-neutral-200 z-10 shadow-sm">&times;</button>
+              <div className="w-full rounded-xl overflow-hidden relative bg-neutral-100 flex items-center justify-center min-h-[400px]">
+                <img src={planoUrlActivo} alt="Plano de Distribución" className="w-full max-h-[70vh] object-contain" />
+              </div>
+              <div className="mt-4 text-center pb-2 w-full">
+                <h3 className="text-sm md:text-base font-bold text-neutral-800 uppercase tracking-wide">Plano de Distribución</h3>
+                <span className="text-[9px] md:text-[10px] text-neutral-400 uppercase tracking-widest mt-1 block">Arienzo Boutique Living</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {unidadSeleccionada && paso === 'mapa' && !vistaActiva && !planoUrlActivo && (
           <div className="fixed inset-0 bg-neutral-900/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-in fade-in">
             <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl p-6 transform transition-transform animate-in slide-in-from-bottom-8">
               <div className="flex justify-between items-start mb-4">
@@ -384,9 +394,19 @@ export default function ReservaExpressPage() {
               </div>
 
               <div className="space-y-3 bg-[#F9F7F5] p-4 rounded-xl border border-[#EAE3DC] text-sm">
-                <div className="flex justify-between border-b border-neutral-200/60 pb-2">
+                
+                {/* DISTRIBUCIÓN CON BOTÓN PARA VER EL PLANO INTELIGENTE */}
+                <div className="flex justify-between border-b border-neutral-200/60 pb-2 items-start">
                   <span className="text-neutral-500">Distribución</span>
-                  <span className="font-bold text-neutral-800">{unidadSeleccionada.tipo}</span>
+                  <div className="text-right flex flex-col items-end">
+                    <span className="font-bold text-neutral-800 leading-tight">{unidadSeleccionada.tipo}</span>
+                    <button 
+                      onClick={() => setPlanoUrlActivo(obtenerUrlPlano(unidadSeleccionada.area))} 
+                      className="text-[10px] text-neutral-600 font-bold underline mt-1.5 cursor-pointer flex items-center gap-1 hover:text-neutral-900"
+                    >
+                      <span>📐</span> Ver plano interno
+                    </button>
+                  </div>
                 </div>
                 
                 <div className="flex justify-between border-b border-neutral-200/60 pb-2">
