@@ -1,43 +1,12 @@
-// Actualizacion para Vercel - Reserva Express (Fix Zoom Celular, Vistas en Modal y Parqueos)
+// Actualizacion para Vercel - Reserva Express (Conectada a lectura de 'propiedades' - Bloqueo manual)
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-
-// INVENTARIO REAL - AGOSTO 2026
-const INVENTARIO = [
-  // PISO 6
-  { id: '604', piso: 6, tipo: '2 Dormitorios', vista: 'Wyndham Poseidón / Mar', precio: 205865, area: 106.65, estado: 'RESERVADO' },
-  { id: '603', piso: 6, tipo: '3 Dorms (Esquinero)', vista: 'Panorámica a La Quadra / Umiña / Mar', precio: 293967, area: 152.72, estado: 'DISPONIBLE' },
-  { id: '602', piso: 6, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 169369, area: 86.60, estado: 'DISPONIBLE' },
-  { id: '601', piso: 6, tipo: '3 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 308760, area: 158.54, estado: 'RESERVADO' },
-  // PISO 5
-  { id: '504', piso: 5, tipo: '2 Dormitorios', vista: 'Wyndham Poseidón / Mar', precio: 201794, area: 106.65, estado: 'RESERVADO' },
-  { id: '503', piso: 5, tipo: '3 Dorms (Esquinero)', vista: 'Panorámica a La Quadra / Umiña / Mar', precio: 290840, area: 152.72, estado: 'DISPONIBLE' },
-  { id: '502', piso: 5, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 165702, area: 86.60, estado: 'DISPONIBLE' },
-  { id: '501', piso: 5, tipo: '3 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 303228, area: 158.54, estado: 'DISPONIBLE' },
-  // PISO 4
-  { id: '404', piso: 4, tipo: '2 Dormitorios', vista: 'Wyndham Poseidón / Mar', precio: 199677, area: 106.65, estado: 'DISPONIBLE' },
-  { id: '403', piso: 4, tipo: '3 Dorms (Esquinero)', vista: 'Panorámica a La Quadra / Umiña / Mar', precio: 287042, area: 152.72, estado: 'DISPONIBLE' },
-  { id: '402', piso: 4, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 163257, area: 86.60, estado: 'DISPONIBLE' },
-  { id: '401', piso: 4, tipo: '3 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 299079, area: 158.54, estado: 'RESERVADO' },
-  // PISO 3
-  { id: '301', piso: 3, tipo: '1 Dormitorio', vista: 'Urbanización', precio: 131529, area: 70.25, estado: 'DISPONIBLE' },
-  { id: '305', piso: 3, tipo: '1 Dormitorio', vista: 'Wyndham Poseidón / Mar', precio: 152779, area: 78.87, estado: 'DISPONIBLE' },
-  { id: '304', piso: 3, tipo: '3 Dorms (Esquinero)', vista: 'Panorámica a La Quadra / Umiña / Mar', precio: 284732, area: 152.68, estado: 'DISPONIBLE' },
-  { id: '303', piso: 3, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 161128, area: 86.76, estado: 'DISPONIBLE' },
-  { id: '302', piso: 3, tipo: '2 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 221487, area: 121.61, estado: 'DISPONIBLE' },
-  // PISO 2
-  { id: '201', piso: 2, tipo: '1 Dormitorio', vista: 'Urbanización', precio: 130981, area: 70.25, estado: 'DISPONIBLE' },
-  { id: '205', piso: 2, tipo: '1 Dormitorio', vista: 'Wyndham Poseidón / Mar', precio: 151259, area: 78.87, estado: 'DISPONIBLE' },
-  { id: '204', piso: 2, tipo: '3 Dorms (Esquinero)', vista: 'Panorámica a La Quadra / Umiña / Mar', precio: 281458, area: 152.72, estado: 'DISPONIBLE' },
-  { id: '203', piso: 2, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 159095, area: 86.66, estado: 'RESERVADO' },
-  { id: '202', piso: 2, tipo: '2 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 218918, area: 121.61, estado: 'DISPONIBLE' },
-];
 
 const PISOS_EDIFICIO = [6, 5, 4, 3, 2];
 
-// FACHADA AJUSTADA: Se eliminó el "null" inicial en pisos 6, 5 y 4
+// FACHADA AJUSTADA
 const LAYOUT_FACHADA: Record<number, string[]> = {
   6: ['604', '603', '602', '601'],
   5: ['504', '503', '502', '501'],
@@ -53,8 +22,8 @@ const FOTOS_VISTAS: Record<string, { titulo: string, url: string }> = {
   'panoramica': { titulo: 'Vista Panorámica Frontal', url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/vistas%20arienzo/vista%20principal%20(1).jpg' }
 };
 
-// Función de ayuda para sacar el key de la vista según el texto
 const obtenerKeyVista = (vistaText: string) => {
+  if (!vistaText) return 'panoramica';
   if (vistaText.includes('Urbanización')) return 'urb';
   if (vistaText.includes('Wyndham')) return 'wyndham';
   return 'panoramica';
@@ -63,6 +32,9 @@ const obtenerKeyVista = (vistaText: string) => {
 export default function ReservaExpressPage() {
   const [paso, setPaso] = useState<'acceso' | 'filtro' | 'mapa' | 'formulario' | 'exito'>('acceso');
   
+  // ESTADO: Aquí guardaremos el inventario que viene de Supabase
+  const [inventario, setInventario] = useState<any[]>([]);
+
   const [emailAcceso, setEmailAcceso] = useState('');
   const [cargandoAcceso, setCargandoAcceso] = useState(false);
   const [errorAcceso, setErrorAcceso] = useState('');
@@ -73,6 +45,25 @@ export default function ReservaExpressPage() {
 
   const [formData, setFormData] = useState({ nombres: '', cedula: '', email: '', telefono: '' });
   const [cargandoReserva, setCargandoReserva] = useState(false);
+
+  // === FUNCIÓN PARA DESCARGAR INVENTARIO DE LA TABLA 'propiedades' ===
+  // Solo lee para mostrar colores, pero no deja que el cliente grabe aquí
+  const cargarInventarioEnTiempoReal = async () => {
+    try {
+      const { data, error } = await supabase.from('propiedades').select('*');
+      if (error) throw error;
+      if (data) {
+        setInventario(data);
+      }
+    } catch (err) {
+      console.error("Error al cargar inventario:", err);
+    }
+  };
+
+  // Cargamos el inventario al entrar a la página
+  useEffect(() => {
+    cargarInventarioEnTiempoReal();
+  }, []);
 
   // 1. DISPARO SILENCIOSO AL SERVIDOR: INGRESO VIP
   const notificarIngresoSilencioso = async (email: string) => {
@@ -123,8 +114,6 @@ export default function ReservaExpressPage() {
       // Conceder acceso
       setFormData({ ...formData, email: correoLimpio });
       setPaso('filtro');
-      
-      // Enviar correo de notificación a Saul en silencio
       notificarIngresoSilencioso(correoLimpio);
 
     } catch (err) {
@@ -134,13 +123,13 @@ export default function ReservaExpressPage() {
     setCargandoAcceso(false);
   };
 
-  // 2. DISPARO SILENCIOSO AL SERVIDOR: RESERVA CONFIRMADA
+  // 2. PROCESAR RESERVA (SOLO NOTIFICACIONES, BLOQUEO EN DB ES MANUAL)
   const procesarReserva = async (e: React.FormEvent) => {
     e.preventDefault();
     setCargandoReserva(true);
 
     try {
-      // Disparamos el correo automático de reserva
+      // Disparamos el correo automático de alerta de reserva
       await fetch('/api/notificar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -170,9 +159,10 @@ export default function ReservaExpressPage() {
     setPaso('mapa');
   };
 
+  // === BUSCA EN EL ESTADO DE SUPABASE ('propiedades') ===
   const obtenerDatosUnidad = (id: string | null) => {
     if (!id) return null;
-    return INVENTARIO.find(u => u.id === id) || null;
+    return inventario.find(u => String(u.id) === id) || null;
   };
 
   // CONTACTO DIRECTO POR WHATSAPP CON DEBBI
@@ -185,7 +175,7 @@ export default function ReservaExpressPage() {
   // REPORTE WHATSAPP MANUAL DE RESPALDO AL FINAL
   const enviarNotificacionReservaWhatsApp = () => {
     const telefonoDebbi = "593979469472"; 
-    const mensaje = `🚨 *¡NUEVA RESERVA EN LÍNEA!* 🚨\n\nEl cliente *${formData.nombres}* acaba de bloquear la unidad:\n\n🏢 *Unidad:* ${unidadSeleccionada?.id} (${unidadSeleccionada?.tipo})\n💵 *Precio:* $${unidadSeleccionada?.precio.toLocaleString('en-US')}\n🆔 *Cédula:* ${formData.cedula}\n📱 *WhatsApp:* ${formData.telefono}\n📧 *Email:* ${formData.email}\n\n¡Entra al CRM para validar la transferencia de $2,500!`;
+    const mensaje = `🚨 *¡NUEVA RESERVA EN LÍNEA (Soft Block)!* 🚨\n\nEl cliente *${formData.nombres}* acaba de realizar una solicitud de bloqueo web:\n\n🏢 *Unidad:* ${unidadSeleccionada?.id} (${unidadSeleccionada?.tipo})\n💵 *Precio:* $${unidadSeleccionada?.precio.toLocaleString('en-US')}\n🆔 *Cédula:* ${formData.cedula}\n📱 *WhatsApp:* ${formData.telefono}\n📧 *Email:* ${formData.email}\n\n¡Comunícate con el cliente y valida el pago de $2,500 para bloquear oficialmente la unidad en el CRM!`;
     window.open(`https://wa.me/${telefonoDebbi}?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
 
@@ -223,7 +213,6 @@ export default function ReservaExpressPage() {
                     value={emailAcceso} 
                     onChange={(e) => setEmailAcceso(e.target.value)}
                     placeholder="tucorreo@ejemplo.com" 
-                    // TEXT-BASE (16px) es la clave aquí para evitar que el celular haga zoom
                     className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-base text-center focus:outline-none focus:border-[#B94A36] focus:ring-1 focus:ring-[#B94A36] transition-all"
                   />
                 </div>
@@ -312,7 +301,6 @@ export default function ReservaExpressPage() {
                   <div className="w-12 md:w-20 flex flex-col justify-center pr-2 md:pr-4">
                     <span className="text-[7px] md:text-[9px] font-bold text-neutral-500 uppercase tracking-widest text-right leading-tight">Vistas</span>
                   </div>
-                  {/* GRID RECALIBRADO MATEMÁTICAMENTE: 4fr 4fr 10fr 5fr 9fr */}
                   <div className="flex-1 grid grid-cols-[4fr_4fr_10fr_5fr_9fr] gap-1 md:gap-2">
                     <button onClick={() => setVistaActiva('urb')} className="col-span-1 bg-neutral-50 hover:bg-neutral-100 shadow-sm rounded-md py-1.5 px-1 flex flex-col items-center justify-center border border-neutral-200 cursor-pointer">
                       <span className="text-[5px] md:text-[7px] font-bold uppercase tracking-widest text-neutral-500 text-center leading-tight">A la<br/>Urbanización</span>
@@ -330,22 +318,24 @@ export default function ReservaExpressPage() {
                 {PISOS_EDIFICIO.map(piso => (
                   <div key={piso} className="flex items-stretch gap-1 md:gap-2 mb-1 md:mb-2 w-full">
                     <div className="w-12 md:w-20 flex items-center justify-end pr-2 md:pr-4 text-[9px] md:text-[11px] font-bold text-neutral-500 uppercase">P{piso}</div>
-                    {/* GRID RECALIBRADO MATEMÁTICAMENTE */}
                     <div className="flex-1 grid gap-1 md:gap-2 grid-cols-[4fr_4fr_10fr_5fr_9fr]">
                       {LAYOUT_FACHADA[piso].map((idUnidad, colIndex) => {
                         if (!idUnidad) return <div key={`empty-${piso}-${colIndex}`} className="invisible"></div>;
                         const unidad = obtenerDatosUnidad(idUnidad);
-                        if (!unidad) return null;
+                        
+                        // Si no encuentra la unidad en Supabase, muestra un cuadro gris vacío
+                        if (!unidad) return <div key={`notfound-${idUnidad}`} className="bg-neutral-100 rounded-lg border border-neutral-200 opacity-50 min-h-[45px] md:min-h-[70px]"></div>;
 
-                        const tipoBase = unidad.tipo.includes('3 Dorms') ? '3 Dormitorios' : unidad.tipo;
+                        const tipoBase = (unidad.tipo || '').includes('3 Dorms') ? '3 Dormitorios' : unidad.tipo;
                         const noCoincide = tipoBase !== filtroTipo;
+                        
+                        // EVALUAMOS EL ESTADO QUE VIENE DE SUPABASE
                         const reservado = unidad.estado === 'RESERVADO';
                         const desactivado = noCoincide || reservado;
                         
                         let botonEstilo = desactivado ? "bg-neutral-50 border border-neutral-200 cursor-not-allowed opacity-90" : "bg-white border-[1.5px] border-[#B94A36] shadow-sm cursor-pointer transform hover:-translate-y-1 hover:shadow-md hover:bg-orange-50/20";
                         
-                        // Ocupan las 2 columnas visuales
-                        if (['604', '504', '404'].includes(unidad.id)) {
+                        if (['604', '504', '404'].includes(String(unidad.id))) {
                           botonEstilo += " col-span-2";
                         }
 
@@ -388,10 +378,10 @@ export default function ReservaExpressPage() {
             <div className="relative w-full max-w-3xl bg-white p-2 md:p-4 rounded-2xl shadow-2xl flex flex-col items-center animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
               <button onClick={() => setVistaActiva(null)} className="absolute top-4 right-4 bg-white/80 backdrop-blur text-neutral-800 w-8 h-8 rounded-full flex items-center justify-center font-bold hover:bg-neutral-200 z-10 shadow-sm">&times;</button>
               <div className="w-full rounded-xl overflow-hidden relative bg-neutral-100">
-                <img src={FOTOS_VISTAS[vistaActiva].url} alt={FOTOS_VISTAS[vistaActiva].titulo} className="w-full max-h-[60vh] object-contain" />
+                <img src={FOTOS_VISTAS[vistaActiva]?.url} alt={FOTOS_VISTAS[vistaActiva]?.titulo} className="w-full max-h-[60vh] object-contain" />
               </div>
               <div className="mt-4 text-center pb-2 w-full">
-                <h3 className="text-sm md:text-base font-bold text-neutral-800 uppercase tracking-wide">{FOTOS_VISTAS[vistaActiva].titulo}</h3>
+                <h3 className="text-sm md:text-base font-bold text-neutral-800 uppercase tracking-wide">{FOTOS_VISTAS[vistaActiva]?.titulo}</h3>
                 <span className="text-[9px] md:text-[10px] text-neutral-400 uppercase tracking-widest mt-1 block">Toma de Dron - Arienzo Boutique Living</span>
               </div>
             </div>
@@ -421,7 +411,6 @@ export default function ReservaExpressPage() {
                   <span className="font-bold text-neutral-800">{unidadSeleccionada.area} m²</span>
                 </div>
                 
-                {/* MODIFICACIÓN: VISTA CON BOTÓN INTEGRADO */}
                 <div className="flex justify-between border-b border-neutral-200/60 pb-2 items-start">
                   <span className="text-neutral-500">Vista / Orientación</span>
                   <div className="text-right w-[60%] flex flex-col items-end">
@@ -435,15 +424,14 @@ export default function ReservaExpressPage() {
                   </div>
                 </div>
 
-                {/* MODIFICACIÓN: PRECIO CON DETALLE DE PARQUEOS Y BODEGAS */}
                 <div className="flex justify-between pt-1 items-center">
                   <span className="text-neutral-500 font-medium mt-1">Inversión Total</span>
                   <div className="text-right">
                     <span className="text-2xl font-bold text-[#B94A36] font-mono block leading-none">
-                      ${unidadSeleccionada.precio.toLocaleString('en-US')}
+                      ${unidadSeleccionada.precio?.toLocaleString('en-US') || 0}
                     </span>
                     <span className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest block mt-1.5">
-                      {unidadSeleccionada.tipo.includes('3 Dorm') 
+                      {(unidadSeleccionada.tipo || '').includes('3 Dorm') 
                         ? 'Incluye 2 parqueos y 1 bodega' 
                         : 'Incluye 1 parqueo y 1 bodega'}
                     </span>
@@ -476,9 +464,7 @@ export default function ReservaExpressPage() {
             <form onSubmit={procesarReserva} className="space-y-4">
               <div>
                 <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Nombres Completos</label>
-                <input required type="text" value={formData.nombres} onChange={e => setFormData({...formData, nombres: e.target.value})} 
-                  // TEXT-BASE (16px) en todos los inputs para evitar zoom en celular
-                  className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-base focus:outline-none focus:border-[#B94A36]" placeholder="Tal como aparece en tu documento" />
+                <input required type="text" value={formData.nombres} onChange={e => setFormData({...formData, nombres: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-base focus:outline-none focus:border-[#B94A36]" placeholder="Tal como aparece en tu documento" />
               </div>
               <div>
                 <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Cédula / Pasaporte</label>
@@ -497,7 +483,7 @@ export default function ReservaExpressPage() {
 
               <div className="pt-6 mt-2 border-t border-neutral-100">
                 <button type="submit" disabled={cargandoReserva} className="w-full bg-[#B94A36] text-white font-bold uppercase tracking-widest text-xs py-4 rounded-xl hover:bg-[#9B3B2B] transition-colors shadow-lg shadow-[#B94A36]/20 disabled:opacity-70 flex justify-center items-center">
-                  {cargandoReserva ? <span className="animate-pulse">Asegurando Unidad...</span> : 'Confirmar Reserva Oficial'}
+                  {cargandoReserva ? <span className="animate-pulse">Registrando solicitud...</span> : 'Confirmar Reserva Oficial'}
                 </button>
               </div>
             </form>
@@ -507,8 +493,8 @@ export default function ReservaExpressPage() {
         {/* PANTALLA DE ÉXITO */}
         {paso === 'exito' && (
           <div className="max-w-md mx-auto bg-white p-8 rounded-2xl border-2 border-emerald-500 shadow-xl text-center animate-in zoom-in-95 duration-500 mb-10 mt-10">
-            <h2 className="text-2xl font-light text-neutral-900 mb-2">¡Unidad Asegurada!</h2>
-            <p className="text-sm text-neutral-600 mb-6">Hola {formData.nombres}, la <strong>Unidad {unidadSeleccionada.id}</strong> ha sido bloqueada exitosamente a tu nombre en nuestro sistema.</p>
+            <h2 className="text-2xl font-light text-neutral-900 mb-2">¡Solicitud Recibida!</h2>
+            <p className="text-sm text-neutral-600 mb-6">Hola {formData.nombres}, tu solicitud para la <strong>Unidad {unidadSeleccionada.id}</strong> ha sido enviada con éxito a nuestro equipo comercial.</p>
             
             <div className="mb-6">
               <button 
@@ -524,7 +510,7 @@ export default function ReservaExpressPage() {
               <div className="absolute top-0 left-0 w-full h-1 bg-red-500 animate-pulse"></div>
               <p className="text-[10px] font-bold text-red-600 uppercase tracking-widest mb-1">Tiempo Restante para Formalizar</p>
               <p className="text-3xl font-mono font-bold text-red-700">23:59:59</p>
-              <p className="text-xs text-red-800/70 mt-2">Tienes 24 horas para realizar la transferencia de $2,500 y evitar que la unidad vuelva al mercado.</p>
+              <p className="text-xs text-red-800/70 mt-2">Tienes 24 horas para realizar la transferencia de $2,500 y evitar que la unidad vuelva al mercado público.</p>
             </div>
 
             <div className="text-left bg-neutral-50 p-4 rounded-lg border border-neutral-200 text-xs text-neutral-700 space-y-2 font-mono">
@@ -537,7 +523,7 @@ export default function ReservaExpressPage() {
             </div>
             
             <p className="text-[10px] text-neutral-500 mt-4 px-2">
-              Una vez efectuada la transferencia, agradeceremos nos puedan enviar el comprobante al correo <strong>ventas@konkeri.com</strong>.
+              Una vez efectuada la transferencia, nuestro equipo validará el pago y bloqueará oficialmente la unidad en el sistema. Agradeceremos enviar el comprobante a <strong>ventas@konkeri.com</strong>.
             </p>
 
             <button onClick={() => window.location.reload()} className="mt-8 text-xs font-bold text-neutral-400 hover:text-neutral-800 uppercase underline">
