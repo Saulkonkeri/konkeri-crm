@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Reserva Express (Fachada con proporciones arquitectónicas calibradas)
+// Actualizacion para Vercel - Reserva Express (Fix Zoom Celular, Vistas en Modal y Parqueos)
 'use client';
 
 import { useState } from 'react';
@@ -51,6 +51,13 @@ const FOTOS_VISTAS: Record<string, { titulo: string, url: string }> = {
   'urb': { titulo: 'Vista a la Urbanización', url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/vistas%20arienzo/vista%20a%20la%20urbanizacion%20(1).jpg' },
   'wyndham': { titulo: 'Vista Lateral', url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/vistas%20arienzo/vista%20a%20mikonos.jpg' },
   'panoramica': { titulo: 'Vista Panorámica Frontal', url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/vistas%20arienzo/vista%20principal%20(1).jpg' }
+};
+
+// Función de ayuda para sacar el key de la vista según el texto
+const obtenerKeyVista = (vistaText: string) => {
+  if (vistaText.includes('Urbanización')) return 'urb';
+  if (vistaText.includes('Wyndham')) return 'wyndham';
+  return 'panoramica';
 };
 
 export default function ReservaExpressPage() {
@@ -216,7 +223,8 @@ export default function ReservaExpressPage() {
                     value={emailAcceso} 
                     onChange={(e) => setEmailAcceso(e.target.value)}
                     placeholder="tucorreo@ejemplo.com" 
-                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm text-center focus:outline-none focus:border-[#B94A36] focus:ring-1 focus:ring-[#B94A36] transition-all"
+                    // TEXT-BASE (16px) es la clave aquí para evitar que el celular haga zoom
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-base text-center focus:outline-none focus:border-[#B94A36] focus:ring-1 focus:ring-[#B94A36] transition-all"
                   />
                 </div>
                 {errorAcceso && <p className="text-xs text-red-500">{errorAcceso}</p>}
@@ -241,24 +249,24 @@ export default function ReservaExpressPage() {
         {paso === 'filtro' && (
           <div className="max-w-lg mx-auto text-center space-y-8 animate-in zoom-in-95 duration-500 mt-10 md:mt-20">
             <div>
-              <h2 className="text-3xl font-light text-neutral-900 mb-2">Bienvenido a tu próximo hogar.</h2>
-              <p className="text-sm text-neutral-500">Para comenzar a explorar el edificio, indícanos qué espacio se adapta mejor a tu estilo de vida.</p>
+              <h2 className="text-3xl font-light text-neutral-900 mb-2 px-2">Selecciona la tipología de departamento.</h2>
+              <p className="text-sm text-neutral-500 px-4">Para explorar el inventario, indícanos qué distribución se adapta a tu requerimiento.</p>
             </div>
             
             <div className="flex flex-col gap-4 px-2">
-              <button onClick={() => seleccionarFiltro('1 Dormitorio')} className="w-full bg-white border border-[#EAE3DC] p-6 rounded-2xl shadow-sm hover:border-[#B94A36] hover:shadow-md transition-all group relative overflow-hidden text-left">
+              <button onClick={() => seleccionarFiltro('1 Dormitorio')} className="w-full bg-white border border-[#EAE3DC] p-5 sm:p-6 rounded-2xl shadow-sm hover:border-[#B94A36] hover:shadow-md transition-all group relative overflow-hidden text-left">
                 <div className="absolute top-0 left-0 w-1 h-full bg-[#B94A36] transform -translate-x-full group-hover:translate-x-0 transition-transform"></div>
                 <h3 className="text-xl font-bold text-neutral-800 uppercase tracking-wide">Suite / 1 Dormitorio</h3>
                 <p className="text-xs text-neutral-400 mt-1">Ideal para ejecutivos o inversión dinámica.</p>
               </button>
 
-              <button onClick={() => seleccionarFiltro('2 Dormitorios')} className="w-full bg-white border border-[#EAE3DC] p-6 rounded-2xl shadow-sm hover:border-[#B94A36] hover:shadow-md transition-all group relative overflow-hidden text-left">
+              <button onClick={() => seleccionarFiltro('2 Dormitorios')} className="w-full bg-white border border-[#EAE3DC] p-5 sm:p-6 rounded-2xl shadow-sm hover:border-[#B94A36] hover:shadow-md transition-all group relative overflow-hidden text-left">
                 <div className="absolute top-0 left-0 w-1 h-full bg-[#B94A36] transform -translate-x-full group-hover:translate-x-0 transition-transform"></div>
                 <h3 className="text-xl font-bold text-neutral-800 uppercase tracking-wide">2 Dormitorios</h3>
                 <p className="text-xs text-neutral-400 mt-1">Equilibrio perfecto de espacio y confort.</p>
               </button>
 
-              <button onClick={() => seleccionarFiltro('3 Dormitorios')} className="w-full bg-white border border-[#EAE3DC] p-6 rounded-2xl shadow-sm hover:border-[#B94A36] hover:shadow-md transition-all group relative overflow-hidden text-left">
+              <button onClick={() => seleccionarFiltro('3 Dormitorios')} className="w-full bg-white border border-[#EAE3DC] p-5 sm:p-6 rounded-2xl shadow-sm hover:border-[#B94A36] hover:shadow-md transition-all group relative overflow-hidden text-left">
                 <div className="absolute top-0 left-0 w-1 h-full bg-[#B94A36] transform -translate-x-full group-hover:translate-x-0 transition-transform"></div>
                 <h3 className="text-xl font-bold text-neutral-800 uppercase tracking-wide">3 Dormitorios</h3>
                 <p className="text-xs text-neutral-400 mt-1">Amplitud máxima para familias y comodidad total.</p>
@@ -322,7 +330,7 @@ export default function ReservaExpressPage() {
                 {PISOS_EDIFICIO.map(piso => (
                   <div key={piso} className="flex items-stretch gap-1 md:gap-2 mb-1 md:mb-2 w-full">
                     <div className="w-12 md:w-20 flex items-center justify-end pr-2 md:pr-4 text-[9px] md:text-[11px] font-bold text-neutral-500 uppercase">P{piso}</div>
-                    {/* GRID RECALIBRADO MATEMÁTICAMENTE: 4fr 4fr 10fr 5fr 9fr */}
+                    {/* GRID RECALIBRADO MATEMÁTICAMENTE */}
                     <div className="flex-1 grid gap-1 md:gap-2 grid-cols-[4fr_4fr_10fr_5fr_9fr]">
                       {LAYOUT_FACHADA[piso].map((idUnidad, colIndex) => {
                         if (!idUnidad) return <div key={`empty-${piso}-${colIndex}`} className="invisible"></div>;
@@ -336,7 +344,7 @@ export default function ReservaExpressPage() {
                         
                         let botonEstilo = desactivado ? "bg-neutral-50 border border-neutral-200 cursor-not-allowed opacity-90" : "bg-white border-[1.5px] border-[#B94A36] shadow-sm cursor-pointer transform hover:-translate-y-1 hover:shadow-md hover:bg-orange-50/20";
                         
-                        // LÓGICA DE EXPANSIÓN: Ocupan las 2 columnas pero equilibradas por el grid
+                        // Ocupan las 2 columnas visuales
                         if (['604', '504', '404'].includes(unidad.id)) {
                           botonEstilo += " col-span-2";
                         }
@@ -403,10 +411,44 @@ export default function ReservaExpressPage() {
               </div>
 
               <div className="space-y-3 bg-[#F9F7F5] p-4 rounded-xl border border-[#EAE3DC] text-sm">
-                <div className="flex justify-between border-b border-neutral-200/60 pb-2"><span className="text-neutral-500">Distribución</span><span className="font-bold text-neutral-800">{unidadSeleccionada.tipo}</span></div>
-                <div className="flex justify-between border-b border-neutral-200/60 pb-2"><span className="text-neutral-500">Área Total</span><span className="font-bold text-neutral-800">{unidadSeleccionada.area} m²</span></div>
-                <div className="flex justify-between border-b border-neutral-200/60 pb-2"><span className="text-neutral-500">Vista / Orientación</span><span className="font-bold text-neutral-800 text-right w-1/2 leading-tight">{unidadSeleccionada.vista}</span></div>
-                <div className="flex justify-between pt-1"><span className="text-neutral-500 font-medium mt-1">Inversión Total</span><span className="text-2xl font-bold text-[#B94A36] font-mono">${unidadSeleccionada.precio.toLocaleString('en-US')}</span></div>
+                <div className="flex justify-between border-b border-neutral-200/60 pb-2">
+                  <span className="text-neutral-500">Distribución</span>
+                  <span className="font-bold text-neutral-800">{unidadSeleccionada.tipo}</span>
+                </div>
+                
+                <div className="flex justify-between border-b border-neutral-200/60 pb-2">
+                  <span className="text-neutral-500">Área Total</span>
+                  <span className="font-bold text-neutral-800">{unidadSeleccionada.area} m²</span>
+                </div>
+                
+                {/* MODIFICACIÓN: VISTA CON BOTÓN INTEGRADO */}
+                <div className="flex justify-between border-b border-neutral-200/60 pb-2 items-start">
+                  <span className="text-neutral-500">Vista / Orientación</span>
+                  <div className="text-right w-[60%] flex flex-col items-end">
+                    <span className="font-bold text-neutral-800 leading-tight">{unidadSeleccionada.vista}</span>
+                    <button 
+                      onClick={() => setVistaActiva(obtenerKeyVista(unidadSeleccionada.vista))} 
+                      className="text-[10px] text-[#B94A36] font-bold underline mt-1.5 cursor-pointer flex items-center gap-1 hover:text-[#9B3B2B]"
+                    >
+                      <span>👁️</span> Ver imagen de la vista
+                    </button>
+                  </div>
+                </div>
+
+                {/* MODIFICACIÓN: PRECIO CON DETALLE DE PARQUEOS Y BODEGAS */}
+                <div className="flex justify-between pt-1 items-center">
+                  <span className="text-neutral-500 font-medium mt-1">Inversión Total</span>
+                  <div className="text-right">
+                    <span className="text-2xl font-bold text-[#B94A36] font-mono block leading-none">
+                      ${unidadSeleccionada.precio.toLocaleString('en-US')}
+                    </span>
+                    <span className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest block mt-1.5">
+                      {unidadSeleccionada.tipo.includes('3 Dorm') 
+                        ? 'Incluye 2 parqueos y 1 bodega' 
+                        : 'Incluye 1 parqueo y 1 bodega'}
+                    </span>
+                  </div>
+                </div>
               </div>
 
               <div className="mt-6 space-y-3">
@@ -434,20 +476,22 @@ export default function ReservaExpressPage() {
             <form onSubmit={procesarReserva} className="space-y-4">
               <div>
                 <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Nombres Completos</label>
-                <input required type="text" value={formData.nombres} onChange={e => setFormData({...formData, nombres: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-sm focus:outline-none focus:border-[#B94A36]" placeholder="Tal como aparece en tu documento" />
+                <input required type="text" value={formData.nombres} onChange={e => setFormData({...formData, nombres: e.target.value})} 
+                  // TEXT-BASE (16px) en todos los inputs para evitar zoom en celular
+                  className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-base focus:outline-none focus:border-[#B94A36]" placeholder="Tal como aparece en tu documento" />
               </div>
               <div>
                 <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Cédula / Pasaporte</label>
-                <input required type="text" value={formData.cedula} onChange={e => setFormData({...formData, cedula: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-sm focus:outline-none focus:border-[#B94A36]" placeholder="Número de identidad" />
+                <input required type="text" value={formData.cedula} onChange={e => setFormData({...formData, cedula: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-base focus:outline-none focus:border-[#B94A36]" placeholder="Número de identidad" />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">WhatsApp</label>
-                  <input required type="tel" value={formData.telefono} onChange={e => setFormData({...formData, telefono: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-sm focus:outline-none focus:border-[#B94A36]" placeholder="099..." />
+                  <input required type="tel" value={formData.telefono} onChange={e => setFormData({...formData, telefono: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-base focus:outline-none focus:border-[#B94A36]" placeholder="099..." />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Correo Electrónico</label>
-                  <input required type="email" value={formData.email} readOnly className="w-full bg-neutral-100 border border-neutral-200 rounded-lg p-3 text-sm text-neutral-500 cursor-not-allowed" />
+                  <input required type="email" value={formData.email} readOnly className="w-full bg-neutral-100 border border-neutral-200 rounded-lg p-3 text-base text-neutral-500 cursor-not-allowed" />
                 </div>
               </div>
 
