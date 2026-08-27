@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Reserva Express (Con Visor Inteligente de Planos por Metraje)
+// Actualizacion para Vercel - Reserva Express (Imágenes de Planos Actualizadas y sin caché)
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -55,15 +55,15 @@ const obtenerKeyVista = (vistaText: string) => {
 };
 
 // === ASIGNACIÓN INTELIGENTE DE PLANOS POR METRAJE ===
-// Evalúa el área (m2) para devolver el plano exacto
+// Agregamos ?v=2 para romper la memoria caché del navegador y forzar la imagen nueva
 const obtenerUrlPlano = (area: number) => {
-  if (area < 75) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/Suite%2070,25m2.png'; // 70.25 m2
-  if (area >= 75 && area < 82) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/Suite%2078,87m2.png'; // 78.87 m2
-  if (area >= 82 && area < 100) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/Suite%2086,60m2.png'; // 86.60 m2
-  if (area >= 100 && area < 115) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/2%20dormitorios%20106,65.png'; // 106.65 m2
-  if (area >= 115 && area < 135) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/2%20dormitorios%20121,61m2.png'; // 121.61 m2
-  if (area >= 135 && area < 155) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/3%20dormitorios%20152,72m2.png'; // 152.72 m2
-  if (area >= 155) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/3%20dormitorios%20158,54m2.png'; // 158.54 m2
+  if (area < 75) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/Suite%2070,25m2.png?v=2'; 
+  if (area >= 75 && area < 82) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/Suite%2078,87m2.png?v=2'; 
+  if (area >= 82 && area < 100) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/Suite%2086,60m2.png?v=2'; 
+  if (area >= 100 && area < 115) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/2%20dormitorios%20106,65.png?v=2'; 
+  if (area >= 115 && area < 135) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/2%20dormitorios%20121,61m2.png?v=2'; 
+  if (area >= 135 && area < 155) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/3%20dormitorios%20152,72m2.png?v=2'; 
+  if (area >= 155) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/3%20dormitorios%20158,54m2.png?v=2'; 
   return null;
 };
 
@@ -316,7 +316,7 @@ export default function ReservaExpressPage() {
                         const desactivado = noCoincide || reservado;
                         
                         let botonEstilo = desactivado ? "bg-neutral-50 border border-neutral-200 cursor-not-allowed opacity-90" : "bg-white border-[1.5px] border-[#B94A36] shadow-sm cursor-pointer transform hover:-translate-y-1 hover:shadow-md hover:bg-orange-50/20";
-                        if (['604', '504', '404'].includes(unidad.id)) botonEstilo += " col-span-2";
+                        if (['604', '504', '404'].includes(String(unidad.id))) botonEstilo += " col-span-2";
 
                         let textoIdEstilo = desactivado ? "text-neutral-400" : "text-[#B94A36] font-bold";
                         let textoTipoEstilo = desactivado ? "text-neutral-400" : "text-neutral-800 font-medium";
