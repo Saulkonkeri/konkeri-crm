@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Reserva Express (Con Sensores RUIDOSOS para depurar)
+// Actualizacion para Vercel - Reserva Express (Con Sensores SILENCIOSOS)
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -96,32 +96,22 @@ export default function ReservaExpressPage() {
   const [cargandoReserva, setCargandoReserva] = useState(false);
 
   // ==========================================
-  // SENSOR CON ALARMAS PARA DEPURAR Y VER DÓNDE FALLA
+  // SENSOR MAESTRO: 100% SILENCIOSO (Sin alertas para el cliente)
   // ==========================================
   const registrarAccion = async (accion: string, idUnidad?: string, detalleAdicional?: string) => {
-    // Alarma 1: Nos avisa si el botón web sí está ejecutando la función nueva
-    alert(`RADAR: Intentando registrar "${accion}"`); 
-    
-    // Forzamos un correo por defecto en caso de que el sistema lo esté perdiendo
-    const correoActivo = formData.email || emailAcceso || 'test_obligatorio@konkeri.com';
+    const correoActivo = formData.email || emailAcceso;
+    if (!correoActivo) return; 
     
     try {
-      const { error } = await supabase.from('tracking_inventario').insert([{
+      await supabase.from('tracking_inventario').insert([{
         email_cliente: correoActivo,
         accion: accion,
         unidad_id: idUnidad || null,
         detalle: detalleAdicional || null
       }]);
-
-      if (error) {
-        // Alarma 2: Nos escupe el error exacto que Supabase está bloqueando
-        alert("❌ ERROR DE SUPABASE: " + error.message);
-      } else {
-        // Alarma 3: Nos confirma que rompió la barrera y entró a la tabla
-        alert("✅ ¡ÉXITO! El dato acaba de entrar a Supabase.");
-      }
-    } catch (err) {
-      alert("❌ ERROR CRÍTICO DE CÓDIGO: " + err);
+    } catch (error) {
+      // Si hay error, lo anota en la consola secreta, pero no molesta al cliente
+      console.error("Error en radar:", error);
     }
   };
 
