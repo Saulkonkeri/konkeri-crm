@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Reserva Express (Imágenes de Planos Actualizadas y sin caché)
+// Actualizacion para Vercel - Reserva Express (Con Sensores de Tracking para CRM)
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -55,7 +55,6 @@ const obtenerKeyVista = (vistaText: string) => {
 };
 
 // === ASIGNACIÓN INTELIGENTE DE PLANOS POR METRAJE ===
-// Agregamos ?v=2 para romper la memoria caché del navegador y forzar la imagen nueva
 const obtenerUrlPlano = (area: number) => {
   if (area < 75) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/Suite%2070,25m2.png?v=2'; 
   if (area >= 75 && area < 82) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/Suite%2078,87m2.png?v=2'; 
@@ -95,6 +94,25 @@ export default function ReservaExpressPage() {
 
   const [formData, setFormData] = useState({ nombres: '', cedula: '', email: '', telefono: '' });
   const [cargandoReserva, setCargandoReserva] = useState(false);
+
+  // ==========================================
+  // SENSOR MAESTRO: Guarda la huella del cliente en Supabase para verla en el CRM
+  // ==========================================
+  const registrarAccion = async (accion: string, idUnidad?: string, detalleAdicional?: string) => {
+    const correoActivo = formData.email || emailAcceso;
+    if (!correoActivo) return; 
+    
+    try {
+      await supabase.from('tracking_inventario').insert([{
+        email_cliente: correoActivo,
+        accion: accion,
+        unidad_id: idUnidad || null,
+        detalle: detalleAdicional || null
+      }]);
+    } catch (error) {
+      console.error("Error en radar:", error);
+    }
+  };
 
   // === FUNCIÓN PARA DESCARGAR INVENTARIO Y TRADUCIRLO ===
   const cargarInventarioEnTiempoReal = async () => {
@@ -159,7 +177,11 @@ export default function ReservaExpressPage() {
       if (ahora > new Date(data.expira_en)) { setErrorAcceso('Tu invitación ha expirado.'); setCargandoAcceso(false); return; }
       setFormData({ ...formData, email: correoLimpio });
       setPaso('filtro');
+      
       notificarIngresoSilencioso(correoLimpio);
+      // SENSOR: Registro de Ingreso
+      registrarAccion('INGRESO_INVENTARIO', undefined, 'Inició sesión en el inventario');
+      
     } catch (err) { setErrorAcceso('Ocurrió un error al verificar.'); }
     setCargandoAcceso(false);
   };
@@ -168,6 +190,9 @@ export default function ReservaExpressPage() {
     e.preventDefault();
     setCargandoReserva(true);
     try {
+      // SENSOR: Registro de Reserva
+      registrarAccion('RESERVA_COMPLETADA', unidadSeleccionada?.id, `Reserva procesada a nombre de ${formData.nombres}`);
+      
       await fetch('/api/notificar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -184,7 +209,12 @@ export default function ReservaExpressPage() {
     setPaso('exito');
   };
 
-  const seleccionarFiltro = (tipo: string) => { setFiltroTipo(tipo); setPaso('mapa'); };
+  const seleccionarFiltro = (tipo: string) => { 
+    setFiltroTipo(tipo); 
+    setPaso('mapa'); 
+    // SENSOR: Registro de Filtro
+    registrarAccion('USO_FILTRO', undefined, `Buscó: ${tipo}`);
+  };
 
   const obtenerDatosUnidad = (idBuscado: string | null) => {
     if (!idBuscado) return null;
@@ -192,6 +222,9 @@ export default function ReservaExpressPage() {
   };
 
   const contactarAsesor = () => {
+    // SENSOR: Registro de Intención WhatsApp
+    registrarAccion('CLIC_WHATSAPP', unidadSeleccionada?.id, 'Intentó contactar asesor');
+    
     const telefonoDebbi = "593979469472"; 
     const mensaje = `Hola Debbi, estoy revisando el inventario VIP y me interesa cotizar la *Unidad ${unidadSeleccionada?.id}* (${unidadSeleccionada?.tipo}). ¿Podemos conversar?`;
     window.open(`https://wa.me/${telefonoDebbi}?text=${encodeURIComponent(mensaje)}`, '_blank');
@@ -325,7 +358,13 @@ export default function ReservaExpressPage() {
                           <button
                             key={unidad.id}
                             disabled={desactivado}
-                            onClick={() => { if(!desactivado) setUnidadSeleccionada(unidad) }}
+                            onClick={() => { 
+                              if(!desactivado) {
+                                setUnidadSeleccionada(unidad);
+                                // SENSOR: Registro de Apertura de Unidad
+                                registrarAccion('ABRIO_UNIDAD', String(unidad.id), 'Revisó detalles de unidad');
+                              } 
+                            }}
                             className={`flex flex-col items-center justify-center p-1 md:p-2 rounded-lg transition-all duration-300 min-h-[45px] md:min-h-[70px] ${botonEstilo}`}
                           >
                             <span className={`text-[12px] md:text-lg font-light leading-none ${textoIdEstilo}`}>{unidad.id}</span>
@@ -401,7 +440,11 @@ export default function ReservaExpressPage() {
                   <div className="text-right flex flex-col items-end">
                     <span className="font-bold text-neutral-800 leading-tight">{unidadSeleccionada.tipo}</span>
                     <button 
-                      onClick={() => setPlanoUrlActivo(obtenerUrlPlano(unidadSeleccionada.area))} 
+                      onClick={() => {
+                        setPlanoUrlActivo(obtenerUrlPlano(unidadSeleccionada.area));
+                        // SENSOR: Registro de vista de plano
+                        registrarAccion('VIO_PLANO_INTERNO', String(unidadSeleccionada.id), 'Abrió imagen del plano');
+                      }} 
                       className="text-[10px] text-neutral-600 font-bold underline mt-1.5 cursor-pointer flex items-center gap-1 hover:text-neutral-900"
                     >
                       <span>📐</span> Ver plano interno
@@ -418,7 +461,13 @@ export default function ReservaExpressPage() {
                   <span className="text-neutral-500">Vista / Orientación</span>
                   <div className="text-right w-[60%] flex flex-col items-end">
                     <span className="font-bold text-neutral-800 leading-tight">{unidadSeleccionada.vista}</span>
-                    <button onClick={() => setVistaActiva(obtenerKeyVista(unidadSeleccionada.vista))} className="text-[10px] text-[#B94A36] font-bold underline mt-1.5 cursor-pointer flex items-center gap-1 hover:text-[#9B3B2B]">
+                    <button 
+                      onClick={() => {
+                        setVistaActiva(obtenerKeyVista(unidadSeleccionada.vista));
+                        // SENSOR: Registro de vista exterior
+                        registrarAccion('VIO_IMAGEN_VISTA', String(unidadSeleccionada.id), `Vio vista: ${unidadSeleccionada.vista}`);
+                      }} 
+                      className="text-[10px] text-[#B94A36] font-bold underline mt-1.5 cursor-pointer flex items-center gap-1 hover:text-[#9B3B2B]">
                       <span>👁️</span> Ver imagen de la vista
                     </button>
                   </div>
