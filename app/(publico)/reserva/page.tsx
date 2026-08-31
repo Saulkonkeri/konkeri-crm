@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Reserva Express (Con Sensores de Tracking para CRM)
+// Actualizacion para Vercel - Reserva Express (Con Sensores RUIDOSOS para depurar)
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -96,21 +96,32 @@ export default function ReservaExpressPage() {
   const [cargandoReserva, setCargandoReserva] = useState(false);
 
   // ==========================================
-  // SENSOR MAESTRO: Guarda la huella del cliente en Supabase para verla en el CRM
+  // SENSOR CON ALARMAS PARA DEPURAR Y VER DÓNDE FALLA
   // ==========================================
   const registrarAccion = async (accion: string, idUnidad?: string, detalleAdicional?: string) => {
-    const correoActivo = formData.email || emailAcceso;
-    if (!correoActivo) return; 
+    // Alarma 1: Nos avisa si el botón web sí está ejecutando la función nueva
+    alert(`RADAR: Intentando registrar "${accion}"`); 
+    
+    // Forzamos un correo por defecto en caso de que el sistema lo esté perdiendo
+    const correoActivo = formData.email || emailAcceso || 'test_obligatorio@konkeri.com';
     
     try {
-      await supabase.from('tracking_inventario').insert([{
+      const { error } = await supabase.from('tracking_inventario').insert([{
         email_cliente: correoActivo,
         accion: accion,
         unidad_id: idUnidad || null,
         detalle: detalleAdicional || null
       }]);
-    } catch (error) {
-      console.error("Error en radar:", error);
+
+      if (error) {
+        // Alarma 2: Nos escupe el error exacto que Supabase está bloqueando
+        alert("❌ ERROR DE SUPABASE: " + error.message);
+      } else {
+        // Alarma 3: Nos confirma que rompió la barrera y entró a la tabla
+        alert("✅ ¡ÉXITO! El dato acaba de entrar a Supabase.");
+      }
+    } catch (err) {
+      alert("❌ ERROR CRÍTICO DE CÓDIGO: " + err);
     }
   };
 
@@ -125,7 +136,6 @@ export default function ReservaExpressPage() {
           const idUnidad = String(item.unidad || item.id);
           const fallbackData = INVENTARIO_FALLBACK.find(f => f.id === idUnidad);
 
-          // Búsqueda inteligente del área en cualquier nombre de columna
           const areaEncontrada = item.area_total || item.area || item.area_util || item.m2 || item.area_m2 || item.metraje || item.superficie || fallbackData?.area || 0;
           const vistaEncontrada = item.vista || item.orientacion || fallbackData?.vista || 'Por definir';
           const precioEncontrado = item.precio || item.precio_total || item.precio_lista || fallbackData?.precio || 0;
