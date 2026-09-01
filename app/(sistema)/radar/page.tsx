@@ -3,10 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 
-// Actualizamos el tipo para incluir un ID de sesión único
 type SesionCliente = {
   idSesion: string;
   email: string;
+  nombre?: string; // <-- NUEVO: Para guardar el nombre del CRM
   inicio: Date;
   fin: Date;
   minutos: number;
@@ -18,13 +18,12 @@ type SesionCliente = {
 export default function RadarInventario() {
   const [sesiones, setSesiones] = useState<SesionCliente[]>([]);
   const [cargando, setCargando] = useState(true);
-  // Ahora expandimos por ID de Sesión, no por email (porque un email puede tener varias sesiones)
   const [sesionExpandida, setSesionExpandida] = useState<string | null>(null);
 
   const cargarRadar = async () => {
     setCargando(true);
     try {
-      // Traemos los últimos 500 clics
+      // 1. Traemos los últimos 500 clics
       const { data, error } = await supabase
         .from('tracking_inventario')
         .select('*')
@@ -34,31 +33,26 @@ export default function RadarInventario() {
       if (error) throw error;
 
       if (data) {
-        // 1. Invertimos el orden para procesar del clic más viejo al más nuevo
         const datosCronologicos = [...data].reverse();
-
         const sesionesList: SesionCliente[] = [];
         const sesionesActivas: Record<string, SesionCliente> = {};
 
-        // 2. AGRUPACIÓN INTELIGENTE POR SESIONES (Timeout de 45 min)
+        // 2. Agrupación por sesiones (Timeout 45 min)
         datosCronologicos.forEach(row => {
           const email = row.email_cliente;
           const fechaRow = new Date(row.created_at);
           const tiempoActual = fechaRow.getTime();
 
-          // Verificamos si este email ya tiene una sesión activa y si el último clic fue hace MENOS de 45 min
           if (sesionesActivas[email] && (tiempoActual - sesionesActivas[email].fin.getTime()) < 45 * 60000) {
-            // Continúa en la misma sesión
             const sesion = sesionesActivas[email];
             sesion.fin = fechaRow;
-            sesion.eventos.unshift(row); // Insertamos arriba para la UI
+            sesion.eventos.unshift(row); 
             if (row.unidad_id && !sesion.unidadesVistas.includes(row.unidad_id)) {
               sesion.unidadesVistas.push(row.unidad_id);
             }
           } else {
-            // Pasó mucho tiempo o es nuevo: CREAMOS NUEVA SESIÓN
             const nuevaSesion: SesionCliente = {
-              idSesion: `${email}-${tiempoActual}`, // ID único combinando correo y hora exacta
+              idSesion: `${email}-${tiempoActual}`,
               email: email,
               inicio: fechaRow,
               fin: fechaRow,
@@ -68,20 +62,44 @@ export default function RadarInventario() {
               unidadesVistas: row.unidad_id ? [row.unidad_id] : []
             };
             sesionesList.push(nuevaSesion);
-            sesionesActivas[email] = nuevaSesion; // Marcamos esta como su nueva sesión activa
+            sesionesActivas[email] = nuevaSesion;
           }
         });
 
-        // 3. Calculamos la duración real de cada bloque y formateamos
+        // 3. Calcular minutos
         sesionesList.forEach(s => {
           const diffMs = s.fin.getTime() - s.inicio.getTime();
           s.minutos = Math.round(diffMs / 60000);
           s.ultimaAccion = s.eventos[0]?.detalle || s.eventos[0]?.accion || 'Desconocido';
         });
 
-        // 4. Ordenamos de nuevo para que las sesiones recién activas salgan arriba
-        sesionesList.sort((a, b) => b.fin.getTime() - a.fin.getTime());
+        // === 4. LA MAGIA: BUSCAR NOMBRES EN EL CRM ===
+        // Sacamos una lista de los correos únicos que están en el radar ahorita
+        const correosUnicos = Array.from(new Set(sesionesList.map(s => s.email)));
         
+        if (correosUnicos.length > 0) {
+          // Le preguntamos a la tabla 'clientes' de quién son esos correos
+          const { data: clientesData } = await supabase
+            .from('clientes')
+            .select('email, nombres, apellidos')
+            .in('email', correosUnicos);
+            
+          if (clientesData) {
+            // Hacemos un diccionario rápido { "correo@.com": "Juan Pérez" }
+            const mapaNombres: Record<string, string> = {};
+            clientesData.forEach(c => {
+              if (c.email) mapaNombres[c.email.toLowerCase()] = `${c.nombres || ''} ${c.apellidos || ''}`.trim();
+            });
+            
+            // Le pegamos el nombre a la sesión
+            sesionesList.forEach(s => {
+              s.nombre = mapaNombres[s.email.toLowerCase()];
+            });
+          }
+        }
+
+        // 5. Ordenamos del más reciente al más antiguo
+        sesionesList.sort((a, b) => b.fin.getTime() - a.fin.getTime());
         setSesiones(sesionesList);
       }
     } catch (error) {
@@ -95,7 +113,7 @@ export default function RadarInventario() {
   }, []);
 
   return (
-    <div className="p-6 md:p-10 max-w-7xl mx-auto bg-neutral-50 min-h-screen">
+    <div className="p-6 md:p-10 max-w-7xl mx-auto bg-[#F4F4F4] min-h-screen">
       <div className="flex justify-between items-end mb-8">
         <div>
           <h1 className="text-3xl font-light text-neutral-900 tracking-tight">Radar de Inventario</h1>
@@ -129,8 +147,16 @@ export default function RadarInventario() {
                   <React.Fragment key={sesion.idSesion}>
                     <tr className="border-b border-neutral-100 hover:bg-neutral-50 transition-colors">
                       <td className="p-4">
-                        <span className="font-medium text-neutral-900 block">{sesion.email}</span>
-                        <span className="text-[10px] text-neutral-400">
+                        {/* AQUI MOSTRAMOS EL NOMBRE SI EXISTE */}
+                        <span className="font-bold text-neutral-900 block text-sm">
+                          {sesion.nombre ? (
+                            <>{sesion.nombre} <span className="text-[10px] text-green-600 ml-1" title="Registrado en CRM">✓</span></>
+                          ) : (
+                            'Prospecto Web'
+                          )}
+                        </span>
+                        <span className="text-[10px] text-neutral-500 font-mono block mt-0.5">{sesion.email}</span>
+                        <span className="text-[9px] text-neutral-400 mt-1.5 block">
                           {new Date().getTime() - sesion.fin.getTime() > 86400000 
                             ? new Date(sesion.fin).toLocaleDateString('es-EC', {day: '2-digit', month:'short'}) 
                             : `Hace ${Math.round((new Date().getTime() - sesion.fin.getTime()) / 60000)} min`}
