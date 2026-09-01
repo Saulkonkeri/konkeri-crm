@@ -18,6 +18,7 @@ export default function Sidebar() {
     { name: '📊 CRM / Pipeline', path: '/crm' },
     { name: '📄 Cotizador', path: '/cotizador' },
     { name: '📦 Inventario', path: '/inventario' },
+    { name: '📡 Radar en Vivo', path: '/radar' }, // <-- AQUÍ ESTÁ EL NUEVO BOTÓN
     { name: '👥 Clientes', path: '/clientes' },
     { name: '🤝 Registrar Operación', path: '/ventas' },
     { name: '📈 Reportes BI', path: '/reportes' },
