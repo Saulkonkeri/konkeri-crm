@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 type SesionCliente = {
   idSesion: string;
   email: string;
-  nombre?: string; // <-- NUEVO: Para guardar el nombre del CRM
+  nombre?: string;
   inicio: Date;
   fin: Date;
   minutos: number;
@@ -20,10 +20,61 @@ export default function RadarInventario() {
   const [cargando, setCargando] = useState(true);
   const [sesionExpandida, setSesionExpandida] = useState<string | null>(null);
 
+  // ==========================================
+  // 🧠 MOTOR DE INFERENCIA COMERCIAL (Pseudo-IA)
+  // ==========================================
+  const generarAnalisisComercial = (sesion: SesionCliente) => {
+    if (sesion.eventos.length === 0) return "Sin datos suficientes para analizar.";
+
+    let analisis = "";
+
+    // 1. Análisis de Tiempo y Profundidad
+    if (sesion.minutos < 2) {
+      analisis += "Vistazo rápido. Exploró la plataforma superficialmente. ";
+    } else if (sesion.minutos < 10) {
+      analisis += "Exploración moderada. Se tomó el tiempo para navegar por el inventario. ";
+    } else {
+      analisis += "Alto nivel de interés. Pasó bastante tiempo analizando el proyecto detalladamente. ";
+    }
+
+    // 2. Patrón de búsqueda (Filtros)
+    const filtros = sesion.eventos.filter(e => e.accion === 'USO_FILTRO');
+    if (filtros.length > 0) {
+      const ultFiltro = filtros[0].detalle?.replace('Buscó: ', '') || '';
+      analisis += `Mostró inclinación directa por la tipología de ${ultFiltro}. `;
+    }
+
+    // 3. Análisis de Unidades
+    if (sesion.unidadesVistas.length === 1) {
+      analisis += `Se enfocó exclusivamente en la unidad ${sesion.unidadesVistas[0]}, lo que indica una búsqueda muy específica. `;
+    } else if (sesion.unidadesVistas.length > 1) {
+      analisis += `Comparó ${sesion.unidadesVistas.length} unidades distintas (${sesion.unidadesVistas.join(', ')}). `;
+    }
+
+    // 4. Comportamiento y Temperatura (Intención)
+    const vioPlanos = sesion.eventos.some(e => e.accion === 'VIO_PLANO_INTERNO');
+    const vioVistas = sesion.eventos.some(e => e.accion === 'VIO_IMAGEN_VISTA');
+    const clicWa = sesion.eventos.some(e => e.accion === 'CLIC_WHATSAPP');
+    const reserva = sesion.eventos.some(e => e.accion === 'RESERVA_COMPLETADA');
+
+    if (reserva) {
+      analisis += "🎯 ¡ALERTA DE CIERRE! El cliente completó un bloqueo de unidad web.";
+    } else if (clicWa) {
+      analisis += "🔥 INTENCIÓN CALIENTE: Intentó contactar por WhatsApp para cotizar.";
+    } else if (vioPlanos && vioVistas) {
+      analisis += "Tiene un perfil analítico: revisó tanto la distribución interna (planos) como las vistas reales.";
+    } else if (vioPlanos) {
+      analisis += "Le dio más importancia a conocer la distribución interna y metrajes.";
+    } else if (vioVistas) {
+      analisis += "Parece darle mucha importancia a la panorámica y vistas del edificio.";
+    }
+
+    return analisis;
+  };
+
   const cargarRadar = async () => {
     setCargando(true);
     try {
-      // 1. Traemos los últimos 500 clics
       const { data, error } = await supabase
         .from('tracking_inventario')
         .select('*')
@@ -37,7 +88,6 @@ export default function RadarInventario() {
         const sesionesList: SesionCliente[] = [];
         const sesionesActivas: Record<string, SesionCliente> = {};
 
-        // 2. Agrupación por sesiones (Timeout 45 min)
         datosCronologicos.forEach(row => {
           const email = row.email_cliente;
           const fechaRow = new Date(row.created_at);
@@ -66,39 +116,32 @@ export default function RadarInventario() {
           }
         });
 
-        // 3. Calcular minutos
         sesionesList.forEach(s => {
           const diffMs = s.fin.getTime() - s.inicio.getTime();
           s.minutos = Math.round(diffMs / 60000);
           s.ultimaAccion = s.eventos[0]?.detalle || s.eventos[0]?.accion || 'Desconocido';
         });
 
-        // === 4. LA MAGIA: BUSCAR NOMBRES EN EL CRM ===
-        // Sacamos una lista de los correos únicos que están en el radar ahorita
         const correosUnicos = Array.from(new Set(sesionesList.map(s => s.email)));
         
         if (correosUnicos.length > 0) {
-          // Le preguntamos a la tabla 'clientes' de quién son esos correos
           const { data: clientesData } = await supabase
             .from('clientes')
             .select('email, nombres, apellidos')
             .in('email', correosUnicos);
             
           if (clientesData) {
-            // Hacemos un diccionario rápido { "correo@.com": "Juan Pérez" }
             const mapaNombres: Record<string, string> = {};
             clientesData.forEach(c => {
               if (c.email) mapaNombres[c.email.toLowerCase()] = `${c.nombres || ''} ${c.apellidos || ''}`.trim();
             });
             
-            // Le pegamos el nombre a la sesión
             sesionesList.forEach(s => {
               s.nombre = mapaNombres[s.email.toLowerCase()];
             });
           }
         }
 
-        // 5. Ordenamos del más reciente al más antiguo
         sesionesList.sort((a, b) => b.fin.getTime() - a.fin.getTime());
         setSesiones(sesionesList);
       }
@@ -147,7 +190,6 @@ export default function RadarInventario() {
                   <React.Fragment key={sesion.idSesion}>
                     <tr className="border-b border-neutral-100 hover:bg-neutral-50 transition-colors">
                       <td className="p-4">
-                        {/* AQUI MOSTRAMOS EL NOMBRE SI EXISTE */}
                         <span className="font-bold text-neutral-900 block text-sm">
                           {sesion.nombre ? (
                             <>{sesion.nombre} <span className="text-[10px] text-green-600 ml-1" title="Registrado en CRM">✓</span></>
@@ -195,14 +237,28 @@ export default function RadarInventario() {
                     
                     {/* HUELLA DETALLADA DEL CLIENTE */}
                     {sesionExpandida === sesion.idSesion && (
-                      <tr className="bg-neutral-50 border-b border-neutral-200">
+                      <tr className="bg-neutral-50 border-b border-neutral-200 shadow-inner">
                         <td colSpan={5} className="p-6">
-                          <h4 className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-4">Registro exacto de acciones en esta sesión</h4>
+                          
+                          {/* PANEL DE ANÁLISIS COMERCIAL */}
+                          <div className="mb-6 bg-white border border-[#D1C292] rounded-xl p-4 shadow-sm flex items-start gap-4">
+                            <div className="bg-[#D1C292]/20 text-[#8A7A55] w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0">
+                              🧠
+                            </div>
+                            <div>
+                              <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8A7A55] mb-1">Análisis de Comportamiento</h4>
+                              <p className="text-sm text-neutral-700 leading-relaxed font-medium">
+                                {generarAnalisisComercial(sesion)}
+                              </p>
+                            </div>
+                          </div>
+
+                          <h4 className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-4 pl-1">Línea de tiempo exacta</h4>
                           <div className="space-y-3 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-neutral-200 before:to-transparent">
                             {sesion.eventos.map((evento, i) => (
                               <div key={i} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
                                 <div className="flex items-center justify-center w-2 h-2 rounded-full border border-white bg-[#B94A36] shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow sm:mx-0 mx-4 z-10"></div>
-                                <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white p-3 rounded-lg border border-neutral-200 shadow-sm flex flex-col">
+                                <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white p-3 rounded-lg border border-neutral-200 shadow-sm flex flex-col hover:border-[#B94A36]/30 transition-colors">
                                   <div className="flex items-center justify-between mb-1">
                                     <span className="text-[10px] font-bold text-neutral-400">{new Date(evento.created_at).toLocaleTimeString('es-EC')}</span>
                                     {evento.unidad_id && <span className="text-[9px] bg-neutral-100 text-neutral-500 font-bold px-1.5 py-0.5 rounded">Unidad {evento.unidad_id}</span>}
