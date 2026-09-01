@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 
-// Tipo de dato para agrupar las sesiones
+// Actualizamos el tipo para incluir un ID de sesión único
 type SesionCliente = {
+  idSesion: string;
   email: string;
   inicio: Date;
   fin: Date;
@@ -17,12 +18,13 @@ type SesionCliente = {
 export default function RadarInventario() {
   const [sesiones, setSesiones] = useState<SesionCliente[]>([]);
   const [cargando, setCargando] = useState(true);
-  const [clienteExpandido, setClienteExpandido] = useState<string | null>(null);
+  // Ahora expandimos por ID de Sesión, no por email (porque un email puede tener varias sesiones)
+  const [sesionExpandida, setSesionExpandida] = useState<string | null>(null);
 
   const cargarRadar = async () => {
     setCargando(true);
     try {
-      // Traemos los últimos 500 clics de la base de datos
+      // Traemos los últimos 500 clics
       const { data, error } = await supabase
         .from('tracking_inventario')
         .select('*')
@@ -32,49 +34,55 @@ export default function RadarInventario() {
       if (error) throw error;
 
       if (data) {
-        // Agrupamos los clics por cliente
-        const agrupado = data.reduce((acc: Record<string, SesionCliente>, row) => {
+        // 1. Invertimos el orden para procesar del clic más viejo al más nuevo
+        const datosCronologicos = [...data].reverse();
+
+        const sesionesList: SesionCliente[] = [];
+        const sesionesActivas: Record<string, SesionCliente> = {};
+
+        // 2. AGRUPACIÓN INTELIGENTE POR SESIONES (Timeout de 45 min)
+        datosCronologicos.forEach(row => {
           const email = row.email_cliente;
-          if (!acc[email]) {
-            acc[email] = {
-              email: email,
-              inicio: new Date(row.created_at),
-              fin: new Date(row.created_at),
-              minutos: 0,
-              eventos: [],
-              ultimaAccion: '',
-              unidadesVistas: []
-            };
-          }
-
-          // Agregamos el evento a su historial
-          acc[email].eventos.push(row);
-
-          // Actualizamos la hora de inicio o fin para calcular el tiempo
           const fechaRow = new Date(row.created_at);
-          if (fechaRow > acc[email].fin) acc[email].fin = fechaRow;
-          if (fechaRow < acc[email].inicio) acc[email].inicio = fechaRow;
+          const tiempoActual = fechaRow.getTime();
 
-          // Recopilamos qué unidades revisó
-          if (row.unidad_id && !acc[email].unidadesVistas.includes(row.unidad_id)) {
-            acc[email].unidadesVistas.push(row.unidad_id);
+          // Verificamos si este email ya tiene una sesión activa y si el último clic fue hace MENOS de 45 min
+          if (sesionesActivas[email] && (tiempoActual - sesionesActivas[email].fin.getTime()) < 45 * 60000) {
+            // Continúa en la misma sesión
+            const sesion = sesionesActivas[email];
+            sesion.fin = fechaRow;
+            sesion.eventos.unshift(row); // Insertamos arriba para la UI
+            if (row.unidad_id && !sesion.unidadesVistas.includes(row.unidad_id)) {
+              sesion.unidadesVistas.push(row.unidad_id);
+            }
+          } else {
+            // Pasó mucho tiempo o es nuevo: CREAMOS NUEVA SESIÓN
+            const nuevaSesion: SesionCliente = {
+              idSesion: `${email}-${tiempoActual}`, // ID único combinando correo y hora exacta
+              email: email,
+              inicio: fechaRow,
+              fin: fechaRow,
+              minutos: 0,
+              eventos: [row],
+              ultimaAccion: '',
+              unidadesVistas: row.unidad_id ? [row.unidad_id] : []
+            };
+            sesionesList.push(nuevaSesion);
+            sesionesActivas[email] = nuevaSesion; // Marcamos esta como su nueva sesión activa
           }
-
-          return acc;
-        }, {});
-
-        // Calculamos el tiempo total de cada uno y formateamos para mostrar
-        const listaSesiones = Object.values(agrupado).map((sesion) => {
-          const diffMs = sesion.fin.getTime() - sesion.inicio.getTime();
-          sesion.minutos = Math.round(diffMs / 60000);
-          sesion.ultimaAccion = sesion.eventos[0]?.detalle || sesion.eventos[0]?.accion || 'Desconocido';
-          return sesion;
         });
 
-        // Ordenamos para que los más recientes salgan arriba
-        listaSesiones.sort((a, b) => b.fin.getTime() - a.fin.getTime());
+        // 3. Calculamos la duración real de cada bloque y formateamos
+        sesionesList.forEach(s => {
+          const diffMs = s.fin.getTime() - s.inicio.getTime();
+          s.minutos = Math.round(diffMs / 60000);
+          s.ultimaAccion = s.eventos[0]?.detalle || s.eventos[0]?.accion || 'Desconocido';
+        });
+
+        // 4. Ordenamos de nuevo para que las sesiones recién activas salgan arriba
+        sesionesList.sort((a, b) => b.fin.getTime() - a.fin.getTime());
         
-        setSesiones(listaSesiones);
+        setSesiones(sesionesList);
       }
     } catch (error) {
       console.error("Error cargando el radar", error);
@@ -117,12 +125,16 @@ export default function RadarInventario() {
                 </tr>
               </thead>
               <tbody>
-                {sesiones.map((sesion, index) => (
-                  <React.Fragment key={index}>
+                {sesiones.map((sesion) => (
+                  <React.Fragment key={sesion.idSesion}>
                     <tr className="border-b border-neutral-100 hover:bg-neutral-50 transition-colors">
                       <td className="p-4">
                         <span className="font-medium text-neutral-900 block">{sesion.email}</span>
-                        <span className="text-[10px] text-neutral-400">Hace {Math.round((new Date().getTime() - sesion.fin.getTime()) / 60000)} min</span>
+                        <span className="text-[10px] text-neutral-400">
+                          {new Date().getTime() - sesion.fin.getTime() > 86400000 
+                            ? new Date(sesion.fin).toLocaleDateString('es-EC', {day: '2-digit', month:'short'}) 
+                            : `Hace ${Math.round((new Date().getTime() - sesion.fin.getTime()) / 60000)} min`}
+                        </span>
                       </td>
                       <td className="p-4">
                         <span className="bg-[#D1C292]/20 text-[#8A7A55] px-3 py-1 rounded-full text-xs font-bold">
@@ -147,19 +159,19 @@ export default function RadarInventario() {
                       </td>
                       <td className="p-4 text-center">
                         <button 
-                          onClick={() => setClienteExpandido(clienteExpandido === sesion.email ? null : sesion.email)}
+                          onClick={() => setSesionExpandida(sesionExpandida === sesion.idSesion ? null : sesion.idSesion)}
                           className="text-xs font-bold text-[#B94A36] hover:underline uppercase tracking-wider"
                         >
-                          {clienteExpandido === sesion.email ? 'Ocultar Clics' : 'Ver Detalles'}
+                          {sesionExpandida === sesion.idSesion ? 'Ocultar Clics' : 'Ver Detalles'}
                         </button>
                       </td>
                     </tr>
                     
-                    {/* HUELLA DETALLADA DEL CLIENTE (Línea de tiempo) */}
-                    {clienteExpandido === sesion.email && (
+                    {/* HUELLA DETALLADA DEL CLIENTE */}
+                    {sesionExpandida === sesion.idSesion && (
                       <tr className="bg-neutral-50 border-b border-neutral-200">
                         <td colSpan={5} className="p-6">
-                          <h4 className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-4">Registro exacto de acciones</h4>
+                          <h4 className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-4">Registro exacto de acciones en esta sesión</h4>
                           <div className="space-y-3 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-neutral-200 before:to-transparent">
                             {sesion.eventos.map((evento, i) => (
                               <div key={i} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
