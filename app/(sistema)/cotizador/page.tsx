@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Cotizador con Fecha de Caducidad (Sentido de Urgencia)
+// Actualizacion para Vercel - Cotizador con Área de BBQ en Terraza
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -34,8 +34,9 @@ export default function CotizadorPage() {
   const [valorDescuento, setValorDescuento] = useState<number>(0);
   const [motivoDescuento, setMotivoDescuento] = useState<string>('');
 
-  // --- CONTROL TEXTUAL DE CLIMATIZACIÓN (No afecta precios) ---
+  // --- COMPLEMENTOS ESTÉTICOS Y ARQUITECTÓNICOS (No afectan precios) ---
   const [incluirClima, setIncluirClima] = useState<boolean>(false);
+  const [incluirBbq, setIncluirBbq] = useState<boolean>(false); // NUEVO: Control de BBQ
 
   // --- PARÁMETROS FINANCIEROS Y DE FECHA ---
   
@@ -736,6 +737,11 @@ export default function CotizadorPage() {
                         <li><span className="font-semibold text-neutral-800">Climatización Estética:</span> Sistema de aire acondicionado integral empotrado en el tumbado para todos los ambientes del departamento.</li>
                       )}
 
+                      {/* MOSTRAR PÁRRAFO DE BBQ SOLO SI SE SELECCIONÓ EL TOGGLE */}
+                      {!esLocal && incluirBbq && (
+                        <li><span className="font-semibold text-neutral-800">Área de BBQ en Terraza:</span> Adecuación de espacio exterior con mesón y recubrimientos listos para su uso (no incluye parrilla ni equipos).</li>
+                      )}
+
                       {!esLocal && (
                         <li><span className="font-semibold text-neutral-800">Equipamiento:</span> La unidad incluye calentador de agua.</li>
                       )}
@@ -763,8 +769,9 @@ export default function CotizadorPage() {
             <>
               {/* OPCIONALES PARA EL PDF (Solo visible para Departamentos) */}
               {!esLocal && propiedadSeleccionada && (
-                <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm space-y-3">
+                <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm space-y-4">
                   <h2 className="text-xs font-semibold text-[#B94A36] uppercase tracking-wider">Presentación de Extras (PDF)</h2>
+                  
                   <div className="flex items-center justify-between bg-neutral-50 border border-neutral-200 p-3 rounded-lg transition-colors hover:border-[#B94A36]/30">
                     <div className="flex items-center gap-3">
                       <input 
@@ -779,6 +786,22 @@ export default function CotizadorPage() {
                       </div>
                     </div>
                   </div>
+
+                  <div className="flex items-center justify-between bg-neutral-50 border border-neutral-200 p-3 rounded-lg transition-colors hover:border-[#B94A36]/30">
+                    <div className="flex items-center gap-3">
+                      <input 
+                        type="checkbox" 
+                        checked={incluirBbq} 
+                        onChange={(e) => setIncluirBbq(e.target.checked)} 
+                        className="w-4 h-4 text-[#B94A36] border-gray-300 rounded focus:ring-[#B94A36] cursor-pointer" 
+                      />
+                      <div className="cursor-pointer select-none" onClick={() => setIncluirBbq(!incluirBbq)}>
+                        <p className="text-xs font-bold text-neutral-800">Mostrar Área de BBQ en el PDF</p>
+                        <p className="text-[10px] text-neutral-500">Agrega el texto sobre el mesón en la terraza (sin incluir equipos).</p>
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
               )}
 
