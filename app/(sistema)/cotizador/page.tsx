@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Cotizador con Llenado Rápido (Cuotas Balón/Refuerzo)
+// Actualizacion para Vercel - Cotizador con Llenado Rápido y Corrección TypeScript
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -63,7 +63,7 @@ export default function CotizadorPage() {
 
   const [cronogramaCuotas, setCronogramaCuotas] = useState<CuotaMes[]>([]);
 
-  // NUEVO: ESTADOS PARA CALCULADORA RÁPIDA DE REFUERZOS (Cuotas Balón)
+  // ESTADOS PARA CALCULADORA RÁPIDA DE REFUERZOS (Cuotas Balón)
   const [mostrarCalculadoraRefuerzos, setMostrarCalculadoraRefuerzos] = useState(false);
   const [cuotaBaseRapida, setCuotaBaseRapida] = useState<number | ''>('');
   const [mesesRefuerzoRapido, setMesesRefuerzoRapido] = useState<string>('');
@@ -284,7 +284,6 @@ export default function CotizadorPage() {
     };
   }, [cronogramaCuotas]);
 
-  // === EDICIÓN MANUAL DE UNA SOLA CUOTA ===
   const actualizarValorCuota = (cuotaNumero: number, nuevoValor: number) => {
     let nuevoCronograma = cronogramaCuotas.map(cuota => {
       if (cuota.numeroCuota === cuotaNumero) {
@@ -307,7 +306,7 @@ export default function CotizadorPage() {
     setCronogramaCuotas(nuevoCronograma);
   };
 
-  // === NUEVO: FUNCIONES DE LLENADO RÁPIDO ===
+  // === FUNCIONES DE LLENADO RÁPIDO ===
   const reiniciarCuotas = () => {
     if (mesesConstruccion <= 0) return;
     const valorBaseCuota = entradaDiferirTotal / mesesConstruccion;
@@ -325,7 +324,6 @@ export default function CotizadorPage() {
       return;
     }
 
-    // Convertir texto "12, 24" a array de números [12, 24]
     const mesesExtra = mesesRefuerzoRapido
       .split(',')
       .map(m => parseInt(m.trim()))
@@ -352,12 +350,12 @@ export default function CotizadorPage() {
       return {
         ...cuota,
         valor: esRefuerzo ? valorPorRefuerzo : base,
-        esEditable: true // Lo bloqueamos para que recalculos futuros no lo borren
+        esEditable: true 
       };
     });
 
     setCronogramaCuotas(nuevoCronograma);
-    setMostrarCalculadoraRefuerzos(false); // Cerramos el panel tras el éxito
+    setMostrarCalculadoraRefuerzos(false); 
   };
 
   const nombreClienteActivo = useMemo(() => {
@@ -984,7 +982,7 @@ export default function CotizadorPage() {
                        <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
                           <div className="flex-1">
                             <label className="text-[9px] font-bold text-orange-700 uppercase mb-1 block">Cuota Fija Base ($)</label>
-                            <input type="number" value={cuotaBaseRapida} onChange={e => setCuotaBaseRapida(e.target.value)} placeholder="Ej: 1500" className="w-full bg-white border border-orange-200 p-2 text-xs font-mono rounded outline-none focus:border-orange-400"/>
+                            <input type="number" value={cuotaBaseRapida} onChange={e => setCuotaBaseRapida(e.target.value === '' ? '' : Number(e.target.value))} placeholder="Ej: 1500" className="w-full bg-white border border-orange-200 p-2 text-xs font-mono rounded outline-none focus:border-orange-400"/>
                           </div>
                           <div className="flex-1">
                             <label className="text-[9px] font-bold text-orange-700 uppercase mb-1 block">Meses de Refuerzo</label>
