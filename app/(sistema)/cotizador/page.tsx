@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Cotizador con Área de BBQ en Terraza
+// Actualizacion para Vercel - Cotizador con Llenado Rápido (Cuotas Balón/Refuerzo)
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -36,17 +36,13 @@ export default function CotizadorPage() {
 
   // --- COMPLEMENTOS ESTÉTICOS Y ARQUITECTÓNICOS (No afectan precios) ---
   const [incluirClima, setIncluirClima] = useState<boolean>(false);
-  const [incluirBbq, setIncluirBbq] = useState<boolean>(false); // NUEVO: Control de BBQ
+  const [incluirBbq, setIncluirBbq] = useState<boolean>(false);
 
   // --- PARÁMETROS FINANCIEROS Y DE FECHA ---
-  
-  // Fechas Base
   const hoyStr = new Date().toISOString().split('T')[0];
   const sieteDiasDespuesStr = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-  // NUEVO: Fecha de Caducidad de la Cotización
   const [fechaCaducidad, setFechaCaducidad] = useState<string>(sieteDiasDespuesStr);
-  
   const [reservaValor, setReservaValor] = useState<number>(2500);
 
   const [tipoInicial, setTipoInicial] = useState<'porcentaje' | 'valor'>('porcentaje');
@@ -67,7 +63,11 @@ export default function CotizadorPage() {
 
   const [cronogramaCuotas, setCronogramaCuotas] = useState<CuotaMes[]>([]);
 
-  // Función Auxiliar para los botones rápidos de caducidad
+  // NUEVO: ESTADOS PARA CALCULADORA RÁPIDA DE REFUERZOS (Cuotas Balón)
+  const [mostrarCalculadoraRefuerzos, setMostrarCalculadoraRefuerzos] = useState(false);
+  const [cuotaBaseRapida, setCuotaBaseRapida] = useState<number | ''>('');
+  const [mesesRefuerzoRapido, setMesesRefuerzoRapido] = useState<string>('');
+
   const setDiasCaducidad = (dias: number) => {
     const nuevaFecha = new Date(Date.now() + dias * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     setFechaCaducidad(nuevaFecha);
@@ -181,7 +181,6 @@ export default function CotizadorPage() {
 
     const precioFin = Math.max(0, listaOriginal - descuentoMonto);
     
-    // --- LÓGICA DE CASCADA MATEMÁTICA ---
     let inicialDeseado = tipoInicial === 'porcentaje' ? precioFin * (valorInicial / 100) : valorInicial;
     let entradaDeseada = tipoEntrada === 'porcentaje' ? precioFin * (valorEntrada / 100) : valorEntrada;
 
@@ -285,6 +284,7 @@ export default function CotizadorPage() {
     };
   }, [cronogramaCuotas]);
 
+  // === EDICIÓN MANUAL DE UNA SOLA CUOTA ===
   const actualizarValorCuota = (cuotaNumero: number, nuevoValor: number) => {
     let nuevoCronograma = cronogramaCuotas.map(cuota => {
       if (cuota.numeroCuota === cuotaNumero) {
@@ -305,6 +305,59 @@ export default function CotizadorPage() {
       });
     }
     setCronogramaCuotas(nuevoCronograma);
+  };
+
+  // === NUEVO: FUNCIONES DE LLENADO RÁPIDO ===
+  const reiniciarCuotas = () => {
+    if (mesesConstruccion <= 0) return;
+    const valorBaseCuota = entradaDiferirTotal / mesesConstruccion;
+    setCronogramaCuotas(cronogramaCuotas.map(c => ({
+      ...c,
+      valor: valorBaseCuota,
+      esEditable: false
+    })));
+  };
+
+  const aplicarPlanRefuerzos = () => {
+    const base = Number(cuotaBaseRapida);
+    if (base <= 0) {
+      alert("Por favor ingresa una Cuota Base mayor a $0.");
+      return;
+    }
+
+    // Convertir texto "12, 24" a array de números [12, 24]
+    const mesesExtra = mesesRefuerzoRapido
+      .split(',')
+      .map(m => parseInt(m.trim()))
+      .filter(m => !isNaN(m) && m > 0 && m <= mesesConstruccion);
+
+    if (mesesExtra.length === 0) {
+      alert(`Por favor ingresa al menos un mes válido entre 1 y ${mesesConstruccion}. (Ej: 12)`);
+      return;
+    }
+
+    const mesesRegularesCount = mesesConstruccion - mesesExtra.length;
+    const totalRegular = base * mesesRegularesCount;
+    
+    if (totalRegular > entradaDiferirTotal) {
+      alert(`La cuota base de $${base} es muy alta. Solo las cuotas regulares sumarían $${totalRegular}, superando el total a diferir ($${entradaDiferirTotal}).`);
+      return;
+    }
+
+    const saldoParaRefuerzos = entradaDiferirTotal - totalRegular;
+    const valorPorRefuerzo = saldoParaRefuerzos / mesesExtra.length;
+
+    const nuevoCronograma = cronogramaCuotas.map(cuota => {
+      const esRefuerzo = mesesExtra.includes(cuota.numeroCuota);
+      return {
+        ...cuota,
+        valor: esRefuerzo ? valorPorRefuerzo : base,
+        esEditable: true // Lo bloqueamos para que recalculos futuros no lo borren
+      };
+    });
+
+    setCronogramaCuotas(nuevoCronograma);
+    setMostrarCalculadoraRefuerzos(false); // Cerramos el panel tras el éxito
   };
 
   const nombreClienteActivo = useMemo(() => {
@@ -444,7 +497,6 @@ export default function CotizadorPage() {
             )}
           </div>
 
-          {/* ASESOR / QUIÉN GENERA LA COTIZACIÓN */}
           <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm">
             <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">Asesor / Comercial Emisor</h2>
             <input
@@ -456,7 +508,6 @@ export default function CotizadorPage() {
             />
           </div>
 
-          {/* VALIDEZ DE LA COTIZACIÓN (CADUCIDAD) */}
           <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm space-y-3">
             <h2 className="text-xs font-semibold text-[#B94A36] uppercase tracking-wider">Validez de la Cotización (Caducidad)</h2>
             <div className="flex flex-col sm:flex-row gap-3 items-center">
@@ -474,10 +525,8 @@ export default function CotizadorPage() {
             <p className="text-[10px] text-neutral-400">Esta fecha aparecerá en el documento impreso para generar urgencia de compra.</p>
           </div>
 
-          {/* ASOCIAR INVERSIONISTA CON BUSCADOR RÁPIDO */}
           <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm space-y-3">
             <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Asociar Inversionista</h2>
-            
             <div className="relative">
               <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-neutral-400 text-xs">🔍</span>
               <input 
@@ -488,7 +537,6 @@ export default function CotizadorPage() {
                 className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-2.5 pl-9 pr-3 text-xs font-medium focus:outline-none focus:border-[#B94A36]" 
               />
             </div>
-
             <select
               value={clienteSeleccionado}
               onChange={(e) => setClienteSeleccionado(e.target.value)}
@@ -503,7 +551,6 @@ export default function CotizadorPage() {
             </select>
           </div>
           
-          {/* 1. SELECCIÓN DE INMUEBLE */}
           <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm">
             <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-4">1. Inmueble Seleccionado</h2>
             <select
@@ -549,7 +596,6 @@ export default function CotizadorPage() {
             )}
           </div>
 
-          {/* VISTA CONDICIONAL PLAN / PREVISUALIZAR */}
           {!propiedadSeleccionada ? (
             <div className="bg-white rounded-xl border border-dashed border-neutral-300 p-12 text-center text-neutral-400">
               <p className="text-sm font-medium">Por favor, selecciona una unidad en el panel superior.</p>
@@ -558,7 +604,6 @@ export default function CotizadorPage() {
             <div className="bg-neutral-800 p-6 rounded-xl shadow-inner flex justify-center border border-neutral-700 overflow-x-auto">
               <div id="plantilla-pdf-arienzo" className="bg-white w-[210mm] min-h-[297mm] p-10 flex flex-col justify-between text-neutral-900 rounded-sm shadow-2xl scale-95 sm:scale-100 origin-top transform">
                 <div>
-                  {/* CABECERA COMERCIAL DEL PDF */}
                   <div className="bg-[#B94A36] px-8 py-5 flex justify-between items-center rounded-t-sm">
                     <div className="flex items-center gap-3">
                       <img 
@@ -570,18 +615,15 @@ export default function CotizadorPage() {
                     <div className="text-right text-white">
                       <h3 className="text-[10px] font-semibold tracking-wider uppercase opacity-90">Propuesta de Inversión</h3>
                       <p className="text-[9px] mt-0.5 font-light opacity-75">Emisión: {new Date().toLocaleDateString('es-EC')}</p>
-                      {/* ETIQUETA DE CADUCIDAD EN EL PDF */}
                       <p className="text-[9px] mt-0.5 font-bold text-red-200">Válida hasta: {formatearFechaLegible(fechaCaducidad)}</p>
                     </div>
                   </div>
 
-                  {/* Inversionista */}
                   <div className="my-3 border-b border-neutral-100 pb-2 text-left">
                     <span className="text-[8px] uppercase tracking-wider text-neutral-400 block">Inversionista de Propuesta</span>
                     <p className="text-sm font-semibold text-neutral-800">{nombreClienteActivo}</p>
                   </div>
 
-                  {/* FICHA TÉCNICA OPTIMIZADA */}
                   <div className="mb-4">
                     <div className="flex items-center justify-between bg-[#F9F7F5] p-3 rounded-md border border-[#EAE3DC] text-[10px]">
                       <div className="flex-1 text-left border-r border-[#EAE3DC] pr-2">
@@ -610,7 +652,6 @@ export default function CotizadorPage() {
                     </div>
                   </div>
 
-                  {/* CONCEPTO ESTRUCTURADO */}
                   <div className="mb-2">
                     <h4 className="text-[8px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Plan de Financiamiento Específico</h4>
                     <table className="w-full text-left text-[11px] border-collapse">
@@ -722,7 +763,6 @@ export default function CotizadorPage() {
                     </div>
                   )}
 
-                  {/* VALORES AGREGADOS A LA UNIDAD */}
                   <div className="mb-4 bg-[#F9F7F5] border border-[#EAE3DC] rounded-md p-3">
                     <h4 className="text-[8px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Valores Agregados a la Unidad</h4>
                     <ul className="text-[9px] text-neutral-700 space-y-1 pl-3 list-disc marker:text-[#DEB886]">
@@ -732,12 +772,10 @@ export default function CotizadorPage() {
                         <li><span className="font-semibold text-neutral-800">Complementos Inmobiliarios:</span> El Valor Total de Venta ya contempla la asignación de los parqueos y la bodega detallados en la ficha técnica.</li>
                       )}
                       
-                      {/* MOSTRAR PÁRRAFO DE CLIMATIZACIÓN SOLO SI SE SELECCIONÓ EL TOGGLE */}
                       {!esLocal && incluirClima && (
                         <li><span className="font-semibold text-neutral-800">Climatización Estética:</span> Sistema de aire acondicionado integral empotrado en el tumbado para todos los ambientes del departamento.</li>
                       )}
 
-                      {/* MOSTRAR PÁRRAFO DE BBQ SOLO SI SE SELECCIONÓ EL TOGGLE */}
                       {!esLocal && incluirBbq && (
                         <li><span className="font-semibold text-neutral-800">Área de BBQ en Terraza:</span> Adecuación de espacio exterior con mesón y recubrimientos listos para su uso (no incluye parrilla ni equipos).</li>
                       )}
@@ -750,7 +788,6 @@ export default function CotizadorPage() {
 
                 </div>
 
-                {/* Firmas */}
                 <div className="mt-2">
                   <div className="grid grid-cols-2 gap-8 text-center text-[9px]">
                     <div className="border-t border-neutral-300 pt-1.5">
@@ -767,7 +804,6 @@ export default function CotizadorPage() {
             </div>
           ) : (
             <>
-              {/* OPCIONALES PARA EL PDF (Solo visible para Departamentos) */}
               {!esLocal && propiedadSeleccionada && (
                 <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm space-y-4">
                   <h2 className="text-xs font-semibold text-[#B94A36] uppercase tracking-wider">Presentación de Extras (PDF)</h2>
@@ -801,11 +837,9 @@ export default function CotizadorPage() {
                       </div>
                     </div>
                   </div>
-
                 </div>
               )}
 
-              {/* MÓDULO DE DESCUENTOS ADICIONALES */}
               <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm space-y-4">
                 <div className="flex justify-between items-center border-b pb-2">
                   <h2 className="text-xs font-semibold text-[#B94A36] uppercase tracking-wider">Descuento Adicional (Opcional)</h2>
@@ -833,7 +867,6 @@ export default function CotizadorPage() {
                 </div>
               </div>
 
-              {/* MODALIDAD TEMPORAL */}
               <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm">
                 <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">Modalidad del Plan Temporal</h2>
                 <div className="grid grid-cols-2 gap-3 bg-neutral-100 p-1 rounded-lg">
@@ -846,7 +879,6 @@ export default function CotizadorPage() {
                 </div>
               </div>
 
-              {/* 2. HITOS TEMPORALES */}
               {incluirFechas && (
                 <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm space-y-6">
                   <div>
@@ -887,18 +919,15 @@ export default function CotizadorPage() {
                 </div>
               )}
 
-              {/* CONTROL DE VALORES DEL PLAN */}
               <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm space-y-4">
                 <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Control de Valores del Plan</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                   
-                  {/* RESERVA */}
                   <div className="space-y-2">
                     <label className="block text-xs font-medium text-neutral-500 uppercase mt-1 mb-1">Reserva (USD)</label>
                     <input type="number" min="0" value={reservaValor || ''} onChange={(e) => setReservaValor(Number(e.target.value))} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-2.5 text-sm font-semibold outline-none mt-1 focus:border-[#B94A36]" />
                   </div>
 
-                  {/* ABONO INICIAL MODIFICADO */}
                   <div className="space-y-2 border border-neutral-100 p-2.5 rounded-lg bg-white shadow-sm">
                     <div className="flex justify-between items-center mb-2">
                       <label className="text-xs font-bold text-[#B94A36] uppercase">Abono Inicial</label>
@@ -915,7 +944,6 @@ export default function CotizadorPage() {
                     </div>
                   </div>
 
-                  {/* CUOTAS OBRA */}
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
                       <label className="text-xs font-medium text-neutral-500 uppercase">Cuotas Obra</label>
@@ -927,7 +955,6 @@ export default function CotizadorPage() {
                     <input type="number" min="0" value={valorEntrada || ''} onChange={(e) => setValorEntrada(Number(e.target.value))} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-2.5 text-sm font-semibold outline-none focus:border-[#B94A36]" />
                   </div>
 
-                  {/* MESES PLAZO */}
                   <div className="space-y-2">
                     <label className="block text-xs font-medium text-neutral-500 uppercase mt-1 mb-1">Meses Plazo Obra</label>
                     <input type="number" min="1" max="48" value={mesesConstruccion} onChange={(e) => setMesesConstruccion(Math.min(48, Number(e.target.value)))} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-2.5 text-sm font-semibold outline-none mt-1 focus:border-[#B94A36]" />
@@ -936,10 +963,40 @@ export default function CotizadorPage() {
                 </div>
               </div>
 
-              {/* VISTA Y AJUSTE DE CUOTAS */}
+              {/* VISTA Y AJUSTE DE CUOTAS CON LLENADO RÁPIDO */}
               {entradaDiferirTotal > 0 && (
                 <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm">
-                  <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">Vista y Ajuste de Cuotas de Obra</h2>
+                  <div className="flex justify-between items-center mb-4 border-b border-neutral-100 pb-3">
+                    <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Vista y Ajuste de Cuotas de Obra</h2>
+                    <div className="flex gap-2">
+                      <button onClick={reiniciarCuotas} className="text-[10px] text-neutral-500 hover:text-neutral-800 font-bold uppercase tracking-wider">
+                        ↻ Reiniciar
+                      </button>
+                      <button onClick={() => setMostrarCalculadoraRefuerzos(!mostrarCalculadoraRefuerzos)} className="text-[10px] bg-[#B94A36]/10 text-[#B94A36] px-2 py-1 rounded hover:bg-[#B94A36]/20 font-bold uppercase tracking-wider transition-colors">
+                        ⚡ Llenado Rápido
+                      </button>
+                    </div>
+                  </div>
+
+                  {mostrarCalculadoraRefuerzos && (
+                    <div className="mb-4 p-3 bg-orange-50 border border-orange-100 rounded-lg flex flex-col gap-3 animate-in fade-in">
+                       <p className="text-[10px] text-orange-800 font-medium">Configura una cuota base fija. El saldo sobrante se dividirá y sumará automáticamente a tus meses de refuerzo (ej. mes de utilidades o bonos).</p>
+                       <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
+                          <div className="flex-1">
+                            <label className="text-[9px] font-bold text-orange-700 uppercase mb-1 block">Cuota Fija Base ($)</label>
+                            <input type="number" value={cuotaBaseRapida} onChange={e => setCuotaBaseRapida(e.target.value)} placeholder="Ej: 1500" className="w-full bg-white border border-orange-200 p-2 text-xs font-mono rounded outline-none focus:border-orange-400"/>
+                          </div>
+                          <div className="flex-1">
+                            <label className="text-[9px] font-bold text-orange-700 uppercase mb-1 block">Meses de Refuerzo</label>
+                            <input type="text" value={mesesRefuerzoRapido} onChange={e => setMesesRefuerzoRapido(e.target.value)} placeholder="Ej: 12, 24" className="w-full bg-white border border-orange-200 p-2 text-xs font-mono rounded outline-none focus:border-orange-400"/>
+                          </div>
+                          <button onClick={aplicarPlanRefuerzos} className="bg-orange-600 text-white px-4 py-2 rounded text-xs font-bold hover:bg-orange-700 uppercase tracking-wider w-full sm:w-auto transition-colors">
+                            Aplicar
+                          </button>
+                       </div>
+                    </div>
+                  )}
+
                   <div className="max-h-80 overflow-y-auto border border-neutral-100 rounded-lg divide-y divide-neutral-100">
                     {cronogramaCuotas.map((cuota) => (
                       <div key={cuota.numeroCuota} className={`flex justify-between items-center p-3 ${cuota.esEditable ? 'bg-[#B94A36] text-white' : 'bg-white'}`}>
@@ -1014,7 +1071,6 @@ export default function CotizadorPage() {
               </div>
             </div>
 
-            {/* BOTONES */}
             {propiedadSeleccionada && (
               <div className="space-y-3 pt-4 border-t border-neutral-100">
                 <button
