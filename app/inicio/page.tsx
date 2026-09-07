@@ -35,14 +35,14 @@ export default function ArienzoLandingPremium() {
         email: correoLimpio,
         tipo: 'prospecto',
         origen: 'Web Pública - Solicitud VIP'
-      }], { onConflict: 'email' }).catch(() => {});
+      }], { onConflict: 'email' });
 
       // SENSOR SILENCIOSO: Registramos la intención
       await supabase.from('tracking_inventario').insert([{
         email_cliente: correoLimpio,
         accion: 'SOLICITUD_ACCESO_VIP',
         detalle: 'Completó formulario en landing page para pedir acceso'
-      }]).catch(() => {});
+      }]);
 
       // Mostramos el mensaje de éxito (NO REDIRIGIMOS)
       setSolicitudEnviada(true);
@@ -55,7 +55,7 @@ export default function ArienzoLandingPremium() {
           tipo: "nueva_solicitud_web",
           datos: { nombres: formData.nombres, telefono: formData.telefono, email: correoLimpio }
         })
-      }).catch(() => {});
+      }).catch(() => {}); // Este catch se queda porque es de fetch (JavaScript estándar), no de Supabase
 
     } catch (error) {
       console.error("Error al procesar:", error);
@@ -65,14 +65,14 @@ export default function ArienzoLandingPremium() {
     }
   };
 
-  const agendarZoom = () => {
+  const agendarZoom = async () => {
     // SENSOR SILENCIOSO
     if (formData.email) {
-      supabase.from('tracking_inventario').insert([{
+      await supabase.from('tracking_inventario').insert([{
         email_cliente: formData.email,
         accion: 'CLIC_AGENDAR_ZOOM',
         detalle: 'Clic en botón principal de Agendar Presentación'
-      }]).catch(() => {});
+      }]);
     }
     // Link de WhatsApp o Calendly
     window.open('https://wa.me/593979469472?text=Hola,%20quisiera%20agendar%20una%20presentación%20virtual%20sobre%20el%20proyecto%20Arienzo.', '_blank');
