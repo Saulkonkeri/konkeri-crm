@@ -100,7 +100,7 @@ export default function ArienzoLandingPremium() {
         </div>
       </header>
 
-      {/* 1. HERO INMERSIVO (Render protagonista sin fondo blanco) */}
+      {/* 1. HERO INMERSIVO */}
       <section className="relative h-[100vh] min-h-[700px] flex flex-col items-center justify-center">
         <img 
           src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Fronta.jpg" 
@@ -108,11 +108,10 @@ export default function ArienzoLandingPremium() {
           className="absolute inset-0 w-full h-full object-cover z-0"
           fetchPriority="high"
         />
-        {/* Degradado oscuro solo arriba y abajo para que el render brille en el medio */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/30 to-black/70 z-0"></div>
 
         <div className="relative z-10 text-center px-6 w-full max-w-4xl mx-auto pt-16">
-          <span className="inline-block text-[10px] font-bold tracking-[0.3em] text-[#DEB886] uppercase mb-6 px-4 py-1.5 border border-[#DEB886]/50 rounded-full backdrop-blur-sm">
+          <span className="inline-block text-[11px] font-bold tracking-[0.3em] text-[#DEB886] uppercase mb-6 px-5 py-2 border border-[#DEB886]/50 rounded-full backdrop-blur-sm">
             Próximamente en Manta
           </span>
           <h1 className="text-4xl md:text-6xl font-medium text-white leading-tight mb-8 tracking-tight drop-shadow-xl">
@@ -140,25 +139,25 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* BANDA TERRACOTA (Logo Dorado Inicial) */}
-      <div className="bg-[#974932] py-8 md:py-10 flex justify-center items-center shadow-inner relative z-20">
+      {/* BANDA TERRACOTA (Más ancha y con mayor presencia) */}
+      <div className="bg-[#974932] py-14 md:py-20 flex justify-center items-center shadow-inner relative z-20">
         <img 
           src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/logo-dorado-arienzo.svg" 
           alt="Arienzo Boutique Living" 
-          className="h-12 md:h-16 drop-shadow-md" 
+          className="h-16 md:h-20 drop-shadow-lg" 
         />
       </div>
 
-      {/* 2. UBICACIÓN (Diseño Arquitectónico Superpuesto) */}
+      {/* 2. UBICACIÓN */}
       <section className="py-24 md:py-32 px-6 bg-[#F9F7F5]">
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-10 items-center">
             
-            {/* Texto (Se superpone ligeramente a la imagen en desktop) */}
             <div className="md:col-span-5 md:pr-10 z-10 order-2 md:order-1">
               <div className="flex items-center gap-4 mb-6">
                 <div className="h-[2px] w-8 bg-[#974932]"></div>
-                <span className="text-[10px] font-bold tracking-[0.25em] text-[#974932] uppercase">Barbasquillo, Manta</span>
+                {/* Título un poco más grande (text-xs) */}
+                <span className="text-xs font-bold tracking-[0.25em] text-[#974932] uppercase">Barbasquillo, Manta</span>
               </div>
               <h3 className="text-3xl md:text-5xl font-medium text-neutral-900 leading-tight mb-8 tracking-tight">
                 La mejor zona <br className="hidden md:block"/> de la ciudad.
@@ -171,31 +170,28 @@ export default function ArienzoLandingPremium() {
               </p>
             </div>
 
-            {/* Imagen con diseño flotante */}
             <div className="md:col-span-7 relative order-1 md:order-2">
-              <div className="absolute -inset-4 bg-[#DEB886]/20 rounded-2xl transform translate-x-4 translate-y-4"></div>
+              <div className="absolute -inset-4 bg-[#DEB886]/20 rounded-2xl transform translate-x-4 translate-y-4 hidden md:block"></div>
               <img 
                 src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/ubicacion-arienzo-1.jpg" 
                 alt="Ubicación Manta" 
                 className="relative z-10 w-full h-auto object-cover rounded-xl shadow-2xl"
                 loading="lazy"
               />
-              {/* Etiqueta Flotante Tech */}
-              <div className="absolute bottom-6 left-6 z-20 bg-white/90 backdrop-blur-md px-5 py-3 rounded-lg shadow-xl border border-white flex items-center gap-3">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                <span className="text-xs font-bold text-neutral-800 uppercase tracking-wider">Alta Plusvalía</span>
-              </div>
             </div>
             
           </div>
         </div>
       </section>
 
-      {/* 3. AMENIDADES (Tarjetas Premium Impactantes) */}
-      <section className="py-24 md:py-32 px-6 bg-white border-t border-[#EAE3DC]">
-        <div className="max-w-6xl mx-auto">
+      {/* 3. AMENIDADES */}
+      <section className="py-24 md:py-32 px-6 bg-white border-t border-[#EAE3DC] relative overflow-hidden">
+        {/* Patrón de diseño sutil de fondo */}
+        <div className="absolute inset-0 bg-[radial-gradient(#EAE3DC_1px,transparent_1px)] [background-size:24px_24px] opacity-40"></div>
+        
+        <div className="max-w-6xl mx-auto relative z-10">
           <div className="text-center mb-16 md:mb-20">
-            <span className="text-[10px] font-bold tracking-[0.25em] text-[#974932] uppercase mb-4 block">Amenidades Exclusivas</span>
+            <span className="text-xs font-bold tracking-[0.25em] text-[#974932] uppercase mb-4 block">Amenidades Exclusivas</span>
             <h3 className="text-3xl md:text-5xl font-medium text-neutral-900 tracking-tight mb-6">
               Espacios pensados para vivir.
             </h3>
@@ -205,9 +201,7 @@ export default function ArienzoLandingPremium() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            
-            {/* Tarjeta 1 */}
-            <div className="group bg-[#F9F7F5] rounded-2xl overflow-hidden border border-neutral-100 shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+            <div className="group bg-white rounded-2xl overflow-hidden border border-[#EAE3DC] shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-2">
               <div className="aspect-[4/3] overflow-hidden relative">
                 <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Piscina-1.jpg" alt="Piscina" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
               </div>
@@ -220,8 +214,7 @@ export default function ArienzoLandingPremium() {
               </div>
             </div>
 
-            {/* Tarjeta 2 */}
-            <div className="group bg-[#F9F7F5] rounded-2xl overflow-hidden border border-neutral-100 shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+            <div className="group bg-white rounded-2xl overflow-hidden border border-[#EAE3DC] shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-2">
               <div className="aspect-[4/3] overflow-hidden relative">
                 <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-living-arienzo.jpg" alt="Living" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
               </div>
@@ -234,8 +227,7 @@ export default function ArienzoLandingPremium() {
               </div>
             </div>
 
-            {/* Tarjeta 3 */}
-            <div className="group bg-[#F9F7F5] rounded-2xl overflow-hidden border border-neutral-100 shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+            <div className="group bg-white rounded-2xl overflow-hidden border border-[#EAE3DC] shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-2">
               <div className="aspect-[4/3] overflow-hidden relative">
                 <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Plaza-Comercial-1-1.jpg" alt="Comercial" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
               </div>
@@ -247,92 +239,87 @@ export default function ArienzoLandingPremium() {
                 </p>
               </div>
             </div>
-
           </div>
         </div>
       </section>
 
-      {/* 4. GALERÍA EN LÍNEA (Scroll horizontal elegante) */}
-      <section className="py-24 md:py-28 bg-[#F9F7F5] border-t border-[#EAE3DC] overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6 mb-12 flex justify-between items-end">
-          <div>
-            <span className="text-[10px] font-bold tracking-[0.25em] text-[#974932] uppercase mb-2 block">Galería</span>
-            <h3 className="text-3xl md:text-4xl font-medium text-neutral-900 tracking-tight">Arquitectura y Diseño</h3>
-          </div>
-        </div>
-        
-        {/* Contenedor de una sola fila con scroll horizontal */}
-        <div className="flex gap-4 overflow-x-auto pb-8 pt-4 px-6 md:px-12 snap-x snap-mandatory hide-scrollbar">
-          {imagenesGaleria.map((img, index) => (
-            <div 
-              key={index} 
-              className="min-w-[280px] md:min-w-[320px] aspect-[4/3] relative group cursor-pointer snap-center rounded-xl overflow-hidden shadow-md shrink-0 border border-neutral-200"
-              onClick={() => setImagenAmpliada(img)}
-            >
-              <img src={img} alt={`Render ${index + 1}`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy" />
-              {/* Capa de Hover con Ícono */}
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
-                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center border border-white/50">
-                  <span className="text-white text-2xl font-light">⛶</span>
-                </div>
+      {/* 4. GALERÍA DEL PROYECTO (Exactamente como la referencia visual) */}
+      <section className="py-20 md:py-28 bg-[#21242E] text-center px-6">
+        <div className="max-w-6xl mx-auto">
+          <span className="text-xs font-bold tracking-[0.25em] text-[#DEB886] uppercase mb-4 block">Galería del Proyecto</span>
+          <h3 className="text-3xl md:text-4xl font-light text-white mb-12 md:mb-16 tracking-tight">Imágenes que hablan por sí solas.</h3>
+          
+          <div className="flex flex-wrap md:flex-nowrap justify-center gap-3 md:gap-4">
+            {imagenesGaleria.map((img, index) => (
+              <div 
+                key={index} 
+                onClick={() => setImagenAmpliada(img)} 
+                className="relative group w-[140px] sm:w-[180px] md:w-full md:flex-1 aspect-[4/3] rounded-md overflow-hidden cursor-pointer shadow-lg bg-[#1a1d24]"
+              >
+                <img src={img} alt={`Render ${index + 1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 opacity-80 group-hover:opacity-100" loading="lazy" />
+                <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
 
       {/* LIGHTBOX MODAL PARA GALERÍA */}
       {imagenAmpliada && (
-        <div className="fixed inset-0 bg-black/95 z-[70] flex items-center justify-center p-4 md:p-8 backdrop-blur-md animate-in fade-in" onClick={() => setImagenAmpliada(null)}>
-          <button className="absolute top-6 right-6 text-white/70 hover:text-white text-4xl font-light transition-colors z-50">&times;</button>
-          <img src={imagenAmpliada} alt="Vista Ampliada" className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl animate-in zoom-in-95" />
+        <div className="fixed inset-0 bg-black/95 z-[70] flex items-center justify-center p-4 md:p-8 backdrop-blur-sm animate-in fade-in" onClick={() => setImagenAmpliada(null)}>
+          <button className="absolute top-6 right-6 text-white/50 hover:text-white text-4xl font-light transition-colors z-50">&times;</button>
+          <img src={imagenAmpliada} alt="Arienzo Vista Ampliada" className="max-w-full max-h-[90vh] object-contain rounded-md shadow-2xl animate-in zoom-in-95" />
         </div>
       )}
 
-      {/* 5. VISIÓN DE INVERSIÓN */}
-      <section className="py-24 px-6 bg-white border-t border-[#EAE3DC]">
-        <div className="max-w-4xl mx-auto text-center">
-          <span className="text-[10px] font-bold tracking-[0.25em] text-[#974932] uppercase mb-4 block">Etapa Cero</span>
-          <h3 className="text-3xl md:text-4xl font-medium text-neutral-900 mb-8">Visión de Inversión</h3>
-          <p className="text-base text-neutral-600 font-light leading-relaxed mb-10 max-w-2xl mx-auto">
+      {/* 5. VISIÓN DE INVERSIÓN (Fondo blanco, diseño arquitectónico) */}
+      <section className="py-24 md:py-32 px-6 bg-white relative overflow-hidden">
+        {/* Línea vertical decorativa */}
+        <div className="absolute left-1/2 top-0 w-[1px] h-20 bg-[#974932]/30 -translate-x-1/2 hidden md:block"></div>
+        {/* Detalle de agua marca gigante sutil */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[15rem] font-bold text-neutral-50 opacity-50 select-none pointer-events-none -z-10">
+          0
+        </div>
+        
+        <div className="max-w-4xl mx-auto text-center relative z-10 pt-8">
+          <span className="text-xs font-bold tracking-[0.25em] text-[#974932] uppercase mb-4 block">Etapa Cero</span>
+          <h3 className="text-3xl md:text-5xl font-medium text-neutral-900 mb-8 tracking-tight">Visión de Inversión</h3>
+          <p className="text-base text-neutral-600 font-light leading-relaxed mb-10 max-w-3xl mx-auto">
             Arienzo representa una entrada estratégica en un sector premium consolidado. Ingresar desde la etapa inicial permite capturar la mayor plusvalía del proyecto. Un formato íntimo que ofrece exclusividad y flexibilidad, ideal tanto para residencia principal como para modelo de renta.
           </p>
         </div>
       </section>
 
-      {/* 6. RESPALDO INSTITUCIONAL (Bloque Exclusivo) */}
-      <section className="py-24 md:py-32 px-6 bg-[#21242E] text-white">
+      {/* 6. RESPALDO INSTITUCIONAL */}
+      <section className="py-24 md:py-32 px-6 bg-[#F9F7F5] border-t border-[#EAE3DC]">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <span className="text-[10px] font-bold tracking-[0.3em] text-[#DEB886] uppercase mb-4 block">Trayectoria</span>
-            <h3 className="text-3xl md:text-4xl font-medium text-white tracking-tight">Respaldo Inmobiliario</h3>
+          <div className="text-center mb-16 md:mb-20">
+            <span className="text-xs font-bold tracking-[0.25em] text-[#974932] uppercase mb-4 block">Trayectoria</span>
+            <h3 className="text-3xl md:text-4xl font-medium text-neutral-900 tracking-tight">Respaldo Inmobiliario</h3>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:divide-x divide-[#EAE3DC]">
             
-            {/* Arquitectura */}
-            <div className="border-t-2 border-[#974932] pt-8 group">
-              <h4 className="text-xl font-medium mb-1">Diez + Muller</h4>
-              <span className="text-[10px] font-bold tracking-widest uppercase text-[#DEB886] block mb-4">Arquitectura</span>
-              <p className="text-sm text-neutral-400 font-light leading-relaxed transition-colors group-hover:text-neutral-300">
+            <div className="md:px-8 text-center group">
+              <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#DEB886] block mb-3">Arquitectura</span>
+              <h4 className="text-xl font-medium text-neutral-900 mb-4">Diez + Muller</h4>
+              <p className="text-sm text-neutral-500 font-light leading-relaxed transition-colors group-hover:text-neutral-700">
                 Considerado entre los estudios más destacados del Ecuador por su trayectoria y la calidad de sus proyectos. Autores de Serene en Marina Blue, reflejando su arquitectura contemporánea y atención al detalle.
               </p>
             </div>
 
-            {/* Construcción */}
-            <div className="border-t-2 border-[#974932] pt-8 group">
-              <h4 className="text-xl font-medium mb-1">Carrasco Suarez</h4>
-              <span className="text-[10px] font-bold tracking-widest uppercase text-[#DEB886] block mb-4">Construcción</span>
-              <p className="text-sm text-neutral-400 font-light leading-relaxed transition-colors group-hover:text-neutral-300">
+            <div className="md:px-8 text-center group border-t border-[#EAE3DC] md:border-t-0 pt-8 md:pt-0">
+              <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#DEB886] block mb-3">Construcción</span>
+              <h4 className="text-xl font-medium text-neutral-900 mb-4">Carrasco Suarez</h4>
+              <p className="text-sm text-neutral-500 font-light leading-relaxed transition-colors group-hover:text-neutral-700">
                 Desde 1992 construyendo con enfoque en calidad, solidez y cumplimiento. Amplia experiencia en la Costa y en proyectos residenciales de alto nivel, incluyendo el Hotel Eolia.
               </p>
             </div>
 
-            {/* Desarrollo */}
-            <div className="border-t-2 border-[#974932] pt-8 group">
-              <h4 className="text-xl font-medium mb-1">Konkeri</h4>
-              <span className="text-[10px] font-bold tracking-widest uppercase text-[#DEB886] block mb-4">Desarrollo y Ventas</span>
-              <p className="text-sm text-neutral-400 font-light leading-relaxed transition-colors group-hover:text-neutral-300">
+            <div className="md:px-8 text-center group border-t border-[#EAE3DC] md:border-t-0 pt-8 md:pt-0">
+              <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#DEB886] block mb-3">Desarrollo y Ventas</span>
+              <h4 className="text-xl font-medium text-neutral-900 mb-4">Konkeri</h4>
+              <p className="text-sm text-neutral-500 font-light leading-relaxed transition-colors group-hover:text-neutral-700">
                 Promotora inmobiliaria con visión integral. Estrategia, planificación y diseño se integran para crear proyectos sólidos y con valor a largo plazo, alineados con el mercado.
               </p>
             </div>
@@ -341,20 +328,15 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* 7. CERRADA FINAL (Limpia y Potente) */}
-      <section className="py-24 md:py-32 bg-white text-center px-6 relative border-b-8 border-[#974932]">
+      {/* 7. CERRADA FINAL (Fondo Claro, sin logo) */}
+      <section className="py-24 md:py-32 bg-white text-center px-6 relative border-b-[12px] border-[#974932]">
         <div className="max-w-3xl mx-auto flex flex-col items-center">
-          <img 
-            src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/logo-dorado-arienzo.svg" 
-            alt="Arienzo Icono" 
-            className="w-20 md:w-28 mb-10 opacity-90" 
-          />
-          <h2 className="text-[10px] font-bold tracking-[0.3em] text-[#974932] uppercase mb-4">Colección Limitada</h2>
+          <h2 className="text-xs font-bold tracking-[0.3em] text-[#974932] uppercase mb-6">Colección Limitada</h2>
           <h3 className="text-4xl md:text-5xl font-medium tracking-tight text-neutral-900 mb-6">Sé uno de los 22 propietarios.</h3>
           <p className="text-base text-neutral-500 font-light mb-12 leading-relaxed max-w-xl mx-auto">
             El privilegio de pertenecer está limitado. Solicita tu acceso para descubrir precios, tipologías y disponibilidad en tiempo real.
           </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-4 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row justify-center gap-5 w-full sm:w-auto">
              <button 
               onClick={abrirCalendly}
               className="bg-[#974932] text-white px-10 py-4 rounded-full text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-[#7A3A27] transition-all duration-300 hover:-translate-y-1 shadow-lg w-full sm:w-auto"
@@ -453,12 +435,12 @@ export default function ArienzoLandingPremium() {
         </div>
       )}
 
-      {/* FOOTER */}
-      <footer className="bg-[#111111] text-neutral-500 py-16 text-center text-[11px] md:text-xs">
-        <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-blanco.svg" alt="Arienzo" className="h-5 mx-auto mb-8 opacity-30" />
+      {/* FOOTER - AHORA MÁS BRILLANTE */}
+      <footer className="bg-[#21242E] text-neutral-400 py-16 text-center text-[11px] md:text-xs">
+        <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-blanco.svg" alt="Arienzo" className="h-7 mx-auto mb-8 opacity-90" />
         <div className="flex flex-col md:flex-row justify-center gap-2 md:gap-6 mb-8 font-light tracking-wider">
           <p>📍 Edificio Manta Business Center, Torre B, Oficina 801</p>
-          <p className="hidden md:block text-neutral-700">•</p>
+          <p className="hidden md:block text-neutral-600">•</p>
           <p>📞 097 946 9472</p>
         </div>
         <p className="mb-2 font-light">Desarrollado por <strong className="text-white font-medium">KONKERI</strong></p>
