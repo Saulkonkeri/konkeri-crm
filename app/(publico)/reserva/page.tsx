@@ -1,7 +1,7 @@
-// Actualizacion para Vercel - Reserva Express (Con Sensores SILENCIOSOS)
+// Actualizacion para Vercel - Reserva Express (Con Sensores SILENCIOSOS y m2 Sutil)
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 
 const PISOS_EDIFICIO = [6, 5, 4, 3, 2];
@@ -110,10 +110,24 @@ export default function ReservaExpressPage() {
         detalle: detalleAdicional || null
       }]);
     } catch (error) {
-      // Si hay error, lo anota en la consola secreta, pero no molesta al cliente
       console.error("Error en radar:", error);
     }
   };
+
+  // === CÁLCULO SUTIL DEL PRECIO POR M2 ===
+  const calcularM2Lanzamiento = useMemo(() => {
+    if (!unidadSeleccionada) return 0;
+    
+    const is3Dorm = (unidadSeleccionada.tipo || '').includes('3 Dorm');
+    // Mismo cálculo del cotizador interno: 5% descuento sobre base de anexos
+    // 3 Dorms = 2 parqueos ($20,000 * 0.95 = $19,000) | 1/2 Dorms = 1 parqueo ($11,000 * 0.95 = $10,450)
+    const valorAnexosDesc = is3Dorm ? 19000 : 10450; 
+    
+    const precioSoloDepto = Math.max(0, (unidadSeleccionada.precio || 0) - valorAnexosDesc);
+    const precioM2 = (unidadSeleccionada.area || 0) > 0 ? precioSoloDepto / unidadSeleccionada.area : 0;
+    
+    return precioM2;
+  }, [unidadSeleccionada]);
 
   // === FUNCIÓN PARA DESCARGAR INVENTARIO Y TRADUCIRLO ===
   const cargarInventarioEnTiempoReal = async () => {
@@ -179,7 +193,6 @@ export default function ReservaExpressPage() {
       setPaso('filtro');
       
       notificarIngresoSilencioso(correoLimpio);
-      // SENSOR: Registro de Ingreso
       registrarAccion('INGRESO_INVENTARIO', undefined, 'Inició sesión en el inventario');
       
     } catch (err) { setErrorAcceso('Ocurrió un error al verificar.'); }
@@ -190,7 +203,6 @@ export default function ReservaExpressPage() {
     e.preventDefault();
     setCargandoReserva(true);
     try {
-      // SENSOR: Registro de Reserva
       registrarAccion('RESERVA_COMPLETADA', unidadSeleccionada?.id, `Reserva procesada a nombre de ${formData.nombres}`);
       
       await fetch('/api/notificar', {
@@ -212,7 +224,6 @@ export default function ReservaExpressPage() {
   const seleccionarFiltro = (tipo: string) => { 
     setFiltroTipo(tipo); 
     setPaso('mapa'); 
-    // SENSOR: Registro de Filtro
     registrarAccion('USO_FILTRO', undefined, `Buscó: ${tipo}`);
   };
 
@@ -222,9 +233,7 @@ export default function ReservaExpressPage() {
   };
 
   const contactarAsesor = () => {
-    // SENSOR: Registro de Intención WhatsApp
     registrarAccion('CLIC_WHATSAPP', unidadSeleccionada?.id, 'Intentó contactar asesor');
-    
     const telefonoDebbi = "593979469472"; 
     const mensaje = `Hola Debbi, estoy revisando el inventario VIP y me interesa cotizar la *Unidad ${unidadSeleccionada?.id}* (${unidadSeleccionada?.tipo}). ¿Podemos conversar?`;
     window.open(`https://wa.me/${telefonoDebbi}?text=${encodeURIComponent(mensaje)}`, '_blank');
@@ -361,7 +370,6 @@ export default function ReservaExpressPage() {
                             onClick={() => { 
                               if(!desactivado) {
                                 setUnidadSeleccionada(unidad);
-                                // SENSOR: Registro de Apertura de Unidad
                                 registrarAccion('ABRIO_UNIDAD', String(unidad.id), 'Revisó detalles de unidad');
                               } 
                             }}
@@ -434,7 +442,6 @@ export default function ReservaExpressPage() {
 
               <div className="space-y-3 bg-[#F9F7F5] p-4 rounded-xl border border-[#EAE3DC] text-sm">
                 
-                {/* DISTRIBUCIÓN CON BOTÓN PARA VER EL PLANO INTELIGENTE */}
                 <div className="flex justify-between border-b border-neutral-200/60 pb-2 items-start">
                   <span className="text-neutral-500">Distribución</span>
                   <div className="text-right flex flex-col items-end">
@@ -442,7 +449,6 @@ export default function ReservaExpressPage() {
                     <button 
                       onClick={() => {
                         setPlanoUrlActivo(obtenerUrlPlano(unidadSeleccionada.area));
-                        // SENSOR: Registro de vista de plano
                         registrarAccion('VIO_PLANO_INTERNO', String(unidadSeleccionada.id), 'Abrió imagen del plano');
                       }} 
                       className="text-[10px] text-neutral-600 font-bold underline mt-1.5 cursor-pointer flex items-center gap-1 hover:text-neutral-900"
@@ -464,12 +470,23 @@ export default function ReservaExpressPage() {
                     <button 
                       onClick={() => {
                         setVistaActiva(obtenerKeyVista(unidadSeleccionada.vista));
-                        // SENSOR: Registro de vista exterior
                         registrarAccion('VIO_IMAGEN_VISTA', String(unidadSeleccionada.id), `Vio vista: ${unidadSeleccionada.vista}`);
                       }} 
                       className="text-[10px] text-[#B94A36] font-bold underline mt-1.5 cursor-pointer flex items-center gap-1 hover:text-[#9B3B2B]">
                       <span>👁️</span> Ver imagen de la vista
                     </button>
+                  </div>
+                </div>
+
+                {/* NUEVA FILA SUTIL DE PRECIO POR M2 */}
+                <div className="flex justify-between border-b border-neutral-200/60 pb-2 pt-1 items-start">
+                  <div className="flex flex-col">
+                     <span className="text-neutral-500">Valor m²</span>
+                     <span className="text-[8px] text-[#B94A36] uppercase tracking-widest font-bold mt-0.5">Pre-Lanzamiento</span>
+                  </div>
+                  <div className="text-right flex flex-col items-end">
+                    <span className="text-neutral-600 font-mono text-sm">${calcularM2Lanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    <span className="text-[8px] text-neutral-400 uppercase tracking-widest mt-0.5">Sin anexos</span>
                   </div>
                 </div>
 
