@@ -62,12 +62,16 @@ export default function ArienzoLandingPremium() {
 
   const abrirCalendly = async () => {
     setMostrarModalCalendly(true);
-    // Sensor silencioso para el radar
-    await supabase.from('tracking_inventario').insert([{
-      email_cliente: 'Visitante Web',
-      accion: 'ABRIO_CALENDLY',
-      detalle: 'Abrió modal de agendamiento'
-    }]).catch(() => {});
+    // Sensor silencioso corregido sin el .catch directo
+    try {
+      await supabase.from('tracking_inventario').insert([{
+        email_cliente: 'Visitante Web',
+        accion: 'ABRIO_CALENDLY',
+        detalle: 'Abrió modal de agendamiento'
+      }]);
+    } catch (error) {
+      // Error ignorado silenciosamente
+    }
   };
 
   return (
@@ -179,7 +183,7 @@ export default function ArienzoLandingPremium() {
             Un proyecto que responde <br /> a <span className="font-medium italic text-[#DEB886]">cómo se vive hoy.</span>
           </h3>
           <p className="mt-6 text-neutral-500 font-light max-w-3xl mx-auto leading-relaxed">
-            Creamos Arienzo Boutique Living buscando el equilibrio perfecto entre una arquitectura destacada y un estilo de vida cómodo. El proyecto cuenta con 22 departamentos y 3 locales comerciales integrados armónicamente para sumar valor a tu experiencia.
+            Creamos Arienzo Boutique Living buscando el equilibrio perfecto entre una arquitectura destacada y un estilo de vida cómodo. El proyecto cuenta con 22 departamentos y 3 locales comerciales integrados armónicamente para sumar valor a tu experiencia[cite: 1].
           </p>
         </div>
 
@@ -191,7 +195,7 @@ export default function ArienzoLandingPremium() {
           </div>
           <div className="p-8 bg-[#F9F7F5] rounded-sm border border-[#EAE3DC] hover:border-[#DEB886] transition-colors">
             <h4 className="text-sm font-bold text-neutral-900 uppercase tracking-widest mb-4">Estándar Exigente</h4>
-            <p className="text-xs text-neutral-600 font-light leading-relaxed">Personas que disfrutan la vida costera, pero no comprometen calidad, diseño ni comodidad urbana. Su formato íntimo ofrece un entorno privado.</p>
+            <p className="text-xs text-neutral-600 font-light leading-relaxed">Personas que disfrutan la vida costera, pero no comprometen calidad, diseño ni comodidad urbana. Su formato íntimo ofrece un entorno privado[cite: 1].</p>
           </div>
           <div className="p-8 bg-neutral-900 text-white rounded-sm shadow-xl">
             <h4 className="text-sm font-bold text-[#DEB886] uppercase tracking-widest mb-4">Visión de Inversión</h4>
@@ -243,17 +247,17 @@ export default function ArienzoLandingPremium() {
               <h4 className="text-lg font-medium tracking-widest text-neutral-800 uppercase mb-2">Diez + Muller</h4>
               <span className="text-[9px] font-bold tracking-[0.2em] text-[#B94A36] uppercase mb-4 block">Arquitectura</span>
               <p className="text-xs text-neutral-600 font-light leading-relaxed">
-                Estudio quiteño reconocido entre los más destacados del Ecuador. Autores de Serene en Marina Blue, reflejando su arquitectura contemporánea y atención al detalle.
+                Estudio quiteño reconocido entre los más destacados del Ecuador. Autores de Serene en Marina Blue, reflejando su arquitectura contemporánea y atención al detalle[cite: 1].
               </p>
             </div>
 
-            {/* Construcción (NUEVO) */}
+            {/* Construcción */}
             <div className="flex flex-col items-center pt-8 md:pt-0 md:px-8">
               <span className="text-3xl mb-4 text-[#DEB886]">🏗️</span>
               <h4 className="text-lg font-medium tracking-widest text-neutral-800 uppercase mb-2">Carrasco Suarez</h4>
               <span className="text-[9px] font-bold tracking-[0.2em] text-[#B94A36] uppercase mb-4 block">Construcción</span>
               <p className="text-xs text-neutral-600 font-light leading-relaxed">
-                Desde 1992 construyendo con solidez. Con amplia experiencia en la Costa y proyectos residenciales de alto nivel como el Hotel Eolia y Serene.
+                Desde 1992 construyendo con solidez. Con amplia experiencia en la Costa y proyectos residenciales de alto nivel como el Hotel Eolia y Serene[cite: 1].
               </p>
             </div>
 
@@ -263,7 +267,7 @@ export default function ArienzoLandingPremium() {
               <h4 className="text-lg font-medium tracking-widest text-neutral-800 uppercase mb-2">Konkeri</h4>
               <span className="text-[9px] font-bold tracking-[0.2em] text-[#B94A36] uppercase mb-4 block">Desarrollo y Ventas</span>
               <p className="text-xs text-neutral-600 font-light leading-relaxed">
-                Promotora en Manta con visión integral. Estrategia y diseño se integran para crear proyectos sólidos, alineados con las necesidades del mercado.
+                Promotora en Manta con visión integral. Estrategia y diseño se integran para crear proyectos sólidos, alineados con las necesidades del mercado[cite: 1].
               </p>
             </div>
           </div>
