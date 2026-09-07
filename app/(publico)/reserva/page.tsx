@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Reserva Express (Con Sensores SILENCIOSOS y m2 Sutil)
+// Actualizacion para Vercel - Reserva Express (Limpieza de término "Suite")
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -119,8 +119,6 @@ export default function ReservaExpressPage() {
     if (!unidadSeleccionada) return 0;
     
     const is3Dorm = (unidadSeleccionada.tipo || '').includes('3 Dorm');
-    // Mismo cálculo del cotizador interno: 5% descuento sobre base de anexos
-    // 3 Dorms = 2 parqueos ($20,000 * 0.95 = $19,000) | 1/2 Dorms = 1 parqueo ($11,000 * 0.95 = $10,450)
     const valorAnexosDesc = is3Dorm ? 19000 : 10450; 
     
     const precioSoloDepto = Math.max(0, (unidadSeleccionada.precio || 0) - valorAnexosDesc);
@@ -288,7 +286,7 @@ export default function ReservaExpressPage() {
             <div className="flex flex-col gap-4 px-2">
               <button onClick={() => seleccionarFiltro('1 Dormitorio')} className="w-full bg-white border border-[#EAE3DC] p-5 sm:p-6 rounded-2xl shadow-sm hover:border-[#B94A36] hover:shadow-md transition-all group relative overflow-hidden text-left">
                 <div className="absolute top-0 left-0 w-1 h-full bg-[#B94A36] transform -translate-x-full group-hover:translate-x-0 transition-transform"></div>
-                <h3 className="text-xl font-bold text-neutral-800 uppercase tracking-wide">Suite / 1 Dormitorio</h3>
+                <h3 className="text-xl font-bold text-neutral-800 uppercase tracking-wide">1 Dormitorio</h3>
               </button>
               <button onClick={() => seleccionarFiltro('2 Dormitorios')} className="w-full bg-white border border-[#EAE3DC] p-5 sm:p-6 rounded-2xl shadow-sm hover:border-[#B94A36] hover:shadow-md transition-all group relative overflow-hidden text-left">
                 <div className="absolute top-0 left-0 w-1 h-full bg-[#B94A36] transform -translate-x-full group-hover:translate-x-0 transition-transform"></div>
@@ -478,7 +476,6 @@ export default function ReservaExpressPage() {
                   </div>
                 </div>
 
-                {/* NUEVA FILA SUTIL DE PRECIO POR M2 */}
                 <div className="flex justify-between border-b border-neutral-200/60 pb-2 pt-1 items-start">
                   <div className="flex flex-col">
                      <span className="text-neutral-500">Valor m²</span>
