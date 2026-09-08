@@ -126,9 +126,9 @@ export default function ArienzoLandingPremium() {
               Próximamente en Manta
             </span>
           </div>
-          <h1 className="text-4xl md:text-6xl lg:text-[4.5rem] font-bold text-white leading-tight mb-8 tracking-tight drop-shadow-xl">
+          <h1 className="text-4xl md:text-5xl lg:text-[4rem] font-medium text-white leading-tight mb-8 tracking-tight drop-shadow-xl">
             Todo empieza con <br />
-            <span className="font-normal italic text-[#F9F7F5]">una buena ubicación.</span>
+            <span className="font-light italic text-[#F9F7F5]">una buena ubicación.</span>
           </h1>
           <p className="text-base md:text-xl text-neutral-200 font-medium max-w-2xl mx-auto mb-10 leading-relaxed drop-shadow-md">
             Colección exclusiva de solo 22 departamentos de 1, 2 y 3 dormitorios. Accede primero a la disponibilidad y precios de lanzamiento en planos.
@@ -162,7 +162,7 @@ export default function ArienzoLandingPremium() {
                 <div className="h-[2px] w-8 bg-[#964B36]"></div>
                 <span className="text-[13px] font-bold tracking-[0.25em] text-[#964B36] uppercase">Barbasquillo, Manta</span>
               </div>
-              <h3 className="text-3xl md:text-5xl font-bold text-neutral-900 leading-tight mb-8 tracking-tight">
+              <h3 className="text-3xl md:text-4xl font-medium text-neutral-900 leading-tight mb-8 tracking-tight">
                 La mejor zona <br className="hidden md:block"/> de la ciudad.
               </h3>
               <p className="text-sm md:text-base text-neutral-600 font-medium leading-relaxed mb-6">
@@ -217,7 +217,7 @@ export default function ArienzoLandingPremium() {
         <div className="max-w-6xl mx-auto relative z-10">
           <div className="text-center mb-16 md:mb-20">
             <span className="text-[13px] font-bold tracking-[0.25em] text-[#964B36] uppercase mb-4 block">Amenidades Exclusivas</span>
-            <h3 className="text-3xl md:text-5xl font-bold text-neutral-900 tracking-tight mb-6">
+            <h3 className="text-3xl md:text-4xl font-medium text-neutral-900 tracking-tight mb-6">
               Espacios pensados para vivir.
             </h3>
             <p className="max-w-2xl mx-auto text-sm md:text-base text-neutral-500 font-medium leading-relaxed">
@@ -232,7 +232,7 @@ export default function ArienzoLandingPremium() {
               </div>
               <div className="p-8">
                 <div className="w-8 h-[2px] bg-[#D1C292] mb-4 transition-all duration-300 group-hover:w-16"></div>
-                <h4 className="text-xl font-bold text-neutral-900 mb-3">Piscina & Rooftop</h4>
+                <h4 className="text-xl font-medium text-neutral-900 mb-3">Piscina & Rooftop</h4>
                 <p className="text-sm text-neutral-600 font-medium leading-relaxed">
                   Concebida desde la experiencia de uso. Un ambiente donde el bienestar, el diseño y la comodidad encuentran el equilibrio perfecto, incluyendo un área de BBQ.
                 </p>
@@ -245,7 +245,7 @@ export default function ArienzoLandingPremium() {
               </div>
               <div className="p-8">
                 <div className="w-8 h-[2px] bg-[#D1C292] mb-4 transition-all duration-300 group-hover:w-16"></div>
-                <h4 className="text-xl font-bold text-neutral-900 mb-3">Social Living & Gym Panorámico</h4>
+                <h4 className="text-xl font-medium text-neutral-900 mb-3">Social Living & Gym Panorámico</h4>
                 <p className="text-sm text-neutral-600 font-medium leading-relaxed">
                   Un ambiente flexible que integra áreas de descanso, coworking y un gimnasio panorámico. Pensado para entrenar, compartir o trabajar de forma remota.
                 </p>
@@ -258,7 +258,7 @@ export default function ArienzoLandingPremium() {
               </div>
               <div className="p-8">
                 <div className="w-8 h-[2px] bg-[#D1C292] mb-4 transition-all duration-300 group-hover:w-16"></div>
-                <h4 className="text-xl font-bold text-neutral-900 mb-3">Área Comercial</h4>
+                <h4 className="text-xl font-medium text-neutral-900 mb-3">Área Comercial</h4>
                 <p className="text-sm text-neutral-600 font-medium leading-relaxed">
                   Un retail de planta baja curado para complementar tu experiencia. Marcas seleccionadas por su calidad, conveniencia y afinidad con el proyecto.
                 </p>
@@ -272,7 +272,7 @@ export default function ArienzoLandingPremium() {
       <section className="py-16 md:py-24 px-6 bg-[#F9F7F5] border-b border-[#EAE3DC] text-center">
         <div className="max-w-3xl mx-auto">
           <span className="text-[11px] font-bold tracking-[0.25em] text-[#964B36] uppercase mb-4 block">Espacios de Autor</span>
-          <h3 className="text-3xl md:text-4xl font-bold text-neutral-900 tracking-tight mb-4">
+          <h3 className="text-3xl md:text-4xl font-medium text-neutral-900 tracking-tight mb-4">
             Formatos exclusivos de 1, 2 y 3 dormitorios.
           </h3>
           <p className="text-sm md:text-base text-neutral-600 font-medium leading-relaxed mb-8">
@@ -343,10 +343,10 @@ export default function ArienzoLandingPremium() {
           <div className="w-[1px] h-12 bg-gradient-to-b from-transparent to-[#964B36] mx-auto mb-6"></div>
           
           <span className="text-[11px] font-bold tracking-[0.25em] text-[#964B36] uppercase mb-4 block">Inversión Temprana</span>
-          <h3 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-6 tracking-tight">Visión de Inversión</h3>
+          <h3 className="text-3xl md:text-4xl font-medium text-neutral-900 mb-6 tracking-tight">Visión de Inversión</h3>
           
           <p className="text-sm md:text-base text-neutral-600 font-medium leading-relaxed mb-8">
-            Arienzo representa una entrada estratégica en un sector premium consolidado. Ingresar en la etapa de <strong className="font-bold text-[#964B36]">lanzamiento en planos</strong> permite capturar la mayor plusvalía del proyecto. Un formato íntimo que ofrece exclusividad y flexibilidad, ideal tanto para residencia principal como para modelo de renta.
+            Arienzo representa una entrada estratégica en un sector premium consolidado. Ingresar en la etapa de <strong className="font-semibold text-[#964B36]">lanzamiento en planos</strong> permite capturar la mayor plusvalía del proyecto. Un formato íntimo que ofrece exclusividad y flexibilidad, ideal tanto para residencia principal como para modelo de renta.
           </p>
 
           <button 
@@ -370,15 +370,15 @@ export default function ArienzoLandingPremium() {
             
             <div className="md:px-8 text-center group">
               <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#D1C292] block mb-3">Arquitectura</span>
-              <h4 className="text-xl font-bold text-white mb-4">DIEZ + MULLER</h4>
+              <h4 className="text-lg md:text-xl font-medium text-white mb-4">DIEZ + MULLER</h4>
               <p className="text-sm text-neutral-400 font-medium leading-relaxed transition-colors group-hover:text-neutral-300">
-                Reconocido y premiado estudio quiteño. Autores de grandes proyectos en la capital y obras exclusivas en la costa como el edificio Serene en Manta, destacando por su visión contemporánea y rigor al detalle.
+                Reconocido y premiado estudio quiteño. Autores de grandes proyectos en la capital y de su exclusivo proyecto en la costa, el edificio Serene en Manta, destacando por su visión contemporánea y rigor al detalle.
               </p>
             </div>
 
             <div className="md:px-8 text-center group border-t border-white/10 md:border-t-0 pt-8 md:pt-0">
               <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#D1C292] block mb-3">Construcción</span>
-              <h4 className="text-xl font-bold text-white mb-4">CARRASCO SUAREZ</h4>
+              <h4 className="text-lg md:text-xl font-medium text-white mb-4">CARRASCO SUAREZ</h4>
               <p className="text-sm text-neutral-400 font-medium leading-relaxed transition-colors group-hover:text-neutral-300">
                 Constructora con sólida trayectoria desde 1992. Amplia experiencia ejecutando obras residenciales premium en la costa ecuatoriana, incluyendo el Hotel Eolia y el moderno edificio Serene en Marina Blue.
               </p>
@@ -386,9 +386,9 @@ export default function ArienzoLandingPremium() {
 
             <div className="md:px-8 text-center group border-t border-white/10 md:border-t-0 pt-8 md:pt-0">
               <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#D1C292] block mb-3">Desarrollo y Ventas</span>
-              <h4 className="text-xl font-bold text-white mb-4">KONKERI</h4>
+              <h4 className="text-lg md:text-xl font-medium text-white mb-4">KONKERI</h4>
               <p className="text-sm text-neutral-400 font-medium leading-relaxed transition-colors group-hover:text-neutral-300">
-                Promotora con oficinas en Manta y sólida experiencia local. Fusionamos estrategia comercial, innovación arquitectónica y tecnología para estructurar desarrollos integrales, altamente rentables y alineados al mercado.
+                Promotora enfocada en el desarrollo integral de proyectos con visión a largo plazo. Fusionamos estrategia comercial, innovación arquitectónica y tecnología para estructurar desarrollos altamente rentables y alineados al mercado.
               </p>
             </div>
 
@@ -396,7 +396,7 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* 8. CERRADA FINAL (Borde dorado y fino) */}
+      {/* 8. CERRADA FINAL */}
       <section className="py-20 md:py-28 bg-[#F9F7F5] text-center px-6 relative border-b-[2px] border-[#D1C292] overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[14rem] md:text-[22rem] font-bold text-[#EAE3DC]/40 pointer-events-none select-none z-0 tracking-tighter leading-none">
           22
@@ -404,7 +404,7 @@ export default function ArienzoLandingPremium() {
         
         <div className="max-w-2xl mx-auto flex flex-col items-center relative z-10">
           <h2 className="text-[11px] font-bold tracking-[0.3em] text-[#964B36] uppercase mb-4">Colección Limitada</h2>
-          <h3 className="text-3xl md:text-4xl font-bold tracking-tight text-neutral-900 mb-4">Sé uno de los 22 propietarios.</h3>
+          <h3 className="text-3xl md:text-4xl font-medium tracking-tight text-neutral-900 mb-4">Sé uno de los 22 propietarios.</h3>
           <p className="text-sm md:text-base text-neutral-600 font-medium mb-10 leading-relaxed">
             El privilegio de pertenecer está limitado. Solicita tu acceso para descubrir precios, tipologías y disponibilidad en tiempo real.
           </p>
@@ -441,7 +441,7 @@ export default function ArienzoLandingPremium() {
               <>
                 <div className="text-center mb-8">
                   <div className="w-12 h-1 bg-[#964B36] mx-auto mb-6 rounded-full"></div>
-                  <h3 className="text-2xl font-bold text-neutral-900 mb-2 tracking-tight">Acceso al Inventario</h3>
+                  <h3 className="text-2xl font-medium text-neutral-900 mb-2 tracking-tight">Acceso al Inventario</h3>
                   <p className="text-xs text-neutral-500 font-medium">Validaremos tu perfil para habilitar el acceso seguro a los <strong>planos arquitectónicos, disponibilidad en tiempo real y precios de lanzamiento.</strong></p>
                 </div>
 
@@ -468,7 +468,7 @@ export default function ArienzoLandingPremium() {
             ) : (
               <div className="text-center py-8">
                 <div className="w-16 h-16 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl shadow-inner">✓</div>
-                <h3 className="text-2xl font-bold text-neutral-900 mb-3 tracking-tight">Solicitud Recibida</h3>
+                <h3 className="text-2xl font-medium text-neutral-900 mb-3 tracking-tight">Solicitud Recibida</h3>
                 <p className="text-sm text-neutral-500 font-medium leading-relaxed mb-8">
                   Nuestro equipo comercial validará tu información y te contactará brevemente para entregarte tu pase de acceso exclusivo.
                 </p>
@@ -511,7 +511,7 @@ export default function ArienzoLandingPremium() {
       {/* FOOTER */}
       <footer className="bg-[#21242E] text-neutral-400 py-10 md:py-12 text-center">
         <div className="max-w-6xl mx-auto px-6">
-          <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/logo-dorado-arienzo.svg" alt="Arienzo" className="h-[32px] mx-auto mb-6 opacity-90" />
+          <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/logo-dorado-arienzo.svg" alt="Arienzo" className="h-[40px] mx-auto mb-6 opacity-90" />
           
           <div className="flex flex-col md:flex-row justify-center items-center gap-2 md:gap-4 mb-6 font-medium text-sm text-neutral-300">
             <p>Edificio Manta Business Center, Torre B, Of. 801</p>
