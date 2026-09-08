@@ -108,9 +108,9 @@ export default function ArienzoLandingPremium() {
           className="absolute inset-0 w-full h-full object-cover z-0"
           fetchPriority="high"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/30 to-black/70 z-0"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/30 to-[#F9F7F5] z-0"></div>
 
-        <div className="relative z-10 text-center px-6 w-full max-w-4xl mx-auto pt-16">
+        <div className="relative z-10 text-center px-6 w-full max-w-5xl mx-auto pt-16">
           <div className="inline-block px-6 py-2.5 border border-[#DEB886]/60 backdrop-blur-md rounded-full mb-8 shadow-[0_0_15px_rgba(222,184,134,0.2)]">
             <span className="text-xs font-bold tracking-[0.35em] text-[#DEB886] uppercase">
               Próximamente en Manta
@@ -120,8 +120,9 @@ export default function ArienzoLandingPremium() {
             Todo empieza con <br />
             <span className="font-light italic text-[#F9F7F5]">una buena ubicación.</span>
           </h1>
-          <p className="text-sm md:text-lg text-neutral-200 font-light max-w-xl mx-auto mb-10 leading-relaxed drop-shadow-md">
-            Colección exclusiva de solo 22 departamentos. Accede primero a los precios de lanzamiento en planos y elige las mejores ubicaciones.
+          {/* Texto mejorado y con mayor legibilidad */}
+          <p className="text-base md:text-xl text-neutral-100 font-light max-w-2xl mx-auto mb-10 leading-relaxed drop-shadow-lg">
+            Colección exclusiva de solo 22 departamentos de 1, 2 y 3 dormitorios. Accede primero a los precios de lanzamiento en planos y elige las mejores ubicaciones.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -141,22 +142,7 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* BANDA TERRACOTA */}
-      <div className="relative py-28 md:py-32 flex justify-center items-center shadow-inner z-20 bg-[#974932] overflow-hidden">
-        <img 
-          src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/familia-en-sala-banco-imagenes-ia.jpg" 
-          alt="Familia en Arienzo" 
-          className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-30"
-        />
-        <div className="absolute inset-0 bg-[#974932]/60"></div>
-        <img 
-          src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/logo-dorado-arienzo.svg" 
-          alt="Arienzo Boutique Living" 
-          className="relative z-10 h-16 md:h-24 drop-shadow-2xl" 
-        />
-      </div>
-
-      {/* 2. UBICACIÓN */}
+      {/* 2. UBICACIÓN CON WIDGET DE PLUSVALÍA */}
       <section className="py-24 md:py-32 px-6 bg-[#F9F7F5] relative overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:40px_40px]"></div>
 
@@ -199,6 +185,7 @@ export default function ArienzoLandingPremium() {
                   <span className="block text-sm md:text-base font-black text-neutral-900 uppercase tracking-wide">Alta Plusvalía</span>
                 </div>
               </div>
+
             </div>
           </div>
         </div>
@@ -260,26 +247,90 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* 4. GALERÍA DEL PROYECTO (Con profundidad y texto editorial) */}
-      <section className="py-24 md:py-32 bg-[#21242E] text-center px-6 relative overflow-hidden">
-        {/* Marca de agua gigante de fondo para darle profundidad */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[8rem] md:text-[15rem] font-bold text-white/[0.03] whitespace-nowrap pointer-events-none select-none z-0">
+      {/* 4. TIPOLOGÍAS Y ACABADOS */}
+      <section className="py-24 md:py-32 px-6 bg-[#F9F7F5] border-b border-[#EAE3DC] relative">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16 md:mb-20">
+            <span className="text-xs font-bold tracking-[0.25em] text-[#974932] uppercase mb-4 block">Distribución Inteligente</span>
+            <h3 className="text-3xl md:text-5xl font-medium text-neutral-900 tracking-tight mb-6">
+              Diseñado con intención.
+            </h3>
+            <p className="max-w-2xl mx-auto text-sm md:text-base text-neutral-500 font-light leading-relaxed">
+              Formatos exclusivos de 1, 2 y 3 dormitorios. Una distribución abierta donde la sala, el comedor, la cocina y la terraza se integran de forma natural para crear ambientes amplios y luminosos.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <div className="bg-white p-8 rounded-2xl border border-[#EAE3DC] text-center hover:border-[#DEB886] transition-colors">
+              <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center rounded-full bg-[#F9F7F5]">
+                <span className="text-[#974932] font-bold text-xl">1</span>
+              </div>
+              <h4 className="text-lg font-medium text-neutral-900 mb-2">Suites</h4>
+              <p className="text-sm text-neutral-500 font-light">Espacios optimizados ideales para ejecutivos o modelo de inversión.</p>
+            </div>
+            <div className="bg-white p-8 rounded-2xl border border-[#EAE3DC] text-center hover:border-[#DEB886] transition-colors">
+              <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center rounded-full bg-[#F9F7F5]">
+                <span className="text-[#974932] font-bold text-xl">2</span>
+              </div>
+              <h4 className="text-lg font-medium text-neutral-900 mb-2">Dormitorios</h4>
+              <p className="text-sm text-neutral-500 font-light">El equilibrio perfecto para parejas o segunda residencia costera.</p>
+            </div>
+            <div className="bg-white p-8 rounded-2xl border border-[#EAE3DC] text-center hover:border-[#DEB886] transition-colors">
+              <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center rounded-full bg-[#F9F7F5]">
+                <span className="text-[#974932] font-bold text-xl">3</span>
+              </div>
+              <h4 className="text-lg font-medium text-neutral-900 mb-2">Dormitorios</h4>
+              <p className="text-sm text-neutral-500 font-light">Amplitud y comodidad sin concesiones para familias exigentes.</p>
+            </div>
+          </div>
+          
+          <div className="text-center">
+             <button 
+                onClick={() => setMostrarModalVip(true)}
+                className="inline-flex items-center gap-2 text-sm font-bold tracking-[0.2em] text-[#974932] uppercase border-b-2 border-[#974932] pb-1 hover:text-[#21242E] hover:border-[#21242E] transition-colors"
+              >
+                Solicitar Planos Arquitectónicos <span className="text-lg">→</span>
+              </button>
+          </div>
+        </div>
+      </section>
+
+      {/* 5. LA FRANJA TERRACOTA */}
+      <div className="relative py-28 md:py-32 flex justify-center items-center shadow-inner z-20 bg-[#974932] overflow-hidden">
+        <img 
+          src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/familia-en-sala-banco-imagenes-ia.jpg" 
+          alt="Familia en Arienzo" 
+          className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-30"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#974932]/40 via-[#974932]/70 to-[#974932]/90"></div>
+        <div className="relative z-10 flex flex-col items-center">
+           <img 
+            src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/logo-dorado-arienzo.svg" 
+            alt="Arienzo Boutique Living" 
+            className="h-16 md:h-24 drop-shadow-2xl mb-8" 
+          />
+          <h2 className="text-white font-light text-xl md:text-3xl tracking-wide max-w-2xl mx-auto text-center leading-relaxed italic px-6 drop-shadow-md">
+            "Porque el verdadero lujo es vivir bien, todos los días."
+          </h2>
+        </div>
+      </div>
+
+      {/* 6. GALERÍA DEL PROYECTO */}
+      <section className="py-20 md:py-28 bg-[#21242E] text-center px-6 relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[8rem] md:text-[15rem] font-bold text-white/[0.02] whitespace-nowrap pointer-events-none select-none z-0">
           ARQUITECTURA
         </div>
 
-        <div className="max-w-7xl mx-auto relative z-10">
+        <div className="max-w-6xl mx-auto relative z-10">
           <span className="text-xs font-bold tracking-[0.25em] text-[#DEB886] uppercase mb-4 block">Galería del Proyecto</span>
-          <h3 className="text-3xl md:text-4xl font-light text-white mb-4 tracking-tight">Imágenes que hablan por sí solas.</h3>
-          <p className="text-sm text-neutral-400 font-light max-w-2xl mx-auto mb-12 md:mb-16">
-            Descubre los detalles, acabados y el diseño contemporáneo que definen el estándar de vida en Arienzo.
-          </p>
+          <h3 className="text-3xl md:text-4xl font-light text-white mb-12 md:mb-16 tracking-tight">Imágenes que hablan por sí solas.</h3>
           
           <div className="flex flex-wrap md:flex-nowrap justify-center gap-3 md:gap-4">
             {imagenesGaleria.map((img, index) => (
               <div 
                 key={index} 
                 onClick={() => setImagenAmpliada(img)} 
-                className="relative group w-[140px] sm:w-[180px] md:w-full md:flex-1 aspect-[4/3] rounded-md overflow-hidden cursor-pointer shadow-2xl bg-[#1a1d24]"
+                className="relative group w-[140px] sm:w-[180px] md:w-full md:flex-1 aspect-[4/3] rounded-md overflow-hidden cursor-pointer shadow-lg bg-[#1a1d24]"
               >
                 <img src={img} alt={`Render ${index + 1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 opacity-80 group-hover:opacity-100" loading="lazy" />
                 <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
@@ -297,42 +348,22 @@ export default function ArienzoLandingPremium() {
         </div>
       )}
 
-      {/* 5. VISIÓN DE INVERSIÓN (Look de Infografía Editorial) */}
-      <section className="py-24 md:py-32 px-6 bg-white relative">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center relative z-10">
-          
-          {/* Columna Izquierda: Texto */}
-          <div className="md:pr-10">
-            <span className="text-xs font-bold tracking-[0.25em] text-[#974932] uppercase mb-4 block">Inversión Temprana</span>
-            <h3 className="text-3xl md:text-5xl font-medium text-neutral-900 mb-8 tracking-tight">Visión de Inversión</h3>
-            <p className="text-base text-neutral-600 font-light leading-relaxed mb-6">
-              Arienzo representa una entrada estratégica en un sector premium consolidado. Ingresar en la etapa de <strong>lanzamiento en planos</strong> permite capturar la mayor plusvalía del proyecto. 
-            </p>
-            <p className="text-base text-neutral-600 font-light leading-relaxed">
-              Un formato íntimo que ofrece exclusividad y flexibilidad comercial a largo plazo.
-            </p>
-          </div>
-
-          {/* Columna Derecha: Viñetas de Datos */}
-          <div className="flex flex-col gap-6 md:pl-10 md:border-l border-[#EAE3DC]">
-            <div className="pb-6 border-b border-[#EAE3DC]/50">
-              <span className="text-sm font-bold text-[#DEB886] mb-1 block">01. EXCLUSIVIDAD</span>
-              <p className="text-sm text-neutral-600 font-light">Formato íntimo de solo 22 departamentos, garantizando privacidad y una comunidad selecta.</p>
-            </div>
-            <div className="pb-6 border-b border-[#EAE3DC]/50">
-              <span className="text-sm font-bold text-[#DEB886] mb-1 block">02. PLUSVALÍA</span>
-              <p className="text-sm text-neutral-600 font-light">Condiciones preferenciales de lanzamiento para maximizar el retorno de inversión.</p>
-            </div>
-            <div>
-              <span className="text-sm font-bold text-[#DEB886] mb-1 block">03. FLEXIBILIDAD</span>
-              <p className="text-sm text-neutral-600 font-light">Diseño optimizado tanto para residencia principal como para el dinámico modelo de renta.</p>
-            </div>
-          </div>
-          
+      {/* 7. VISIÓN DE INVERSIÓN */}
+      <section className="py-24 md:py-32 px-6 bg-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:30px_30px]"></div>
+        <div className="absolute right-0 top-0 w-[400px] h-[400px] bg-[#DEB886]/10 rounded-full blur-[100px] translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+        <div className="absolute left-0 bottom-0 w-[400px] h-[400px] bg-[#974932]/5 rounded-full blur-[100px] -translate-x-1/2 translate-y-1/2 pointer-events-none"></div>
+        
+        <div className="max-w-4xl mx-auto text-center relative z-10">
+          <span className="text-xs font-bold tracking-[0.25em] text-[#974932] uppercase mb-4 block">Inversión Temprana</span>
+          <h3 className="text-3xl md:text-5xl font-medium text-neutral-900 mb-8 tracking-tight">Visión de Inversión</h3>
+          <p className="text-base text-neutral-600 font-light leading-relaxed mb-10 max-w-3xl mx-auto">
+            Arienzo representa una entrada estratégica en un sector premium consolidado. Ingresar en la etapa de <strong>lanzamiento en planos</strong> permite capturar la mayor plusvalía del proyecto. Un formato íntimo que ofrece exclusividad y flexibilidad, ideal tanto para residencia principal como para modelo de renta.
+          </p>
         </div>
       </section>
 
-      {/* 6. RESPALDO INSTITUCIONAL */}
+      {/* 8. RESPALDO INSTITUCIONAL */}
       <section className="py-24 md:py-32 px-6 bg-[#21242E] text-white">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16 md:mb-20">
@@ -354,7 +385,7 @@ export default function ArienzoLandingPremium() {
               <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#DEB886] block mb-3">Construcción</span>
               <h4 className="text-xl font-medium text-white mb-4">Carrasco Suarez</h4>
               <p className="text-sm text-neutral-400 font-light leading-relaxed transition-colors group-hover:text-neutral-300">
-                Desde 1992 construyendo con enfoque en calidad, solidez y cumplimiento. Amplia experiencia en la Costa y en proyectos residenciales de alto nivel, incluyendo el Hotel Eolia.
+                Desde 1992 construyendo con enfoque en calidad, solidez y cumplimiento. Amplia experiencia en la Costa y en proyectos residenciales de alto nivel, incluyendo el Hotel Eolia en Santa Marianita y el edificio Serene en Marina Blue.
               </p>
             </div>
 
@@ -370,9 +401,8 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* 7. CERRADA FINAL (Con 22 Gigante de fondo) */}
+      {/* 9. CERRADA FINAL */}
       <section className="py-24 md:py-36 bg-white text-center px-6 relative border-b-[12px] border-[#974932] overflow-hidden">
-        {/* Número 22 Gigante en el fondo como anclaje visual */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[15rem] md:text-[25rem] font-bold text-[#F9F7F5] pointer-events-none select-none z-0 tracking-tighter leading-none">
           22
         </div>
@@ -483,14 +513,14 @@ export default function ArienzoLandingPremium() {
       )}
 
       {/* FOOTER */}
-      <footer className="bg-[#21242E] text-neutral-400 py-16 text-center text-[11px] md:text-xs">
+      <footer className="bg-[#111111] text-neutral-500 py-16 text-center text-xs md:text-sm">
         <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-blanco.svg" alt="Arienzo" className="h-7 mx-auto mb-8 opacity-90" />
         <div className="flex flex-col md:flex-row justify-center gap-2 md:gap-6 mb-8 font-light tracking-wider">
           <p>📍 Edificio Manta Business Center, Torre B, Oficina 801</p>
-          <p className="hidden md:block text-neutral-600">•</p>
+          <p className="hidden md:block text-neutral-700">•</p>
           <p>📞 097 946 9472</p>
         </div>
-        <p className="mb-2 font-light">Desarrollado por <strong className="text-white font-medium">KONKERI</strong></p>
+        <p className="mb-2 font-light text-sm md:text-base">Desarrollado por <strong className="text-white font-medium">KONKERI</strong></p>
         <p className="font-light opacity-50">© {new Date().getFullYear()} Arienzo Boutique Living. Todos los derechos reservados.</p>
       </footer>
     </div>
