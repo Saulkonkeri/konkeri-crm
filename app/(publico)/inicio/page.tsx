@@ -197,7 +197,7 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* LA FRANJA TERRACOTA (Ahora más gruesa) */}
+      {/* LA FRANJA TERRACOTA */}
       <div className="relative py-20 md:py-28 flex justify-center items-center shadow-inner z-20 bg-[#974932] overflow-hidden">
         <img 
           src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/familia-en-sala-banco-imagenes-ia.jpg" 
@@ -268,62 +268,22 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* 4. TIPOLOGÍAS Y ACABADOS (Diseño Bento Grid Pro sin espacios vacíos) */}
-      <section className="py-24 md:py-32 px-6 bg-[#F9F7F5] border-b border-[#EAE3DC] relative">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            
-            {/* Tarjeta de Texto Principal */}
-            <div className="lg:col-span-6 bg-white p-10 md:p-14 rounded-3xl shadow-sm border border-[#EAE3DC] flex flex-col justify-center">
-              <span className="text-[13px] font-bold tracking-[0.25em] text-[#974932] uppercase mb-4 block">Distribución de Autor</span>
-              <h3 className="text-3xl md:text-5xl font-medium text-neutral-900 tracking-tight mb-6">
-                Acabados de primera y espacios eficientes.
-              </h3>
-              <p className="text-base text-neutral-600 font-light leading-relaxed mb-8">
-                Departamentos con terrazas integradas, ventanales de piso a techo y selección de materiales premium. Diseñados para maximizar la ventilación, la iluminación natural y optimizar cada metro cuadrado de tu inversión.
-              </p>
-              <button 
-                onClick={() => setMostrarModalVip(true)}
-                className="inline-flex items-center gap-3 text-xs font-bold tracking-[0.1em] bg-[#21242E] text-white px-8 py-4 rounded-full hover:bg-[#974932] transition-colors duration-300 w-fit shadow-md"
-              >
-                VER DISPONIBILIDAD <span className="text-lg">→</span>
-              </button>
-            </div>
-            
-            {/* Grilla Bento para Tipologías */}
-            <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
-              
-              <div className="bg-[#21242E] p-8 md:p-10 rounded-3xl text-white group hover:-translate-y-1 transition-transform duration-300 shadow-lg flex flex-col justify-between">
-                <div>
-                  <span className="text-5xl font-light text-[#DEB886] block mb-3">1</span>
-                  <h4 className="text-lg font-medium tracking-wide mb-2">Dormitorio</h4>
-                </div>
-                <p className="text-sm font-light text-neutral-400">Suite optimizada, formato ideal para ejecutivos e inversión inmobiliaria rentable.</p>
-              </div>
-
-              <div className="bg-white p-8 md:p-10 rounded-3xl border border-[#EAE3DC] group hover:border-[#DEB886] hover:-translate-y-1 transition-all duration-300 shadow-sm flex flex-col justify-between">
-                <div>
-                  <span className="text-5xl font-light text-[#974932] block mb-3">2</span>
-                  <h4 className="text-lg font-medium tracking-wide text-neutral-900 mb-2">Dormitorios</h4>
-                </div>
-                <p className="text-sm font-light text-neutral-500">El equilibrio perfecto para residir en pareja o mantener como segunda vivienda costera.</p>
-              </div>
-
-              <div className="sm:col-span-2 bg-[#F9F7F5] p-8 md:p-10 rounded-3xl border border-[#EAE3DC] group hover:border-[#DEB886] transition-all duration-300 flex items-center justify-between shadow-sm cursor-pointer" onClick={() => setMostrarModalVip(true)}>
-                <div className="max-w-[70%]">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="text-5xl font-light text-[#974932]">3</span>
-                    <h4 className="text-xl font-medium tracking-wide text-neutral-900 mt-2">Dormitorios</h4>
-                  </div>
-                  <p className="text-sm font-light text-neutral-500">Amplitud y comodidad sin concesiones para familias.</p>
-                </div>
-                <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center border border-[#EAE3DC] group-hover:bg-[#974932] group-hover:text-white transition-colors duration-300 shadow-sm shrink-0">
-                  <span className="text-2xl">→</span>
-                </div>
-              </div>
-
-            </div>
-          </div>
+      {/* 4. TIPOLOGÍAS Y ACABADOS (Compacto y Directo) */}
+      <section className="py-20 md:py-28 px-6 bg-[#F9F7F5] border-b border-[#EAE3DC] text-center">
+        <div className="max-w-3xl mx-auto">
+          <span className="text-[13px] font-bold tracking-[0.25em] text-[#974932] uppercase mb-4 block">Espacios de Autor</span>
+          <h3 className="text-3xl md:text-4xl font-medium text-neutral-900 tracking-tight mb-6">
+            Formatos exclusivos de 1, 2 y 3 dormitorios.
+          </h3>
+          <p className="text-base text-neutral-600 font-light leading-relaxed mb-10">
+            Diseño optimizado con acabados de primera, ventanales de piso a techo y una distribución abierta donde la sala, el comedor y la terraza se integran de forma natural[cite: 1].
+          </p>
+          <button 
+            onClick={() => setMostrarModalVip(true)}
+            className="inline-flex items-center justify-center gap-3 text-xs font-bold tracking-[0.1em] bg-[#21242E] text-white px-8 py-4 rounded-full hover:bg-[#974932] transition-colors duration-300 w-full sm:w-auto shadow-md"
+          >
+            VER DISPONIBILIDAD Y PRECIOS <span className="text-lg">→</span>
+          </button>
         </div>
       </section>
 
@@ -374,7 +334,7 @@ export default function ArienzoLandingPremium() {
         </div>
       )}
 
-      {/* 6. VISIÓN DE INVERSIÓN */}
+      {/* 6. VISIÓN DE INVERSIÓN (Restaurado al diseño centrado limpio) */}
       <section className="py-24 md:py-32 px-6 bg-white relative overflow-hidden border-t border-[#EAE3DC]">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:30px_30px]"></div>
         <div className="absolute right-0 top-0 w-[400px] h-[400px] bg-[#DEB886]/10 rounded-full blur-[100px] translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
@@ -383,13 +343,13 @@ export default function ArienzoLandingPremium() {
         <div className="max-w-4xl mx-auto text-center relative z-10">
           <span className="text-[13px] font-bold tracking-[0.25em] text-[#974932] uppercase mb-4 block">Inversión Temprana</span>
           <h3 className="text-3xl md:text-5xl font-medium text-neutral-900 mb-8 tracking-tight">Visión de Inversión</h3>
-          <p className="text-base text-neutral-600 font-light leading-relaxed mb-10 max-w-3xl mx-auto">
+          <p className="text-base text-neutral-600 font-light leading-relaxed max-w-3xl mx-auto">
             Arienzo representa una entrada estratégica en un sector premium consolidado. Ingresar en la etapa de <strong>lanzamiento en planos</strong> permite capturar la mayor plusvalía del proyecto. Un formato íntimo que ofrece exclusividad y flexibilidad, ideal tanto para residencia principal como para modelo de renta.
           </p>
         </div>
       </section>
 
-      {/* 7. RESPALDO INSTITUCIONAL (Textos Equilibrados) */}
+      {/* 7. RESPALDO INSTITUCIONAL */}
       <section className="py-24 md:py-32 px-6 bg-[#21242E] text-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16 md:mb-20">
@@ -403,7 +363,7 @@ export default function ArienzoLandingPremium() {
               <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#DEB886] block mb-3">Arquitectura</span>
               <h4 className="text-xl font-medium text-white mb-4">Diez + Muller</h4>
               <p className="text-sm text-neutral-400 font-light leading-relaxed transition-colors group-hover:text-neutral-300">
-                Estudio arquitectónico reconocido entre los más destacados del país. Autores de proyectos icónicos como Serene en Marina Blue, destacando por su visión contemporánea, integración con el entorno y rigurosa atención al detalle.
+                Considerado entre los estudios más destacados del Ecuador. Autores de Serene en Marina Blue, reflejando su arquitectura contemporánea y atención al detalle[cite: 1].
               </p>
             </div>
 
@@ -411,7 +371,7 @@ export default function ArienzoLandingPremium() {
               <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#DEB886] block mb-3">Construcción</span>
               <h4 className="text-xl font-medium text-white mb-4">Carrasco Suarez</h4>
               <p className="text-sm text-neutral-400 font-light leading-relaxed transition-colors group-hover:text-neutral-300">
-                Constructora con sólida trayectoria desde 1992, garantizando altos estándares de calidad y cumplimiento. Cuentan con amplia experiencia ejecutando obras residenciales premium en la Costa, incluyendo el Hotel Eolia y Serene.
+                Desde 1992 construyendo con solidez. Amplia experiencia en la Costa y en proyectos residenciales de alto nivel, incluyendo el Hotel Eolia en Santa Marianita y el edificio Serene en Marina Blue[cite: 1].
               </p>
             </div>
 
@@ -419,7 +379,7 @@ export default function ArienzoLandingPremium() {
               <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#DEB886] block mb-3">Desarrollo y Ventas</span>
               <h4 className="text-xl font-medium text-white mb-4">Konkeri</h4>
               <p className="text-sm text-neutral-400 font-light leading-relaxed transition-colors group-hover:text-neutral-300">
-                Promotora inmobiliaria enfocada en el desarrollo integral de proyectos con visión a largo plazo. Fusionamos estrategia comercial, innovación arquitectónica y tecnología para estructurar desarrollos altamente rentables y alineados al mercado.
+                En Konkeri concebimos, estructuramos y desarrollamos proyectos bajo una visión integral. Estrategia, planificación y diseño se unen mediante tecnología para crear desarrollos sólidos, alineados a las necesidades reales del mercado[cite: 1].
               </p>
             </div>
 
@@ -538,17 +498,18 @@ export default function ArienzoLandingPremium() {
         </div>
       )}
 
-      {/* FOOTER */}
-      <footer className="bg-[#21242E] text-neutral-400 py-12 md:py-16">
-        <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="flex flex-col items-center md:items-start gap-4">
-            <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-blanco.svg" alt="Arienzo" className="h-6 opacity-90" />
-            <p className="text-xs font-light mt-2">📍 Edificio Manta Business Center, Torre B, Oficina 801</p>
-            <p className="text-xs font-light">📞 097 946 9472</p>
+      {/* FOOTER (Restaurado al centro con mejor orden tipográfico) */}
+      <footer className="bg-[#21242E] text-neutral-400 py-16 text-center">
+        <div className="max-w-6xl mx-auto px-6">
+          <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-blanco.svg" alt="Arienzo" className="h-7 mx-auto mb-8 opacity-90" />
+          <div className="flex flex-col md:flex-row justify-center items-center gap-3 md:gap-6 mb-10 font-light text-sm">
+            <p>📍 Edificio Manta Business Center, Torre B, Oficina 801</p>
+            <p className="hidden md:block text-neutral-600">•</p>
+            <p>📞 097 946 9472</p>
           </div>
-          <div className="text-center md:text-right flex flex-col items-center md:items-end gap-3">
-            <p className="text-xs font-light">Desarrollado por <strong className="text-white font-medium">KONKERI</strong></p>
-            <p className="text-[10px] font-light text-neutral-500">© {new Date().getFullYear()} Arienzo Boutique Living. Todos los derechos reservados.</p>
+          <div className="flex flex-col items-center gap-2">
+            <p className="text-sm font-light">Desarrollado por <strong className="text-white font-medium tracking-wide">KONKERI</strong></p>
+            <p className="text-[11px] font-light opacity-50">© {new Date().getFullYear()} Arienzo Boutique Living. Todos los derechos reservados.</p>
           </div>
         </div>
       </footer>
