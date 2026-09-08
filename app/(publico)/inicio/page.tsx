@@ -34,7 +34,7 @@ export default function ArienzoLandingPremium() {
         telefono: formData.telefono,
         email: correoLimpio,
         tipo: 'prospecto',
-        origen: 'Web Pública - Solicitud VIP'
+        origen: 'Web Pública - Solicitud Acceso Exclusivo'
       }], { onConflict: 'email' });
 
       await supabase.from('tracking_inventario').insert([{
@@ -105,7 +105,7 @@ export default function ArienzoLandingPremium() {
             onClick={() => setMostrarModalVip(true)}
             className={`text-[10px] font-bold uppercase tracking-[0.2em] px-6 py-3 rounded-full transition-all duration-300 ${scrolled ? 'bg-[#974932] text-white hover:bg-[#7A3A27] shadow-md' : 'bg-white/20 backdrop-blur-md text-white border border-white/40 hover:bg-white hover:text-[#974932]'}`}
           >
-            Acceso VIP
+            Acceso Exclusivo
           </button>
         </div>
       </header>
@@ -145,7 +145,7 @@ export default function ArienzoLandingPremium() {
               onClick={() => setMostrarModalVip(true)}
               className="w-full sm:w-auto bg-transparent border border-white/50 text-white px-8 py-4 rounded-full text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-white hover:text-[#974932] transition-all duration-300 hover:-translate-y-0.5"
             >
-              Solicitar Precios VIP
+              Solicitar Acceso Exclusivo
             </button>
           </div>
         </div>
@@ -268,7 +268,7 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* 4. TIPOLOGÍAS Y ACABADOS (Compacto) */}
+      {/* 4. TIPOLOGÍAS Y ACABADOS */}
       <section className="py-16 md:py-24 px-6 bg-[#F9F7F5] border-b border-[#EAE3DC] text-center">
         <div className="max-w-3xl mx-auto">
           <span className="text-[11px] font-bold tracking-[0.25em] text-[#974932] uppercase mb-4 block">Espacios de Autor</span>
@@ -334,13 +334,14 @@ export default function ArienzoLandingPremium() {
         </div>
       )}
 
-      {/* 6. VISIÓN DE INVERSIÓN (Compacto, elegante y con diseño de fondo sutil) */}
+      {/* 6. VISIÓN DE INVERSIÓN (Con Cuadrícula y Glow) */}
       <section className="py-16 md:py-24 px-6 bg-[#FDFCFB] relative border-t border-[#EAE3DC] overflow-hidden">
-        {/* Fondo arquitectónico sutil */}
-        <div className="absolute inset-0 bg-[radial-gradient(#EAE3DC_1px,transparent_1px)] [background-size:24px_24px] opacity-60"></div>
+        {/* Fondo de cuadrícula arquitectónica + resplandor */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:40px_40px]"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#DEB886]/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
         
         <div className="max-w-3xl mx-auto text-center relative z-10">
-          <div className="w-[1px] h-10 bg-[#974932] mx-auto mb-6 opacity-60"></div>
+          <div className="w-[1px] h-12 bg-gradient-to-b from-transparent to-[#974932] mx-auto mb-6"></div>
           
           <span className="text-[11px] font-bold tracking-[0.25em] text-[#974932] uppercase mb-4 block">Inversión Temprana</span>
           <h3 className="text-3xl md:text-4xl font-medium text-neutral-900 mb-6 tracking-tight">Visión de Inversión</h3>
@@ -372,7 +373,7 @@ export default function ArienzoLandingPremium() {
               <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#DEB886] block mb-3">Arquitectura</span>
               <h4 className="text-xl font-medium text-white mb-4">Diez + Muller</h4>
               <p className="text-sm text-neutral-400 font-light leading-relaxed transition-colors group-hover:text-neutral-300">
-                Estudio arquitectónico reconocido entre los más destacados del país. Autores de proyectos icónicos en la costa, destacando por su visión contemporánea y rigurosa atención al detalle.
+                Estudio arquitectónico reconocido entre los más destacados del país. Autores de proyectos icónicos en la costa ecuatoriana como el edificio Serene en Manta, destacando por su visión contemporánea y su rigurosa atención al detalle.
               </p>
             </div>
 
@@ -380,7 +381,7 @@ export default function ArienzoLandingPremium() {
               <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#DEB886] block mb-3">Construcción</span>
               <h4 className="text-xl font-medium text-white mb-4">Carrasco Suarez</h4>
               <p className="text-sm text-neutral-400 font-light leading-relaxed transition-colors group-hover:text-neutral-300">
-                Constructora con sólida trayectoria desde 1992, garantizando altos estándares. Amplia experiencia ejecutando obras residenciales premium, incluyendo el Hotel Eolia y el edificio Serene.
+                Constructora con sólida trayectoria desde 1992, garantizando altos estándares y cumplimiento. Cuentan con amplia experiencia ejecutando obras residenciales premium en la costa, como el Hotel Eolia y el edificio Serene en Marina Blue.
               </p>
             </div>
 
@@ -388,7 +389,7 @@ export default function ArienzoLandingPremium() {
               <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#DEB886] block mb-3">Desarrollo y Ventas</span>
               <h4 className="text-xl font-medium text-white mb-4">Konkeri</h4>
               <p className="text-sm text-neutral-400 font-light leading-relaxed transition-colors group-hover:text-neutral-300">
-                Promotora enfocada en el desarrollo integral de proyectos con visión a largo plazo. Fusionamos estrategia comercial y diseño para estructurar desarrollos rentables y alineados al mercado.
+                Promotora enfocada en el desarrollo integral de proyectos con visión a largo plazo. Fusionamos estrategia comercial, innovación arquitectónica y tecnología para estructurar desarrollos altamente rentables, sólidos y perfectamente alineados al mercado.
               </p>
             </div>
 
@@ -398,7 +399,6 @@ export default function ArienzoLandingPremium() {
 
       {/* 8. CERRADA FINAL */}
       <section className="py-20 md:py-28 bg-[#F9F7F5] text-center px-6 relative border-b-[12px] border-[#974932] overflow-hidden">
-        {/* Número 22 sutil como marca de agua real */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[14rem] md:text-[22rem] font-bold text-[#EAE3DC]/40 pointer-events-none select-none z-0 tracking-tighter leading-none">
           22
         </div>
@@ -421,13 +421,13 @@ export default function ArienzoLandingPremium() {
               onClick={() => setMostrarModalVip(true)}
               className="bg-[#21242E] text-white px-10 py-4 rounded-full text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-black transition-all duration-300 hover:-translate-y-1 shadow-xl w-full sm:w-auto"
             >
-              Solicitar Precios VIP
+              Solicitar Acceso Exclusivo
             </button>
           </div>
         </div>
       </section>
 
-      {/* MODAL CERRADURA VIP */}
+      {/* MODAL CERRADURA EXCLUSIVA */}
       {mostrarModalVip && (
         <div className="fixed inset-0 bg-[#21242E]/95 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white w-full max-w-md p-10 rounded-2xl relative shadow-2xl animate-in zoom-in-95">
