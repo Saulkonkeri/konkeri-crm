@@ -166,7 +166,7 @@ export default function ArienzoLandingPremium() {
                 La mejor zona <br className="hidden md:block"/> de la ciudad.
               </h3>
               <p className="text-sm md:text-base text-neutral-600 font-light leading-relaxed mb-6">
-                Vivir en Arienzo es disfrutar de una ubicación estratégica. Con acceso inmediato a La Quadra, el nuevo Riocentro Plaza Barbasquillo, hoteles, restaurantes y las principales vías de conexión.
+                Vivir en Arienzo es disfrutar de una ubicación estratégica. A pasos de La Quadra y del nuevo Riocentro Plaza Barbasquillo, con acceso inmediato a hoteles, restaurantes y las principales vías de conexión.
               </p>
               <p className="text-sm md:text-base text-neutral-600 font-light leading-relaxed">
                 Diseñado para quienes valoran la conectividad y una vida caminable, donde todo está a tu alcance.
@@ -245,9 +245,9 @@ export default function ArienzoLandingPremium() {
               </div>
               <div className="p-8">
                 <div className="w-8 h-[2px] bg-[#DEB886] mb-4 transition-all duration-300 group-hover:w-16"></div>
-                <h4 className="text-xl font-medium text-neutral-900 mb-3">Social Living</h4>
+                <h4 className="text-xl font-medium text-neutral-900 mb-3">Social Living & Gym Panorámico</h4>
                 <p className="text-sm text-neutral-600 font-light leading-relaxed">
-                  Un ambiente flexible que integra áreas de descanso, coworking y entretenimiento. Pensado para compartir, trabajar de forma remota o simplemente disfrutar.
+                  Un ambiente flexible que integra áreas de descanso, coworking y un gimnasio panorámico. Pensado para entrenar, compartir o trabajar de forma remota.
                 </p>
               </div>
             </div>
@@ -371,25 +371,25 @@ export default function ArienzoLandingPremium() {
             
             <div className="md:px-8 text-center group">
               <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#DEB886] block mb-3">Arquitectura</span>
-              <h4 className="text-xl font-medium text-white mb-4">Diez + Muller</h4>
+              <h4 className="text-xl font-medium text-white mb-4">DIEZ + MULLER</h4>
               <p className="text-sm text-neutral-400 font-light leading-relaxed transition-colors group-hover:text-neutral-300">
-                Estudio arquitectónico reconocido entre los más destacados del país. Autores de proyectos icónicos en la costa ecuatoriana como el edificio Serene en Manta, destacando por su visión contemporánea y su rigurosa atención al detalle.
+                Reconocido y premiado estudio quiteño. Autores de grandes proyectos en la capital y obras icónicas en la costa como el edificio Serene en Manta, destacando por su visión contemporánea y rigor al detalle.
               </p>
             </div>
 
             <div className="md:px-8 text-center group border-t border-white/10 md:border-t-0 pt-8 md:pt-0">
               <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#DEB886] block mb-3">Construcción</span>
-              <h4 className="text-xl font-medium text-white mb-4">Carrasco Suarez</h4>
+              <h4 className="text-xl font-medium text-white mb-4">CARRASCO SUAREZ</h4>
               <p className="text-sm text-neutral-400 font-light leading-relaxed transition-colors group-hover:text-neutral-300">
-                Constructora con sólida trayectoria desde 1992, garantizando altos estándares y cumplimiento. Cuentan con amplia experiencia ejecutando obras residenciales premium en la costa, como el Hotel Eolia y el edificio Serene en Marina Blue.
+                Constructora con sólida trayectoria desde 1992. Amplia experiencia ejecutando obras residenciales premium en la costa ecuatoriana, incluyendo el Hotel Eolia y el moderno edificio Serene en Marina Blue.
               </p>
             </div>
 
             <div className="md:px-8 text-center group border-t border-white/10 md:border-t-0 pt-8 md:pt-0">
               <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#DEB886] block mb-3">Desarrollo y Ventas</span>
-              <h4 className="text-xl font-medium text-white mb-4">Konkeri</h4>
+              <h4 className="text-xl font-medium text-white mb-4">KONKERI</h4>
               <p className="text-sm text-neutral-400 font-light leading-relaxed transition-colors group-hover:text-neutral-300">
-                Promotora enfocada en el desarrollo integral de proyectos con visión a largo plazo. Fusionamos estrategia comercial, innovación arquitectónica y tecnología para estructurar desarrollos altamente rentables, sólidos y perfectamente alineados al mercado.
+                Promotora enfocada en el desarrollo integral de proyectos. Fusionamos estrategia comercial, innovación arquitectónica y tecnología para estructurar desarrollos altamente rentables y alineados al mercado.
               </p>
             </div>
 
@@ -427,7 +427,7 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* MODAL CERRADURA EXCLUSIVA */}
+      {/* MODAL CERRADURA VIP */}
       {mostrarModalVip && (
         <div className="fixed inset-0 bg-[#21242E]/95 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white w-full max-w-md p-10 rounded-2xl relative shadow-2xl animate-in zoom-in-95">
@@ -443,7 +443,7 @@ export default function ArienzoLandingPremium() {
                 <div className="text-center mb-8">
                   <div className="w-12 h-1 bg-[#974932] mx-auto mb-6 rounded-full"></div>
                   <h3 className="text-2xl font-medium text-neutral-900 mb-2 tracking-tight">Acceso al Inventario</h3>
-                  <p className="text-xs text-neutral-500 font-light">Validaremos tu perfil para habilitar el acceso seguro a la disponibilidad y precios en planos.</p>
+                  <p className="text-xs text-neutral-500 font-light">Validaremos tu perfil para habilitar el acceso seguro a los <strong>planos arquitectónicos, disponibilidad en tiempo real y precios de lanzamiento.</strong></p>
                 </div>
 
                 <form onSubmit={procesarSolicitudVIP} className="space-y-4">
