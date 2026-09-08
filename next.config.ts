@@ -5,26 +5,26 @@ const nextConfig: NextConfig = {
     return {
       beforeFiles: [
         {
-          // Regla de máxima prioridad para el dominio principal
-          source: '/:path*',
+          // Interceptar SOLO la raíz exacta del dominio principal
+          source: '/',
           has: [
             {
               type: 'host',
               value: 'arienzoliving.com',
             },
           ],
-          destination: '/inicio/:path*',
+          destination: '/inicio',
         },
         {
-          // Regla de máxima prioridad para el www
-          source: '/:path*',
+          // Interceptar SOLO la raíz exacta con www
+          source: '/',
           has: [
             {
               type: 'host',
               value: 'www.arienzoliving.com',
             },
           ],
-          destination: '/inicio/:path*',
+          destination: '/inicio',
         },
       ],
     };
@@ -32,4 +32,3 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
-
