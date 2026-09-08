@@ -268,7 +268,7 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* 4. TIPOLOGÍAS Y ACABADOS (Compacto, elegante y directo al CTA) */}
+      {/* 4. TIPOLOGÍAS Y ACABADOS (Diseño compacto y directo al CTA) */}
       <section className="py-16 md:py-24 px-6 bg-[#F9F7F5] border-b border-[#EAE3DC] text-center">
         <div className="max-w-3xl mx-auto">
           <span className="text-[11px] font-bold tracking-[0.25em] text-[#974932] uppercase mb-4 block">Espacios de Autor</span>
@@ -334,19 +334,31 @@ export default function ArienzoLandingPremium() {
         </div>
       )}
 
-      {/* 6. VISIÓN DE INVERSIÓN (Menos espacio, diseño centrado y limpio) */}
-      <section className="py-16 md:py-24 px-6 bg-white relative border-t border-[#EAE3DC]">
+      {/* 6. VISIÓN DE INVERSIÓN (Rediseño escaneable y CTA impactante) */}
+      <section className="py-20 md:py-28 px-6 bg-white relative border-t border-[#EAE3DC]">
         <div className="max-w-3xl mx-auto text-center relative z-10">
+          {/* Línea vertical mantenida */}
           <div className="w-[1px] h-12 bg-gradient-to-b from-transparent to-[#974932] mx-auto mb-6"></div>
+          
           <span className="text-[11px] font-bold tracking-[0.25em] text-[#974932] uppercase mb-4 block">Inversión Temprana</span>
-          <h3 className="text-3xl md:text-4xl font-medium text-neutral-900 mb-6 tracking-tight">Visión de Inversión</h3>
-          <p className="text-sm md:text-base text-neutral-600 font-light leading-relaxed">
-            Arienzo representa una entrada estratégica en un sector premium consolidado. Ingresar en la etapa de <strong className="font-medium text-[#974932]">lanzamiento en planos</strong> permite capturar la mayor plusvalía del proyecto. Un formato íntimo que ofrece exclusividad y flexibilidad, ideal tanto para residencia principal como para modelo de renta.
-          </p>
+          <h3 className="text-3xl md:text-4xl font-medium text-neutral-900 mb-8 tracking-tight">Visión de Inversión</h3>
+          
+          <div className="text-sm md:text-base text-neutral-600 font-light leading-relaxed space-y-3 mb-10">
+            <p>Arienzo representa una entrada estratégica en un sector premium consolidado.</p>
+            <p>Ingresar en la etapa de <strong className="font-medium text-[#974932]">lanzamiento en planos</strong> permite capturar la mayor plusvalía del proyecto.</p>
+            <p>Un formato íntimo que ofrece exclusividad y flexibilidad, ideal tanto para residencia principal como para modelo de renta.</p>
+          </div>
+
+          <button 
+            onClick={() => setMostrarModalVip(true)}
+            className="inline-flex items-center justify-center gap-3 text-[11px] font-bold tracking-[0.15em] bg-[#21242E] text-white px-8 py-4 rounded-full hover:bg-[#974932] hover:-translate-y-1 transition-all duration-300 shadow-xl"
+          >
+            CONSULTAR PRECIOS EN PLANOS <span className="text-base">→</span>
+          </button>
         </div>
       </section>
 
-      {/* 7. RESPALDO INSTITUCIONAL (Textos equilibrados de igual tamaño) */}
+      {/* 7. RESPALDO INSTITUCIONAL (Textos equilibrados) */}
       <section className="py-20 md:py-28 px-6 bg-[#21242E] text-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16 md:mb-20">
@@ -384,30 +396,32 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* 8. CERRADA FINAL (Más compacto y directo) */}
-      <section className="py-16 md:py-24 bg-[#F9F7F5] text-center px-6 relative border-b-[12px] border-[#974932] overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[12rem] md:text-[20rem] font-bold text-white pointer-events-none select-none z-0 tracking-tighter leading-none drop-shadow-sm">
+      {/* 8. CERRADA FINAL (22 muy sutil, CTA destacado) */}
+      <section className="py-20 md:py-28 bg-[#F9F7F5] text-center px-6 relative border-b-[12px] border-[#974932] overflow-hidden">
+        {/* El número "22" ahora es sutil y se camufla con el fondo, sin estorbar la lectura */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[14rem] md:text-[22rem] font-bold text-[#EAE3DC]/40 pointer-events-none select-none z-0 tracking-tighter leading-none">
           22
         </div>
         
         <div className="max-w-2xl mx-auto flex flex-col items-center relative z-10">
           <h2 className="text-[11px] font-bold tracking-[0.3em] text-[#974932] uppercase mb-4">Colección Limitada</h2>
           <h3 className="text-3xl md:text-4xl font-medium tracking-tight text-neutral-900 mb-4">Sé uno de los 22 propietarios.</h3>
-          <p className="text-sm md:text-base text-neutral-600 font-light mb-8 leading-relaxed">
+          <p className="text-sm md:text-base text-neutral-600 font-light mb-10 leading-relaxed">
             El privilegio de pertenecer está limitado. Solicita tu acceso para descubrir precios, tipologías y disponibilidad en tiempo real.
           </p>
+          
           <div className="flex flex-col sm:flex-row justify-center gap-4 w-full sm:w-auto">
              <button 
-              onClick={abrirCalendly}
-              className="bg-[#974932] text-white px-8 py-3.5 rounded-full text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-[#7A3A27] transition-all duration-300 shadow-md w-full sm:w-auto"
+              onClick={() => setMostrarModalVip(true)}
+              className="bg-[#21242E] text-white px-10 py-4 rounded-full text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-black transition-all duration-300 hover:-translate-y-1 shadow-xl w-full sm:w-auto"
             >
-              Agendar Presentación
+              Solicitar Acceso VIP
             </button>
             <button 
-              onClick={() => setMostrarModalVip(true)}
-              className="bg-transparent border border-neutral-300 text-neutral-700 px-8 py-3.5 rounded-full text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-white hover:border-white transition-all duration-300 w-full sm:w-auto shadow-sm"
+              onClick={abrirCalendly}
+              className="bg-[#974932] text-white px-10 py-4 rounded-full text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-[#7A3A27] transition-all duration-300 hover:-translate-y-1 shadow-xl w-full sm:w-auto"
             >
-              Solicitar Precios VIP
+              Agendar Zoom
             </button>
           </div>
         </div>
@@ -495,20 +509,20 @@ export default function ArienzoLandingPremium() {
         </div>
       )}
 
-      {/* FOOTER (Más compacto y tipografía legible) */}
+      {/* FOOTER (Limpio, centrado y sin emojis) */}
       <footer className="bg-[#21242E] text-neutral-400 py-10 md:py-12 text-center border-t border-[#1a1d24]">
         <div className="max-w-6xl mx-auto px-6">
-          <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-blanco.svg" alt="Arienzo" className="h-8 mx-auto mb-6 opacity-90" />
+          <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-blanco.svg" alt="Arienzo" className="h-5 mx-auto mb-6 opacity-90" />
           
-          <div className="flex flex-col md:flex-row justify-center items-center gap-2 md:gap-4 mb-6 font-light text-base text-neutral-300">
-            <p>📍 Edificio Manta Business Center, Torre B, Oficina 801</p>
+          <div className="flex flex-col md:flex-row justify-center items-center gap-2 md:gap-4 mb-6 font-light text-sm text-neutral-300">
+            <p><span className="font-medium text-[#DEB886] text-xs uppercase tracking-widest mr-1">Dir:</span> Edificio Manta Business Center, Torre B, Of. 801</p>
             <p className="hidden md:block text-neutral-600">•</p>
-            <p>📞 097 946 9472</p>
+            <p><span className="font-medium text-[#DEB886] text-xs uppercase tracking-widest mr-1">Tel:</span> 097 946 9472</p>
           </div>
           
           <div className="flex flex-col items-center gap-1">
             <p className="text-sm font-light">Desarrollado por <strong className="text-white font-medium tracking-wide">KONKERI</strong></p>
-            <p className="text-xs font-light opacity-50">© {new Date().getFullYear()} Arienzo Boutique Living. Todos los derechos reservados.</p>
+            <p className="text-[11px] font-light opacity-50">© {new Date().getFullYear()} Arienzo Boutique Living. Todos los derechos reservados.</p>
           </div>
         </div>
       </footer>
