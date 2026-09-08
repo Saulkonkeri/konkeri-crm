@@ -1,9 +1,10 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+import type { NextConfig } from 'next';
+
+const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        // Regla para el dominio principal (Landing)
+        // Regla para el dominio principal
         source: '/:path*',
         has: [
           {
@@ -14,7 +15,7 @@ const nextConfig = {
         destination: '/inicio/:path*',
       },
       {
-        // Regla para el dominio con www (Landing)
+        // Regla para el www
         source: '/:path*',
         has: [
           {
@@ -23,7 +24,7 @@ const nextConfig = {
           },
         ],
         destination: '/inicio/:path*',
-      }
+      },
     ];
   },
 };
