@@ -18,10 +18,27 @@ export default function ArienzoLandingPremium() {
     email: ''
   });
 
+  // 1. CONTROL DE SCROLL (Ya lo tenías)
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // 2. NUEVO: RASTREADOR DE VISITAS PARA EL RADAR
+  useEffect(() => {
+    const registrarVisitaSilenciosa = async () => {
+      try {
+        await supabase.from('tracking_inventario').insert([{
+          email_cliente: 'Visitante Web',
+          accion: 'VISITA_LANDING_PAGE',
+          detalle: 'Alguien está explorando la página principal'
+        }]);
+      } catch (error) {
+        // Fallo silencioso para no molestar al usuario
+      }
+    };
+    registrarVisitaSilenciosa();
   }, []);
 
   const procesarSolicitudVIP = async (e: React.FormEvent) => {
@@ -30,7 +47,7 @@ export default function ArienzoLandingPremium() {
     const correoLimpio = formData.email.trim().toLowerCase();
 
     try {
-      // 1. Intentar hacer UPSERT en Radar (Supabase)
+      // 1. Intentar hacer UPSERT
       const { error: errorCliente } = await supabase.from('clientes').upsert([{
         nombres: formData.nombres,
         telefono: formData.telefono,
@@ -40,7 +57,6 @@ export default function ArienzoLandingPremium() {
         estado_acceso: 'pendiente'
       }], { onConflict: 'email' });
 
-      // Si falla, intentamos UPDATE directo
       if (errorCliente) {
         const { error: updateError } = await supabase.from('clientes')
           .update({ estado_acceso: 'pendiente', nombres: formData.nombres, telefono: formData.telefono })
@@ -51,16 +67,14 @@ export default function ArienzoLandingPremium() {
         }
       }
 
-      // 2. Guardar en el tracking de acciones
+      // 2. Guardar en el tracking (Radar)
       await supabase.from('tracking_inventario').insert([{
         email_cliente: correoLimpio,
         accion: 'SOLICITUD_ACCESO_VIP',
         detalle: 'Completó formulario web'
       }]);
 
-      // ------------------------------------------------------------------
-      // 3. DISPARAR NOTIFICACIÓN (¡APAGADO TEMPORALMENTE POR EMERGENCIA!)
-      // ------------------------------------------------------------------
+      // 3. CARTERO APAGADO TEMPORALMENTE (Para asegurar los leads)
       /*
       const respuesta = await fetch('/api/notificar', {
         method: 'POST',
@@ -76,9 +90,8 @@ export default function ArienzoLandingPremium() {
         alert(`❌ El CRM guardó los datos, pero Hostinger bloqueó el correo. Motivo: ${errorData.error || respuesta.statusText}`);
       }
       */
-      // ------------------------------------------------------------------
 
-      // 4. Pantalla de éxito final (Ahora llegará aquí directo)
+      // 4. Pantalla de éxito final
       setSolicitudEnviada(true);
       
     } catch (error) {
@@ -122,7 +135,7 @@ export default function ArienzoLandingPremium() {
   return (
     <div className="min-h-screen bg-[#F9F7F5] text-neutral-800 selection:bg-[#964B36] selection:text-white overflow-x-hidden" style={{ fontFamily: 'Montserrat, sans-serif' }}>
       
-      {/* NAVEGACIÓN - BARRA MÁS GRUESA AL HACER SCROLL */}
+      {/* NAVEGACIÓN */}
       <header className={`fixed top-0 w-full z-40 transition-all duration-500 ${scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm py-5 md:py-6' : 'bg-transparent py-6 md:py-8'}`}>
         <div className="max-w-7xl mx-auto px-5 md:px-12 flex justify-between items-center">
           <Image 
@@ -550,16 +563,12 @@ export default function ArienzoLandingPremium() {
         </div>
       )}
 
-      {/* FOOTER RENOVADO: CON CSS GRID PARA CENTRADO PERFECTO */}
+      {/* FOOTER */}
       <footer className="bg-[#21242E] text-neutral-400 py-8 border-t border-[#D1C292]/30">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-          
-          {/* Izquierda en Escritorio / Arriba en Móvil */}
           <div className="text-xs font-medium tracking-wide text-center md:text-left order-1 md:order-1">
             Un proyecto de <a href="https://konkeri.com" target="_blank" rel="noopener noreferrer" className="text-[#D1C292] hover:text-white transition-colors font-bold tracking-widest ml-1">KONKERI</a>
           </div>
-
-          {/* Centro en Escritorio / Medio en Móvil */}
           <div className="flex justify-center order-2 md:order-2">
             <Image 
               src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/logo-dorado-arienzo.svg" 
@@ -569,12 +578,9 @@ export default function ArienzoLandingPremium() {
               className="w-[140px] md:w-[170px] h-auto opacity-90" 
             />
           </div>
-
-          {/* Derecha en Escritorio / Abajo en Móvil */}
           <div className="text-[10px] md:text-[11px] font-medium opacity-60 text-center md:text-right order-3 md:order-3">
             © {new Date().getFullYear()} Todos los derechos reservados.
           </div>
-
         </div>
       </footer>
     </div>
