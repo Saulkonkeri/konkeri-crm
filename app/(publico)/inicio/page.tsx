@@ -100,9 +100,9 @@ export default function ArienzoLandingPremium() {
           <Image 
             src={scrolled ? "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" : "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-blanco.svg"} 
             alt="Arienzo Logo"
-            width={140}
-            height={28}
-            className="w-[100px] md:w-[140px] h-auto transition-all duration-500"
+            width={160}
+            height={32}
+            className="w-[120px] md:w-[160px] h-auto transition-all duration-500"
           />
           <button 
             onClick={() => setMostrarModalVip(true)}
@@ -122,7 +122,6 @@ export default function ArienzoLandingPremium() {
           priority
           className="absolute inset-0 object-cover z-0"
         />
-        {/* Gradiente más claro para no oscurecer tanto la foto */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-black/70 z-0"></div>
 
         <div className="relative z-10 text-center px-6 w-full max-w-4xl mx-auto pt-20">
@@ -523,29 +522,29 @@ export default function ArienzoLandingPremium() {
         </div>
       )}
 
-      {/* FOOTER RENOVADO Y FINO */}
+      {/* FOOTER RENOVADO: CON CSS GRID PARA CENTRADO PERFECTO */}
       <footer className="bg-[#21242E] text-neutral-400 py-8 border-t border-[#D1C292]/30">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6 md:gap-0">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
           
           {/* Izquierda en Escritorio / Arriba en Móvil */}
-          <div className="text-xs font-medium order-1 md:order-1 tracking-wide">
+          <div className="text-xs font-medium tracking-wide text-center md:text-left order-1 md:order-1">
             Un proyecto de <a href="https://konkeri.com" target="_blank" rel="noopener noreferrer" className="text-[#D1C292] hover:text-white transition-colors font-bold tracking-widest ml-1">KONKERI</a>
           </div>
 
           {/* Centro en Escritorio / Medio en Móvil */}
-          <div className="order-2 md:order-2">
+          <div className="flex justify-center order-2 md:order-2">
             <Image 
               src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/logo-dorado-arienzo.svg" 
               alt="Arienzo" 
-              width={140}
-              height={35}
-              className="h-[30px] w-auto opacity-90" 
+              width={180}
+              height={45}
+              className="w-[140px] md:w-[170px] h-auto opacity-90" 
             />
           </div>
 
           {/* Derecha en Escritorio / Abajo en Móvil */}
-          <div className="text-[10px] md:text-[11px] font-medium opacity-60 order-3 md:order-3 text-center md:text-right">
-            © {new Date().getFullYear()} Arienzo Boutique Living.<br className="block md:hidden"/> Todos los derechos reservados.
+          <div className="text-[10px] md:text-[11px] font-medium opacity-60 text-center md:text-right order-3 md:order-3">
+            © {new Date().getFullYear()} Todos los derechos reservados.
           </div>
 
         </div>
