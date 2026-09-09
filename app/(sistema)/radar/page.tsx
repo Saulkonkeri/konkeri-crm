@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 
-// TIPO PARA EL RADAR DE INVENTARIO
 type SesionCliente = {
   idSesion: string;
   email: string;
@@ -22,6 +21,7 @@ export default function RadarCentral() {
   // ESTADOS PESTAÑA 1: SOLICITUDES VIP
   const [solicitudes, setSolicitudes] = useState<any[]>([]);
   const [cargandoSolicitudes, setCargandoSolicitudes] = useState(true);
+  const [tiemposSeleccionados, setTiemposSeleccionados] = useState<Record<string, string>>({});
 
   // ESTADOS PESTAÑA 2: RADAR INVENTARIO
   const [sesiones, setSesiones] = useState<SesionCliente[]>([]);
@@ -34,7 +34,7 @@ export default function RadarCentral() {
   }, []);
 
   // ==========================================
-  // LÓGICA PESTAÑA 1: SOLICITUDES VIP
+  // PESTAÑA 1: SOLICITUDES VIP
   // ==========================================
   const cargarSolicitudes = async () => {
     setCargandoSolicitudes(true);
@@ -43,28 +43,53 @@ export default function RadarCentral() {
         .from('clientes')
         .select('*')
         .eq('estado_acceso', 'pendiente')
+        // FILTRO ESTRICTO: Solo landing page
+        .eq('origen', 'Web Pública - Solicitud Acceso Exclusivo')
         .order('created_at', { ascending: false });
 
-      if (data) setSolicitudes(data);
+      if (error) {
+        console.error("Error al cargar solicitudes:", error);
+        return;
+      }
+
+      if (data) {
+        setSolicitudes(data);
+        const tiemposInit: Record<string, string> = {};
+        data.forEach(c => { tiemposInit[c.id] = '24'; });
+        setTiemposSeleccionados(tiemposInit);
+      }
     } catch (error) {
-      console.error("Error cargando solicitudes", error);
+      console.error("Error inesperado cargando solicitudes", error);
     } finally {
       setCargandoSolicitudes(false);
     }
   };
 
+  const handleTiempoChange = (id: string, valor: string) => {
+    setTiemposSeleccionados(prev => ({ ...prev, [id]: valor }));
+  };
+
   const aprobarAcceso = async (cliente: any) => {
-    alert(`Aprobando acceso para ${cliente.nombres}... (Configuraremos el correo en el siguiente paso)`);
+    const horas = tiemposSeleccionados[cliente.id] || '24';
+    alert(`Aprobando a ${cliente.nombres} por ${horas} horas... (En construcción)`);
+  };
+
+  const enviarCorreo = async (cliente: any) => {
+    alert(`Enviando correo a ${cliente.email} desde ventas@arienzoliving.com...`);
   };
 
   const abrirWhatsApp = (telefono: string, nombres: string) => {
+    if (!telefono) {
+      alert("Este cliente no tiene un teléfono registrado.");
+      return;
+    }
     const mensaje = `Hola ${nombres}, soy Saúl de Konkeri. Hemos validado tu perfil y tu acceso exclusivo al inventario de Arienzo Boutique Living está listo. Puedes ingresar aquí: https://reserva.arienzoliving.com con tu correo.`;
     const url = `https://wa.me/${telefono.replace(/\D/g, '')}?text=${encodeURIComponent(mensaje)}`;
     window.open(url, '_blank');
   };
 
   // ==========================================
-  // LÓGICA PESTAÑA 2: RADAR INVENTARIO (Tu código)
+  // PESTAÑA 2: RADAR INVENTARIO
   // ==========================================
   const generarAnalisisComercial = (sesion: SesionCliente) => {
     if (sesion.eventos.length === 0) return "Sin datos suficientes para analizar.";
@@ -103,12 +128,14 @@ export default function RadarCentral() {
       const { data, error } = await supabase
         .from('tracking_inventario')
         .select('*')
-        // ¡LA MAGIA AQUÍ!: Excluimos todo lo que venga de la Landing Page
         .not('accion', 'in', '("SOLICITUD_ACCESO_VIP","ABRIO_CALENDLY")')
         .order('created_at', { ascending: false })
         .limit(500);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error cargando radar:", error);
+        return;
+      }
 
       if (data) {
         const datosCronologicos = [...data].reverse();
@@ -173,9 +200,10 @@ export default function RadarCentral() {
         setSesiones(sesionesList);
       }
     } catch (error) {
-      console.error("Error cargando el radar", error);
+      console.error("Error inesperado cargando el radar", error);
+    } finally {
+      setCargandoRadar(false);
     }
-    setCargandoRadar(false);
   };
 
   return (
@@ -230,7 +258,7 @@ export default function RadarCentral() {
       {pestañaActiva === 'solicitudes' && (
         <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden animate-in fade-in slide-in-from-bottom-2">
           <div className="px-6 py-5 border-b border-neutral-100 flex justify-between items-center bg-neutral-50/50">
-            <h3 className="font-bold text-neutral-800">Pendientes de Aprobación</h3>
+            <h3 className="font-bold text-neutral-800">Accesos Web Pendientes</h3>
           </div>
           
           <div className="overflow-x-auto">
@@ -240,20 +268,20 @@ export default function RadarCentral() {
                   <th className="px-6 py-4 font-medium">Cliente</th>
                   <th className="px-6 py-4 font-medium">Contacto</th>
                   <th className="px-6 py-4 font-medium">Fecha</th>
-                  <th className="px-6 py-4 font-medium text-right">Acción</th>
+                  <th className="px-6 py-4 font-medium text-right">Gestión de Acceso</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
                 {cargandoSolicitudes ? (
                   <tr><td colSpan={4} className="px-6 py-10 text-center text-neutral-400">Cargando solicitudes...</td></tr>
                 ) : solicitudes.length === 0 ? (
-                  <tr><td colSpan={4} className="px-6 py-10 text-center text-neutral-400 font-medium">No hay solicitudes pendientes.</td></tr>
+                  <tr><td colSpan={4} className="px-6 py-10 text-center text-neutral-400 font-medium">No hay solicitudes nuevas desde la web.</td></tr>
                 ) : (
                   solicitudes.map((cliente) => (
                     <tr key={cliente.id} className="hover:bg-neutral-50/50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="font-bold text-neutral-900">{cliente.nombres}</div>
-                        <div className="text-xs text-neutral-400">{cliente.origen}</div>
+                        <div className="text-xs text-neutral-400">Desde Landing Page</div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-neutral-900 font-mono text-xs">{cliente.email}</div>
@@ -262,19 +290,42 @@ export default function RadarCentral() {
                       <td className="px-6 py-4 text-xs">
                         {new Date(cliente.created_at).toLocaleDateString('es-EC', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                       </td>
-                      <td className="px-6 py-4 text-right flex justify-end gap-2">
-                        <button 
-                          onClick={() => abrirWhatsApp(cliente.telefono, cliente.nombres)}
-                          className="bg-green-50 text-green-700 hover:bg-green-100 px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors border border-green-200"
-                        >
-                          WhatsApp
-                        </button>
-                        <button 
-                          onClick={() => aprobarAcceso(cliente)}
-                          className="bg-[#964B36] text-white hover:bg-[#7d3e2c] px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm"
-                        >
-                          Dar Acceso
-                        </button>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          
+                          <select 
+                            className="bg-white border border-neutral-200 text-neutral-700 rounded-lg text-xs p-2 focus:outline-none focus:border-[#964B36]"
+                            value={tiemposSeleccionados[cliente.id] || '24'}
+                            onChange={(e) => handleTiempoChange(cliente.id, e.target.value)}
+                          >
+                            <option value="2">2 horas</option>
+                            <option value="12">12 horas</option>
+                            <option value="24">24 horas</option>
+                            <option value="48">48 horas</option>
+                            <option value="999">Ilimitado</option>
+                          </select>
+
+                          <button 
+                            onClick={() => aprobarAcceso(cliente)}
+                            className="bg-neutral-800 text-white hover:bg-black px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm"
+                          >
+                            Aprobar
+                          </button>
+                          
+                          <button 
+                            onClick={() => enviarCorreo(cliente)}
+                            className="bg-[#964B36] text-white hover:bg-[#7d3e2c] px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm"
+                          >
+                            ✉️ Enviar Correo
+                          </button>
+
+                          <button 
+                            onClick={() => abrirWhatsApp(cliente.telefono, cliente.nombres)}
+                            className="bg-green-50 text-green-700 hover:bg-green-100 px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors border border-green-200"
+                          >
+                            WhatsApp
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -285,7 +336,7 @@ export default function RadarCentral() {
         </div>
       )}
 
-      {/* CONTENIDO PESTAÑA 2: RADAR INVENTARIO (Tu diseño original intacto) */}
+      {/* CONTENIDO PESTAÑA 2: RADAR INVENTARIO */}
       {pestañaActiva === 'inventario' && (
         <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2">
           {cargandoRadar && sesiones.length === 0 ? (
@@ -407,7 +458,7 @@ export default function RadarCentral() {
           <div className="text-4xl mb-4 text-[#D1C292]">🌐</div>
           <h3 className="text-lg font-bold text-neutral-800 mb-2">Tráfico de la Landing Page</h3>
           <p className="text-neutral-500 max-w-md mx-auto">
-            Aquí filtraremos los eventos "Solicitud VIP" y "Calendly" que acabamos de excluir del Radar de Inventario, para que midas la conversión de tu pauta.
+            Próximo paso: Instalaremos el rastreador en la landing page para ver aquí las sesiones de los visitantes anónimos y el tiempo que navegan.
           </p>
         </div>
       )}
