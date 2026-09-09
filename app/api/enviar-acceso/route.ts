@@ -11,8 +11,8 @@ export async function POST(request: Request) {
       port: Number(process.env.SMTP_PORT),
       secure: true, // true para el puerto 465
       auth: {
-        user: process.env.SMTP_USER_ARIENZO, // <-- CORREGIDO: Ahora usa el usuario de Arienzo
-        pass: process.env.SMTP_PASS_ARIENZO, // <-- CORREGIDO: Ahora usa la contraseña de Arienzo
+        user: process.env.SMTP_USER_ARIENZO,
+        pass: process.env.SMTP_PASS_ARIENZO,
       },
     });
 
@@ -73,8 +73,8 @@ export async function POST(request: Request) {
             
             <div class="signature">
               <p class="signature-name">Saúl Intriago</p>
-              <p class="signature-title">Dirección Comercial</p>
-              <p class="signature-company">Konkeri S.A.S.</p>
+              <p class="signature-title">Director Comercial</p>
+              <p class="signature-company">Promotora Inmobiliaria Konkeri</p>
             </div>
           </div>
           
