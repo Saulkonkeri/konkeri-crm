@@ -30,33 +30,36 @@ export default function ArienzoLandingPremium() {
     const correoLimpio = formData.email.trim().toLowerCase();
 
     try {
-      // 1. Intentar hacer UPSERT (Insertar si es nuevo, actualizar si ya existe)
+      // 1. Intentar hacer UPSERT
       const { error: errorCliente } = await supabase.from('clientes').upsert([{
         nombres: formData.nombres,
         telefono: formData.telefono,
         email: correoLimpio,
         tipo: 'prospecto',
         origen: 'Web Pública - Solicitud Acceso Exclusivo',
-        estado_acceso: 'pendiente' // Lo regresamos a pendiente para que asome en el Radar
+        estado_acceso: 'pendiente'
       }], { onConflict: 'email' });
 
-      // Si Supabase bloquea el upsert por reglas de seguridad, forzamos un UPDATE simple
+      // Si falla, intentamos UPDATE directo y REVISAMOS si funciona
       if (errorCliente) {
-        console.error("Upsert bloqueado, intentando actualización directa:", errorCliente);
-        await supabase.from('clientes')
-          .update({ estado_acceso: 'pendiente' })
+        const { error: updateError } = await supabase.from('clientes')
+          .update({ estado_acceso: 'pendiente', nombres: formData.nombres, telefono: formData.telefono })
           .eq('email', correoLimpio);
+          
+        if (updateError) {
+          alert(`🚨 Error en CRM: Supabase bloqueó la actualización del cliente repetido. Detalle: ${updateError.message}`);
+        }
       }
 
-      // 2. Guardar en el tracking del Radar
+      // 2. Guardar en el tracking (Radar)
       await supabase.from('tracking_inventario').insert([{
         email_cliente: correoLimpio,
         accion: 'SOLICITUD_ACCESO_VIP',
         detalle: 'Completó formulario web'
       }]);
 
-      // 3. DISPARAR NOTIFICACIÓN CON 'AWAIT' (Garantiza que el correo salga antes de seguir)
-      await fetch('/api/notificar', {
+      // 3. DISPARAR NOTIFICACIÓN Y EXAMINAR AL CARTERO
+      const respuesta = await fetch('/api/notificar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -65,12 +68,18 @@ export default function ArienzoLandingPremium() {
         })
       });
 
-      // 4. Recién cuando el correo sale, mostramos la pantalla de éxito
+      // ¡AQUÍ ESTÁ LA MAGIA! Si el cartero falla, nos confesará el motivo real
+      if (!respuesta.ok) {
+        const errorData = await respuesta.json();
+        alert(`❌ El CRM guardó los datos, pero Hostinger bloqueó el correo. Motivo: ${errorData.error || respuesta.statusText}`);
+      }
+
+      // 4. Pantalla de éxito final
       setSolicitudEnviada(true);
       
     } catch (error) {
       console.error("Error general:", error);
-      alert("Hubo un problema de conexión. Intenta nuevamente.");
+      alert("Hubo un problema grave en la ejecución. Revisa la consola.");
     } finally {
       setCargando(false);
     }
