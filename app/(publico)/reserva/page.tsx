@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Reserva Express (Limpieza de término "Suite")
+// Actualizacion para Vercel - Reserva Express (Limpieza de término "Suite" y Logo incorporado)
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -245,22 +245,34 @@ export default function ReservaExpressPage() {
 
   return (
     <div className="min-h-screen bg-[#F9F7F5] font-sans pb-20 relative">
+      {/* HEADER CUANDO NAVEGAS (CON LOGO) */}
       {paso !== 'acceso' && (
         <header className="bg-white border-b border-[#EAE3DC] px-6 py-4 sticky top-0 z-40 flex justify-center shadow-sm">
-          <div className="text-center cursor-pointer" onClick={() => setPaso('filtro')}>
-            <h1 className="text-lg font-light tracking-[0.2em] text-neutral-900 uppercase">Arienzo</h1>
-            <p className="text-[9px] font-bold tracking-widest text-[#B94A36] uppercase mt-0.5">Boutique Living</p>
+          <div className="text-center cursor-pointer flex justify-center items-center" onClick={() => setPaso('filtro')}>
+            <img 
+              src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" 
+              alt="Arienzo Boutique Living" 
+              className="w-28 md:w-32 h-auto"
+            />
           </div>
         </header>
       )}
 
       <main className="max-w-5xl mx-auto px-3 md:px-4 mt-6">
+        {/* CAJA DE ACCESO (CON LOGO) */}
         {paso === 'acceso' && (
           <div className="min-h-[80vh] flex flex-col items-center justify-center animate-in fade-in duration-700 px-4">
             <div className="bg-white p-8 md:p-12 rounded-3xl border border-[#EAE3DC] shadow-xl max-w-md w-full text-center relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1.5 bg-[#B94A36]"></div>
-              <h1 className="text-3xl font-light tracking-[0.2em] text-neutral-900 uppercase mt-4">Arienzo</h1>
-              <p className="text-[9px] font-bold tracking-widest text-[#B94A36] uppercase mt-1 mb-8">Boutique Living</p>
+              
+              <div className="flex justify-center mt-4 mb-8">
+                <img 
+                  src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" 
+                  alt="Arienzo Boutique Living" 
+                  className="w-40 md:w-48 h-auto"
+                />
+              </div>
+              
               <h2 className="text-xl font-light text-neutral-800 mb-2">Acceso Exclusivo</h2>
               <p className="text-xs text-neutral-500 mb-8 px-2">Ingresa tu correo electrónico autorizado para visualizar el inventario.</p>
               
