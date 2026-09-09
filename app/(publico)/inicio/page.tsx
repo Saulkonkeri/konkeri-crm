@@ -30,22 +30,38 @@ export default function ArienzoLandingPremium() {
     const correoLimpio = formData.email.trim().toLowerCase();
 
     try {
-      await supabase.from('clientes').upsert([{
+      // 1. Guardar en la tabla de clientes (Agregamos estado_acceso: 'pendiente')
+      const { error: errorCliente } = await supabase.from('clientes').upsert([{
         nombres: formData.nombres,
         telefono: formData.telefono,
         email: correoLimpio,
         tipo: 'prospecto',
-        origen: 'Web Pública - Solicitud Acceso Exclusivo'
+        origen: 'Web Pública - Solicitud Acceso Exclusivo',
+        estado_acceso: 'pendiente' // ESTA LÍNEA ES VITAL PARA EL CRM
       }], { onConflict: 'email' });
 
-      await supabase.from('tracking_inventario').insert([{
+      // Si Supabase rebota la inserción por permisos o errores, lo mostramos:
+      if (errorCliente) {
+        console.error("Error Supabase Clientes:", errorCliente);
+        alert(`Error de base de datos: ${errorCliente.message}`);
+        setCargando(false);
+        return; 
+      }
+
+      // 2. Guardar en el tracking
+      const { error: errorTracking } = await supabase.from('tracking_inventario').insert([{
         email_cliente: correoLimpio,
         accion: 'SOLICITUD_ACCESO_VIP',
         detalle: 'Completó formulario web'
       }]);
 
+      if (errorTracking) {
+        console.error("Error Supabase Tracking:", errorTracking);
+      }
+
       setSolicitudEnviada(true);
 
+      // 3. Disparar notificación por correo
       fetch('/api/notificar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -54,7 +70,9 @@ export default function ArienzoLandingPremium() {
           datos: { nombres: formData.nombres, telefono: formData.telefono, email: correoLimpio }
         })
       }).catch(() => {});
+      
     } catch (error) {
+      console.error("Error general:", error);
       alert("Hubo un problema de conexión. Intenta nuevamente.");
     } finally {
       setCargando(false);
@@ -94,8 +112,8 @@ export default function ArienzoLandingPremium() {
   return (
     <div className="min-h-screen bg-[#F9F7F5] text-neutral-800 selection:bg-[#964B36] selection:text-white overflow-x-hidden" style={{ fontFamily: 'Montserrat, sans-serif' }}>
       
-      {/* NAVEGACIÓN */}
-      <header className={`fixed top-0 w-full z-40 transition-all duration-500 ${scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm py-3 md:py-5' : 'bg-transparent py-5 md:py-8'}`}>
+      {/* NAVEGACIÓN - BARRA MÁS GRUESA AL HACER SCROLL */}
+      <header className={`fixed top-0 w-full z-40 transition-all duration-500 ${scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm py-5 md:py-6' : 'bg-transparent py-6 md:py-8'}`}>
         <div className="max-w-7xl mx-auto px-5 md:px-12 flex justify-between items-center">
           <Image 
             src={scrolled ? "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" : "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-blanco.svg"} 
@@ -106,7 +124,7 @@ export default function ArienzoLandingPremium() {
           />
           <button 
             onClick={() => setMostrarModalVip(true)}
-            className={`text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2.5 md:px-6 md:py-3 rounded-full transition-all duration-300 ${scrolled ? 'bg-[#964B36] text-white hover:bg-[#7d3e2c] shadow-md' : 'bg-white/20 backdrop-blur-md text-white border border-white/40 hover:bg-white hover:text-[#964B36]'}`}
+            className={`text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-3 md:px-6 md:py-3.5 rounded-full transition-all duration-300 ${scrolled ? 'bg-[#964B36] text-white hover:bg-[#7d3e2c] shadow-md' : 'bg-white/20 backdrop-blur-md text-white border border-white/40 hover:bg-white hover:text-[#964B36]'}`}
           >
             Acceso Exclusivo
           </button>
