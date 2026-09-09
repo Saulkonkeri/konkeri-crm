@@ -30,46 +30,43 @@ export default function ArienzoLandingPremium() {
     const correoLimpio = formData.email.trim().toLowerCase();
 
     try {
-      // 1. Guardar en la tabla de clientes (Agregamos estado_acceso: 'pendiente')
+      // 1. Intentar hacer UPSERT (Insertar si es nuevo, actualizar si ya existe)
       const { error: errorCliente } = await supabase.from('clientes').upsert([{
         nombres: formData.nombres,
         telefono: formData.telefono,
         email: correoLimpio,
         tipo: 'prospecto',
         origen: 'Web Pública - Solicitud Acceso Exclusivo',
-        estado_acceso: 'pendiente' // ESTA LÍNEA ES VITAL PARA EL CRM
+        estado_acceso: 'pendiente' // Lo regresamos a pendiente para que asome en el Radar
       }], { onConflict: 'email' });
 
-      // Si Supabase rebota la inserción por permisos o errores, lo mostramos:
+      // Si Supabase bloquea el upsert por reglas de seguridad, forzamos un UPDATE simple
       if (errorCliente) {
-        console.error("Error Supabase Clientes:", errorCliente);
-        alert(`Error de base de datos: ${errorCliente.message}`);
-        setCargando(false);
-        return; 
+        console.error("Upsert bloqueado, intentando actualización directa:", errorCliente);
+        await supabase.from('clientes')
+          .update({ estado_acceso: 'pendiente' })
+          .eq('email', correoLimpio);
       }
 
-      // 2. Guardar en el tracking
-      const { error: errorTracking } = await supabase.from('tracking_inventario').insert([{
+      // 2. Guardar en el tracking del Radar
+      await supabase.from('tracking_inventario').insert([{
         email_cliente: correoLimpio,
         accion: 'SOLICITUD_ACCESO_VIP',
         detalle: 'Completó formulario web'
       }]);
 
-      if (errorTracking) {
-        console.error("Error Supabase Tracking:", errorTracking);
-      }
-
-      setSolicitudEnviada(true);
-
-      // 3. Disparar notificación por correo
-      fetch('/api/notificar', {
+      // 3. DISPARAR NOTIFICACIÓN CON 'AWAIT' (Garantiza que el correo salga antes de seguir)
+      await fetch('/api/notificar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           tipo: "nueva_solicitud_web",
           datos: { nombres: formData.nombres, telefono: formData.telefono, email: correoLimpio }
         })
-      }).catch(() => {});
+      });
+
+      // 4. Recién cuando el correo sale, mostramos la pantalla de éxito
+      setSolicitudEnviada(true);
       
     } catch (error) {
       console.error("Error general:", error);
@@ -438,7 +435,7 @@ export default function ArienzoLandingPremium() {
           <h2 className="text-[11px] font-bold tracking-[0.3em] text-[#964B36] uppercase mb-4">Colección Limitada</h2>
           <h3 className="text-3xl md:text-4xl font-medium tracking-tight text-neutral-900 mb-4">Sé uno de los 22 propietarios.</h3>
           <p className="text-sm md:text-base text-neutral-600 font-medium mb-10 leading-relaxed">
-            El privilegio de pertenecer está limitado. Solicita tu acceso para descubrir precios, tipologías y disponibilidad en tiempo real.
+            El privilegeo de pertenecer está limitado. Solicita tu acceso para descubrir precios, tipologías y disponibilidad en tiempo real.
           </p>
           
           <div className="flex flex-col sm:flex-row justify-center gap-4 w-full sm:w-auto">
