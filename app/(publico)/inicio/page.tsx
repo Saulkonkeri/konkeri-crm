@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 
 export default function ArienzoLandingPremium() {
@@ -94,16 +95,18 @@ export default function ArienzoLandingPremium() {
     <div className="min-h-screen bg-[#F9F7F5] text-neutral-800 selection:bg-[#964B36] selection:text-white overflow-x-hidden" style={{ fontFamily: 'Montserrat, sans-serif' }}>
       
       {/* NAVEGACIÓN */}
-      <header className={`fixed top-0 w-full z-40 transition-all duration-500 ${scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm py-4 md:py-5' : 'bg-transparent py-6 md:py-8'}`}>
-        <div className="max-w-7xl mx-auto px-6 md:px-12 flex justify-between items-center">
-          <img 
+      <header className={`fixed top-0 w-full z-40 transition-all duration-500 ${scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm py-3 md:py-5' : 'bg-transparent py-5 md:py-8'}`}>
+        <div className="max-w-7xl mx-auto px-5 md:px-12 flex justify-between items-center">
+          <Image 
             src={scrolled ? "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" : "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-blanco.svg"} 
-            alt="Arienzo Logo" 
-            className="h-5 md:h-7 w-auto transition-all duration-500"
+            alt="Arienzo Logo"
+            width={140}
+            height={28}
+            className="w-[100px] md:w-[140px] h-auto transition-all duration-500"
           />
           <button 
             onClick={() => setMostrarModalVip(true)}
-            className={`text-[10px] font-bold uppercase tracking-[0.2em] px-6 py-3 rounded-full transition-all duration-300 ${scrolled ? 'bg-[#964B36] text-white hover:bg-[#7d3e2c] shadow-md' : 'bg-white/20 backdrop-blur-md text-white border border-white/40 hover:bg-white hover:text-[#964B36]'}`}
+            className={`text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2.5 md:px-6 md:py-3 rounded-full transition-all duration-300 ${scrolled ? 'bg-[#964B36] text-white hover:bg-[#7d3e2c] shadow-md' : 'bg-white/20 backdrop-blur-md text-white border border-white/40 hover:bg-white hover:text-[#964B36]'}`}
           >
             Acceso Exclusivo
           </button>
@@ -111,48 +114,50 @@ export default function ArienzoLandingPremium() {
       </header>
 
       {/* 1. HERO INMERSIVO */}
-      <section className="relative h-[100vh] min-h-[700px] flex flex-col items-center justify-center">
-        <img 
+      <section className="relative h-[100vh] min-h-[650px] flex flex-col items-center justify-center">
+        <Image 
           src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Fronta.jpg" 
           alt="Arienzo Fachada"
-          className="absolute inset-0 w-full h-full object-cover z-0"
-          fetchPriority="high"
+          fill
+          priority
+          className="absolute inset-0 object-cover z-0"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-black/80 z-0"></div>
+        {/* Gradiente más claro para no oscurecer tanto la foto */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-black/70 z-0"></div>
 
-        <div className="relative z-10 text-center px-6 w-full max-w-4xl mx-auto pt-16">
-          <div className="inline-block px-6 py-2.5 border border-[#D1C292]/60 backdrop-blur-md rounded-full mb-8 shadow-[0_0_15px_rgba(209,194,146,0.2)]">
-            <span className="text-[13px] font-bold tracking-[0.35em] text-[#D1C292] uppercase">
+        <div className="relative z-10 text-center px-6 w-full max-w-4xl mx-auto pt-20">
+          <div className="inline-block px-5 py-2 border border-[#D1C292]/60 backdrop-blur-md rounded-full mb-6 md:mb-8 shadow-[0_0_15px_rgba(209,194,146,0.2)]">
+            <span className="text-[11px] md:text-[13px] font-bold tracking-[0.35em] text-[#D1C292] uppercase">
               Próximamente en Manta
             </span>
           </div>
-          <h1 className="text-4xl md:text-5xl lg:text-[4rem] font-medium text-white leading-tight mb-8 tracking-tight drop-shadow-xl">
+          <h1 className="text-[2rem] leading-tight md:text-5xl lg:text-[4rem] font-medium text-white md:leading-tight mb-6 md:mb-8 tracking-tight drop-shadow-xl max-w-3xl mx-auto">
             Todo empieza con <br />
             <span className="font-light italic text-[#F9F7F5]">una buena ubicación.</span>
           </h1>
-          <p className="text-base md:text-xl text-neutral-200 font-medium max-w-2xl mx-auto mb-10 leading-relaxed drop-shadow-md">
+          <p className="text-sm md:text-xl text-neutral-100 font-medium max-w-2xl mx-auto mb-8 md:mb-10 leading-relaxed drop-shadow-md">
             Colección exclusiva de solo 22 departamentos de 1, 2 y 3 dormitorios. Accede primero a la disponibilidad y precios de lanzamiento en planos.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4">
             <button 
               onClick={abrirCalendly}
-              className="w-full sm:w-auto bg-[#964B36] text-white px-8 py-4 rounded-full text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-[#7d3e2c] transition-all duration-300 shadow-xl hover:-translate-y-0.5"
+              className="w-full sm:w-auto bg-[#964B36] text-white px-6 py-3.5 md:px-8 md:py-4 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-[#7d3e2c] transition-all duration-300 shadow-xl hover:-translate-y-0.5"
             >
               Agendar Presentación
             </button>
             <button 
               onClick={() => setMostrarModalVip(true)}
-              className="w-full sm:w-auto bg-transparent border border-white/50 text-white px-8 py-4 rounded-full text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-white hover:text-[#964B36] transition-all duration-300 hover:-translate-y-0.5"
+              className="w-full sm:w-auto bg-white/10 backdrop-blur-sm border border-white/40 text-white px-6 py-3.5 md:px-8 md:py-4 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-white hover:text-[#964B36] transition-all duration-300 hover:-translate-y-0.5"
             >
-              Solicitar Acceso Exclusivo
+              Solicitar Acceso
             </button>
           </div>
         </div>
       </section>
 
       {/* 2. UBICACIÓN */}
-      <section className="py-24 md:py-32 px-6 bg-[#F9F7F5] relative overflow-hidden">
+      <section className="py-20 md:py-32 px-6 bg-[#F9F7F5] relative overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:40px_40px]"></div>
 
         <div className="max-w-6xl mx-auto relative z-10">
@@ -162,7 +167,7 @@ export default function ArienzoLandingPremium() {
                 <div className="h-[2px] w-8 bg-[#964B36]"></div>
                 <span className="text-[13px] font-bold tracking-[0.25em] text-[#964B36] uppercase">Barbasquillo, Manta</span>
               </div>
-              <h3 className="text-3xl md:text-4xl font-medium text-neutral-900 leading-tight mb-8 tracking-tight">
+              <h3 className="text-3xl md:text-4xl font-medium text-neutral-900 leading-tight mb-6 md:mb-8 tracking-tight">
                 La mejor zona <br className="hidden md:block"/> de la ciudad.
               </h3>
               <p className="text-sm md:text-base text-neutral-600 font-medium leading-relaxed mb-6">
@@ -175,12 +180,15 @@ export default function ArienzoLandingPremium() {
 
             <div className="md:col-span-7 relative order-1 md:order-2">
               <div className="absolute -inset-4 bg-[#D1C292]/20 rounded-2xl transform translate-x-4 translate-y-4 hidden md:block"></div>
-              <img 
-                src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/ubicacion-arienzo-1.jpg" 
-                alt="Ubicación Manta" 
-                className="relative z-10 w-full h-auto object-cover rounded-xl shadow-2xl"
-                loading="lazy"
-              />
+              <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden shadow-2xl">
+                <Image 
+                  src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/ubicacion-arienzo-1.jpg" 
+                  alt="Ubicación Manta" 
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-cover"
+                />
+              </div>
               
               <div className="absolute -bottom-6 -left-2 md:-left-8 z-20 bg-white/95 backdrop-blur-xl px-5 md:px-6 py-4 rounded-xl shadow-2xl border border-white/50 flex items-center gap-4 hover:scale-105 transition-transform duration-300">
                 <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center relative">
@@ -198,18 +206,23 @@ export default function ArienzoLandingPremium() {
       </section>
 
       {/* LA FRANJA TERRACOTA */}
-      <div className="relative py-20 md:py-28 flex justify-center items-center shadow-inner z-20 bg-[#964B36] overflow-hidden">
-        <img 
+      <div className="relative h-[200px] md:h-[280px] flex justify-center items-center shadow-inner z-20 bg-[#964B36] overflow-hidden">
+        <Image 
           src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/familia-en-sala-banco-imagenes-ia.jpg" 
           alt="Familia en Arienzo" 
-          className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-30"
+          fill
+          sizes="100vw"
+          className="object-cover mix-blend-overlay opacity-30"
         />
         <div className="absolute inset-0 bg-[#964B36]/70"></div>
-        <img 
-          src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/logo-dorado-arienzo.svg" 
-          alt="Arienzo Boutique Living" 
-          className="relative z-10 h-16 md:h-24 drop-shadow-2xl hover:scale-105 transition-transform duration-700" 
-        />
+        <div className="relative z-10 w-[200px] md:w-[300px] h-[60px] md:h-[90px] hover:scale-105 transition-transform duration-700">
+          <Image 
+            src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/logo-dorado-arienzo.svg" 
+            alt="Arienzo Boutique Living" 
+            fill
+            className="object-contain drop-shadow-2xl" 
+          />
+        </div>
       </div>
 
       {/* 3. AMENIDADES */}
@@ -228,7 +241,7 @@ export default function ArienzoLandingPremium() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="group bg-white rounded-2xl overflow-hidden border border-[#EAE3DC] shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-2">
               <div className="aspect-[4/3] overflow-hidden relative">
-                <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Piscina-1.jpg" alt="Piscina" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
+                <Image src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Piscina-1.jpg" alt="Piscina" fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover transition-transform duration-700 group-hover:scale-105" />
               </div>
               <div className="p-8">
                 <div className="w-8 h-[2px] bg-[#D1C292] mb-4 transition-all duration-300 group-hover:w-16"></div>
@@ -241,7 +254,7 @@ export default function ArienzoLandingPremium() {
 
             <div className="group bg-white rounded-2xl overflow-hidden border border-[#EAE3DC] shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-2">
               <div className="aspect-[4/3] overflow-hidden relative">
-                <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-living-arienzo.jpg" alt="Living" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
+                <Image src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-living-arienzo.jpg" alt="Living" fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover transition-transform duration-700 group-hover:scale-105" />
               </div>
               <div className="p-8">
                 <div className="w-8 h-[2px] bg-[#D1C292] mb-4 transition-all duration-300 group-hover:w-16"></div>
@@ -254,7 +267,7 @@ export default function ArienzoLandingPremium() {
 
             <div className="group bg-white rounded-2xl overflow-hidden border border-[#EAE3DC] shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-2">
               <div className="aspect-[4/3] overflow-hidden relative">
-                <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Plaza-Comercial-1-1.jpg" alt="Comercial" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
+                <Image src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Plaza-Comercial-1-1.jpg" alt="Comercial" fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover transition-transform duration-700 group-hover:scale-105" />
               </div>
               <div className="p-8">
                 <div className="w-8 h-[2px] bg-[#D1C292] mb-4 transition-all duration-300 group-hover:w-16"></div>
@@ -304,7 +317,7 @@ export default function ArienzoLandingPremium() {
                 onClick={() => setImagenIndex(index)} 
                 className="relative group w-[140px] sm:w-[180px] md:w-full md:flex-1 aspect-[4/3] rounded-md overflow-hidden cursor-pointer shadow-lg bg-[#1a1d24]"
               >
-                <img src={img} alt={`Render ${index + 1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 opacity-80 group-hover:opacity-100" loading="lazy" />
+                <Image src={img} alt={`Render ${index + 1}`} fill sizes="(max-width: 768px) 50vw, 20vw" className="object-cover transition-transform duration-500 group-hover:scale-110 opacity-80 group-hover:opacity-100" />
                 <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
               </div>
             ))}
@@ -321,12 +334,14 @@ export default function ArienzoLandingPremium() {
             &#8249;
           </button>
 
-          <img 
-            src={imagenesGaleria[imagenIndex]} 
-            alt="Vista Ampliada" 
-            className="max-w-full max-h-[85vh] object-contain rounded-md shadow-2xl animate-in zoom-in-95" 
-            onClick={(e) => e.stopPropagation()} 
-          />
+          <div className="relative w-full max-w-5xl h-[80vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            <Image 
+              src={imagenesGaleria[imagenIndex]} 
+              alt="Vista Ampliada" 
+              fill
+              className="object-contain rounded-md shadow-2xl animate-in zoom-in-95" 
+            />
+          </div>
 
           <button onClick={nextImagen} className="absolute right-2 md:right-10 text-white/40 hover:text-white text-5xl md:text-7xl p-4 z-50 transition-all hover:scale-110 select-none">
             &#8250;
@@ -508,23 +523,31 @@ export default function ArienzoLandingPremium() {
         </div>
       )}
 
-      {/* FOOTER */}
-      <footer className="bg-[#21242E] text-neutral-400 py-10 md:py-12 text-center">
-        <div className="max-w-6xl mx-auto px-6">
-          <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/logo-dorado-arienzo.svg" alt="Arienzo" className="h-[40px] mx-auto mb-6 opacity-90" />
+      {/* FOOTER RENOVADO Y FINO */}
+      <footer className="bg-[#21242E] text-neutral-400 py-8 border-t border-[#D1C292]/30">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6 md:gap-0">
           
-          <div className="flex flex-col md:flex-row justify-center items-center gap-2 md:gap-4 mb-6 font-medium text-sm text-neutral-300">
-            <p>Edificio Manta Business Center, Torre B, Of. 801</p>
-            <p className="hidden md:block text-neutral-600">•</p>
-            <p>097 946 9472</p>
+          {/* Izquierda en Escritorio / Arriba en Móvil */}
+          <div className="text-xs font-medium order-1 md:order-1 tracking-wide">
+            Un proyecto de <a href="https://konkeri.com" target="_blank" rel="noopener noreferrer" className="text-[#D1C292] hover:text-white transition-colors font-bold tracking-widest ml-1">KONKERI</a>
           </div>
-          
-          <div className="flex flex-col items-center gap-1">
-            <p className="text-sm font-medium">
-              Desarrollado por <a href="https://konkeri.com" target="_blank" rel="noopener noreferrer" className="text-[#D1C292] hover:text-white transition-colors font-bold tracking-wide ml-1">KONKERI</a>
-            </p>
-            <p className="text-[11px] font-medium opacity-50">© {new Date().getFullYear()} Arienzo Boutique Living. Todos los derechos reservados.</p>
+
+          {/* Centro en Escritorio / Medio en Móvil */}
+          <div className="order-2 md:order-2">
+            <Image 
+              src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/logo-dorado-arienzo.svg" 
+              alt="Arienzo" 
+              width={140}
+              height={35}
+              className="h-[30px] w-auto opacity-90" 
+            />
           </div>
+
+          {/* Derecha en Escritorio / Abajo en Móvil */}
+          <div className="text-[10px] md:text-[11px] font-medium opacity-60 order-3 md:order-3 text-center md:text-right">
+            © {new Date().getFullYear()} Arienzo Boutique Living.<br className="block md:hidden"/> Todos los derechos reservados.
+          </div>
+
         </div>
       </footer>
     </div>

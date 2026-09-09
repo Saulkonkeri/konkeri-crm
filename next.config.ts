@@ -1,6 +1,16 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  // 1. Autorizamos a Next.js para optimizar las imágenes de tu base de datos
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'ijzqqbybubruthargcnq.supabase.co',
+      },
+    ],
+  },
+  // 2. Mantenemos intactas tus reglas de enrutamiento
   async rewrites() {
     return {
       beforeFiles: [
