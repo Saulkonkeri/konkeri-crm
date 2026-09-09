@@ -6,22 +6,36 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { tipo, datos } = body;
 
-    // Conectamos Vercel con el correo de tu Hosting (SMTP)
+    // Conectamos Vercel con el correo de Arienzo en Hostinger
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST, 
-      port: 465,
-      secure: true, // true para el puerto 465
+      port: Number(process.env.SMTP_PORT) || 465,
+      secure: true, 
       auth: {
-        user: process.env.SMTP_USER, 
-        pass: process.env.SMTP_PASS, 
+        user: process.env.SMTP_USER_ARIENZO, // Usamos las llaves exclusivas de Arienzo
+        pass: process.env.SMTP_PASS_ARIENZO, 
       },
     });
 
     let asunto = '';
     let htmlFormato = '';
 
+    // ALERTA 0: NUEVA SOLICITUD DESDE LA LANDING PAGE (Esta es la que faltaba)
+    if (tipo === 'nueva_solicitud_web') {
+      asunto = '🚨 Nuevo Lead: Solicitud de Acceso VIP - Arienzo';
+      htmlFormato = `
+        <h2 style="color: #964B36;">Nueva Solicitud de Acceso al Inventario</h2>
+        <p>Un prospecto acaba de solicitar acceso exclusivo desde la Landing Page.</p>
+        <ul style="font-size: 16px;">
+          <li><strong>Nombre:</strong> ${datos.nombres}</li>
+          <li><strong>WhatsApp:</strong> ${datos.telefono}</li>
+          <li><strong>Correo:</strong> ${datos.email}</li>
+        </ul>
+        <p>Ingresa a tu CRM para aprobar su acceso y enviarle el pase.</p>
+      `;
+    }
     // ALERTA 1: INGRESO VIP
-    if (tipo === 'ingreso_vip') {
+    else if (tipo === 'ingreso_vip') {
       asunto = `👁️ ALERTA: Nuevo ingreso al Inventario Arienzo`;
       htmlFormato = `
         <h2 style="color: #B94A36;">Alerta de Ingreso VIP</h2>
@@ -43,14 +57,14 @@ export async function POST(req: Request) {
         <p><strong>Unidad Reservada:</strong> ${datos.unidadId} (${datos.tipoUnidad})</p>
         <p><strong>Precio Total:</strong> $${datos.precio}</p>
         <br/>
-        <p><i>A la espera del comprobante de transferencia bancaria.</i></p>
+        <p><i>A la espera del comprobante de transferencia bancaria para bloqueo oficial.</i></p>
       `;
     }
 
-    // Enviamos el correo a tu bandeja principal
+    // Enviamos el correo a tus DOS bandejas simultáneamente
     await transporter.sendMail({
-      from: `"Arienzo Bot" <${process.env.SMTP_USER}>`, 
-      to: 'saul@konkeri.com', // AQUÍ PONES EL CORREO DONDE QUIERES RECIBIR LAS ALERTAS
+      from: `"Notificaciones Arienzo" <${process.env.SMTP_USER_ARIENZO}>`, 
+      to: 'saul@konkeri.com, ventas@arienzoliving.com', // <-- Ya va a los dos correos
       subject: asunto,
       html: htmlFormato,
     });
