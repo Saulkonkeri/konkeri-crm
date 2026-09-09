@@ -30,7 +30,7 @@ export default function ArienzoLandingPremium() {
     const correoLimpio = formData.email.trim().toLowerCase();
 
     try {
-      // 1. Intentar hacer UPSERT
+      // 1. Intentar hacer UPSERT en Radar (Supabase)
       const { error: errorCliente } = await supabase.from('clientes').upsert([{
         nombres: formData.nombres,
         telefono: formData.telefono,
@@ -40,7 +40,7 @@ export default function ArienzoLandingPremium() {
         estado_acceso: 'pendiente'
       }], { onConflict: 'email' });
 
-      // Si falla, intentamos UPDATE directo y REVISAMOS si funciona
+      // Si falla, intentamos UPDATE directo
       if (errorCliente) {
         const { error: updateError } = await supabase.from('clientes')
           .update({ estado_acceso: 'pendiente', nombres: formData.nombres, telefono: formData.telefono })
@@ -51,14 +51,17 @@ export default function ArienzoLandingPremium() {
         }
       }
 
-      // 2. Guardar en el tracking (Radar)
+      // 2. Guardar en el tracking de acciones
       await supabase.from('tracking_inventario').insert([{
         email_cliente: correoLimpio,
         accion: 'SOLICITUD_ACCESO_VIP',
         detalle: 'Completó formulario web'
       }]);
 
-      // 3. DISPARAR NOTIFICACIÓN Y EXAMINAR AL CARTERO
+      // ------------------------------------------------------------------
+      // 3. DISPARAR NOTIFICACIÓN (¡APAGADO TEMPORALMENTE POR EMERGENCIA!)
+      // ------------------------------------------------------------------
+      /*
       const respuesta = await fetch('/api/notificar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -68,13 +71,14 @@ export default function ArienzoLandingPremium() {
         })
       });
 
-      // ¡AQUÍ ESTÁ LA MAGIA! Si el cartero falla, nos confesará el motivo real
       if (!respuesta.ok) {
         const errorData = await respuesta.json();
         alert(`❌ El CRM guardó los datos, pero Hostinger bloqueó el correo. Motivo: ${errorData.error || respuesta.statusText}`);
       }
+      */
+      // ------------------------------------------------------------------
 
-      // 4. Pantalla de éxito final
+      // 4. Pantalla de éxito final (Ahora llegará aquí directo)
       setSolicitudEnviada(true);
       
     } catch (error) {
