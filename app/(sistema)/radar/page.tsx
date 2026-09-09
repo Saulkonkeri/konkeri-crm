@@ -74,8 +74,33 @@ export default function RadarCentral() {
     alert(`Aprobando a ${cliente.nombres} por ${horas} horas... (En construcción)`);
   };
 
+  // --- AQUÍ ESTÁ LA MAGIA DEL CORREO CONECTADA ---
   const enviarCorreo = async (cliente: any) => {
-    alert(`Enviando correo a ${cliente.email} desde ventas@arienzoliving.com...`);
+    const horas = tiemposSeleccionados[cliente.id] || '24';
+    
+    // Cambiamos el texto del botón temporalmente a "Enviando..."
+    alert(`Iniciando envío a ${cliente.email}... Por favor espera un momento.`);
+    
+    try {
+      const response = await fetch('/api/enviar-acceso', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: cliente.email,
+          nombres: cliente.nombres,
+          horas: horas
+        }),
+      });
+
+      if (response.ok) {
+        alert("¡Correo corporativo enviado con éxito! Revisa la bandeja de entrada (o spam por si acaso).");
+      } else {
+        alert("Hubo un problema de conexión con el servidor de correos de Hostinger.");
+      }
+    } catch (error) {
+      console.error("Error al disparar el correo:", error);
+      alert("Error en el sistema al intentar enviar el correo.");
+    }
   };
 
   const abrirWhatsApp = (telefono: string, nombres: string) => {
