@@ -11,8 +11,8 @@ export async function POST(request: Request) {
       port: Number(process.env.SMTP_PORT),
       secure: true, // true para el puerto 465
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: process.env.SMTP_USER_ARIENZO, // <-- CORREGIDO: Ahora usa el usuario de Arienzo
+        pass: process.env.SMTP_PASS_ARIENZO, // <-- CORREGIDO: Ahora usa la contraseña de Arienzo
       },
     });
 
