@@ -1,18 +1,24 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 
+// ESTA FUNCIÓN NUEVA NOS PERMITIRÁ VER AL CARTERO EN EL NAVEGADOR
+export async function GET() {
+  return NextResponse.json({ 
+    estado: "¡BINGO! El cartero está vivo, respirando en Vercel y listo para enviar correos." 
+  });
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { tipo, datos } = body;
 
-    // Conectamos Vercel con el correo de Arienzo en Hostinger
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST, 
       port: Number(process.env.SMTP_PORT) || 465,
       secure: true, 
       auth: {
-        user: process.env.SMTP_USER_ARIENZO, // Usamos las llaves exclusivas de Arienzo
+        user: process.env.SMTP_USER_ARIENZO, 
         pass: process.env.SMTP_PASS_ARIENZO, 
       },
     });
@@ -20,7 +26,6 @@ export async function POST(req: Request) {
     let asunto = '';
     let htmlFormato = '';
 
-    // ALERTA 0: NUEVA SOLICITUD DESDE LA LANDING PAGE (Esta es la que faltaba)
     if (tipo === 'nueva_solicitud_web') {
       asunto = '🚨 Nuevo Lead: Solicitud de Acceso VIP - Arienzo';
       htmlFormato = `
@@ -34,7 +39,6 @@ export async function POST(req: Request) {
         <p>Ingresa a tu CRM para aprobar su acceso y enviarle el pase.</p>
       `;
     }
-    // ALERTA 1: INGRESO VIP
     else if (tipo === 'ingreso_vip') {
       asunto = `👁️ ALERTA: Nuevo ingreso al Inventario Arienzo`;
       htmlFormato = `
@@ -44,7 +48,6 @@ export async function POST(req: Request) {
         <p><strong>Fecha y Hora:</strong> ${datos.fecha}</p>
       `;
     } 
-    // ALERTA 2: RESERVA COMPLETADA
     else if (tipo === 'reserva') {
       asunto = `🚨 ¡NUEVA RESERVA! Unidad ${datos.unidadId} bloqueada por ${datos.nombres}`;
       htmlFormato = `
@@ -61,10 +64,9 @@ export async function POST(req: Request) {
       `;
     }
 
-    // Enviamos el correo a tus DOS bandejas simultáneamente
     await transporter.sendMail({
       from: `"Notificaciones Arienzo" <${process.env.SMTP_USER_ARIENZO}>`, 
-      to: 'saul@konkeri.com, ventas@arienzoliving.com', // <-- Ya va a los dos correos
+      to: 'saul@konkeri.com, ventas@arienzoliving.com', 
       subject: asunto,
       html: htmlFormato,
     });
