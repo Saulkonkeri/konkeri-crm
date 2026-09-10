@@ -1,1156 +1,779 @@
-// Actualizacion forzada para Vercel - CRM con Pases VIP Dinámicos (Selector de Tiempo)
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 
-interface Cliente {
+// ==========================================
+// 1. DEFINICIÓN DE TIPOS
+// ==========================================
+type SesionCliente = {
+  idSesion: string;
+  email: string;
+  nombre?: string;
+  inicio: Date;
+  fin: Date;
+  minutos: number;
+  eventos: any[];
+  ultimaAccion: string;
+  unidadesVistas: string[];
+};
+
+type EventoWeb = {
   id: string;
-  nombres: string;
-  apellidos: string;
-  telefono: string;
-  email?: string;
-  ciudad_residencia?: string;
-  motivo_compra?: string;
-  tipologia_interes?: string;
-  estado: string;
-  origen_captacion?: string;
-  campana?: string;
-  ingresado_por?: string;
-  notas: string;
-  temperatura?: string; 
-  proximo_contacto?: string | null; 
-  tipo_accion?: string;
-  detalle_accion?: string | null;
-  tipo?: string; 
-}
-
-interface Cotizacion {
-  id: string;
-  unidad_numero: string;
-  precio_total: number;
-  estado: string;
   created_at: string;
-  motivo_descuento: string;
-}
+  visitor_id: string;
+  session_id: string;
+  email_cliente: string;
+  accion: string;
+  detalle: string;
+  metadata: any;
+};
 
-interface Actividad {
-  id?: string;
-  cliente_id: string;
-  agente: string;
-  tipo_contacto: string; 
-  resultado: string;
-  notas: string;
-  created_at: string;
-  clientes?: { nombres: string; apellidos: string };
-}
+type VisitanteAgrupado = {
+  visitor_id: string;
+  email: string | null;
+  primeraVisita: Date;
+  ultimaActividad: Date;
+  sesiones: Set<string>;
+  eventos: EventoWeb[];
+  tiempoAcumuladoMin: number;
+  score: number;
+  fuentePrincipal: string;
+  nivelInteraccion: '🔥 ALTO' | '⚡ MEDIO' | '🧊 BAJO';
+};
 
-export default function CRMPage() {
-  const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [cargando, setCargando] = useState(true);
-  const [busqueda, setBusqueda] = useState('');
+export default function RadarCentral() {
+  // CONTROL DE PESTAÑAS (Por defecto abre en Solicitudes)
+  const [pestañaActiva, setPestañaActiva] = useState('solicitudes'); 
   
-  const [filtroCiudad, setFiltroCiudad] = useState('Todas');
-  const [filtroTipologia, setFiltroTipologia] = useState('Todas');
-  const [filtroOrigen, setFiltroOrigen] = useState('Todos');
-  const [filtroPendientes, setFiltroPendientes] = useState(false);
+  // ESTADOS PESTAÑA 1: SOLICITUDES VIP
+  const [solicitudes, setSolicitudes] = useState<any[]>([]);
+  const [cargandoSolicitudes, setCargandoSolicitudes] = useState(true);
+  const [tiemposSeleccionados, setTiemposSeleccionados] = useState<Record<string, string>>({});
 
-  const [vista, setVista] = useState<'lista' | 'kanban' | 'actividad'>('kanban');
+  // ESTADOS PESTAÑA 2: RADAR INVENTARIO
+  const [sesiones, setSesiones] = useState<SesionCliente[]>([]);
+  const [cargandoRadar, setCargandoRadar] = useState(true);
+  const [sesionExpandida, setSesionExpandida] = useState<string | null>(null);
 
-  const [mostrarModalNuevo, setMostrarModalNuevo] = useState(false);
-  const [mostrarModalPlantilla, setMostrarModalPlantilla] = useState(false);
-  const [mostrarModalHistorial, setMostrarModalHistorial] = useState(false);
-  const [clienteSeleccionado, setClienteSeleccionado] = useState<Cliente | null>(null);
-
-  const [nuevoNombre, setNuevoNombre] = useState('');
-  const [nuevoApellido, setNuevoApellido] = useState('');
-  const [nuevoTelefono, setNuevoTelefono] = useState('');
-  const [nuevoEmail, setNuevoEmail] = useState('');
-  const [nuevaCiudad, setNuevaCiudad] = useState('');
-  const [nuevoOrigen, setNuevoOrigen] = useState('Meta Ads');
-  const [nuevoCampana, setNuevoCampana] = useState(''); 
-  const [nuevoMotivo, setNuevoMotivo] = useState('Para Invertir');
-  const [nuevoInteres, setNuevoInteres] = useState('Suite');
-  const [nuevoIngresadoPor, setNuevoIngresadoPor] = useState('Saúl Intriago / Debbi Mera'); 
-  const [guardandoCliente, setGuardandoCliente] = useState(false);
-
-  const [nuevaNotaTexto, setNuevaNotaTexto] = useState('');
-  const [guardandoNota, setGuardandoNota] = useState(false);
-  
-  const [fechaAccion, setFechaAccion] = useState('');
-  const [tipoAccion, setTipoAccion] = useState('Llamada Telefónica');
-  const [detalleAccion, setDetalleAccion] = useState('');
-  const [guardandoTarea, setGuardandoTarea] = useState(false);
-
-  const [cotizacionesCliente, setCotizacionesCliente] = useState<Cotizacion[]>([]);
-  const [cargandoHistorial, setCargandoHistorial] = useState(false);
-
-  const [filtroTiempo, setFiltroTiempo] = useState<'hoy' | 'ayer' | 'semana' | 'mes'>('hoy');
-  const [actividadesDia, setActividadesDia] = useState<Actividad[]>([]);
-  
-  const [llamadaClienteId, setLlamadaClienteId] = useState('');
-  const [llamadaAgente, setLlamadaAgente] = useState('Saúl Intriago');
-  const [tipoContacto, setTipoContacto] = useState('Llamada');
-  const [llamadaResultado, setLlamadaResultado] = useState('Contestó');
-  const [llamadaNota, setLlamadaNota] = useState('');
-  const [guardandoActividadRapida, setGuardandoActividadRapida] = useState(false);
-
-  const [proximaFechaRapida, setProximaFechaRapida] = useState('');
-  const [proximaAccionRapida, setProximaAccionRapida] = useState('');
-
-  const [busquedaLlamada, setBusquedaLlamada] = useState('');
-  const [mostrarOpcionesLlamada, setMostrarOpcionesLlamada] = useState(false);
-
-  const [plantillaMensaje, setPlantillaMensaje] = useState(
-    "Hola {nombre}, le saluda Saúl Intriago de Arienzo Boutique Living. Recibí su solicitud de información y le comparto el brochure del proyecto. ¿A qué hora le viene bien que conversemos unos minutos?"
-  );
-  
-  const [plantillaCampana, setPlantillaCampana] = useState(
-    "Hola {nombre}, le escribo de Arienzo Boutique Living. Hoy lanzamos un beneficio especial para elegir las mejores unidades. ¿Le gustaría que le envíe el inventario actualizado?"
-  );
-
-  // ESTADOS VIP
-  const [activandoVIP, setActivandoVIP] = useState(false);
-  const [tiempoVIP, setTiempoVIP] = useState<number>(24); // Valor por defecto 24 horas
-
-  const estados = ['Interesado', 'Contactado', 'Cotizado', 'En Negociación', 'Reserva', 'Cierre (Ganado)', 'Descartado'];
-  const origenes = ['Página Web / Landing Page', 'Referido / Directo', 'Llamada Telefónica', 'WhatsApp Orgánico', 'Instagram / Facebook', 'Meta Ads', 'Feria / Evento', 'Otro'];
-  const motivos = ['Por definir', 'Para Vivir', 'Para Invertir', 'Segunda Residencia'];
-  const intereses = ['Por definir', 'Suite', '2 Dormitorios', '3 Dormitorios', 'Local Comercial', 'Penthouse'];
-  const tiposAccion = ['Llamada Telefónica', 'Reunión Presencial', 'Mensaje WhatsApp', 'Enviar Cotización'];
+  // ESTADOS PESTAÑA 3: ACTIVIDAD WEB
+  const [eventosWeb, setEventosWeb] = useState<EventoWeb[]>([]);
+  const [visitantesAgrupados, setVisitantesAgrupados] = useState<VisitanteAgrupado[]>([]);
+  const [cargandoWeb, setCargandoWeb] = useState(true);
+  const [filtroTiempo, setFiltroTiempo] = useState('30d');
+  const [visitanteExpandido, setVisitanteExpandido] = useState<string | null>(null);
 
   useEffect(() => {
-    cargarClientes();
-    const plantillaGuardada = localStorage.getItem('plantilla_bienvenida_arienzo');
-    const campanaGuardada = localStorage.getItem('plantilla_campana_arienzo');
-    if (plantillaGuardada) setPlantillaMensaje(plantillaGuardada);
-    if (campanaGuardada) setPlantillaCampana(campanaGuardada);
-  }, []);
-
-  useEffect(() => {
-    cargarBitacoraRango();
+    cargarDatos();
   }, [filtroTiempo]);
 
-  useEffect(() => {
-    if (clienteSeleccionado) {
-      setFechaAccion(clienteSeleccionado.proximo_contacto || '');
-      setTipoAccion(clienteSeleccionado.tipo_accion || 'Llamada Telefónica');
-      setDetalleAccion(clienteSeleccionado.detalle_accion || '');
-      setNuevaNotaTexto('');
-    }
-  }, [clienteSeleccionado]);
+  const cargarDatos = () => {
+    cargarSolicitudes();
+    cargarRadar();
+    cargarActividadWeb();
+  };
 
-  // === FUNCIÓN AJUSTADA: OTORGAR ACCESO VIP DINÁMICO ===
-  const otorgarAccesoVIP = async (emailCliente?: string) => {
-    if (!emailCliente) {
-      alert("El cliente no tiene un correo electrónico registrado. Actualiza sus datos primero.");
-      return;
-    }
-    setActivandoVIP(true);
+  // ==========================================
+  // LÓGICA PESTAÑA 1: SOLICITUDES VIP
+  // ==========================================
+  const cargarSolicitudes = async () => {
+    setCargandoSolicitudes(true);
     try {
-      // AJUSTE: Sumamos exactamente las horas seleccionadas
-      const fechaExpiracion = new Date();
-      fechaExpiracion.setHours(fechaExpiracion.getHours() + tiempoVIP); 
+      const { data, error } = await supabase
+        .from('clientes')
+        .select('*')
+        .eq('origen', 'Web Pública - Solicitud Acceso Exclusivo')
+        .order('created_at', { ascending: false })
+        .limit(100);
 
-      const { error } = await supabase
+      if (data) {
+        setSolicitudes(data);
+        const tiemposInit: Record<string, string> = {};
+        data.forEach(c => { tiemposInit[c.id] = '24'; });
+        setTiemposSeleccionados(tiemposInit);
+      }
+    } catch (error) {
+      console.error("Error al cargar solicitudes:", error);
+    } finally {
+      setCargandoSolicitudes(false);
+    }
+  };
+
+  const handleTiempoChange = (id: string, valor: string) => {
+    setTiemposSeleccionados(prev => ({ ...prev, [id]: valor }));
+  };
+
+  // 🔴 ¡AQUÍ ESTÁ LA MAGIA ARREGLADA (El Pase VIP Real) 🔴
+  const aprobarAcceso = async (cliente: any) => {
+    const horasStr = tiemposSeleccionados[cliente.id] || '24';
+    const horasNum = parseInt(horasStr, 10);
+    const esRenovacion = cliente.estado_acceso === 'aprobado';
+    
+    const mensaje = horasStr === '999' 
+      ? `¿Estás seguro de darle acceso ILIMITADO a ${cliente.nombres}?`
+      : esRenovacion 
+        ? `¿Renovar el acceso de ${cliente.nombres} por ${horasStr} horas adicionales?`
+        : `¿Estás seguro de aprobar el acceso a ${cliente.nombres} por ${horasStr} horas?`;
+
+    const confirmar = window.confirm(mensaje);
+    if (!confirmar) return; 
+
+    try {
+      // 1. CALCULAMOS LA HORA DE VENCIMIENTO IGUAL QUE EN EL CRM
+      const fechaExpiracion = new Date();
+      fechaExpiracion.setHours(fechaExpiracion.getHours() + horasNum);
+
+      // 2. CREAMOS EL PASE VIP EN LA TABLA CORRECTA
+      const { error: errorPase } = await supabase
         .from('accesos_inventario')
         .upsert({ 
-          email: emailCliente.toLowerCase().trim(), 
+          email: cliente.email.toLowerCase().trim(), 
           expira_en: fechaExpiracion.toISOString() 
         });
 
-      if (error) throw error;
-      
-      alert(`¡Acceso VIP otorgado por ${tiempoVIP} horas!\n\nEl correo autorizado es: ${emailCliente}`);
-      
-    } catch (error: any) {
-      alert(`Error al generar el pase: ${error.message}`);
-    } finally {
-      setActivandoVIP(false);
-    }
-  };
+      if (errorPase) throw errorPase;
 
-  const cargarClientes = async () => {
-    try {
-      const { data, error } = await supabase.from('clientes').select('*').order('created_at', { ascending: false });
-      if (error) throw error;
-      if (data) setClientes(data);
+      // 3. ACTUALIZAMOS VISUALMENTE LA TABLA DE CLIENTES A "Aprobado"
+      await supabase
+        .from('clientes')
+        .update({ estado_acceso: 'aprobado' }) 
+        .eq('id', cliente.id);
+
+      // 4. REFLEJAMOS EL CAMBIO EN LA PANTALLA
+      setSolicitudes((prev) => 
+        prev.map((c) => c.id === cliente.id ? { ...c, estado_acceso: 'aprobado' } : c)
+      );
+      
+      alert(esRenovacion ? `✅ Tiempo renovado para ${cliente.nombres}.` : `✅ ¡Listo! Acceso aprobado para ${cliente.nombres}. El pase VIP está activo.`);
+      
     } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setCargando(false);
+      console.error("Error detallado al generar pase VIP:", error);
+      alert("❌ Hubo un error al generar el Pase VIP en la base de datos.");
     }
   };
 
-  const cargarBitacoraRango = async () => {
+  const enviarCorreo = async (cliente: any) => {
+    const horas = tiemposSeleccionados[cliente.id] || '24';
+    alert(`Iniciando envío a ${cliente.email}... Por favor espera un momento.`);
     try {
-      const start = new Date();
-      const end = new Date();
-
-      if (filtroTiempo === 'hoy') {
-        start.setHours(0,0,0,0);
-        end.setHours(23,59,59,999);
-      } else if (filtroTiempo === 'ayer') {
-        start.setDate(start.getDate() - 1);
-        start.setHours(0,0,0,0);
-        end.setDate(end.getDate() - 1);
-        end.setHours(23,59,59,999);
-      } else if (filtroTiempo === 'semana') {
-        start.setDate(start.getDate() - 7);
-        start.setHours(0,0,0,0);
-        end.setHours(23,59,59,999);
-      } else if (filtroTiempo === 'mes') {
-        start.setDate(start.getDate() - 30);
-        start.setHours(0,0,0,0);
-        end.setHours(23,59,59,999);
+      const response = await fetch('/api/enviar-acceso', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cliente.email, nombres: cliente.nombres, horas: horas }),
+      });
+      if (response.ok) {
+        alert("¡Correo corporativo enviado con éxito!");
+      } else {
+        alert("Hubo un problema de conexión con el servidor de correos de Hostinger.");
       }
-      
-      const { data, error } = await supabase
-        .from('registro_llamadas')
-        .select('*, clientes(nombres, apellidos)')
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString())
-        .order('created_at', { ascending: false });
-        
-      if (!error && data) setActividadesDia(data);
     } catch (error) {
-      console.error('Error cargando bitácora:', error);
+      alert("Error en el sistema al intentar enviar el correo.");
     }
   };
 
-  const registrarActividadRapida = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!llamadaClienteId) { alert("Selecciona un prospecto de la lista usando el buscador."); return; }
+  const abrirWhatsApp = (telefono: string, nombres: string) => {
+    if (!telefono) { alert("Este cliente no tiene un teléfono registrado."); return; }
     
-    setGuardandoActividadRapida(true);
+    let numLimpio = telefono.replace(/\D/g, '');
+    if (numLimpio.startsWith('0') && numLimpio.length === 10) {
+      numLimpio = '593' + numLimpio.substring(1);
+    } else if (numLimpio.length === 9) {
+      numLimpio = '593' + numLimpio;
+    }
+
+    const mensaje = `Hola ${nombres}, soy Saúl de Konkeri. Hemos validado tu perfil y tu acceso exclusivo al inventario de Arienzo Boutique Living está listo. Puedes ingresar aquí: https://reserva.arienzoliving.com con tu correo.`;
+    window.open(`https://wa.me/${numLimpio}?text=${encodeURIComponent(mensaje)}`, '_blank');
+  };
+
+  // ==========================================
+  // LÓGICA PESTAÑA 2: RADAR INVENTARIO
+  // ==========================================
+  const generarAnalisisComercial = (sesion: SesionCliente) => {
+    if (sesion.eventos.length === 0) return "Sin datos suficientes para analizar.";
+    let analisis = "";
+    if (sesion.minutos < 2) analisis += "Vistazo rápido. Exploró superficialmente. ";
+    else if (sesion.minutos < 10) analisis += "Exploración moderada. Navegó por el inventario. ";
+    else analisis += "Alto nivel de interés. Analizó el proyecto detalladamente. ";
+
+    const filtros = sesion.eventos.filter(e => e.accion === 'USO_FILTRO');
+    if (filtros.length > 0) {
+      const ultFiltro = filtros[0].detalle?.replace('Buscó: ', '') || '';
+      analisis += `Mostró inclinación por la tipología de ${ultFiltro}. `;
+    }
+
+    if (sesion.unidadesVistas.length === 1) analisis += `Se enfocó exclusivamente en la unidad ${sesion.unidadesVistas[0]}. `;
+    else if (sesion.unidadesVistas.length > 1) analisis += `Comparó ${sesion.unidadesVistas.length} unidades (${sesion.unidadesVistas.join(', ')}). `;
+
+    const reserva = sesion.eventos.some(e => e.accion === 'RESERVA_COMPLETADA');
+    if (reserva) analisis += "🎯 ¡ALERTA DE CIERRE! Completó un bloqueo web. ";
+
+    return analisis;
+  };
+
+  const cargarRadar = async () => {
+    setCargandoRadar(true);
     try {
-      const payload = {
-        cliente_id: llamadaClienteId,
-        agente: llamadaAgente,
-        tipo_contacto: tipoContacto,
-        resultado: llamadaResultado,
-        notas: llamadaNota
-      };
+      const { data } = await supabase
+        .from('tracking_inventario')
+        .select('*')
+        .not('accion', 'in', '("SOLICITUD_ACCESO_VIP","ABRIO_CALENDLY","VISITA_LANDING","ABRIO_FORMULARIO","CLIC_WHATSAPP","REGISTRO_COMPLETADO","CLIC_DISPONIBILIDAD")')
+        .not('accion', 'like', 'SCROLL_%')
+        .not('accion', 'like', 'VIO_%')
+        .not('detalle', 'ilike', '%LANDING%') 
+        .order('created_at', { ascending: false })
+        .limit(500);
 
-      const { data, error } = await supabase.from('registro_llamadas').insert([payload]).select('*, clientes(nombres, apellidos)');
-      if (error) throw error;
+      if (data) {
+        const datosCronologicos = [...data].reverse();
+        const sesionesList: SesionCliente[] = [];
+        const sesionesActivas: Record<string, SesionCliente> = {};
 
-      if (filtroTiempo === 'hoy' && data) {
-        setActividadesDia([data[0], ...actividadesDia]);
-      }
+        datosCronologicos.forEach(row => {
+          const email = row.email_cliente;
+          const fechaRow = new Date(row.created_at);
+          const tiempoActual = fechaRow.getTime();
 
-      const clienteActual = clientes.find(c => c.id === llamadaClienteId);
-      if (clienteActual) {
-        const fechaStr = new Date().toLocaleString('es-EC', { dateStyle: 'short', timeStyle: 'short' });
-        const icono = tipoContacto === 'WhatsApp' ? '💬' : tipoContacto === 'Email' ? '📧' : tipoContacto === 'Zoom' ? '📹' : tipoContacto === 'Reunión' ? '🤝' : '📞';
-        const prefijo = `[${fechaStr}] ${icono} ${tipoContacto} (${llamadaResultado}) por ${llamadaAgente}`;
-        const textoNota = llamadaNota ? `: ${llamadaNota}` : '';
-        const notaSincronizada = `${prefijo}${textoNota}\n\n${clienteActual.notas || ''}`;
+          if (sesionesActivas[email] && (tiempoActual - sesionesActivas[email].fin.getTime()) < 45 * 60000) {
+            const sesion = sesionesActivas[email];
+            sesion.fin = fechaRow;
+            sesion.eventos.unshift(row); 
+            if (row.unidad_id && !sesion.unidadesVistas.includes(row.unidad_id)) {
+              sesion.unidadesVistas.push(row.unidad_id);
+            }
+          } else {
+            const nuevaSesion: SesionCliente = {
+              idSesion: `${email}-${tiempoActual}`,
+              email: email,
+              inicio: fechaRow,
+              fin: fechaRow,
+              minutos: 0,
+              eventos: [row],
+              ultimaAccion: '',
+              unidadesVistas: row.unidad_id ? [row.unidad_id] : []
+            };
+            sesionesList.push(nuevaSesion);
+            sesionesActivas[email] = nuevaSesion;
+          }
+        });
 
-        const updates: any = { notas: notaSincronizada };
+        sesionesList.forEach(s => {
+          const diffMs = s.fin.getTime() - s.inicio.getTime();
+          s.minutos = Math.round(diffMs / 60000);
+          s.ultimaAccion = s.eventos[0]?.detalle || s.eventos[0]?.accion || 'Desconocido';
+        });
 
-        if (proximaFechaRapida) {
-          updates.proximo_contacto = proximaFechaRapida;
-          updates.tipo_accion = proximaAccionRapida || 'Seguimiento';
+        const correosUnicos = Array.from(new Set(sesionesList.map(s => s.email)));
+        if (correosUnicos.length > 0) {
+          const { data: clientesData } = await supabase.from('clientes').select('email, nombres, apellidos').in('email', correosUnicos);
+          if (clientesData) {
+            const mapaNombres: Record<string, string> = {};
+            clientesData.forEach(c => { if (c.email) mapaNombres[c.email.toLowerCase()] = `${c.nombres || ''} ${c.apellidos || ''}`.trim(); });
+            sesionesList.forEach(s => { s.nombre = mapaNombres[s.email.toLowerCase()]; });
+          }
         }
-
-        await supabase.from('clientes').update(updates).eq('id', llamadaClienteId);
-        
-        setClientes(prev => prev.map(c => c.id === llamadaClienteId ? { ...c, ...updates } : c));
-        if (clienteSeleccionado?.id === llamadaClienteId) {
-          setClienteSeleccionado(prev => prev ? { ...prev, ...updates } : prev);
-        }
+        sesionesList.sort((a, b) => b.fin.getTime() - a.fin.getTime());
+        setSesiones(sesionesList);
       }
-      
-      setLlamadaClienteId('');
-      setBusquedaLlamada('');
-      setLlamadaNota('');
-      setProximaFechaRapida('');
-      setProximaAccionRapida('');
-      
-    } catch (error: any) {
-      alert(`Error al registrar actividad: ${error.message}`);
     } finally {
-      setGuardandoActividadRapida(false);
+      setCargandoRadar(false);
     }
   };
 
-  const extraerFechaUltimaNota = (notas: string | null) => {
-    if (!notas) return null;
-    const match = notas.match(/\[(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-    if (match) {
-      const day = parseInt(match[1], 10);
-      const month = parseInt(match[2], 10) - 1;
-      const year = parseInt(match[3], 10);
-      return new Date(year, month, day);
+  // ==========================================
+  // LÓGICA PESTAÑA 3: ACTIVIDAD WEB (LANDING)
+  // ==========================================
+  const PESOS_EVENTOS: Record<string, number> = {
+    'VISITA_LANDING': 1,
+    'SCROLL_50': 2,
+    'SCROLL_90': 3,
+    'VIO_ARQUITECTURA': 2,
+    'ABRIO_FORMULARIO': 6,
+    'ABRIO_CALENDLY': 8,
+    'CLIC_WHATSAPP': 10,
+    'REGISTRO_COMPLETADO': 15,
+  };
+
+  const cargarActividadWeb = async () => {
+    setCargandoWeb(true);
+    try {
+      const fechaLimite = new Date();
+      if (filtroTiempo === '7d') fechaLimite.setDate(fechaLimite.getDate() - 7);
+      if (filtroTiempo === '30d') fechaLimite.setDate(fechaLimite.getDate() - 30);
+      if (filtroTiempo === 'hoy') fechaLimite.setHours(0,0,0,0);
+
+      const { data } = await supabase
+        .from('tracking_inventario')
+        .select('*')
+        .not('visitor_id', 'is', null) 
+        .gte('created_at', fechaLimite.toISOString())
+        .order('created_at', { ascending: true });
+
+      if (data) {
+        setEventosWeb(data);
+        procesarVisitantes(data);
+      }
+    } finally {
+      setCargandoWeb(false);
     }
-    return null;
   };
 
-  const obtenerDiasInactivos = (notas: string | null) => {
-    const ultimaFecha = extraerFechaUltimaNota(notas);
-    if (!ultimaFecha) return 999;
-    const hoy = new Date();
-    hoy.setHours(0,0,0,0);
-    ultimaFecha.setHours(0,0,0,0);
-    const diffTime = hoy.getTime() - ultimaFecha.getTime();
-    return Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
-  };
+  const procesarVisitantes = (eventos: EventoWeb[]) => {
+    const mapa = new Map<string, VisitanteAgrupado>();
 
-  const esFechaVencida = (fecha?: string | null) => {
-    if (!fecha) return false;
-    const hoy = new Date(); hoy.setHours(0,0,0,0);
-    return new Date(fecha + 'T00:00:00') <= hoy;
-  };
-
-  const clientesFiltrados = useMemo(() => {
-    return clientes.filter(c => {
-      const b = busqueda.toLowerCase();
-      const coincideBusqueda = !b || `${c.nombres || ''} ${c.apellidos || ''}`.toLowerCase().includes(b) || (c.telefono && c.telefono.includes(b));
-      const coincideCiudad = filtroCiudad === 'Todas' || (c.ciudad_residencia && c.ciudad_residencia.toLowerCase().trim() === filtroCiudad.toLowerCase().trim());
-      const coincideTipologia = filtroTipologia === 'Todas' || (c.tipologia_interes && c.tipologia_interes.toLowerCase().trim() === filtroTipologia.toLowerCase().trim());
-      const coincideOrigen = filtroOrigen === 'Todos' || (c.origen_captacion && c.origen_captacion.toLowerCase().trim() === filtroOrigen.toLowerCase().trim());
-      
-      let coincidePendiente = true;
-      if (filtroPendientes) {
-        if (!c.proximo_contacto) {
-          coincidePendiente = false;
-        } else {
-          const hoy = new Date();
-          hoy.setHours(23, 59, 59, 999);
-          const fechaContacto = new Date(c.proximo_contacto + 'T00:00:00');
-          coincidePendiente = fechaContacto <= hoy;
-        }
+    eventos.forEach(ev => {
+      if (!mapa.has(ev.visitor_id)) {
+        mapa.set(ev.visitor_id, {
+          visitor_id: ev.visitor_id,
+          email: ev.email_cliente?.includes('@') ? ev.email_cliente : null,
+          primeraVisita: new Date(ev.created_at),
+          ultimaActividad: new Date(ev.created_at),
+          sesiones: new Set([ev.session_id]),
+          eventos: [],
+          tiempoAcumuladoMin: 0,
+          score: 0,
+          fuentePrincipal: ev.metadata?.utm_source || ev.metadata?.referrer || 'Directo',
+          nivelInteraccion: '🧊 BAJO'
+        });
       }
 
-      return coincideBusqueda && coincideCiudad && coincideTipologia && coincideOrigen && coincidePendiente;
+      const visitante = mapa.get(ev.visitor_id)!;
+      visitante.eventos.push(ev);
+      visitante.sesiones.add(ev.session_id);
+      visitante.ultimaActividad = new Date(Math.max(visitante.ultimaActividad.getTime(), new Date(ev.created_at).getTime()));
+      
+      if (ev.email_cliente?.includes('@')) visitante.email = ev.email_cliente;
+      visitante.score += PESOS_EVENTOS[ev.accion] || 1;
     });
-  }, [clientes, busqueda, filtroCiudad, filtroTipologia, filtroOrigen, filtroPendientes]);
 
-  const prospectosFiltradosParaLlamada = useMemo(() => {
-    if (!busquedaLlamada) return clientes.slice(0, 50);
-    const b = busquedaLlamada.toLowerCase();
-    return clientes.filter(c => 
-      `${c.nombres} ${c.apellidos}`.toLowerCase().includes(b) || (c.telefono && c.telefono.includes(b))
-    ).slice(0, 50);
-  }, [clientes, busquedaLlamada]);
+    const resultado = Array.from(mapa.values()).map(v => {
+      const sesionesAgrupadas = v.eventos.reduce((acc, curr) => {
+        if (!acc[curr.session_id]) acc[curr.session_id] = [];
+        acc[curr.session_id].push(new Date(curr.created_at).getTime());
+        return acc;
+      }, {} as Record<string, number[]>);
 
-  const ciudadesDisponibles = useMemo(() => {
-    const setCiudades = new Set<string>();
-    clientes.forEach(c => { if (c.ciudad_residencia) setCiudades.add(c.ciudad_residencia.trim()); });
-    return Array.from(setCiudades).sort();
-  }, [clientes]);
+      let minAcumulados = 0;
+      Object.values(sesionesAgrupadas).forEach(tiempos => {
+        if (tiempos.length > 1) minAcumulados += (Math.max(...tiempos) - Math.min(...tiempos)) / 60000;
+        else minAcumulados += 1; 
+      });
+      
+      v.tiempoAcumuladoMin = Math.round(minAcumulados);
+      if (v.sesiones.size > 1) v.score += 5; 
 
-  const tipologiasDisponibles = useMemo(() => {
-    const setTipos = new Set<string>();
-    clientes.forEach(c => { if (c.tipologia_interes) setTipos.add(c.tipologia_interes.trim()); });
-    return Array.from(setTipos).sort();
-  }, [clientes]);
+      if (v.score >= 20) v.nivelInteraccion = '🔥 ALTO';
+      else if (v.score >= 8) v.nivelInteraccion = '⚡ MEDIO';
+      else v.nivelInteraccion = '🧊 BAJO';
 
-  const campanasDisponibles = useMemo(() => {
-    const setCampanas = new Set<string>();
-    clientes.forEach(c => { if (c.campana) setCampanas.add(c.campana.trim()); });
-    return Array.from(setCampanas).sort();
-  }, [clientes]);
+      v.eventos.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      return v;
+    });
 
-  const handleDragStart = (e: React.DragEvent, clienteId: string) => { e.dataTransfer.setData('clienteId', clienteId); };
-  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); };
-
-  const handleDrop = async (e: React.DragEvent, nuevoEstado: string) => {
-    e.preventDefault();
-    const clienteId = e.dataTransfer.getData('clienteId');
-    if (!clienteId) return;
-
-    setClientes(prev => prev.map(c => c.id === clienteId ? { ...c, estado: nuevoEstado } : c));
-    if (clienteSeleccionado?.id === clienteId) {
-      setClienteSeleccionado(prev => prev ? { ...prev, estado: nuevoEstado } : prev);
-    }
-
-    try {
-      const { error } = await supabase.from('clientes').update({ estado: nuevoEstado }).eq('id', clienteId);
-      if (error) throw error;
-    } catch (error: any) {
-      console.error("Error moviendo lead:", error);
-      cargarClientes();
-    }
+    resultado.sort((a, b) => b.ultimaActividad.getTime() - a.ultimaActividad.getTime());
+    setVisitantesAgrupados(resultado);
   };
 
-  const guardarNuevoCliente = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const normalizarTelefono = (tel: string) => {
-      if (!tel) return '';
-      let num = tel.replace(/\D/g, '');
-      if (num.startsWith('593')) num = num.substring(3);
-      if (num.startsWith('0')) num = num.substring(1);
-      return num;
+  const metricas = useMemo(() => {
+    const unicos = visitantesAgrupados.length;
+    const totalSesiones = visitantesAgrupados.reduce((acc, v) => acc + v.sesiones.size, 0);
+    const recurrentes = visitantesAgrupados.filter(v => v.sesiones.size > 1).length;
+    const altoInteres = visitantesAgrupados.filter(v => v.nivelInteraccion === '🔥 ALTO').length;
+    const conversiones = visitantesAgrupados.filter(v => v.email !== null).length;
+    
+    const funnel = {
+      visitas: eventosWeb.filter(e => e.accion === 'VISITA_LANDING').length,
+      scroll50: eventosWeb.filter(e => e.accion === 'SCROLL_50').length,
+      intentosContacto: eventosWeb.filter(e => ['ABRIO_FORMULARIO', 'ABRIO_CALENDLY', 'CLIC_WHATSAPP'].includes(e.accion)).length,
+      registros: conversiones
     };
 
-    const telefonoNormalizadoNuevo = normalizarTelefono(nuevoTelefono);
-    const clienteDuplicadoTelefono = clientes.find(c => c.telefono && normalizarTelefono(c.telefono) === telefonoNormalizadoNuevo);
+    return { unicos, totalSesiones, recurrentes, altoInteres, conversiones, funnel };
+  }, [visitantesAgrupados, eventosWeb]);
 
-    if (clienteDuplicadoTelefono) {
-      alert(`⚠️ ¡ATENCIÓN! Este número ya está registrado.\nPertenece a: ${clienteDuplicadoTelefono.nombres} ${clienteDuplicadoTelefono.apellidos}`);
-      return; 
-    }
-
-    setGuardandoCliente(true);
-    try {
-      const notaInicial = `[${new Date().toLocaleDateString('es-EC')}] Cliente ingresado por ${nuevoIngresadoPor || 'Sistema'}.`;
-      const payload: any = {
-        nombres: nuevoNombre.trim(), apellidos: nuevoApellido.trim(), telefono: nuevoTelefono.trim(),
-        email: nuevoEmail ? nuevoEmail.trim().toLowerCase() : null, ciudad_residencia: nuevaCiudad.trim() || null, 
-        motivo_compra: nuevoMotivo, tipologia_interes: nuevoInteres, origen_captacion: nuevoOrigen,
-        campana: nuevoCampana.trim() || null,
-        notas: notaInicial, estado: 'Interesado', tipo: 'prospecto', temperatura: '❄️ Frío'
-      };
-      if (nuevoIngresadoPor.trim()) payload.ingresado_por = nuevoIngresadoPor.trim();
-
-      const { data, error } = await supabase.from('clientes').insert([payload]).select();
-      if (error) throw error;
-      if (data && data.length > 0) {
-        setClientes([data[0], ...clientes]);
-        setMostrarModalNuevo(false);
-        setNuevoNombre(''); setNuevoApellido(''); setNuevoTelefono(''); setNuevoEmail(''); setNuevaCiudad(''); setNuevoCampana('');
-      }
-    } catch (error: any) { alert(`Error al guardar: ${error.message}`); } finally { setGuardandoCliente(false); }
-  };
-
-  const guardarPlantilla = () => {
-    localStorage.setItem('plantilla_bienvenida_arienzo', plantillaMensaje);
-    localStorage.setItem('plantilla_campana_arienzo', plantillaCampana);
-    setMostrarModalPlantilla(false);
-    alert('Mensajes actualizados correctamente.');
-  };
-
-  const actualizarCampoRapido = async (id: string, campo: string, valor: string) => {
-    setClientes(prev => prev.map(c => c.id === id ? { ...c, [campo]: valor } : c));
-    if (clienteSeleccionado?.id === id) setClienteSeleccionado(prev => prev ? { ...prev, [campo]: valor } : prev);
-    await supabase.from('clientes').update({ [campo]: valor }).eq('id', id);
-  };
-
-  const guardarProximaTarea = async () => {
-    if (!clienteSeleccionado) return;
-    setGuardandoTarea(true);
-    try {
-      const updates = { proximo_contacto: fechaAccion || null, tipo_accion: tipoAccion, detalle_accion: detalleAccion || null };
-      const { error } = await supabase.from('clientes').update(updates).eq('id', clienteSeleccionado.id);
-      if (error) throw error;
-
-     setClientes(prev => prev.map(c => c.id === clienteSeleccionado.id ? { ...c, ...updates } as any : c));
-      setClienteSeleccionado(prev => prev ? { ...prev, ...updates } : prev);
-      
-      const btn = document.getElementById('btn-guardar-tarea');
-      if (btn) {
-        const originalText = btn.innerText; btn.innerText = '¡Guardado!'; btn.classList.add('bg-green-600');
-        setTimeout(() => { btn.innerText = originalText; btn.classList.remove('bg-green-600'); }, 2000);
-      }
-    } catch (error: any) { alert(`Error al guardar: ${error.message}`); } finally { setGuardandoTarea(false); }
-  };
-
-  const agregarNotaBitacora = async () => {
-    if (!clienteSeleccionado || !nuevaNotaTexto.trim()) return;
-    setGuardandoNota(true);
-    try {
-      const fecha = new Date().toLocaleString('es-EC', { dateStyle: 'short', timeStyle: 'short' });
-      const notaFinal = `[${fecha}] ${nuevaNotaTexto}\n\n${clienteSeleccionado.notas || ''}`;
-      
-      const { error } = await supabase.from('clientes').update({ notas: notaFinal }).eq('id', clienteSeleccionado.id);
-      if (error) throw error;
-
-      setClientes(prev => prev.map(c => c.id === clienteSeleccionado.id ? { ...c, notas: notaFinal } : c));
-      setClienteSeleccionado(prev => prev ? { ...prev, notas: notaFinal } : prev);
-      setNuevaNotaTexto('');
-    } catch (error: any) { alert(`Error: ${error.message}`); } finally { setGuardandoNota(false); }
-  };
-
-  const abrirWhatsApp = (cliente: Cliente, tipoMensaje: 'bienvenida' | 'campana' | 'libre') => {
-    if (!cliente.telefono) { alert("Sin número registrado."); return; }
-    let num = cliente.telefono.replace(/\D/g, '');
-    if (num.startsWith('09') && num.length === 10) num = '593' + num.substring(1);
-    
-    let txt = '';
-    if (tipoMensaje === 'bienvenida') txt = `?text=${encodeURIComponent(plantillaMensaje.replace('{nombre}', cliente.nombres))}`;
-    else if (tipoMensaje === 'campana') txt = `?text=${encodeURIComponent(plantillaCampana.replace('{nombre}', cliente.nombres))}`;
-    
-    window.open(`https://wa.me/${num}${txt}`, '_blank');
-  };
-
-  const verHistorialCotizaciones = async (cliente: Cliente) => {
-    setMostrarModalHistorial(true);
-    setCargandoHistorial(true);
-    try {
-      const { data, error } = await supabase.from('cotizaciones').select('*').eq('cliente_id', cliente.id).order('created_at', { ascending: false });
-      if (error) throw error;
-      setCotizacionesCliente(data || []);
-    } catch (error) { console.error(error); } finally { setCargandoHistorial(false); }
-  };
-
-  const tituloActividad = {
-    hoy: 'Actividad de Hoy',
-    ayer: 'Actividad de Ayer',
-    semana: 'Últimos 7 Días',
-    mes: 'Últimos 30 Días'
-  };
-
-  if (cargando) return <div className="flex min-h-screen items-center justify-center bg-[#F4F4F4]"><p className="text-sm font-light tracking-widest text-[#B94A36] uppercase animate-pulse">Sincronizando...</p></div>;
 
   return (
-    <div className="min-h-screen bg-[#F4F4F4] px-4 md:px-6 py-6 font-sans text-neutral-800 flex flex-col h-screen overflow-hidden">
+    <div className="p-6 md:p-10 max-w-7xl mx-auto bg-[#F4F4F4] min-h-screen font-sans">
       
-      {/* 1. HEADER PRINCIPAL Y VISTAS */}
-      <div className="w-full flex-shrink-0 mb-3 space-y-3">
-        <div className="bg-white rounded-xl border border-neutral-200 p-4 shadow-sm flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <span className="text-[10px] font-bold tracking-widest text-[#B94A36] uppercase">Gestión Comercial Arienzo</span>
-            <h1 className="text-xl font-medium tracking-tight text-neutral-900 mt-1">Pipeline de Prospectos</h1>
-          </div>
-          
-          <div className="flex bg-neutral-100 p-1 rounded-lg border border-neutral-200">
-            <button onClick={() => setVista('kanban')} className={`px-4 py-2 rounded-md text-xs font-bold transition-colors ${vista === 'kanban' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}>📋 Tablero</button>
-            <button onClick={() => setVista('lista')} className={`px-4 py-2 rounded-md text-xs font-bold transition-colors ${vista === 'lista' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}>🗄️ Lista</button>
-            <button onClick={() => setVista('actividad')} className={`px-4 py-2 rounded-md text-xs font-bold transition-colors ${vista === 'actividad' ? 'bg-[#B94A36] text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}>⚡ Actividad</button>
-          </div>
-
-          <div className="flex gap-2">
-            <button onClick={() => setMostrarModalPlantilla(true)} className="px-3 py-2 bg-neutral-100 text-neutral-700 text-xs font-bold rounded-lg hover:bg-neutral-200 transition">⚙️ Mensajes</button>
-            <button onClick={() => setMostrarModalNuevo(true)} className="px-4 py-2 bg-neutral-900 text-white text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-black transition shadow-md">+ Prospecto</button>
-          </div>
+      {/* ENCABEZADO */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
+        <div>
+          <h1 className="text-3xl font-light text-neutral-900 tracking-tight">Centro de Mando Digital</h1>
+          <p className="text-sm text-neutral-500 mt-1">Control de accesos VIP y monitoreo de actividad en tiempo real.</p>
         </div>
-
-        {/* 2. BARRA DE FILTROS */}
-        <div className="bg-white p-3 rounded-xl border border-neutral-200 shadow-sm flex flex-wrap items-center gap-3">
-          <div className="relative flex-1 min-w-[220px]">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-neutral-400">🔍</span>
-            <input 
-              type="text" 
-              placeholder="Buscar prospecto por nombre, ciudad o teléfono..." 
-              value={busqueda} 
-              onChange={(e) => setBusqueda(e.target.value)} 
-              className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-2 pl-9 pr-3 text-xs focus:outline-none focus:border-[#B94A36]" 
-            />
-          </div>
-
-          <div className="flex items-center gap-1.5 text-xs">
-            <span className="text-neutral-400 font-medium text-[10px] uppercase">Ciudad:</span>
-            <select value={filtroCiudad} onChange={(e) => setFiltroCiudad(e.target.value)} className="bg-neutral-50 border border-neutral-200 rounded-lg py-2 px-2.5 text-xs font-semibold text-neutral-700 outline-none focus:border-[#B94A36]">
-              <option value="Todas">Todas</option>
-              {ciudadesDisponibles.map(ciu => <option key={ciu} value={ciu}>{ciu}</option>)}
-            </select>
-          </div>
-
-          <div className="flex items-center border-l border-neutral-200 pl-3">
-            <button 
-              onClick={() => setFiltroPendientes(!filtroPendientes)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all border ${filtroPendientes ? 'bg-red-50 text-red-700 border-red-200 shadow-sm' : 'bg-white text-neutral-500 border-neutral-200 hover:bg-neutral-50'}`}
-            >
-              <span className={`text-[14px] ${filtroPendientes ? 'animate-pulse' : ''}`}>🎯</span>
-              {filtroPendientes ? 'Filtro: Tareas de Hoy' : 'Modo Cacería (Off)'}
-            </button>
-          </div>
-        </div>
+        <button 
+          onClick={cargarDatos}
+          className="bg-white border border-neutral-200 text-neutral-700 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-neutral-100 transition-colors shadow-sm flex items-center gap-2"
+        >
+          ↻ Refrescar Datos
+        </button>
       </div>
 
-      {/* ÁREA DE TRABAJO DINÁMICA */}
-      <div className="w-full flex-1 min-h-0 overflow-hidden relative">
-        
-        {vista === 'kanban' && (
-          <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-7 gap-2 h-full overflow-y-auto pb-4 custom-scrollbar px-1">
-            {estados.map(estado => {
-              const leads = clientesFiltrados.filter(c => c.estado === estado);
-              return (
-                <div key={estado} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, estado)} className="bg-neutral-200/40 rounded-xl p-2 flex flex-col h-full overflow-hidden border border-neutral-200/60">
-                  <div className="flex justify-between items-center mb-2 px-1 flex-shrink-0">
-                    <h3 className="text-[10px] font-bold uppercase tracking-wider text-neutral-600 truncate pr-2">{estado}</h3>
-                    <span className="bg-white text-neutral-500 text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">{leads.length}</span>
-                  </div>
-                  <div className="space-y-2 overflow-y-auto flex-1 pr-1 custom-scrollbar">
-                    {leads.map(cliente => {
-                      const diasInactivos = obtenerDiasInactivos(cliente.notas);
-                      const abandonado = diasInactivos > 4 && cliente.estado !== 'Descartado' && cliente.estado !== 'Cierre (Ganado)';
-                      const agendadoVencido = esFechaVencida(cliente.proximo_contacto);
+      {/* SISTEMA DE PESTAÑAS */}
+      <div className="flex overflow-x-auto space-x-1 bg-white p-1 rounded-xl shadow-sm border border-neutral-200 mb-8 w-fit">
+        <button 
+          onClick={() => setPestañaActiva('solicitudes')}
+          className={`whitespace-nowrap px-6 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${
+            pestañaActiva === 'solicitudes' ? 'bg-[#21242E] text-white shadow' : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
+          }`}
+        >
+          🎯 Solicitudes VIP
+          {solicitudes.length > 0 && (
+            <span className="bg-[#964B36] text-white text-[10px] px-2 py-0.5 rounded-full">{solicitudes.length}</span>
+          )}
+        </button>
+        <button 
+          onClick={() => setPestañaActiva('inventario')}
+          className={`whitespace-nowrap px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${
+            pestañaActiva === 'inventario' ? 'bg-[#21242E] text-white shadow' : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
+          }`}
+        >
+          👀 Radar Inventario
+        </button>
+        <button 
+          onClick={() => setPestañaActiva('web')}
+          className={`whitespace-nowrap px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${
+            pestañaActiva === 'web' ? 'bg-[#21242E] text-white shadow' : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
+          }`}
+        >
+          🌐 Actividad Web
+        </button>
+      </div>
 
-                      return (
-                        <div 
-                          key={cliente.id} 
-                          draggable 
-                          onDragStart={(e) => handleDragStart(e, cliente.id)} 
-                          onClick={() => setClienteSeleccionado(cliente)} 
-                          className={`bg-white p-2.5 rounded-lg shadow-sm cursor-pointer transition-all relative cursor-grab border-[1.5px] ${agendadoVencido ? 'border-red-500' : abandonado ? 'border-orange-400' : 'border-transparent'} hover:border-[#B94A36]`}
-                        >
-                          {cliente.temperatura && <span className="absolute top-2 right-2 text-[10px]">{cliente.temperatura.split(' ')[0]}</span>}
-                          <h4 className="font-bold text-neutral-900 text-[11px] pr-4 leading-tight">{cliente.nombres} {cliente.apellidos}</h4>
-                          <p className="text-[9px] text-neutral-500 font-mono mt-0.5 mb-1">{cliente.telefono || 'Sin celular'}</p>
-                          
-                          {cliente.tipologia_interes && cliente.tipologia_interes !== 'Por definir' && (
-                            <span className="inline-block mt-1 bg-purple-50 text-purple-700 border border-purple-200 text-[8px] font-bold px-1.5 py-0.5 rounded mr-1">
-                              {cliente.tipologia_interes.includes('Suite') ? '🏢' : '🛏️'} {cliente.tipologia_interes}
-                            </span>
-                          )}
-
-                          {cliente.proximo_contacto && (
-                            <div className={`mt-1 text-[8px] font-bold px-1.5 py-0.5 inline-block rounded border ${agendadoVencido ? 'bg-red-50 text-red-700 border-red-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
-                              📅 Agendado: {new Date(cliente.proximo_contacto).toLocaleDateString('es-EC', {day:'2-digit', month:'short'})}
-                            </div>
-                          )}
-
-                          <div className="mt-1.5 pt-1.5 border-t border-neutral-100 flex justify-between items-center">
-                            <span className={`text-[8px] font-bold ${abandonado ? 'text-orange-600' : 'text-neutral-400'}`}>
-                              {diasInactivos === 0 ? 'Última acción: Hoy' : diasInactivos === 1 ? 'Última acción: Ayer' : diasInactivos > 300 ? 'Sin registros recientes' : `Inactivo: ${diasInactivos} días`}
-                            </span>
-                            {abandonado && <span className="text-[10px] animate-pulse" title="Lead enfriándose">⚠️</span>}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
+      {/* ========================================================= */}
+      {/* CONTENIDO PESTAÑA 1: SOLICITUDES VIP */}
+      {/* ========================================================= */}
+      {pestañaActiva === 'solicitudes' && (
+        <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden animate-in fade-in slide-in-from-bottom-2">
+          <div className="px-6 py-5 border-b border-neutral-100 flex justify-between items-center bg-neutral-50/50">
+            <h3 className="font-bold text-neutral-800">Accesos Web Pendientes</h3>
           </div>
-        )}
-
-        {vista === 'lista' && (
-          <div className="bg-white rounded-xl border border-neutral-200 shadow-sm h-full overflow-auto w-full">
-            <table className="w-full text-left text-sm border-collapse min-w-[800px]">
-              <thead className="sticky top-0 bg-neutral-900 z-10">
-                <tr className="text-white text-[10px] uppercase tracking-wider">
-                  <th className="px-4 py-3 font-semibold">Prospecto</th>
-                  <th className="px-4 py-3 font-semibold">Interés</th>
-                  <th className="px-4 py-3 font-semibold">Estado</th>
-                  <th className="px-4 py-3 font-semibold">Tarea Pendiente</th>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm text-neutral-600">
+              <thead className="bg-white text-neutral-400 text-xs uppercase tracking-wider border-b">
+                <tr>
+                  <th className="px-6 py-4 font-medium">Cliente</th>
+                  <th className="px-6 py-4 font-medium">Contacto</th>
+                  <th className="px-6 py-4 font-medium">Fecha</th>
+                  <th className="px-6 py-4 font-medium text-right">Gestión de Acceso</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-100 text-neutral-700">
-                {clientesFiltrados.map((cliente) => (
-                  <tr key={cliente.id} onClick={() => setClienteSeleccionado(cliente)} className="hover:bg-neutral-50 cursor-pointer">
-                    <td className="px-4 py-3">
-                      <div className="font-bold text-neutral-900 text-xs">{cliente.nombres} {cliente.apellidos}</div>
-                      <div className="text-[10px] text-neutral-400 font-mono">{cliente.telefono}</div>
-                    </td>
-                    <td className="px-4 py-3 text-xs font-semibold text-purple-700">{cliente.tipologia_interes}</td>
-                    <td className="px-4 py-3"><div className="text-[10px] font-bold text-neutral-700 bg-neutral-100 inline-block px-1.5 py-0.5 rounded">{cliente.estado}</div></td>
-                    <td className="px-4 py-3">
-                      {cliente.proximo_contacto ? (
-                         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${esFechaVencida(cliente.proximo_contacto) ? 'bg-red-100 text-red-700' : 'bg-blue-50 text-blue-700'}`}>
-                           {new Date(cliente.proximo_contacto).toLocaleDateString('es-EC')}
-                         </span>
-                      ) : <span className="text-[10px] text-neutral-400">Sin agendar</span>}
-                    </td>
-                  </tr>
-                ))}
+              <tbody className="divide-y divide-neutral-100">
+                {cargandoSolicitudes ? (
+                  <tr><td colSpan={4} className="px-6 py-10 text-center text-neutral-400">Cargando solicitudes...</td></tr>
+                ) : solicitudes.length === 0 ? (
+                  <tr><td colSpan={4} className="px-6 py-10 text-center text-neutral-400 font-medium">No hay solicitudes nuevas desde la web.</td></tr>
+                ) : (
+                  solicitudes.map((cliente) => (
+                    <tr key={cliente.id} className={`transition-colors ${cliente.estado_acceso === 'aprobado' ? 'bg-green-50/30' : 'hover:bg-neutral-50/50'}`}>
+                      <td className="px-6 py-4">
+                        <div className="font-bold text-neutral-900 flex items-center">
+                          {cliente.nombres}
+                          {cliente.estado_acceso === 'aprobado' && (
+                            <span className="ml-2 bg-green-100 text-green-700 text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wider">Aprobado</span>
+                          )}
+                        </div>
+                        <div className="text-xs text-neutral-400">Desde Landing Page</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-neutral-900 font-mono text-xs">{cliente.email}</div>
+                        <div className="text-neutral-500">{cliente.telefono}</div>
+                      </td>
+                      <td className="px-6 py-4 text-xs">
+                        {new Date(cliente.created_at).toLocaleDateString('es-EC', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <select 
+                            className="bg-white border border-neutral-200 text-neutral-700 rounded-lg text-xs p-2 focus:outline-none focus:border-[#964B36]"
+                            value={tiemposSeleccionados[cliente.id] || '24'}
+                            onChange={(e) => handleTiempoChange(cliente.id, e.target.value)}
+                          >
+                            <option value="2">2 horas</option>
+                            <option value="12">12 horas</option>
+                            <option value="24">24 horas</option>
+                            <option value="48">48 horas</option>
+                            <option value="999">Ilimitado</option>
+                          </select>
+                          
+                          {cliente.estado_acceso === 'aprobado' ? (
+                            <button onClick={() => aprobarAcceso(cliente)} className="bg-[#D1C292] text-white hover:bg-[#bfae7e] px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-sm transition-colors">
+                              ↻ Renovar
+                            </button>
+                          ) : (
+                            <button onClick={() => aprobarAcceso(cliente)} className="bg-neutral-800 text-white hover:bg-black px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm">
+                              Aprobar
+                            </button>
+                          )}
+
+                          <button onClick={() => enviarCorreo(cliente)} className="bg-[#964B36] text-white hover:bg-[#7d3e2c] px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm">
+                            ✉️ Enviar Correo
+                          </button>
+                          <button onClick={() => abrirWhatsApp(cliente.telefono, cliente.nombres)} className="bg-green-50 text-green-700 hover:bg-green-100 px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors border border-green-200">
+                            WhatsApp
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* === VISTA 3: BITÁCORA MULTICANAL CON AGENDAMIENTO === */}
-        {vista === 'actividad' && (
-          <div className="flex flex-col h-full gap-4">
-            
-            <div className="bg-white p-3 rounded-xl border border-neutral-200 shadow-sm flex items-center justify-between flex-shrink-0">
-               <div>
-                 <h2 className="text-sm font-bold text-neutral-900 tracking-wide">Reporte de Productividad</h2>
-                 <p className="text-[10px] text-neutral-500 mt-0.5">Analiza el rendimiento sin saturar la vista</p>
-               </div>
-               
-               <div className="flex bg-neutral-100 p-1 rounded-lg border border-neutral-200">
-                 <button onClick={() => setFiltroTiempo('hoy')} className={`px-4 py-1.5 rounded-md text-[11px] font-bold transition-all ${filtroTiempo === 'hoy' ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'}`}>Hoy</button>
-                 <button onClick={() => setFiltroTiempo('ayer')} className={`px-4 py-1.5 rounded-md text-[11px] font-bold transition-all ${filtroTiempo === 'ayer' ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'}`}>Ayer</button>
-                 <button onClick={() => setFiltroTiempo('semana')} className={`px-4 py-1.5 rounded-md text-[11px] font-bold transition-all ${filtroTiempo === 'semana' ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'}`}>7 Días</button>
-                 <button onClick={() => setFiltroTiempo('mes')} className={`px-4 py-1.5 rounded-md text-[11px] font-bold transition-all ${filtroTiempo === 'mes' ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'}`}>30 Días</button>
-               </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-shrink-0">
-              <div className="bg-white p-4 rounded-xl border border-neutral-200 shadow-sm text-center transition-all hover:border-[#B94A36]/30">
-                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Total Acciones</p>
-                <p className="text-3xl font-light text-neutral-900 mt-1">{actividadesDia.length}</p>
-              </div>
-              <div className="bg-white p-4 rounded-xl border border-neutral-200 shadow-sm text-center transition-all hover:border-green-300">
-                <p className="text-[10px] font-bold text-green-600 uppercase tracking-widest">Éxito / Efectivas</p>
-                <p className="text-3xl font-light text-green-600 mt-1">
-                  {actividadesDia.filter(a => a.resultado === 'Contestó' || a.resultado === 'Respondio' || a.resultado === 'Efectivo').length}
-                </p>
-              </div>
-              <div className="bg-white p-4 rounded-xl border border-neutral-200 shadow-sm flex flex-col justify-center space-y-1">
-                <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest text-center border-b border-neutral-100 pb-1 mb-1">Impacto Por Canal</p>
-                <div className="flex justify-between items-center">
-                  <span className="text-[11px] font-bold text-neutral-600">📞 / 📹 Llamadas y Zoom</span>
-                  <span className="text-sm font-bold text-neutral-900">{actividadesDia.filter(a => a.tipo_contacto === 'Llamada' || a.tipo_contacto === 'Zoom').length}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[11px] font-bold text-neutral-600">💬 WhatsApps</span>
-                  <span className="text-sm font-bold text-neutral-900">{actividadesDia.filter(a => a.tipo_contacto === 'WhatsApp').length}</span>
-                </div>
-              </div>
-              <div className="bg-white p-4 rounded-xl border border-neutral-200 shadow-sm flex flex-col justify-center space-y-1">
-                <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest text-center border-b border-neutral-100 pb-1 mb-1">Rendimiento Agente</p>
-                <div className="flex justify-between items-center">
-                  <span className="text-[11px] font-bold text-neutral-600">Saúl</span>
-                  <span className="text-sm font-bold text-neutral-900">{actividadesDia.filter(a => a.agente.includes('Saúl')).length}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[11px] font-bold text-neutral-600">Debbi</span>
-                  <span className="text-sm font-bold text-neutral-900">{actividadesDia.filter(a => a.agente.includes('Debbi') || a.agente.includes('Debbie') || a.agente.includes('Débora')).length}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col md:flex-row gap-4 flex-1 min-h-0">
-              
-              <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-5 w-full md:w-1/3 flex flex-col flex-shrink-0 overflow-y-auto custom-scrollbar">
-                <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wide border-b border-neutral-100 pb-3 mb-4">⚡ Acción y Agendamiento</h3>
-                <form onSubmit={registrarActividadRapida} className="flex-1 flex flex-col space-y-3">
-                  
-                  <div className="relative">
-                    <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Buscar Cliente</label>
-                    <input 
-                      type="text" 
-                      placeholder="🔍 Escribe nombre o teléfono..."
-                      value={busquedaLlamada}
-                      onChange={(e) => {
-                        setBusquedaLlamada(e.target.value);
-                        setMostrarOpcionesLlamada(true);
-                        setLlamadaClienteId(''); 
-                      }}
-                      onFocus={() => setMostrarOpcionesLlamada(true)}
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]"
-                    />
-                    {busquedaLlamada && !llamadaClienteId && <p className="text-[9px] text-[#B94A36] mt-1 font-bold">⚠️ Haz clic en un prospecto abajo</p>}
-                    {mostrarOpcionesLlamada && !llamadaClienteId && (
-                      <ul className="absolute z-10 w-full mt-1 bg-white border border-neutral-200 rounded-md shadow-lg max-h-48 overflow-y-auto custom-scrollbar">
-                        {prospectosFiltradosParaLlamada.length > 0 ? (
-                          prospectosFiltradosParaLlamada.map(c => (
-                            <li 
-                              key={c.id} 
-                              className="p-2 text-xs hover:bg-neutral-50 cursor-pointer border-b border-neutral-100 last:border-0 flex flex-col"
-                              onClick={() => {
-                                setLlamadaClienteId(c.id);
-                                setBusquedaLlamada(`${c.nombres} ${c.apellidos}`);
-                                setMostrarOpcionesLlamada(false);
-                              }}
-                            >
-                              <span className="font-bold text-neutral-800">{c.nombres} {c.apellidos}</span>
-                              <span className="text-[10px] text-neutral-500 font-mono">{c.telefono}</span>
-                            </li>
-                          ))
-                        ) : (
-                          <li className="p-2 text-xs text-neutral-400 text-center">No encontrado</li>
-                        )}
-                      </ul>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Asesor</label>
-                      <select value={llamadaAgente} onChange={(e) => setLlamadaAgente(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none">
-                        <option value="Saúl Intriago">Saúl</option>
-                        <option value="Debbi Mera">Debbi</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Vía (Incluye Zoom)</label>
-                      <select value={tipoContacto} onChange={(e) => setTipoContacto(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs font-bold focus:outline-none">
-                        <option value="Llamada">📞 Llamada</option>
-                        <option value="WhatsApp">💬 WhatsApp</option>
-                        <option value="Zoom">📹 Videollamada Zoom</option>
-                        <option value="Email">📧 Email</option>
-                        <option value="Reunión">🤝 Presencial</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Resultado</label>
-                    <select value={llamadaResultado} onChange={(e) => setLlamadaResultado(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs font-bold focus:outline-none">
-                      {tipoContacto === 'Llamada' || tipoContacto === 'Zoom' ? (
-                        <>
-                          <option value="Contestó">✅ Contestó / Asistió</option>
-                          <option value="No contestó">❌ No contestó / Faltó</option>
-                          <option value="Equivocado">🚫 Número Erróneo</option>
-                        </>
-                      ) : tipoContacto === 'WhatsApp' ? (
-                        <>
-                          <option value="Respondio">✅ Respondió el chat</option>
-                          <option value="Enviado">✔️ Enviado (Sin resp)</option>
-                          <option value="Leido">👀 Leído (Visto)</option>
-                        </>
-                      ) : (
-                        <>
-                          <option value="Efectivo">✅ Efectivo / Realizado</option>
-                          <option value="Fallido">❌ Cancelado</option>
-                        </>
+      {/* ========================================================= */}
+      {/* CONTENIDO PESTAÑA 2: RADAR INVENTARIO */}
+      {/* ========================================================= */}
+      {pestañaActiva === 'inventario' && (
+        <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2">
+          {cargandoRadar && sesiones.length === 0 ? (
+            <div className="p-10 text-center text-neutral-500">Cargando radar...</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-neutral-100 text-neutral-500 border-b border-neutral-200">
+                    <th className="p-4 text-[10px] uppercase tracking-widest font-bold">Prospecto</th>
+                    <th className="p-4 text-[10px] uppercase tracking-widest font-bold">Tiempo</th>
+                    <th className="p-4 text-[10px] uppercase tracking-widest font-bold">Unidades</th>
+                    <th className="p-4 text-[10px] uppercase tracking-widest font-bold">Último Movimiento</th>
+                    <th className="p-4 text-[10px] uppercase tracking-widest font-bold text-center">Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sesiones.map((sesion) => (
+                    <React.Fragment key={sesion.idSesion}>
+                      <tr className="border-b border-neutral-100 hover:bg-neutral-50 transition-colors">
+                        <td className="p-4">
+                          <span className="font-bold text-neutral-900 block text-sm">
+                            {sesion.nombre ? (
+                              <>{sesion.nombre} <span className="text-[10px] text-green-600 ml-1" title="Registrado en CRM">✓</span></>
+                            ) : ( 'Prospecto Anónimo' )}
+                          </span>
+                          <span className="text-[10px] text-neutral-500 font-mono block mt-0.5">{sesion.email}</span>
+                          <span className="text-[9px] text-neutral-400 mt-1.5 block">
+                            {new Date().getTime() - sesion.fin.getTime() > 86400000 
+                              ? new Date(sesion.fin).toLocaleDateString('es-EC', {day: '2-digit', month:'short'}) 
+                              : `Hace ${Math.round((new Date().getTime() - sesion.fin.getTime()) / 60000)} min`}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <span className="bg-[#D1C292]/20 text-[#8A7A55] px-3 py-1 rounded-full text-xs font-bold">
+                            {sesion.minutos === 0 ? '< 1 min' : `${sesion.minutos} min`}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex gap-1 flex-wrap">
+                            {sesion.unidadesVistas.length > 0 ? (
+                              sesion.unidadesVistas.map(u => (
+                                <span key={u} className="bg-neutral-100 border border-neutral-200 text-neutral-600 text-[10px] font-bold px-2 py-0.5 rounded">{u}</span>
+                              ))
+                            ) : ( <span className="text-xs text-neutral-400">-</span> )}
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <span className="text-sm text-neutral-600">{sesion.ultimaAccion}</span>
+                        </td>
+                        <td className="p-4 text-center">
+                          <button onClick={() => setSesionExpandida(sesionExpandida === sesion.idSesion ? null : sesion.idSesion)} className="text-xs font-bold text-[#B94A36] hover:underline uppercase tracking-wider">
+                            {sesionExpandida === sesion.idSesion ? 'Ocultar' : 'Detalles'}
+                          </button>
+                        </td>
+                      </tr>
+                      
+                      {sesionExpandida === sesion.idSesion && (
+                        <tr className="bg-neutral-50 border-b border-neutral-200 shadow-inner">
+                          <td colSpan={5} className="p-6">
+                            <div className="mb-6 bg-white border border-[#D1C292] rounded-xl p-4 shadow-sm flex items-start gap-4">
+                              <div className="bg-[#D1C292]/20 text-[#8A7A55] w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0">🧠</div>
+                              <div>
+                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8A7A55] mb-1">Análisis Comercial Automático</h4>
+                                <p className="text-sm text-neutral-700 leading-relaxed font-medium">{generarAnalisisComercial(sesion)}</p>
+                              </div>
+                            </div>
+                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-4 pl-1">Línea de tiempo</h4>
+                            <div className="space-y-3 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-neutral-200 before:to-transparent">
+                              {sesion.eventos.map((evento, i) => (
+                                <div key={i} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                                  <div className="flex items-center justify-center w-2 h-2 rounded-full border border-white bg-[#B94A36] shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow sm:mx-0 mx-4 z-10"></div>
+                                  <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white p-3 rounded-lg border border-neutral-200 shadow-sm flex flex-col hover:border-[#B94A36]/30 transition-colors">
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-[10px] font-bold text-neutral-400">{new Date(evento.created_at).toLocaleTimeString('es-EC')}</span>
+                                      {evento.unidad_id && <span className="text-[9px] bg-neutral-100 text-neutral-500 font-bold px-1.5 py-0.5 rounded">Unidad {evento.unidad_id}</span>}
+                                    </div>
+                                    <span className="text-sm font-medium text-neutral-800">{evento.accion.replace(/_/g, ' ')}</span>
+                                    <span className="text-xs text-neutral-500">{evento.detalle}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </td>
+                        </tr>
                       )}
-                    </select>
-                  </div>
+                    </React.Fragment>
+                  ))}
+                  {sesiones.length === 0 && !cargandoRadar && (
+                    <tr><td colSpan={5} className="p-8 text-center text-neutral-400">Aún no hay actividad registrada en el inventario.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
-                  <div>
-                    <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">¿Qué pasó hoy?</label>
-                    <textarea rows={2} value={llamadaNota} onChange={(e) => setLlamadaNota(e.target.value)} placeholder="Ej: Le gustó la suite, pide descuento..." className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none resize-none"></textarea>
-                  </div>
-                  
-                  <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg mt-2">
-                    <label className="block text-[10px] font-bold text-blue-700 uppercase mb-2">📅 ¿Agendar Siguiente Paso?</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <input 
-                        type="date" 
-                        value={proximaFechaRapida} 
-                        onChange={(e) => setProximaFechaRapida(e.target.value)} 
-                        className="w-full bg-white border border-blue-200 rounded-md p-1.5 text-xs text-neutral-700 outline-none focus:border-blue-400" 
-                      />
-                      <select 
-                        value={proximaAccionRapida} 
-                        onChange={(e) => setProximaAccionRapida(e.target.value)} 
-                        className="w-full bg-white border border-blue-200 rounded-md p-1.5 text-xs text-neutral-700 outline-none focus:border-blue-400"
-                      >
-                        <option value="">-- Qué hacer --</option>
-                        <option value="Llamar">Llamar</option>
-                        <option value="WhatsApp">Escribir WhatsApp</option>
-                        <option value="Reunión">Reunión / Zoom</option>
-                        <option value="Cotización">Enviar Cotización</option>
-                      </select>
-                    </div>
-                  </div>
+      {/* ========================================================= */}
+      {/* CONTENIDO PESTAÑA 3: ACTIVIDAD WEB (LANDING) */}
+      {/* ========================================================= */}
+      {pestañaActiva === 'web' && (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+          
+          {/* BARRA DE FILTROS */}
+          <div className="flex justify-end gap-2">
+            {['hoy', '7d', '30d'].map(f => (
+              <button 
+                key={f} 
+                onClick={() => setFiltroTiempo(f)}
+                className={`px-4 py-2 text-xs font-bold rounded-lg uppercase tracking-wider transition-colors ${filtroTiempo === f ? 'bg-[#D1C292] text-white' : 'bg-white text-neutral-500 border border-neutral-200'}`}
+              >
+                {f === 'hoy' ? 'Hoy' : f === '7d' ? '7 Días' : '30 Días'}
+              </button>
+            ))}
+          </div>
 
-                  <button type="submit" disabled={guardandoActividadRapida || !llamadaClienteId} className={`w-full py-3 mt-auto text-white text-[11px] font-bold uppercase tracking-widest rounded-lg transition shadow-sm ${!llamadaClienteId ? 'bg-neutral-400 cursor-not-allowed' : 'bg-[#B94A36] hover:bg-[#9B3B2B]'}`}>
-                    {guardandoActividadRapida ? 'Procesando...' : '💾 Guardar y Actualizar'}
-                  </button>
-                </form>
-              </div>
+          {/* DASHBOARD DE MÉTRICAS */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm">
+              <span className="text-[10px] uppercase font-bold text-neutral-400 tracking-widest">Visitantes Únicos</span>
+              <div className="text-3xl font-light text-neutral-900 mt-1">{metricas.unicos}</div>
+            </div>
+            <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm">
+              <span className="text-[10px] uppercase font-bold text-neutral-400 tracking-widest">Sesiones</span>
+              <div className="text-3xl font-light text-neutral-900 mt-1">{metricas.totalSesiones}</div>
+            </div>
+            <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm">
+              <span className="text-[10px] uppercase font-bold text-neutral-400 tracking-widest">Recurrentes</span>
+              <div className="text-3xl font-light text-neutral-900 mt-1">{metricas.recurrentes}</div>
+            </div>
+            <div className="bg-[#21242E] text-white p-5 rounded-2xl shadow-sm">
+              <span className="text-[10px] uppercase font-bold text-[#D1C292] tracking-widest">Alta Intención</span>
+              <div className="text-3xl font-light mt-1">{metricas.altoInteres}</div>
+            </div>
+            <div className="bg-[#964B36] text-white p-5 rounded-2xl shadow-sm">
+              <span className="text-[10px] uppercase font-bold text-white/70 tracking-widest">Registros (Leads)</span>
+              <div className="text-3xl font-light mt-1">{metricas.conversiones}</div>
+            </div>
+          </div>
 
-              <div className="bg-white rounded-xl border border-neutral-200 shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
-                <div className="p-4 border-b border-neutral-100 bg-neutral-50 flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wide">📋 {tituloActividad[filtroTiempo]}</h3>
-                </div>
-                <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-                  {actividadesDia.length === 0 ? (
-                    <div className="h-full flex items-center justify-center">
-                      <p className="text-neutral-400 text-xs text-center">No hay flujo registrado para este periodo.<br/>¡A encender los motores!</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {actividadesDia.map((act) => (
-                        <div key={act.id} className="flex gap-4 p-3 bg-neutral-50 border border-neutral-100 rounded-lg hover:border-neutral-200 transition-colors">
-                          <div className="text-center pt-1 min-w-[50px]">
-                            {filtroTiempo !== 'hoy' && filtroTiempo !== 'ayer' ? (
-                              <>
-                                <span className="block text-[9px] font-bold text-neutral-500 mb-0.5">{new Date(act.created_at).toLocaleDateString('es-EC', {day:'2-digit', month:'short'})}</span>
-                                <span className="text-[9px] font-mono text-neutral-400">{new Date(act.created_at).toLocaleTimeString('es-EC', {hour: '2-digit', minute:'2-digit'})}</span>
-                              </>
+          {/* EMBUDO VISUAL */}
+          <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4 text-center">
+            <div className="flex-1">
+              <div className="text-2xl font-light text-neutral-900">{metricas.funnel.visitas}</div>
+              <div className="text-[10px] font-bold uppercase text-neutral-400 tracking-widest">Visitas</div>
+            </div>
+            <div className="text-[#D1C292]">→</div>
+            <div className="flex-1">
+              <div className="text-2xl font-light text-neutral-900">{metricas.funnel.scroll50}</div>
+              <div className="text-[10px] font-bold uppercase text-neutral-400 tracking-widest">Scroll 50%</div>
+            </div>
+            <div className="text-[#D1C292]">→</div>
+            <div className="flex-1">
+              <div className="text-2xl font-light text-[#964B36]">{metricas.funnel.intentosContacto}</div>
+              <div className="text-[10px] font-bold uppercase text-neutral-400 tracking-widest">Intento de Contacto</div>
+              <div className="text-[8px] text-neutral-400 mt-1">(WhatsApp, Calendly o VIP)</div>
+            </div>
+            <div className="text-[#D1C292]">→</div>
+            <div className="flex-1">
+              <div className="text-2xl font-light text-green-600">{metricas.funnel.registros}</div>
+              <div className="text-[10px] font-bold uppercase text-neutral-400 tracking-widest">Registrados</div>
+            </div>
+          </div>
+
+          {/* TABLA DE VISITANTES AGRUPADOS */}
+          <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-neutral-50 border-b border-neutral-200">
+                  <tr>
+                    <th className="p-4 text-[10px] uppercase font-bold text-neutral-500 tracking-widest">Identidad / Estado</th>
+                    <th className="p-4 text-[10px] uppercase font-bold text-neutral-500 tracking-widest">Comportamiento</th>
+                    <th className="p-4 text-[10px] uppercase font-bold text-neutral-500 tracking-widest">Fuente</th>
+                    <th className="p-4 text-[10px] uppercase font-bold text-neutral-500 tracking-widest">Nivel de Intención</th>
+                    <th className="p-4 text-center text-[10px] uppercase font-bold text-neutral-500 tracking-widest">Acción</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-100">
+                  {cargandoWeb ? (
+                    <tr><td colSpan={5} className="p-10 text-center text-neutral-400">Analizando huellas digitales...</td></tr>
+                  ) : visitantesAgrupados.map((v) => (
+                    <React.Fragment key={v.visitor_id}>
+                      <tr className="hover:bg-neutral-50 transition-colors">
+                        <td className="p-4">
+                          <div className="font-bold text-sm text-neutral-900">
+                            {v.email ? (
+                              <span className="text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200">✓ {v.email}</span>
                             ) : (
-                              <span className="text-[10px] font-mono text-neutral-400">{new Date(act.created_at).toLocaleTimeString('es-EC', {hour: '2-digit', minute:'2-digit'})}</span>
+                              `Anónimo #${v.visitor_id.substring(0,6)}`
                             )}
                           </div>
-                          <div className="flex-1 border-l border-neutral-200 pl-4">
-                            <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <span className="text-xs font-bold text-neutral-900">{act.clientes?.nombres} {act.clientes?.apellidos}</span>
-                              <span className="text-[12px]">{act.tipo_contacto === 'WhatsApp' ? '💬' : act.tipo_contacto === 'Email' ? '📧' : act.tipo_contacto === 'Zoom' ? '📹' : act.tipo_contacto === 'Reunión' ? '🤝' : '📞'}</span>
-                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${act.resultado.includes('Contestó') || act.resultado.includes('Respondio') || act.resultado.includes('Efectivo') ? 'bg-green-100 text-green-700' : 'bg-neutral-200 text-neutral-600'}`}>{act.resultado}</span>
+                          <div className="text-[10px] text-neutral-400 mt-2">Última act: {v.ultimaActividad.toLocaleString('es-EC')}</div>
+                        </td>
+                        <td className="p-4">
+                          <div className="text-xs font-medium text-neutral-700">{v.sesiones.size} Sesiones · {v.tiempoAcumuladoMin} min</div>
+                          <div className="text-[10px] text-neutral-400 mt-1">{v.eventos.length} Interacciones registradas</div>
+                        </td>
+                        <td className="p-4">
+                          <span className="text-xs bg-neutral-100 px-2 py-1 rounded text-neutral-600 font-mono">{v.fuentePrincipal}</span>
+                        </td>
+                        <td className="p-4">
+                          <span className={`text-xs font-bold px-2 py-1 rounded ${v.nivelInteraccion === '🔥 ALTO' ? 'bg-red-50 text-red-600' : v.nivelInteraccion === '⚡ MEDIO' ? 'bg-yellow-50 text-yellow-600' : 'bg-blue-50 text-blue-600'}`}>
+                            {v.nivelInteraccion} ({v.score} pts)
+                          </span>
+                        </td>
+                        <td className="p-4 text-center">
+                          <button 
+                            onClick={() => setVisitanteExpandido(visitanteExpandido === v.visitor_id ? null : v.visitor_id)}
+                            className="text-[10px] font-bold text-[#964B36] hover:underline uppercase tracking-widest bg-[#964B36]/10 px-3 py-1.5 rounded"
+                          >
+                            {visitanteExpandido === v.visitor_id ? 'Ocultar' : 'Ver Detalle'}
+                          </button>
+                        </td>
+                      </tr>
+
+                      {/* LÍNEA DE TIEMPO DESPLEGABLE */}
+                      {visitanteExpandido === v.visitor_id && (
+                        <tr className="bg-neutral-50 shadow-inner">
+                          <td colSpan={5} className="p-6">
+                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-4 pl-1">Historial del Visitante</h4>
+                            <div className="space-y-3 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-neutral-200">
+                              {v.eventos.map((evento) => (
+                                <div key={evento.id} className="relative flex items-center group">
+                                  <div className="flex items-center justify-center w-2 h-2 rounded-full border border-white bg-[#D1C292] z-10 ml-4 mr-4"></div>
+                                  <div className="bg-white p-3 rounded-lg border border-neutral-200 shadow-sm w-full md:w-1/2 flex justify-between items-center">
+                                    <div>
+                                      <span className="text-sm font-bold text-neutral-800">{evento.accion.replace(/_/g, ' ')}</span>
+                                      <span className="text-xs text-neutral-500 block">{evento.detalle}</span>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-neutral-400 whitespace-nowrap">
+                                      {new Date(evento.created_at).toLocaleTimeString('es-EC')}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                            <p className="text-[11px] text-neutral-600 leading-relaxed">{act.notas || 'Sin notas adicionales'}</p>
-                            <p className="text-[9px] font-bold text-neutral-400 mt-1 uppercase tracking-wider">Agente: {act.agente}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* --- MODALES Y PANEL LATERAL --- */}
-      {clienteSeleccionado && (
-        <div className="fixed inset-0 bg-neutral-900/40 z-40 transition-opacity backdrop-blur-[2px]" onClick={() => setClienteSeleccionado(null)}></div>
-      )}
-
-      <div className={`fixed top-0 right-0 h-full w-full max-w-[360px] bg-white shadow-2xl border-l border-neutral-200 transform transition-transform duration-300 z-50 flex flex-col ${clienteSeleccionado ? 'translate-x-0' : 'translate-x-full'}`}>
-        {clienteSeleccionado && (
-          <>
-            <div className="p-5 border-b border-neutral-100 bg-neutral-50 relative flex-shrink-0">
-              <button onClick={() => setClienteSeleccionado(null)} className="absolute top-3 right-4 text-neutral-400 hover:text-neutral-900 text-xl font-bold">&times;</button>
-              <h2 className="text-lg font-bold text-neutral-900 pr-6 leading-tight">
-                {clienteSeleccionado.tipo === 'cliente' && <span className="text-[#B94A36] mr-1" title="Inversionista Formal">👑</span>}
-                {clienteSeleccionado.nombres} {clienteSeleccionado.apellidos}
-              </h2>
-              <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                <span className="bg-white border border-neutral-200 text-neutral-600 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">{clienteSeleccionado.origen_captacion || 'Sin origen'}</span>
-                {clienteSeleccionado.ciudad_residencia && (
-                  <span className="bg-neutral-100 text-neutral-700 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">📍 {clienteSeleccionado.ciudad_residencia}</span>
-                )}
-                {clienteSeleccionado.campana && (
-                  <span className="bg-purple-50 border border-purple-200 text-purple-700 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">📢 {clienteSeleccionado.campana}</span>
-                )}
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-5 space-y-6">
-              <div className="space-y-2">
-                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1">Acciones de Contacto</p>
-                <div className="flex gap-2">
-                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'bienvenida')} className="flex-1 flex flex-col items-center justify-center gap-1 bg-[#25D366] hover:bg-[#1DA851] text-white py-2 rounded-lg transition shadow-sm border border-transparent">
-                    <span className="text-xs font-bold leading-none mt-1">👋 Welcome</span>
-                  </button>
-                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'campana')} className="flex-1 flex flex-col items-center justify-center gap-1 bg-[#128C7E] hover:bg-[#075E54] text-white py-2 rounded-lg transition shadow-sm border border-transparent">
-                    <span className="text-xs font-bold leading-none mt-1">📢 Campaña</span>
-                  </button>
-                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'libre')} className="flex-1 flex flex-col items-center justify-center gap-1 bg-white hover:bg-neutral-50 text-neutral-700 py-2 rounded-lg transition shadow-sm border border-neutral-200">
-                    <span className="text-xs font-bold leading-none mt-1">💬 Chat</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Fase Embudo</label>
-                  <select value={clienteSeleccionado.estado} onChange={(e) => actualizarCampoRapido(clienteSeleccionado.id, 'estado', e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-1.5 text-[11px] font-bold text-neutral-800 outline-none focus:border-[#B94A36]">
-                    {estados.map(est => <option key={est} value={est}>{est}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Termómetro</label>
-                  <select value={clienteSeleccionado.temperatura || '❄️ Frío'} onChange={(e) => actualizarCampoRapido(clienteSeleccionado.id, 'temperatura', e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-1.5 text-[11px] font-bold text-neutral-800 outline-none focus:border-[#B94A36]">
-                    <option value="🔥 Caliente">🔥 Caliente</option>
-                    <option value="☀️ Tibio">☀️ Tibio</option>
-                    <option value="❄️ Frío">❄️ Frío</option>
-                  </select>
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Campaña Asociada</label>
-                  <input 
-                    type="text" 
-                    list="lista-campanas" 
-                    defaultValue={clienteSeleccionado.campana || ''} 
-                    onBlur={(e) => {
-                      if (e.target.value !== clienteSeleccionado.campana) {
-                        actualizarCampoRapido(clienteSeleccionado.id, 'campana', e.target.value);
-                      }
-                    }}
-                    className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-1.5 text-[11px] font-bold text-neutral-800 outline-none focus:border-[#B94A36]" 
-                    placeholder="Escribe o selecciona de la lista..." 
-                  />
-                </div>
-              </div>
-
-              {/* === BLOQUE ACTUALIZADO: PASE VIP DINÁMICO === */}
-              <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl mt-4 space-y-2 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-500"></div>
-                <h3 className="text-[11px] font-bold text-amber-900 flex items-center gap-1.5 uppercase tracking-wider">
-                  🔑 Pase VIP: Inventario
-                </h3>
-                <p className="text-[9px] text-amber-700 leading-tight">Autoriza el email de este cliente para ver precios y disponibilidad web.</p>
-                <div className="pt-1 flex gap-2">
-                  <select
-                    value={tiempoVIP}
-                    onChange={(e) => setTiempoVIP(Number(e.target.value))}
-                    className="w-[35%] bg-white border border-amber-200 text-amber-900 rounded-lg p-2 text-[10px] font-bold outline-none focus:border-amber-400"
-                  >
-                    <option value={1}>1 Hora</option>
-                    <option value={12}>12 Horas</option>
-                    <option value={24}>24 Horas</option>
-                    <option value={48}>48 Horas</option>
-                  </select>
-                  <button 
-                    onClick={() => otorgarAccesoVIP(clienteSeleccionado.email)}
-                    disabled={activandoVIP || !clienteSeleccionado.email}
-                    className={`w-[65%] py-2 text-white rounded-lg text-[10px] font-bold transition shadow-sm uppercase tracking-wider ${!clienteSeleccionado.email ? 'bg-neutral-400 cursor-not-allowed' : 'bg-amber-600 hover:bg-amber-700'}`}
-                  >
-                    {activandoVIP ? 'Generando...' : !clienteSeleccionado.email ? '❌ Sin Email' : 'Generar Pase'}
-                  </button>
-                </div>
-              </div>
-
-              <div className="bg-blue-50/50 border border-blue-100 p-4 rounded-xl space-y-3 mt-4">
-                <h3 className="text-[11px] font-bold text-blue-800 flex items-center gap-1.5 uppercase tracking-wider mb-2">
-                  📅 Agendar Siguiente Paso
-                </h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[9px] font-bold text-neutral-500 uppercase mb-1">Fecha</label>
-                    <input type="date" value={fechaAccion} onChange={(e) => setFechaAccion(e.target.value)} className="w-full bg-white border border-neutral-200 rounded-md p-1.5 text-[11px] font-medium outline-none focus:border-blue-400" />
-                  </div>
-                  <div>
-                    <label className="block text-[9px] font-bold text-neutral-500 uppercase mb-1">Tipo de Acción</label>
-                    <select value={tipoAccion} onChange={(e) => setTipoAccion(e.target.value)} className="w-full bg-white border border-neutral-200 rounded-md p-1.5 text-[11px] font-medium outline-none focus:border-blue-400">
-                      {tiposAccion.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-[9px] font-bold text-neutral-500 uppercase mb-1">Objetivo / Detalles</label>
-                  <input type="text" value={detalleAccion} onChange={(e) => setDetalleAccion(e.target.value)} placeholder="Ej: Preguntar qué opinó la mamá..." className="w-full bg-white border border-neutral-200 rounded-md p-2 text-[11px] outline-none focus:border-blue-400" />
-                </div>
-                <div className="flex justify-end pt-1">
-                  <button id="btn-guardar-tarea" onClick={guardarProximaTarea} disabled={guardandoTarea} className="px-3 py-1.5 bg-blue-600 text-white text-[10px] font-bold rounded-md hover:bg-blue-700 transition shadow-sm">
-                    {guardandoTarea ? 'Guardando...' : '💾 Guardar Tarea'}
-                  </button>
-                </div>
-              </div>
-
-              <div className="pt-2">
-                <label className="block text-[11px] font-bold text-neutral-900 tracking-wider mb-2 uppercase">Log de Seguimiento</label>
-                <div className="flex flex-col gap-2 mb-3">
-                  <textarea rows={2} value={nuevaNotaTexto} onChange={(e) => setNuevaNotaTexto(e.target.value)} placeholder="¿Qué ocurrió en el contacto de hoy?" className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-2 text-xs focus:outline-none focus:border-neutral-400 resize-none" />
-                  <button onClick={agregarNotaBitacora} disabled={!nuevaNotaTexto.trim() || guardandoNota} className="self-end px-3 py-1 bg-neutral-800 text-white text-[10px] font-bold rounded-md disabled:opacity-50 hover:bg-black transition">
-                    {guardandoNota ? 'Registrando...' : '+ Agregar Registro'}
-                  </button>
-                </div>
-                <div className="bg-neutral-50 p-3 rounded-xl border border-neutral-200 h-[150px] overflow-y-auto custom-scrollbar shadow-inner">
-                  {clienteSeleccionado.notas ? (
-                    <div className="text-[11px] text-neutral-700 whitespace-pre-wrap leading-relaxed">{clienteSeleccionado.notas}</div>
-                  ) : (
-                    <p className="text-[11px] text-neutral-400 text-center italic mt-10">Sin actividad registrada aún.</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-neutral-100 pb-6">
-                <button onClick={() => verHistorialCotizaciones(clienteSeleccionado)} className="w-full py-2 bg-neutral-100 text-neutral-700 rounded-lg text-[11px] font-bold hover:bg-neutral-200 transition">
-                  📄 Ver Cotizaciones Generadas
-                </button>
-              </div>
-
-            </div>
-          </>
-        )}
-      </div>
-
-      {mostrarModalNuevo && (
-        <div className="fixed inset-0 bg-neutral-900/60 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl p-6">
-            <div className="flex justify-between items-center mb-4 border-b border-neutral-100 pb-3">
-              <h2 className="text-lg font-bold text-neutral-900">Registro de Prospecto</h2>
-              <button onClick={() => setMostrarModalNuevo(false)} className="text-neutral-400 hover:text-neutral-900 text-xl font-bold">&times;</button>
-            </div>
-            <form onSubmit={guardarNuevoCliente} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Nombres <span className="text-[#B94A36]">*</span></label>
-                  <input required type="text" value={nuevoNombre} onChange={e => setNuevoNombre(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Apellidos</label>
-                  <input type="text" value={nuevoApellido} onChange={e => setNuevoApellido(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Teléfono <span className="text-[#B94A36]">*</span></label>
-                  <input required type="tel" value={nuevoTelefono} onChange={e => setNuevoTelefono(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Email</label>
-                  <input type="email" value={nuevoEmail} onChange={e => setNuevoEmail(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Ciudad Residencia</label>
-                  <input type="text" value={nuevaCiudad} onChange={e => setNuevaCiudad(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Ingresado Por (Asesor)</label>
-                  <input type="text" value={nuevoIngresadoPor} onChange={e => setNuevoIngresadoPor(e.target.value)} placeholder="Ej: Saúl Intriago / Debbi Mera" className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs font-semibold focus:outline-none focus:border-[#B94A36]" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Origen</label>
-                  <select value={nuevoOrigen} onChange={e => setNuevoOrigen(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]">
-                    {origenes.map(o => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Campaña (Opcional)</label>
-                  <input 
-                    type="text" 
-                    list="lista-campanas" 
-                    value={nuevoCampana} 
-                    onChange={e => setNuevoCampana(e.target.value)} 
-                    placeholder="Ej: Lanzamiento Fase 1" 
-                    className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]" 
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Motivo Compra</label>
-                  <select value={nuevoMotivo} onChange={e => setNuevoMotivo(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]">
-                    {motivos.map(m => <option key={m} value={m}>{m}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Interés</label>
-                  <select value={nuevoInteres} onChange={e => setNuevoInteres(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]">
-                    {intereses.map(i => <option key={i} value={i}>{i}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="pt-4 flex justify-end gap-3">
-                <button type="button" onClick={() => setMostrarModalNuevo(false)} className="px-4 py-2 text-xs font-semibold text-neutral-500">Cancelar</button>
-                <button type="submit" disabled={guardandoCliente} className="px-5 py-2 bg-[#B94A36] text-white rounded-md text-xs font-bold uppercase tracking-wider hover:bg-[#9B3B2B] disabled:opacity-50">Guardar</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {mostrarModalPlantilla && (
-        <div className="fixed inset-0 bg-neutral-900/60 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6">
-            <h2 className="text-lg font-bold text-neutral-900 mb-2">Configuración de Plantillas WhatsApp</h2>
-            <p className="text-[10px] text-neutral-500 mb-4">Usa <strong className="text-neutral-800">{`{nombre}`}</strong> donde deba aparecer el prospecto.</p>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-neutral-700 mb-1">👋 Mensaje Inicial / Bienvenida</label>
-                <textarea rows={3} value={plantillaMensaje} onChange={e => setPlantillaMensaje(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-sm focus:outline-none focus:border-[#B94A36]" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-[#128C7E] mb-1">📢 Mensaje de Campaña / Seguimiento Masivo</label>
-                <textarea rows={3} value={plantillaCampana} onChange={e => setPlantillaCampana(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-sm focus:outline-none focus:border-[#128C7E]" />
-              </div>
-            </div>
-            <div className="flex justify-end gap-3 mt-4">
-              <button onClick={() => setMostrarModalPlantilla(false)} className="px-4 py-2 text-xs font-semibold text-neutral-600">Cancelar</button>
-              <button onClick={guardarPlantilla} className="px-5 py-2 bg-neutral-900 text-white text-xs font-bold rounded-lg hover:bg-neutral-800">Guardar Plantillas</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {mostrarModalHistorial && clienteSeleccionado && (
-        <div className="fixed inset-0 bg-neutral-900/60 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl p-6">
-            <div className="flex justify-between items-center mb-4 border-b border-neutral-100 pb-3">
-              <h2 className="text-lg font-bold text-neutral-900">Cotizaciones Emitidas</h2>
-              <button onClick={() => setMostrarModalHistorial(false)} className="text-neutral-400 hover:text-neutral-900 text-xl font-bold">&times;</button>
-            </div>
-            <div className="min-h-[150px] max-h-[400px] overflow-y-auto">
-              {cargandoHistorial ? (
-                <p className="text-center text-xs text-neutral-400 mt-10">Buscando...</p>
-              ) : cotizacionesCliente.length === 0 ? (
-                <p className="text-center text-xs text-neutral-400 mt-10">Sin cotizaciones generadas.</p>
-              ) : (
-                <div className="space-y-3">
-                  {cotizacionesCliente.map((cot, i) => (
-                    <div key={i} className="flex justify-between items-center bg-neutral-50 p-3 rounded-lg border border-neutral-200">
-                      <div>
-                        <p className="text-sm font-bold text-neutral-900">Unidad {cot.unidad_numero}</p>
-                        <p className="text-[10px] text-neutral-500 mt-0.5">{new Date(cot.created_at).toLocaleDateString('es-EC')}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[10px] text-neutral-400 uppercase tracking-wider mb-0.5">Precio Cierre</p>
-                        <p className="text-sm font-mono font-bold text-[#B94A36]">${cot.precio_total.toLocaleString('en-US')}</p>
-                      </div>
-                    </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   ))}
-                </div>
-              )}
+                </tbody>
+              </table>
             </div>
           </div>
+
         </div>
       )}
-
-      <datalist id="lista-campanas">
-        {campanasDisponibles.map(c => <option key={c} value={c} />)}
-      </datalist>
-
     </div>
   );
 }
