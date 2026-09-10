@@ -105,7 +105,35 @@ export default function RadarCentral() {
 
   const aprobarAcceso = async (cliente: any) => {
     const horas = tiemposSeleccionados[cliente.id] || '24';
-    alert(`Aprobando a ${cliente.nombres} por ${horas} horas... (En construcción)`);
+    
+    // 1. Mensaje de confirmación (Permite Cancelar)
+    const mensaje = horas === '999' 
+      ? `¿Estás seguro de darle acceso ILIMITADO a ${cliente.nombres}?`
+      : `¿Estás seguro de aprobar el acceso a ${cliente.nombres} por ${horas} horas?`;
+
+    const confirmar = window.confirm(mensaje);
+    
+    // Si haces clic en "Cancelar", la función se detiene y no hace nada
+    if (!confirmar) return; 
+
+    try {
+      // 2. Le decimos a Supabase que lo apruebe
+      const { error } = await supabase
+        .from('clientes')
+        .update({ estado_acceso: 'aprobado' }) // Cambia el estado para darle luz verde
+        .eq('id', cliente.id);
+
+      if (error) throw error;
+
+      // 3. Lo quitamos visualmente de la tabla de "Pendientes" al instante
+      setSolicitudes((prev) => prev.filter((c) => c.id !== cliente.id));
+      
+      alert(`✅ ¡Listo! Acceso aprobado para ${cliente.nombres}.`);
+      
+    } catch (error) {
+      console.error("Error al aprobar acceso:", error);
+      alert("❌ Hubo un error de conexión al intentar aprobar al cliente.");
+    }
   };
 
   const enviarCorreo = async (cliente: any) => {
