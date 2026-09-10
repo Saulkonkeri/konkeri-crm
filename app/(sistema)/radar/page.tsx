@@ -106,33 +106,37 @@ export default function RadarCentral() {
   const aprobarAcceso = async (cliente: any) => {
     const horas = tiemposSeleccionados[cliente.id] || '24';
     
-    // 1. Mensaje de confirmación (Permite Cancelar)
     const mensaje = horas === '999' 
       ? `¿Estás seguro de darle acceso ILIMITADO a ${cliente.nombres}?`
       : `¿Estás seguro de aprobar el acceso a ${cliente.nombres} por ${horas} horas?`;
 
     const confirmar = window.confirm(mensaje);
-    
-    // Si haces clic en "Cancelar", la función se detiene y no hace nada
     if (!confirmar) return; 
 
     try {
-      // 2. Le decimos a Supabase que lo apruebe
-      const { error } = await supabase
+      // Usamos el EMAIL en lugar del ID, es mucho más seguro para actualizar
+      const { data, error } = await supabase
         .from('clientes')
-        .update({ estado_acceso: 'aprobado' }) // Cambia el estado para darle luz verde
-        .eq('id', cliente.id);
+        .update({ estado_acceso: 'aprobado' }) 
+        .eq('email', cliente.email)
+        .select(); // Le pedimos a Supabase que nos devuelva el dato actualizado
 
       if (error) throw error;
 
-      // 3. Lo quitamos visualmente de la tabla de "Pendientes" al instante
-      setSolicitudes((prev) => prev.filter((c) => c.id !== cliente.id));
-      
-      alert(`✅ ¡Listo! Acceso aprobado para ${cliente.nombres}.`);
+      // Si Supabase devuelve un arreglo vacío, significa que el RLS bloqueó la edición
+      if (!data || data.length === 0) {
+        alert("⚠️ Supabase bloqueó la actualización. Ve a tu panel de Supabase > Authentication > Policies (o en la tabla 'clientes') y asegúrate de que esté permitido hacer UPDATE.");
+        return;
+      }
+
+      // EN LUGAR DE BORRARLO, LE CAMBIAMOS EL ESTADO VISUAL A "APROBADO" PARA QUE SIGA EN LA LISTA
+      setSolicitudes((prev) => 
+        prev.map((c) => c.email === cliente.email ? { ...c, estado_acceso: 'aprobado' } : c)
+      );
       
     } catch (error) {
-      console.error("Error al aprobar acceso:", error);
-      alert("❌ Hubo un error de conexión al intentar aprobar al cliente.");
+      console.error("Error detallado al aprobar acceso:", error);
+      alert("❌ Hubo un error en la base de datos al intentar aprobar al cliente.");
     }
   };
 
@@ -159,14 +163,10 @@ export default function RadarCentral() {
   const abrirWhatsApp = (telefono: string, nombres: string) => {
     if (!telefono) { alert("Este cliente no tiene un teléfono registrado."); return; }
     
-    // Limpiamos el número: quita espacios, guiones y signos +
     let numLimpio = telefono.replace(/\D/g, '');
-    
-    // Si empieza con 0 (como 099...), le quitamos el 0 y le ponemos el 593 de Ecuador
     if (numLimpio.startsWith('0') && numLimpio.length === 10) {
       numLimpio = '593' + numLimpio.substring(1);
     } else if (numLimpio.length === 9) {
-      // Por si escribió directo 99... sin el 0
       numLimpio = '593' + numLimpio;
     }
 
@@ -205,11 +205,10 @@ export default function RadarCentral() {
       const { data } = await supabase
         .from('tracking_inventario')
         .select('*')
-        // FILTRO BLINDADO: Excluye absolutamente todo lo de la Landing
         .not('accion', 'in', '("SOLICITUD_ACCESO_VIP","ABRIO_CALENDLY","VISITA_LANDING","ABRIO_FORMULARIO","CLIC_WHATSAPP","REGISTRO_COMPLETADO","CLIC_DISPONIBILIDAD")')
         .not('accion', 'like', 'SCROLL_%')
         .not('accion', 'like', 'VIO_%')
-        .not('detalle', 'ilike', '%LANDING%') // Atrapa cualquier detalle antiguo que diga "Landing"
+        .not('detalle', 'ilike', '%LANDING%') 
         .order('created_at', { ascending: false })
         .limit(500);
 
@@ -272,8 +271,6 @@ export default function RadarCentral() {
   // ==========================================
   // LÓGICA PESTAÑA 3: ACTIVIDAD WEB (LANDING)
   // ==========================================
-  
-  // PONDERACIÓN ADAPTADA A LOS BOTONES REALES DE TU LANDING
   const PESOS_EVENTOS: Record<string, number> = {
     'VISITA_LANDING': 1,
     'SCROLL_50': 2,
@@ -296,7 +293,7 @@ export default function RadarCentral() {
       const { data } = await supabase
         .from('tracking_inventario')
         .select('*')
-        .not('visitor_id', 'is', null) // Solo trae los que tienen huella digital (Landing)
+        .not('visitor_id', 'is', null) 
         .gte('created_at', fechaLimite.toISOString())
         .order('created_at', { ascending: true });
 
@@ -351,7 +348,7 @@ export default function RadarCentral() {
       });
       
       v.tiempoAcumuladoMin = Math.round(minAcumulados);
-      if (v.sesiones.size > 1) v.score += 5; // Extra por recurrencia
+      if (v.sesiones.size > 1) v.score += 5; 
 
       if (v.score >= 20) v.nivelInteraccion = '🔥 ALTO';
       else if (v.score >= 8) v.nivelInteraccion = '⚡ MEDIO';
@@ -372,7 +369,6 @@ export default function RadarCentral() {
     const altoInteres = visitantesAgrupados.filter(v => v.nivelInteraccion === '🔥 ALTO').length;
     const conversiones = visitantesAgrupados.filter(v => v.email !== null).length;
     
-    // FUNNEL ADAPTADO A TU LANDING
     const funnel = {
       visitas: eventosWeb.filter(e => e.accion === 'VISITA_LANDING').length,
       scroll50: eventosWeb.filter(e => e.accion === 'SCROLL_50').length,
@@ -433,7 +429,7 @@ export default function RadarCentral() {
       </div>
 
       {/* ========================================================= */}
-      {/* CONTENIDO PESTAÑA 1: SOLICITUDES VIP (RESTURADA) */}
+      {/* CONTENIDO PESTAÑA 1: SOLICITUDES VIP */}
       {/* ========================================================= */}
       {pestañaActiva === 'solicitudes' && (
         <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden animate-in fade-in slide-in-from-bottom-2">
@@ -457,9 +453,14 @@ export default function RadarCentral() {
                   <tr><td colSpan={4} className="px-6 py-10 text-center text-neutral-400 font-medium">No hay solicitudes nuevas desde la web.</td></tr>
                 ) : (
                   solicitudes.map((cliente) => (
-                    <tr key={cliente.id} className="hover:bg-neutral-50/50 transition-colors">
+                    <tr key={cliente.id} className={`transition-colors ${cliente.estado_acceso === 'aprobado' ? 'bg-green-50/30' : 'hover:bg-neutral-50/50'}`}>
                       <td className="px-6 py-4">
-                        <div className="font-bold text-neutral-900">{cliente.nombres}</div>
+                        <div className="font-bold text-neutral-900 flex items-center">
+                          {cliente.nombres}
+                          {cliente.estado_acceso === 'aprobado' && (
+                            <span className="ml-2 bg-green-100 text-green-700 text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wider">Aprobado</span>
+                          )}
+                        </div>
                         <div className="text-xs text-neutral-400">Desde Landing Page</div>
                       </td>
                       <td className="px-6 py-4">
@@ -472,7 +473,8 @@ export default function RadarCentral() {
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <select 
-                            className="bg-white border border-neutral-200 text-neutral-700 rounded-lg text-xs p-2 focus:outline-none focus:border-[#964B36]"
+                            disabled={cliente.estado_acceso === 'aprobado'}
+                            className="bg-white border border-neutral-200 text-neutral-700 rounded-lg text-xs p-2 focus:outline-none focus:border-[#964B36] disabled:opacity-50 disabled:bg-neutral-50"
                             value={tiemposSeleccionados[cliente.id] || '24'}
                             onChange={(e) => handleTiempoChange(cliente.id, e.target.value)}
                           >
@@ -482,9 +484,17 @@ export default function RadarCentral() {
                             <option value="48">48 horas</option>
                             <option value="999">Ilimitado</option>
                           </select>
-                          <button onClick={() => aprobarAcceso(cliente)} className="bg-neutral-800 text-white hover:bg-black px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm">
-                            Aprobar
-                          </button>
+                          
+                          {cliente.estado_acceso === 'aprobado' ? (
+                            <button disabled className="bg-green-500 text-white px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-sm opacity-90 cursor-not-allowed">
+                              ✓ Listo
+                            </button>
+                          ) : (
+                            <button onClick={() => aprobarAcceso(cliente)} className="bg-neutral-800 text-white hover:bg-black px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm">
+                              Aprobar
+                            </button>
+                          )}
+
                           <button onClick={() => enviarCorreo(cliente)} className="bg-[#964B36] text-white hover:bg-[#7d3e2c] px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm">
                             ✉️ Enviar Correo
                           </button>
@@ -503,7 +513,7 @@ export default function RadarCentral() {
       )}
 
       {/* ========================================================= */}
-      {/* CONTENIDO PESTAÑA 2: RADAR INVENTARIO (RESTAURADA) */}
+      {/* CONTENIDO PESTAÑA 2: RADAR INVENTARIO */}
       {/* ========================================================= */}
       {pestañaActiva === 'inventario' && (
         <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2">
