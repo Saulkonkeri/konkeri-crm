@@ -248,13 +248,15 @@ export default function ArienzoLandingPremium() {
         </div>
       </header>
 
-      {/* 1. HERO INMERSIVO */}
+      {/* 1. HERO INMERSIVO (¡AQUÍ ESTÁ LA OPTIMIZACIÓN LCP!) */}
       <section className="relative h-[100vh] min-h-[650px] flex flex-col items-center justify-center">
         <Image 
           src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Fronta.jpg" 
           alt="Arienzo Fachada"
           fill
           priority
+          quality={80}
+          sizes="100vw"
           className="absolute inset-0 object-cover z-0"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-black/70 z-0"></div>

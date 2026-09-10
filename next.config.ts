@@ -1,12 +1,14 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // 1. Autorizamos a Next.js para optimizar las imágenes de tu base de datos
+  // 1. Autorizamos a Next.js para optimizar las imágenes de tu base de datos y forzamos formatos ultra ligeros (Para Google PageSpeed)
   images: {
+    formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       {
         protocol: 'https',
         hostname: 'ijzqqbybubruthargcnq.supabase.co',
+        pathname: '/storage/v1/object/public/**',
       },
     ],
   },
