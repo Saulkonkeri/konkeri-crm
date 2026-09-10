@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
-import "../globals.css"; // Aseguramos que Tailwind cargue bien
+import "../../globals.css"; // <-- ¡CORREGIDO! Con doble salto para encontrar el CSS
 
 // 1. SEO y OPEN GRAPH exclusivo para la Landing Page
 export const metadata: Metadata = {
