@@ -43,13 +43,14 @@ type VisitanteAgrupado = {
 };
 
 export default function RadarCentral() {
-  // CONTROL DE PESTAÑAS (Por defecto abre en Solicitudes)
   const [pestañaActiva, setPestañaActiva] = useState('solicitudes'); 
   
   // ESTADOS PESTAÑA 1: SOLICITUDES VIP
   const [solicitudes, setSolicitudes] = useState<any[]>([]);
   const [cargandoSolicitudes, setCargandoSolicitudes] = useState(true);
   const [tiemposSeleccionados, setTiemposSeleccionados] = useState<Record<string, string>>({});
+  // Para forzar la actualización del cronómetro cada minuto
+  const [ticker, setTicker] = useState(0); 
 
   // ESTADOS PESTAÑA 2: RADAR INVENTARIO
   const [sesiones, setSesiones] = useState<SesionCliente[]>([]);
@@ -65,6 +66,9 @@ export default function RadarCentral() {
 
   useEffect(() => {
     cargarDatos();
+    // Inicia un reloj interno para actualizar los tiempos de expiración cada 60 segundos
+    const intervalo = setInterval(() => setTicker(t => t + 1), 60000);
+    return () => clearInterval(intervalo);
   }, [filtroTiempo]);
 
   const cargarDatos = () => {
@@ -74,24 +78,50 @@ export default function RadarCentral() {
   };
 
   // ==========================================
-  // LÓGICA PESTAÑA 1: SOLICITUDES VIP
+  // LÓGICA PESTAÑA 1: SOLICITUDES VIP (MEJORADA CON TIEMPOS)
   // ==========================================
   const cargarSolicitudes = async () => {
     setCargandoSolicitudes(true);
     try {
-      const { data, error } = await supabase
+      const { data: clientesData, error: errClientes } = await supabase
         .from('clientes')
         .select('*')
-        // ELIMINÉ EL FILTRO ".eq('estado_acceso', 'pendiente')" PARA QUE NO DESAPAREZCAN
         .eq('origen', 'Web Pública - Solicitud Acceso Exclusivo')
         .order('created_at', { ascending: false })
-        .limit(100); // Límite por seguridad para que no colapse la pantalla si hay miles
+        .limit(100);
 
-      if (data) {
-        setSolicitudes(data);
+      if (errClientes) throw errClientes;
+
+      if (clientesData && clientesData.length > 0) {
+        // Obtenemos los correos para buscar si tienen pase VIP en la tabla accesos_inventario
+        const emails = clientesData.map(c => c.email?.toLowerCase().trim()).filter(Boolean);
+        let mapaAccesos: Record<string, string> = {};
+
+        if (emails.length > 0) {
+          const { data: accesosData } = await supabase
+            .from('accesos_inventario')
+            .select('email, expira_en')
+            .in('email', emails);
+
+          if (accesosData) {
+            accesosData.forEach(acc => {
+              mapaAccesos[acc.email] = acc.expira_en;
+            });
+          }
+        }
+
+        // Combinamos la información
+        const solicitudesCompletas = clientesData.map(c => ({
+          ...c,
+          expira_en: c.email ? mapaAccesos[c.email.toLowerCase().trim()] : null
+        }));
+
+        setSolicitudes(solicitudesCompletas);
         const tiemposInit: Record<string, string> = {};
-        data.forEach(c => { tiemposInit[c.id] = '24'; });
+        solicitudesCompletas.forEach(c => { tiemposInit[c.id] = '24'; });
         setTiemposSeleccionados(tiemposInit);
+      } else {
+        setSolicitudes([]);
       }
     } catch (error) {
       console.error("Error al cargar solicitudes:", error);
@@ -100,47 +130,79 @@ export default function RadarCentral() {
     }
   };
 
+  const calcularTiempoRestante = (expiraEn?: string | null) => {
+    if (!expiraEn) return { estado: 'sin_pase', texto: 'Sin pase generado' };
+    const diff = new Date(expiraEn).getTime() - new Date().getTime();
+    if (diff <= 0) return { estado: 'caducado', texto: '⚠️ Caducado' };
+    
+    const horas = Math.floor(diff / 3600000);
+    const min = Math.floor((diff % 3600000) / 60000);
+    
+    if (horas > 800) return { estado: 'activo', texto: '⚡ Acceso Ilimitado' };
+    return { estado: 'activo', texto: `⏱️ Vence en ${horas}h ${min}m` };
+  };
+
   const handleTiempoChange = (id: string, valor: string) => {
     setTiemposSeleccionados(prev => ({ ...prev, [id]: valor }));
   };
 
   const aprobarAcceso = async (cliente: any) => {
-    const horas = tiemposSeleccionados[cliente.id] || '24';
+    const horasStr = tiemposSeleccionados[cliente.id] || '24';
+    const horasNum = parseInt(horasStr, 10);
+    const statusTiempo = calcularTiempoRestante(cliente.expira_en);
+    const esRenovacion = statusTiempo.estado === 'caducado' || statusTiempo.estado === 'activo';
     
-    const esRenovacion = cliente.estado_acceso === 'aprobado';
-    
-    const mensaje = horas === '999' 
+    const mensaje = horasStr === '999' 
       ? `¿Estás seguro de darle acceso ILIMITADO a ${cliente.nombres}?`
       : esRenovacion 
-        ? `¿Renovar el acceso de ${cliente.nombres} por ${horas} horas adicionales?`
-        : `¿Estás seguro de aprobar el acceso a ${cliente.nombres} por ${horas} horas?`;
+        ? `¿Renovar el acceso de ${cliente.nombres} por ${horasStr} horas?`
+        : `¿Estás seguro de aprobar el acceso a ${cliente.nombres} por ${horasStr} horas?`;
 
     const confirmar = window.confirm(mensaje);
     if (!confirmar) return; 
 
     try {
-      const { data, error } = await supabase
-        .from('clientes')
-        .update({ estado_acceso: 'aprobado' }) 
-        .eq('email', cliente.email)
-        .select(); 
+      const fechaExpiracion = new Date();
+      fechaExpiracion.setHours(fechaExpiracion.getHours() + horasNum);
 
-      if (error) throw error;
+      // 1. FORZAMOS EL RECIBO DE LA TABLA ACCESOS_INVENTARIO
+      const { data: dataPase, error: errorPase } = await supabase
+        .from('accesos_inventario')
+        .upsert({ 
+          email: cliente.email.toLowerCase().trim(), 
+          expira_en: fechaExpiracion.toISOString() 
+        })
+        .select();
 
-      if (!data || data.length === 0) {
-        alert("⚠️ Supabase bloqueó la actualización. Recuerda ejecutar la línea de SQL en tu panel de Supabase.");
+      if (errorPase) throw errorPase;
+      if (!dataPase || dataPase.length === 0) {
+        alert("⚠️ ATENCIÓN: Supabase bloqueó la creación del Pase VIP por seguridad. Apaga el RLS de la tabla 'accesos_inventario'.");
         return;
       }
 
+      // 2. FORZAMOS EL RECIBO DE LA TABLA CLIENTES
+      const { data: dataCliente, error: errorCliente } = await supabase
+        .from('clientes')
+        .update({ estado_acceso: 'aprobado' }) 
+        .eq('id', cliente.id)
+        .select();
+
+      if (errorCliente) throw errorCliente;
+      if (!dataCliente || dataCliente.length === 0) {
+        alert("⚠️ ATENCIÓN: Supabase bloqueó la actualización de estado por seguridad. Apaga el RLS de la tabla 'clientes'.");
+        return;
+      }
+
+      // SI LLEGÓ AQUÍ, FUE UN ÉXITO REAL. ACTUALIZAMOS LA PANTALLA.
       setSolicitudes((prev) => 
-        prev.map((c) => c.email === cliente.email ? { ...c, estado_acceso: 'aprobado' } : c)
+        prev.map((c) => c.id === cliente.id ? { ...c, estado_acceso: 'aprobado', expira_en: fechaExpiracion.toISOString() } : c)
       );
       
-      alert(esRenovacion ? `✅ Tiempo renovado para ${cliente.nombres}.` : `✅ ¡Listo! Acceso aprobado para ${cliente.nombres}.`);
+      alert(`✅ ¡Listo! Acceso activado correctamente para ${cliente.nombres}.`);
       
     } catch (error) {
-      console.error("Error detallado al aprobar acceso:", error);
-      alert("❌ Hubo un error en la base de datos al intentar aprobar al cliente.");
+      console.error("Error detallado al generar pase VIP:", error);
+      alert("❌ Hubo un error crítico de conexión con la base de datos.");
     }
   };
 
@@ -163,7 +225,6 @@ export default function RadarCentral() {
     }
   };
 
-  // LÓGICA MEJORADA PARA WHATSAPP
   const abrirWhatsApp = (telefono: string, nombres: string) => {
     if (!telefono) { alert("Este cliente no tiene un teléfono registrado."); return; }
     
@@ -387,7 +448,6 @@ export default function RadarCentral() {
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto bg-[#F4F4F4] min-h-screen font-sans">
       
-      {/* ENCABEZADO */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-light text-neutral-900 tracking-tight">Centro de Mando Digital</h1>
@@ -401,7 +461,6 @@ export default function RadarCentral() {
         </button>
       </div>
 
-      {/* SISTEMA DE PESTAÑAS */}
       <div className="flex overflow-x-auto space-x-1 bg-white p-1 rounded-xl shadow-sm border border-neutral-200 mb-8 w-fit">
         <button 
           onClick={() => setPestañaActiva('solicitudes')}
@@ -410,8 +469,10 @@ export default function RadarCentral() {
           }`}
         >
           🎯 Solicitudes VIP
-          {solicitudes.length > 0 && (
-            <span className="bg-[#964B36] text-white text-[10px] px-2 py-0.5 rounded-full">{solicitudes.length}</span>
+          {solicitudes.filter(s => calcularTiempoRestante(s.expira_en).estado !== 'activo').length > 0 && (
+            <span className="bg-[#964B36] text-white text-[10px] px-2 py-0.5 rounded-full">
+              {solicitudes.filter(s => calcularTiempoRestante(s.expira_en).estado !== 'activo').length}
+            </span>
           )}
         </button>
         <button 
@@ -432,84 +493,85 @@ export default function RadarCentral() {
         </button>
       </div>
 
-      {/* ========================================================= */}
-      {/* CONTENIDO PESTAÑA 1: SOLICITUDES VIP */}
-      {/* ========================================================= */}
       {pestañaActiva === 'solicitudes' && (
         <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden animate-in fade-in slide-in-from-bottom-2">
           <div className="px-6 py-5 border-b border-neutral-100 flex justify-between items-center bg-neutral-50/50">
-            <h3 className="font-bold text-neutral-800">Accesos Web Pendientes</h3>
+            <h3 className="font-bold text-neutral-800">Accesos Web y Control VIP</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm text-neutral-600">
               <thead className="bg-white text-neutral-400 text-xs uppercase tracking-wider border-b">
                 <tr>
                   <th className="px-6 py-4 font-medium">Cliente</th>
+                  <th className="px-6 py-4 font-medium">Estado del Pase VIP</th>
                   <th className="px-6 py-4 font-medium">Contacto</th>
-                  <th className="px-6 py-4 font-medium">Fecha</th>
-                  <th className="px-6 py-4 font-medium text-right">Gestión de Acceso</th>
+                  <th className="px-6 py-4 font-medium text-right">Gestión Rápida</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
                 {cargandoSolicitudes ? (
-                  <tr><td colSpan={4} className="px-6 py-10 text-center text-neutral-400">Cargando solicitudes...</td></tr>
+                  <tr><td colSpan={4} className="px-6 py-10 text-center text-neutral-400">Cargando datos en vivo...</td></tr>
                 ) : solicitudes.length === 0 ? (
-                  <tr><td colSpan={4} className="px-6 py-10 text-center text-neutral-400 font-medium">No hay solicitudes nuevas desde la web.</td></tr>
+                  <tr><td colSpan={4} className="px-6 py-10 text-center text-neutral-400 font-medium">No hay registros desde la web.</td></tr>
                 ) : (
-                  solicitudes.map((cliente) => (
-                    <tr key={cliente.id} className={`transition-colors ${cliente.estado_acceso === 'aprobado' ? 'bg-green-50/30' : 'hover:bg-neutral-50/50'}`}>
-                      <td className="px-6 py-4">
-                        <div className="font-bold text-neutral-900 flex items-center">
-                          {cliente.nombres}
-                          {cliente.estado_acceso === 'aprobado' && (
-                            <span className="ml-2 bg-green-100 text-green-700 text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wider">Aprobado</span>
-                          )}
-                        </div>
-                        <div className="text-xs text-neutral-400">Desde Landing Page</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-neutral-900 font-mono text-xs">{cliente.email}</div>
-                        <div className="text-neutral-500">{cliente.telefono}</div>
-                      </td>
-                      <td className="px-6 py-4 text-xs">
-                        {new Date(cliente.created_at).toLocaleDateString('es-EC', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {/* SELECT DESBLOQUEADO PARA PODER RENOVAR */}
-                          <select 
-                            className="bg-white border border-neutral-200 text-neutral-700 rounded-lg text-xs p-2 focus:outline-none focus:border-[#964B36]"
-                            value={tiemposSeleccionados[cliente.id] || '24'}
-                            onChange={(e) => handleTiempoChange(cliente.id, e.target.value)}
-                          >
-                            <option value="2">2 horas</option>
-                            <option value="12">12 horas</option>
-                            <option value="24">24 horas</option>
-                            <option value="48">48 horas</option>
-                            <option value="999">Ilimitado</option>
-                          </select>
-                          
-                          {/* BOTON CAMBIA A RENOVAR SI YA ESTÁ APROBADO */}
-                          {cliente.estado_acceso === 'aprobado' ? (
-                            <button onClick={() => aprobarAcceso(cliente)} className="bg-[#D1C292] text-white hover:bg-[#bfae7e] px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-sm transition-colors">
-                              ↻ Renovar
-                            </button>
-                          ) : (
-                            <button onClick={() => aprobarAcceso(cliente)} className="bg-neutral-800 text-white hover:bg-black px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm">
-                              Aprobar
-                            </button>
-                          )}
+                  solicitudes.map((cliente) => {
+                    const statusTiempo = calcularTiempoRestante(cliente.expira_en);
+                    const activo = statusTiempo.estado === 'activo';
+                    const caducado = statusTiempo.estado === 'caducado';
 
-                          <button onClick={() => enviarCorreo(cliente)} className="bg-[#964B36] text-white hover:bg-[#7d3e2c] px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm">
-                            ✉️ Enviar Correo
-                          </button>
-                          <button onClick={() => abrirWhatsApp(cliente.telefono, cliente.nombres)} className="bg-green-50 text-green-700 hover:bg-green-100 px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors border border-green-200">
-                            WhatsApp
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                    return (
+                      <tr key={cliente.id} className={`transition-colors ${activo ? 'bg-green-50/20' : caducado ? 'bg-red-50/20' : 'hover:bg-neutral-50/50'}`}>
+                        <td className="px-6 py-4">
+                          <div className="font-bold text-neutral-900">{cliente.nombres}</div>
+                          <div className="text-[10px] text-neutral-400">Registrado el {new Date(cliente.created_at).toLocaleDateString('es-EC')}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className={`inline-flex items-center text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide border ${
+                            activo ? 'bg-green-100 text-green-800 border-green-200' : 
+                            caducado ? 'bg-red-100 text-red-800 border-red-200' : 
+                            'bg-neutral-100 text-neutral-600 border-neutral-200'
+                          }`}>
+                            {statusTiempo.texto}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-neutral-900 font-mono text-xs">{cliente.email}</div>
+                          <div className="text-neutral-500">{cliente.telefono}</div>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <select 
+                              className="bg-white border border-neutral-200 text-neutral-700 rounded-lg text-[11px] p-2 focus:outline-none focus:border-[#964B36] font-bold"
+                              value={tiemposSeleccionados[cliente.id] || '24'}
+                              onChange={(e) => handleTiempoChange(cliente.id, e.target.value)}
+                            >
+                              <option value="2">2 horas</option>
+                              <option value="12">12 horas</option>
+                              <option value="24">24 horas</option>
+                              <option value="48">48 horas</option>
+                              <option value="999">Ilimitado</option>
+                            </select>
+                            
+                            <button 
+                              onClick={() => aprobarAcceso(cliente)} 
+                              className={`px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm text-white ${
+                                activo ? 'bg-[#D1C292] hover:bg-[#bfae7e]' : 'bg-neutral-800 hover:bg-black'
+                              }`}
+                            >
+                              {activo ? '↻ Renovar' : 'Aprobar'}
+                            </button>
+
+                            <button onClick={() => enviarCorreo(cliente)} className="bg-[#964B36] text-white hover:bg-[#7d3e2c] px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm" title="Enviar correo de confirmación">
+                              ✉️
+                            </button>
+                            <button onClick={() => abrirWhatsApp(cliente.telefono, cliente.nombres)} className="bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors" title="Escribir por WhatsApp">
+                              💬
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -518,7 +580,7 @@ export default function RadarCentral() {
       )}
 
       {/* ========================================================= */}
-      {/* CONTENIDO PESTAÑA 2: RADAR INVENTARIO */}
+      {/* PESTAÑA 2: RADAR INVENTARIO */}
       {/* ========================================================= */}
       {pestañaActiva === 'inventario' && (
         <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2">
@@ -619,12 +681,11 @@ export default function RadarCentral() {
       )}
 
       {/* ========================================================= */}
-      {/* CONTENIDO PESTAÑA 3: ACTIVIDAD WEB (LANDING) */}
+      {/* PESTAÑA 3: ACTIVIDAD WEB (LANDING) */}
       {/* ========================================================= */}
       {pestañaActiva === 'web' && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
           
-          {/* BARRA DE FILTROS */}
           <div className="flex justify-end gap-2">
             {['hoy', '7d', '30d'].map(f => (
               <button 
@@ -637,7 +698,6 @@ export default function RadarCentral() {
             ))}
           </div>
 
-          {/* DASHBOARD DE MÉTRICAS */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm">
               <span className="text-[10px] uppercase font-bold text-neutral-400 tracking-widest">Visitantes Únicos</span>
@@ -661,7 +721,6 @@ export default function RadarCentral() {
             </div>
           </div>
 
-          {/* EMBUDO VISUAL */}
           <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4 text-center">
             <div className="flex-1">
               <div className="text-2xl font-light text-neutral-900">{metricas.funnel.visitas}</div>
@@ -685,7 +744,6 @@ export default function RadarCentral() {
             </div>
           </div>
 
-          {/* TABLA DE VISITANTES AGRUPADOS */}
           <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
@@ -736,7 +794,6 @@ export default function RadarCentral() {
                         </td>
                       </tr>
 
-                      {/* LÍNEA DE TIEMPO DESPLEGABLE */}
                       {visitanteExpandido === v.visitor_id && (
                         <tr className="bg-neutral-50 shadow-inner">
                           <td colSpan={5} className="p-6">
