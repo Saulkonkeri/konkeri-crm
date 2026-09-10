@@ -127,10 +127,23 @@ export default function RadarCentral() {
     }
   };
 
+  // LÓGICA MEJORADA PARA WHATSAPP
   const abrirWhatsApp = (telefono: string, nombres: string) => {
     if (!telefono) { alert("Este cliente no tiene un teléfono registrado."); return; }
+    
+    // Limpiamos el número: quita espacios, guiones y signos +
+    let numLimpio = telefono.replace(/\D/g, '');
+    
+    // Si empieza con 0 (como 099...), le quitamos el 0 y le ponemos el 593 de Ecuador
+    if (numLimpio.startsWith('0') && numLimpio.length === 10) {
+      numLimpio = '593' + numLimpio.substring(1);
+    } else if (numLimpio.length === 9) {
+      // Por si escribió directo 99... sin el 0
+      numLimpio = '593' + numLimpio;
+    }
+
     const mensaje = `Hola ${nombres}, soy Saúl de Konkeri. Hemos validado tu perfil y tu acceso exclusivo al inventario de Arienzo Boutique Living está listo. Puedes ingresar aquí: https://reserva.arienzoliving.com con tu correo.`;
-    window.open(`https://wa.me/${telefono.replace(/\D/g, '')}?text=${encodeURIComponent(mensaje)}`, '_blank');
+    window.open(`https://wa.me/${numLimpio}?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
 
   // ==========================================
@@ -164,10 +177,11 @@ export default function RadarCentral() {
       const { data } = await supabase
         .from('tracking_inventario')
         .select('*')
-        // EXCLUYE EVENTOS DE LA LANDING PARA NO ENSUCIAR EL INVENTARIO
-        .not('accion', 'in', '("SOLICITUD_ACCESO_VIP","ABRIO_CALENDLY","VISITA_LANDING","ABRIO_FORMULARIO","CLIC_WHATSAPP","REGISTRO_COMPLETADO")')
+        // FILTRO BLINDADO: Excluye absolutamente todo lo de la Landing
+        .not('accion', 'in', '("SOLICITUD_ACCESO_VIP","ABRIO_CALENDLY","VISITA_LANDING","ABRIO_FORMULARIO","CLIC_WHATSAPP","REGISTRO_COMPLETADO","CLIC_DISPONIBILIDAD")')
         .not('accion', 'like', 'SCROLL_%')
-        .not('accion', 'like', 'VIO_ARQUITECTURA')
+        .not('accion', 'like', 'VIO_%')
+        .not('detalle', 'ilike', '%LANDING%') // Atrapa cualquier detalle antiguo que diga "Landing"
         .order('created_at', { ascending: false })
         .limit(500);
 
