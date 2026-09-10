@@ -18,8 +18,12 @@ export default function ArienzoLandingPremium() {
     email: ''
   });
 
-  const trackEvent = async (accion: string, detalle: string) => {
+  // ==========================================
+  // EL CEREBRO DEL TRACKING (Actualizado para Meta Avanzado)
+  // ==========================================
+  const trackEvent = async (accion: string, detalle: string, datosUsuario?: { email?: string, telefono?: string }) => {
     try {
+      // 1. Identidades (Anónimo o Conocido)
       let visitorId = localStorage.getItem('arienzo_visitor_id');
       if (!visitorId) {
         visitorId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'id-' + Math.random().toString(36).substring(2, 10);
@@ -32,16 +36,21 @@ export default function ArienzoLandingPremium() {
         sessionStorage.setItem('arienzo_session_id', sessionId);
       }
 
+      // GENERAMOS EL EVENT_ID PARA DEDUPLICACIÓN DE META (CAPI)
+      const eventId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'evt-' + Date.now();
+
       const urlParams = new URLSearchParams(window.location.search);
       const metadata = {
         utm_source: urlParams.get('utm_source'),
         utm_campaign: urlParams.get('utm_campaign'),
         referrer: document.referrer || 'Directo',
-        dispositivo: /Mobile|Android|iP(hone|od|ad)/i.test(navigator.userAgent) ? 'Móvil' : 'Desktop'
+        dispositivo: /Mobile|Android|iP(hone|od|ad)/i.test(navigator.userAgent) ? 'Móvil' : 'Desktop',
+        meta_event_id: eventId // Guardamos el ID para mandarlo luego por el servidor
       };
 
       const emailConocido = localStorage.getItem('arienzo_lead_email');
 
+      // 2. ENVIAR A TU CRM (Supabase)
       await supabase.from('tracking_inventario').insert([{
         visitor_id: visitorId,
         session_id: sessionId,
@@ -51,16 +60,24 @@ export default function ArienzoLandingPremium() {
         metadata
       }]);
 
+      // 3. ENVIAR AL PÍXEL DE META CON COINCIDENCIAS AVANZADAS
       if (typeof window !== 'undefined' && (window as any).fbq) {
         const fbq = (window as any).fbq;
+        
         if (accion === 'REGISTRO_COMPLETADO') {
-          fbq('track', 'Lead', { content_name: 'Registro VIP Landing' });
+          // Aquí enviamos el correo (em) y teléfono (ph) limpios como pide Meta
+          fbq('track', 'Lead', { 
+            content_name: 'Registro VIP Landing',
+            em: datosUsuario?.email?.toLowerCase().trim() || '',
+            ph: datosUsuario?.telefono?.replace(/\D/g, '') || '' // Quita todo lo que no sea número
+          }, { eventID: eventId });
+          
         } else if (accion === 'CLIC_WHATSAPP') {
-          fbq('track', 'Contact', { content_name: 'Clic Botón WhatsApp' });
+          fbq('track', 'Contact', { content_name: 'Clic Botón WhatsApp' }, { eventID: eventId });
         } else if (accion === 'ABRIO_CALENDLY') {
-          fbq('track', 'Schedule', { content_name: 'Abrió Calendly' });
+          fbq('track', 'Schedule', { content_name: 'Abrió Calendly' }, { eventID: eventId });
         } else if (accion !== 'VISITA_LANDING') { 
-          fbq('trackCustom', accion, { detalle });
+          fbq('trackCustom', accion, { detalle }, { eventID: eventId });
         }
       }
     } catch (error) {
@@ -68,6 +85,7 @@ export default function ArienzoLandingPremium() {
     }
   };
 
+  // CONTROL DE SCROLL Y VISITA INICIAL
   useEffect(() => {
     if (!sessionStorage.getItem('visita_registrada')) {
       trackEvent('VISITA_LANDING', 'Ingresó a la página principal de Arienzo');
@@ -100,6 +118,7 @@ export default function ArienzoLandingPremium() {
     };
   }, []);
 
+  // FUNCIONES
   const abrirModalVIP = () => {
     trackEvent('ABRIO_FORMULARIO', 'Hizo clic en botón Acceso Exclusivo');
     setMostrarModalVip(true);
@@ -132,7 +151,12 @@ export default function ArienzoLandingPremium() {
       }
 
       localStorage.setItem('arienzo_lead_email', correoLimpio);
-      await trackEvent('REGISTRO_COMPLETADO', `Registró datos. Correo: ${correoLimpio}`);
+      
+      // AQUÍ LE PASAMOS LOS DATOS DEL USUARIO A LA FUNCIÓN DE TRACKING
+      await trackEvent('REGISTRO_COMPLETADO', `Registró datos. Correo: ${correoLimpio}`, {
+        email: correoLimpio,
+        telefono: formData.telefono
+      });
 
       const visitorId = localStorage.getItem('arienzo_visitor_id');
       if (visitorId) {
