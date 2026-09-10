@@ -82,9 +82,10 @@ export default function RadarCentral() {
       const { data, error } = await supabase
         .from('clientes')
         .select('*')
-        .eq('estado_acceso', 'pendiente')
+        // ELIMINÉ EL FILTRO ".eq('estado_acceso', 'pendiente')" PARA QUE NO DESAPAREZCAN
         .eq('origen', 'Web Pública - Solicitud Acceso Exclusivo')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100); // Límite por seguridad para que no colapse la pantalla si hay miles
 
       if (data) {
         setSolicitudes(data);
@@ -106,33 +107,36 @@ export default function RadarCentral() {
   const aprobarAcceso = async (cliente: any) => {
     const horas = tiemposSeleccionados[cliente.id] || '24';
     
+    const esRenovacion = cliente.estado_acceso === 'aprobado';
+    
     const mensaje = horas === '999' 
       ? `¿Estás seguro de darle acceso ILIMITADO a ${cliente.nombres}?`
-      : `¿Estás seguro de aprobar el acceso a ${cliente.nombres} por ${horas} horas?`;
+      : esRenovacion 
+        ? `¿Renovar el acceso de ${cliente.nombres} por ${horas} horas adicionales?`
+        : `¿Estás seguro de aprobar el acceso a ${cliente.nombres} por ${horas} horas?`;
 
     const confirmar = window.confirm(mensaje);
     if (!confirmar) return; 
 
     try {
-      // Usamos el EMAIL en lugar del ID, es mucho más seguro para actualizar
       const { data, error } = await supabase
         .from('clientes')
         .update({ estado_acceso: 'aprobado' }) 
         .eq('email', cliente.email)
-        .select(); // Le pedimos a Supabase que nos devuelva el dato actualizado
+        .select(); 
 
       if (error) throw error;
 
-      // Si Supabase devuelve un arreglo vacío, significa que el RLS bloqueó la edición
       if (!data || data.length === 0) {
-        alert("⚠️ Supabase bloqueó la actualización. Ve a tu panel de Supabase > Authentication > Policies (o en la tabla 'clientes') y asegúrate de que esté permitido hacer UPDATE.");
+        alert("⚠️ Supabase bloqueó la actualización. Recuerda ejecutar la línea de SQL en tu panel de Supabase.");
         return;
       }
 
-      // EN LUGAR DE BORRARLO, LE CAMBIAMOS EL ESTADO VISUAL A "APROBADO" PARA QUE SIGA EN LA LISTA
       setSolicitudes((prev) => 
         prev.map((c) => c.email === cliente.email ? { ...c, estado_acceso: 'aprobado' } : c)
       );
+      
+      alert(esRenovacion ? `✅ Tiempo renovado para ${cliente.nombres}.` : `✅ ¡Listo! Acceso aprobado para ${cliente.nombres}.`);
       
     } catch (error) {
       console.error("Error detallado al aprobar acceso:", error);
@@ -472,9 +476,9 @@ export default function RadarCentral() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          {/* SELECT DESBLOQUEADO PARA PODER RENOVAR */}
                           <select 
-                            disabled={cliente.estado_acceso === 'aprobado'}
-                            className="bg-white border border-neutral-200 text-neutral-700 rounded-lg text-xs p-2 focus:outline-none focus:border-[#964B36] disabled:opacity-50 disabled:bg-neutral-50"
+                            className="bg-white border border-neutral-200 text-neutral-700 rounded-lg text-xs p-2 focus:outline-none focus:border-[#964B36]"
                             value={tiemposSeleccionados[cliente.id] || '24'}
                             onChange={(e) => handleTiempoChange(cliente.id, e.target.value)}
                           >
@@ -485,9 +489,10 @@ export default function RadarCentral() {
                             <option value="999">Ilimitado</option>
                           </select>
                           
+                          {/* BOTON CAMBIA A RENOVAR SI YA ESTÁ APROBADO */}
                           {cliente.estado_acceso === 'aprobado' ? (
-                            <button disabled className="bg-green-500 text-white px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-sm opacity-90 cursor-not-allowed">
-                              ✓ Listo
+                            <button onClick={() => aprobarAcceso(cliente)} className="bg-[#D1C292] text-white hover:bg-[#bfae7e] px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-sm transition-colors">
+                              ↻ Renovar
                             </button>
                           ) : (
                             <button onClick={() => aprobarAcceso(cliente)} className="bg-neutral-800 text-white hover:bg-black px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm">
@@ -656,7 +661,7 @@ export default function RadarCentral() {
             </div>
           </div>
 
-          {/* EMBUDO VISUAL (AJUSTADO A LA REALIDAD DE LA LANDING) */}
+          {/* EMBUDO VISUAL */}
           <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4 text-center">
             <div className="flex-1">
               <div className="text-2xl font-light text-neutral-900">{metricas.funnel.visitas}</div>
