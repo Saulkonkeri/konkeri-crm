@@ -19,11 +19,10 @@ export default function ArienzoLandingPremium() {
   });
 
   // ==========================================
-  // EL CEREBRO DEL TRACKING (Actualizado para Meta Avanzado)
+  // EL CEREBRO DEL TRACKING (Píxel + CAPI Integrado)
   // ==========================================
   const trackEvent = async (accion: string, detalle: string, datosUsuario?: { email?: string, telefono?: string }) => {
     try {
-      // 1. Identidades (Anónimo o Conocido)
       let visitorId = localStorage.getItem('arienzo_visitor_id');
       if (!visitorId) {
         visitorId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'id-' + Math.random().toString(36).substring(2, 10);
@@ -36,7 +35,7 @@ export default function ArienzoLandingPremium() {
         sessionStorage.setItem('arienzo_session_id', sessionId);
       }
 
-      // GENERAMOS EL EVENT_ID PARA DEDUPLICACIÓN DE META (CAPI)
+      // ID Único para que Meta sepa que es el mismo evento y no lo cuente doble
       const eventId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'evt-' + Date.now();
 
       const urlParams = new URLSearchParams(window.location.search);
@@ -45,12 +44,12 @@ export default function ArienzoLandingPremium() {
         utm_campaign: urlParams.get('utm_campaign'),
         referrer: document.referrer || 'Directo',
         dispositivo: /Mobile|Android|iP(hone|od|ad)/i.test(navigator.userAgent) ? 'Móvil' : 'Desktop',
-        meta_event_id: eventId // Guardamos el ID para mandarlo luego por el servidor
+        meta_event_id: eventId
       };
 
       const emailConocido = localStorage.getItem('arienzo_lead_email');
 
-      // 2. ENVIAR A TU CRM (Supabase)
+      // 1. A TU CRM
       await supabase.from('tracking_inventario').insert([{
         visitor_id: visitorId,
         session_id: sessionId,
@@ -60,18 +59,15 @@ export default function ArienzoLandingPremium() {
         metadata
       }]);
 
-      // 3. ENVIAR AL PÍXEL DE META CON COINCIDENCIAS AVANZADAS
+      // 2. AL NAVEGADOR (PÍXEL NORMAL)
       if (typeof window !== 'undefined' && (window as any).fbq) {
         const fbq = (window as any).fbq;
-        
         if (accion === 'REGISTRO_COMPLETADO') {
-          // Aquí enviamos el correo (em) y teléfono (ph) limpios como pide Meta
           fbq('track', 'Lead', { 
             content_name: 'Registro VIP Landing',
             em: datosUsuario?.email?.toLowerCase().trim() || '',
-            ph: datosUsuario?.telefono?.replace(/\D/g, '') || '' // Quita todo lo que no sea número
+            ph: datosUsuario?.telefono?.replace(/\D/g, '') || ''
           }, { eventID: eventId });
-          
         } else if (accion === 'CLIC_WHATSAPP') {
           fbq('track', 'Contact', { content_name: 'Clic Botón WhatsApp' }, { eventID: eventId });
         } else if (accion === 'ABRIO_CALENDLY') {
@@ -80,12 +76,33 @@ export default function ArienzoLandingPremium() {
           fbq('trackCustom', accion, { detalle }, { eventID: eventId });
         }
       }
-    } catch (error) {
-      // Fallo silencioso
-    }
+
+      // 3. AL SERVIDOR (API DE CONVERSIONES - CAPI)
+      let metaEventName = accion;
+      if (accion === 'REGISTRO_COMPLETADO') metaEventName = 'Lead';
+      else if (accion === 'CLIC_WHATSAPP') metaEventName = 'Contact';
+      else if (accion === 'ABRIO_CALENDLY') metaEventName = 'Schedule';
+      else if (accion === 'VISITA_LANDING') metaEventName = 'PageView';
+
+      // Solo mandamos al servidor los eventos importantes para no saturarlo
+      if (['Lead', 'Contact', 'Schedule', 'PageView'].includes(metaEventName)) {
+        fetch('/api/meta-capi', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            eventName: metaEventName,
+            eventId: eventId,
+            email: datosUsuario?.email || emailConocido || '',
+            telefono: datosUsuario?.telefono || '',
+            eventUrl: window.location.href,
+            userAgent: navigator.userAgent
+          })
+        }).catch(() => {}); // Silencioso
+      }
+
+    } catch (error) {}
   };
 
-  // CONTROL DE SCROLL Y VISITA INICIAL
   useEffect(() => {
     if (!sessionStorage.getItem('visita_registrada')) {
       trackEvent('VISITA_LANDING', 'Ingresó a la página principal de Arienzo');
@@ -93,8 +110,8 @@ export default function ArienzoLandingPremium() {
     }
 
     const handleScrollNav = () => setScrolled(window.scrollY > 50);
-    
     const trackedScrolls = new Set();
+    
     const handleScrollTracking = () => {
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
       if (docHeight <= 0) return;
@@ -118,7 +135,6 @@ export default function ArienzoLandingPremium() {
     };
   }, []);
 
-  // FUNCIONES
   const abrirModalVIP = () => {
     trackEvent('ABRIO_FORMULARIO', 'Hizo clic en botón Acceso Exclusivo');
     setMostrarModalVip(true);
@@ -152,7 +168,7 @@ export default function ArienzoLandingPremium() {
 
       localStorage.setItem('arienzo_lead_email', correoLimpio);
       
-      // AQUÍ LE PASAMOS LOS DATOS DEL USUARIO A LA FUNCIÓN DE TRACKING
+      // Enviamos el correo y teléfono a Meta para cruzar los datos
       await trackEvent('REGISTRO_COMPLETADO', `Registró datos. Correo: ${correoLimpio}`, {
         email: correoLimpio,
         telefono: formData.telefono
@@ -169,7 +185,7 @@ export default function ArienzoLandingPremium() {
       
     } catch (error) {
       console.error("Error general:", error);
-      alert("Hubo un problema grave en la ejecución. Revisa la consola.");
+      alert("Hubo un problema grave en la ejecución.");
     } finally {
       setCargando(false);
     }
