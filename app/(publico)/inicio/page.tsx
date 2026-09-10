@@ -19,11 +19,11 @@ export default function ArienzoLandingPremium() {
   });
 
   // ==========================================
-  // EL CEREBRO DEL TRACKING DE ACTIVIDAD WEB
+  // EL CEREBRO DEL TRACKING (Conectado a CRM y META)
   // ==========================================
   const trackEvent = async (accion: string, detalle: string) => {
     try {
-      // 1. Crear o recuperar IDs (Usamos crypto o fallback para que no requiera instalar UUID)
+      // 1. Identidades (Anónimo o Conocido)
       let visitorId = localStorage.getItem('arienzo_visitor_id');
       if (!visitorId) {
         visitorId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'id-' + Math.random().toString(36).substring(2, 10);
@@ -36,7 +36,6 @@ export default function ArienzoLandingPremium() {
         sessionStorage.setItem('arienzo_session_id', sessionId);
       }
 
-      // 2. Extraer UTMs y Metadatos
       const urlParams = new URLSearchParams(window.location.search);
       const metadata = {
         utm_source: urlParams.get('utm_source'),
@@ -47,7 +46,7 @@ export default function ArienzoLandingPremium() {
 
       const emailConocido = localStorage.getItem('arienzo_lead_email');
 
-      // 3. Enviar a Supabase silenciosamente
+      // 2. ENVIAR A TU CRM (Supabase)
       await supabase.from('tracking_inventario').insert([{
         visitor_id: visitorId,
         session_id: sessionId,
@@ -56,8 +55,25 @@ export default function ArienzoLandingPremium() {
         detalle,
         metadata
       }]);
+
+      // 3. ENVIAR AL PÍXEL DE META (Facebook/Instagram)
+      if (typeof window !== 'undefined' && (window as any).fbq) {
+        const fbq = (window as any).fbq;
+        
+        // Mapeamos los eventos clave para que el algoritmo de Facebook los entienda
+        if (accion === 'REGISTRO_COMPLETADO') {
+          fbq('track', 'Lead', { content_name: 'Registro VIP Landing' });
+        } else if (accion === 'CLIC_WHATSAPP') {
+          fbq('track', 'Contact', { content_name: 'Clic Botón WhatsApp' });
+        } else if (accion === 'ABRIO_CALENDLY') {
+          fbq('track', 'Schedule', { content_name: 'Abrió Calendly' });
+        } else if (accion !== 'VISITA_LANDING') { 
+          // (Visita_landing se ignora aquí porque el layout ya manda el PageView)
+          fbq('trackCustom', accion, { detalle });
+        }
+      }
     } catch (error) {
-      // Fallo silencioso
+      // Fallo silencioso para no dañar la experiencia del usuario
     }
   };
 
@@ -134,7 +150,7 @@ export default function ArienzoLandingPremium() {
       localStorage.setItem('arienzo_lead_email', correoLimpio);
       await trackEvent('REGISTRO_COMPLETADO', `Registró datos. Correo: ${correoLimpio}`);
 
-      // MAGIA: Asociamos todo el historial anónimo previo a su correo real
+      // Asociamos todo el historial anónimo previo a su correo real
       const visitorId = localStorage.getItem('arienzo_visitor_id');
       if (visitorId) {
         await supabase.from('tracking_inventario')

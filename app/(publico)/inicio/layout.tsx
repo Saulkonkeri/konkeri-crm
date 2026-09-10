@@ -36,7 +36,7 @@ export default function InicioLayout({
 }) {
   return (
     <>
-      {/* 2. PIXEL DE META (Facebook/Instagram Ads) */}
+      {/* 2. PIXEL DE META CONECTADO (Facebook/Instagram Ads) */}
       <Script id="meta-pixel" strategy="afterInteractive">
         {`
           !function(f,b,e,v,n,t,s)
@@ -47,7 +47,7 @@ export default function InicioLayout({
           t.src=v;s=b.getElementsByTagName(e)[0];
           s.parentNode.insertBefore(t,s)}(window, document,'script',
           'https://connect.facebook.net/en_US/fbevents.js');
-          fbq('init', 'TU_PIXEL_ID'); // <-- Aquí pondremos tu número de Pixel real luego
+          fbq('init', '1698482924903057');
           fbq('track', 'PageView');
         `}
       </Script>
