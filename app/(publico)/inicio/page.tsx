@@ -18,28 +18,96 @@ export default function ArienzoLandingPremium() {
     email: ''
   });
 
-  // 1. CONTROL DE SCROLL 
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  // ==========================================
+  // EL CEREBRO DEL TRACKING DE ACTIVIDAD WEB
+  // ==========================================
+  const trackEvent = async (accion: string, detalle: string) => {
+    try {
+      // 1. Crear o recuperar IDs (Usamos crypto o fallback para que no requiera instalar UUID)
+      let visitorId = localStorage.getItem('arienzo_visitor_id');
+      if (!visitorId) {
+        visitorId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'id-' + Math.random().toString(36).substring(2, 10);
+        localStorage.setItem('arienzo_visitor_id', visitorId);
+      }
 
-  // 2. RASTREADOR DE VISITAS PARA ACTIVIDAD WEB (NUEVO)
+      let sessionId = sessionStorage.getItem('arienzo_session_id');
+      if (!sessionId) {
+        sessionId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'sess-' + Math.random().toString(36).substring(2, 10);
+        sessionStorage.setItem('arienzo_session_id', sessionId);
+      }
+
+      // 2. Extraer UTMs y Metadatos
+      const urlParams = new URLSearchParams(window.location.search);
+      const metadata = {
+        utm_source: urlParams.get('utm_source'),
+        utm_campaign: urlParams.get('utm_campaign'),
+        referrer: document.referrer || 'Directo',
+        dispositivo: /Mobile|Android|iP(hone|od|ad)/i.test(navigator.userAgent) ? 'Móvil' : 'Desktop'
+      };
+
+      const emailConocido = localStorage.getItem('arienzo_lead_email');
+
+      // 3. Enviar a Supabase silenciosamente
+      await supabase.from('tracking_inventario').insert([{
+        visitor_id: visitorId,
+        session_id: sessionId,
+        email_cliente: emailConocido || 'Anónimo',
+        accion,
+        detalle,
+        metadata
+      }]);
+    } catch (error) {
+      // Fallo silencioso
+    }
+  };
+
+  // CONTROL DE SCROLL Y VISITA INICIAL
   useEffect(() => {
-    const registrarVisitaSilenciosa = async () => {
-      try {
-        await supabase.from('tracking_inventario').insert([{
-          email_cliente: 'Visitante Anónimo (Landing)',
-          accion: 'VISITA_LANDING_PAGE',
-          detalle: 'TIPO: LANDING - Navegando en la página principal de Arienzo'
-        }]);
-      } catch (error) {
-        // Fallo silencioso
+    // Registra la visita solo si no se ha registrado en esta sesión
+    if (!sessionStorage.getItem('visita_registrada')) {
+      trackEvent('VISITA_LANDING', 'Ingresó a la página principal de Arienzo');
+      sessionStorage.setItem('visita_registrada', 'true');
+    }
+
+    const handleScrollNav = () => setScrolled(window.scrollY > 50);
+    
+    // Tracking de profundidad de scroll
+    const trackedScrolls = new Set();
+    const handleScrollTracking = () => {
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (docHeight <= 0) return;
+      const scrollPercent = Math.round((window.scrollY / docHeight) * 100);
+      
+      if (scrollPercent >= 50 && !trackedScrolls.has(50)) {
+        trackedScrolls.add(50);
+        trackEvent('SCROLL_50', 'Hizo scroll hasta la mitad de la página');
+      }
+      if (scrollPercent >= 90 && !trackedScrolls.has(90)) {
+        trackedScrolls.add(90);
+        trackEvent('SCROLL_90', 'Llegó al final de la página');
       }
     };
-    registrarVisitaSilenciosa();
+
+    window.addEventListener('scroll', handleScrollNav);
+    window.addEventListener('scroll', handleScrollTracking);
+    return () => {
+      window.removeEventListener('scroll', handleScrollNav);
+      window.removeEventListener('scroll', handleScrollTracking);
+    };
   }, []);
+
+  // ==========================================
+  // FUNCIONES CON TRACKING INYECTADO
+  // ==========================================
+  const abrirModalVIP = () => {
+    trackEvent('ABRIO_FORMULARIO', 'Hizo clic en botón Acceso Exclusivo');
+    setMostrarModalVip(true);
+  };
+
+  const abrirCalendly = () => {
+    trackEvent('ABRIO_CALENDLY', 'Abrió modal de agendamiento');
+    setMostrarModalCalendly(true);
+  };
 
   const procesarSolicitudVIP = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,32 +125,22 @@ export default function ArienzoLandingPremium() {
       }], { onConflict: 'email' });
 
       if (errorCliente) {
-        const { error: updateError } = await supabase.from('clientes')
+        await supabase.from('clientes')
           .update({ estado_acceso: 'pendiente', nombres: formData.nombres, telefono: formData.telefono })
           .eq('email', correoLimpio);
-          
-        if (updateError) {
-          alert(`🚨 Error en CRM: Supabase bloqueó la actualización del cliente repetido. Detalle: ${updateError.message}`);
-        }
       }
 
-      await supabase.from('tracking_inventario').insert([{
-        email_cliente: correoLimpio,
-        accion: 'SOLICITUD_ACCESO_VIP',
-        detalle: 'Completó formulario web'
-      }]);
+      // GUARDAMOS SU IDENTIDAD PARA EL FUTURO
+      localStorage.setItem('arienzo_lead_email', correoLimpio);
+      await trackEvent('REGISTRO_COMPLETADO', `Registró datos. Correo: ${correoLimpio}`);
 
-      // CARTERO APAGADO TEMPORALMENTE
-      /*
-      const respuesta = await fetch('/api/notificar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tipo: "nueva_solicitud_web",
-          datos: { nombres: formData.nombres, telefono: formData.telefono, email: correoLimpio }
-        })
-      });
-      */
+      // MAGIA: Asociamos todo el historial anónimo previo a su correo real
+      const visitorId = localStorage.getItem('arienzo_visitor_id');
+      if (visitorId) {
+        await supabase.from('tracking_inventario')
+          .update({ email_cliente: correoLimpio })
+          .eq('visitor_id', visitorId);
+      }
 
       setSolicitudEnviada(true);
       
@@ -94,17 +152,6 @@ export default function ArienzoLandingPremium() {
     }
   };
 
-  const abrirCalendly = async () => {
-    setMostrarModalCalendly(true);
-    try {
-      await supabase.from('tracking_inventario').insert([{
-        email_cliente: 'Visitante Web',
-        accion: 'ABRIO_CALENDLY',
-        detalle: 'Abrió modal de agendamiento'
-      }]);
-    } catch (error) {}
-  };
-
   const imagenesGaleria = [
     "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Fronta.jpg",
     "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Interior-Departamento-1.jpg",
@@ -113,6 +160,11 @@ export default function ArienzoLandingPremium() {
     "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-living-arienzo.jpg",
     "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Plaza-Comercial-1-1.jpg"
   ];
+
+  const clickImagen = (index: number) => {
+    trackEvent('VIO_ARQUITECTURA', `Abrió render ${index + 1} de la galería`);
+    setImagenIndex(index);
+  };
 
   const prevImagen = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -138,7 +190,7 @@ export default function ArienzoLandingPremium() {
             className="w-[120px] md:w-[160px] h-auto transition-all duration-500"
           />
           <button 
-            onClick={() => setMostrarModalVip(true)}
+            onClick={abrirModalVIP}
             className={`text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-3 md:px-6 md:py-3.5 rounded-full transition-all duration-300 ${scrolled ? 'bg-[#964B36] text-white hover:bg-[#7d3e2c] shadow-md' : 'bg-white/20 backdrop-blur-md text-white border border-white/40 hover:bg-white hover:text-[#964B36]'}`}
           >
             Acceso Exclusivo
@@ -179,7 +231,7 @@ export default function ArienzoLandingPremium() {
               Agendar Presentación
             </button>
             <button 
-              onClick={() => setMostrarModalVip(true)}
+              onClick={abrirModalVIP}
               className="w-full sm:w-auto bg-white/10 backdrop-blur-sm border border-white/40 text-white px-6 py-3.5 md:px-8 md:py-4 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-white hover:text-[#964B36] transition-all duration-300 hover:-translate-y-0.5"
             >
               Solicitar Acceso
@@ -324,7 +376,7 @@ export default function ArienzoLandingPremium() {
             Diseño optimizado con acabados de primera, ventanales de piso a techo y una distribución abierta donde la sala, el comedor y la terraza se integran de forma natural.
           </p>
           <button 
-            onClick={() => setMostrarModalVip(true)}
+            onClick={() => { trackEvent('CLIC_DISPONIBILIDAD', 'Clic en botón de ver disponibilidad'); abrirModalVIP(); }}
             className="inline-flex items-center justify-center gap-3 text-xs font-bold tracking-[0.1em] bg-[#21242E] text-white px-8 py-4 rounded-full hover:bg-[#964B36] transition-colors duration-300 w-full sm:w-auto shadow-md"
           >
             VER DISPONIBILIDAD Y PRECIOS <span className="text-lg">→</span>
@@ -346,7 +398,7 @@ export default function ArienzoLandingPremium() {
             {imagenesGaleria.map((img, index) => (
               <div 
                 key={index} 
-                onClick={() => setImagenIndex(index)} 
+                onClick={() => clickImagen(index)} 
                 className="relative group w-[140px] sm:w-[180px] md:w-full md:flex-1 aspect-[4/3] rounded-md overflow-hidden cursor-pointer shadow-lg bg-[#1a1d24]"
               >
                 <Image src={img} alt={`Render ${index + 1}`} fill sizes="(max-width: 768px) 50vw, 20vw" className="object-cover transition-transform duration-500 group-hover:scale-110 opacity-80 group-hover:opacity-100" />
@@ -397,7 +449,7 @@ export default function ArienzoLandingPremium() {
           </p>
 
           <button 
-            onClick={() => setMostrarModalVip(true)}
+            onClick={abrirModalVIP}
             className="inline-flex items-center justify-center gap-3 text-[11px] font-bold tracking-[0.15em] bg-[#21242E] text-white px-8 py-3.5 rounded-full hover:bg-[#964B36] hover:-translate-y-1 transition-all duration-300 shadow-xl"
           >
             CONSULTAR PRECIOS EN PLANOS <span className="text-base">→</span>
@@ -443,7 +495,7 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* 8. CERRADA FINAL */}
+      {/* 8. CERRADA FINAL CON WHATSAPP INCORPORADO */}
       <section className="py-20 md:py-28 bg-[#F9F7F5] text-center px-6 relative border-b-[2px] border-[#D1C292] overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[14rem] md:text-[22rem] font-bold text-[#EAE3DC]/40 pointer-events-none select-none z-0 tracking-tighter leading-none">
           22
@@ -464,12 +516,27 @@ export default function ArienzoLandingPremium() {
               Agendar Presentación
             </button>
             <button 
-              onClick={() => setMostrarModalVip(true)}
+              onClick={abrirModalVIP}
               className="bg-[#21242E] text-white px-10 py-4 rounded-full text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-black transition-all duration-300 hover:-translate-y-1 shadow-xl w-full sm:w-auto"
             >
               Solicitar Acceso Exclusivo
             </button>
           </div>
+
+          {/* EL BOTÓN DISCRETO DE WHATSAPP */}
+          <div className="mt-8 md:mt-10 flex justify-center">
+            <a 
+              href="https://wa.me/593979469472?text=Hola,%20me%20gustaría%20recibir%20más%20información%20sobre%20el%20proyecto%20Arienzo."
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackEvent('CLIC_WHATSAPP', 'Hizo clic en enlace de WhatsApp al final de la página')}
+              className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-[#25D366] transition-colors border-b border-transparent hover:border-[#25D366] pb-1"
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+              Hablar con un asesor
+            </a>
+          </div>
+
         </div>
       </section>
 
