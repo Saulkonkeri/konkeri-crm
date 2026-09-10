@@ -19,7 +19,7 @@ export default function ArienzoLandingPremium() {
   });
 
   // ==========================================
-  // EL CEREBRO DEL TRACKING (Píxel + CAPI Integrado)
+  // EL CEREBRO DEL TRACKING (CRM + Meta + CAPI + Google)
   // ==========================================
   const trackEvent = async (accion: string, detalle: string, datosUsuario?: { email?: string, telefono?: string }) => {
     try {
@@ -35,7 +35,6 @@ export default function ArienzoLandingPremium() {
         sessionStorage.setItem('arienzo_session_id', sessionId);
       }
 
-      // ID Único para que Meta sepa que es el mismo evento y no lo cuente doble
       const eventId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'evt-' + Date.now();
 
       const urlParams = new URLSearchParams(window.location.search);
@@ -59,7 +58,7 @@ export default function ArienzoLandingPremium() {
         metadata
       }]);
 
-      // 2. AL NAVEGADOR (PÍXEL NORMAL)
+      // 2. A META (Navegador)
       if (typeof window !== 'undefined' && (window as any).fbq) {
         const fbq = (window as any).fbq;
         if (accion === 'REGISTRO_COMPLETADO') {
@@ -77,14 +76,13 @@ export default function ArienzoLandingPremium() {
         }
       }
 
-      // 3. AL SERVIDOR (API DE CONVERSIONES - CAPI)
+      // 3. A META (Servidor CAPI)
       let metaEventName = accion;
       if (accion === 'REGISTRO_COMPLETADO') metaEventName = 'Lead';
       else if (accion === 'CLIC_WHATSAPP') metaEventName = 'Contact';
       else if (accion === 'ABRIO_CALENDLY') metaEventName = 'Schedule';
       else if (accion === 'VISITA_LANDING') metaEventName = 'PageView';
 
-      // Solo mandamos al servidor los eventos importantes para no saturarlo
       if (['Lead', 'Contact', 'Schedule', 'PageView'].includes(metaEventName)) {
         fetch('/api/meta-capi', {
           method: 'POST',
@@ -97,7 +95,21 @@ export default function ArienzoLandingPremium() {
             eventUrl: window.location.href,
             userAgent: navigator.userAgent
           })
-        }).catch(() => {}); // Silencioso
+        }).catch(() => {});
+      }
+
+      // 4. A GOOGLE ANALYTICS (GA4)
+      if (typeof window !== 'undefined' && typeof (window as any).gtag !== 'undefined') {
+        const gtag = (window as any).gtag;
+        if (accion === 'REGISTRO_COMPLETADO') {
+          gtag('event', 'generate_lead', { event_category: 'engagement', event_label: 'Registro VIP Landing' });
+        } else if (accion === 'CLIC_WHATSAPP') {
+          gtag('event', 'click_whatsapp', { event_category: 'contact', event_label: 'Clic Botón WhatsApp' });
+        } else if (accion === 'ABRIO_CALENDLY') {
+          gtag('event', 'schedule_meeting', { event_category: 'engagement', event_label: 'Abrió Calendly' });
+        } else if (accion !== 'VISITA_LANDING') {
+          gtag('event', accion, { event_category: 'interaction', event_label: detalle });
+        }
       }
 
     } catch (error) {}
@@ -168,7 +180,6 @@ export default function ArienzoLandingPremium() {
 
       localStorage.setItem('arienzo_lead_email', correoLimpio);
       
-      // Enviamos el correo y teléfono a Meta para cruzar los datos
       await trackEvent('REGISTRO_COMPLETADO', `Registró datos. Correo: ${correoLimpio}`, {
         email: correoLimpio,
         telefono: formData.telefono

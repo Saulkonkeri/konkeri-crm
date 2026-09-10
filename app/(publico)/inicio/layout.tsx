@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
-import "../../globals.css"; // <-- ¡CORREGIDO! Con doble salto para encontrar el CSS
+import "../../globals.css";
 
 // 1. SEO y OPEN GRAPH exclusivo para la Landing Page
 export const metadata: Metadata = {
@@ -55,6 +55,26 @@ export default function PublicLayout({
               fbq('init', '1698482924903057');
               fbq('track', 'PageView');
             `
+          }}
+        />
+
+        {/* 3. GOOGLE ANALYTICS (GA4) */}
+        <Script 
+          strategy="afterInteractive" 
+          src={`https://www.googletagmanager.com/gtag/js?id=G-G0S1K17J66`} 
+        />
+        <Script
+          id="google-analytics"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-G0S1K17J66', {
+                page_path: window.location.pathname,
+              });
+            `,
           }}
         />
         
