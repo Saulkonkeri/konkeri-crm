@@ -18,24 +18,24 @@ export default function ArienzoLandingPremium() {
     email: ''
   });
 
-  // 1. CONTROL DE SCROLL (Ya lo tenías)
+  // 1. CONTROL DE SCROLL 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // 2. NUEVO: RASTREADOR DE VISITAS PARA EL RADAR
+  // 2. RASTREADOR DE VISITAS PARA ACTIVIDAD WEB (NUEVO)
   useEffect(() => {
     const registrarVisitaSilenciosa = async () => {
       try {
         await supabase.from('tracking_inventario').insert([{
-          email_cliente: 'Visitante Web',
+          email_cliente: 'Visitante Anónimo (Landing)',
           accion: 'VISITA_LANDING_PAGE',
-          detalle: 'Alguien está explorando la página principal'
+          detalle: 'TIPO: LANDING - Navegando en la página principal de Arienzo'
         }]);
       } catch (error) {
-        // Fallo silencioso para no molestar al usuario
+        // Fallo silencioso
       }
     };
     registrarVisitaSilenciosa();
@@ -47,7 +47,6 @@ export default function ArienzoLandingPremium() {
     const correoLimpio = formData.email.trim().toLowerCase();
 
     try {
-      // 1. Intentar hacer UPSERT
       const { error: errorCliente } = await supabase.from('clientes').upsert([{
         nombres: formData.nombres,
         telefono: formData.telefono,
@@ -67,14 +66,13 @@ export default function ArienzoLandingPremium() {
         }
       }
 
-      // 2. Guardar en el tracking (Radar)
       await supabase.from('tracking_inventario').insert([{
         email_cliente: correoLimpio,
         accion: 'SOLICITUD_ACCESO_VIP',
         detalle: 'Completó formulario web'
       }]);
 
-      // 3. CARTERO APAGADO TEMPORALMENTE (Para asegurar los leads)
+      // CARTERO APAGADO TEMPORALMENTE
       /*
       const respuesta = await fetch('/api/notificar', {
         method: 'POST',
@@ -84,14 +82,8 @@ export default function ArienzoLandingPremium() {
           datos: { nombres: formData.nombres, telefono: formData.telefono, email: correoLimpio }
         })
       });
-
-      if (!respuesta.ok) {
-        const errorData = await respuesta.json();
-        alert(`❌ El CRM guardó los datos, pero Hostinger bloqueó el correo. Motivo: ${errorData.error || respuesta.statusText}`);
-      }
       */
 
-      // 4. Pantalla de éxito final
       setSolicitudEnviada(true);
       
     } catch (error) {

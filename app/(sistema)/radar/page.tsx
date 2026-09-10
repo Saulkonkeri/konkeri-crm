@@ -28,10 +28,19 @@ export default function RadarCentral() {
   const [cargandoRadar, setCargandoRadar] = useState(true);
   const [sesionExpandida, setSesionExpandida] = useState<string | null>(null);
 
+  // ESTADOS PESTAÑA 3: ACTIVIDAD WEB
+  const [actividadWeb, setActividadWeb] = useState<any[]>([]);
+  const [cargandoWeb, setCargandoWeb] = useState(true);
+
   useEffect(() => {
+    cargarDatos();
+  }, []);
+
+  const cargarDatos = () => {
     cargarSolicitudes();
     cargarRadar();
-  }, []);
+    cargarActividadWeb();
+  };
 
   // ==========================================
   // PESTAÑA 1: SOLICITUDES VIP
@@ -43,14 +52,8 @@ export default function RadarCentral() {
         .from('clientes')
         .select('*')
         .eq('estado_acceso', 'pendiente')
-        // FILTRO ESTRICTO: Solo landing page
         .eq('origen', 'Web Pública - Solicitud Acceso Exclusivo')
         .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error("Error al cargar solicitudes:", error);
-        return;
-      }
 
       if (data) {
         setSolicitudes(data);
@@ -74,13 +77,9 @@ export default function RadarCentral() {
     alert(`Aprobando a ${cliente.nombres} por ${horas} horas... (En construcción)`);
   };
 
-  // --- AQUÍ ESTÁ LA MAGIA DEL CORREO CONECTADA ---
   const enviarCorreo = async (cliente: any) => {
     const horas = tiemposSeleccionados[cliente.id] || '24';
-    
-    // Cambiamos el texto del botón temporalmente a "Enviando..."
     alert(`Iniciando envío a ${cliente.email}... Por favor espera un momento.`);
-    
     try {
       const response = await fetch('/api/enviar-acceso', {
         method: 'POST',
@@ -153,14 +152,10 @@ export default function RadarCentral() {
       const { data, error } = await supabase
         .from('tracking_inventario')
         .select('*')
-        .not('accion', 'in', '("SOLICITUD_ACCESO_VIP","ABRIO_CALENDLY")')
+        // EXCLUIMOS LA ACTIVIDAD DE LA LANDING PARA NO ENSUCIAR EL RADAR
+        .not('accion', 'in', '("SOLICITUD_ACCESO_VIP","ABRIO_CALENDLY","VISITA_LANDING_PAGE")')
         .order('created_at', { ascending: false })
         .limit(500);
-
-      if (error) {
-        console.error("Error cargando radar:", error);
-        return;
-      }
 
       if (data) {
         const datosCronologicos = [...data].reverse();
@@ -231,6 +226,29 @@ export default function RadarCentral() {
     }
   };
 
+  // ==========================================
+  // PESTAÑA 3: ACTIVIDAD WEB (NUEVA FUNCIÓN)
+  // ==========================================
+  const cargarActividadWeb = async () => {
+    setCargandoWeb(true);
+    try {
+      const { data, error } = await supabase
+        .from('tracking_inventario')
+        .select('*')
+        .eq('accion', 'VISITA_LANDING_PAGE')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (data) {
+        setActividadWeb(data);
+      }
+    } catch (error) {
+      console.error("Error al cargar actividad web:", error);
+    } finally {
+      setCargandoWeb(false);
+    }
+  };
+
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto bg-[#F4F4F4] min-h-screen font-sans">
       
@@ -241,7 +259,7 @@ export default function RadarCentral() {
           <p className="text-sm text-neutral-500 mt-1">Control de accesos VIP y monitoreo de actividad en tiempo real.</p>
         </div>
         <button 
-          onClick={() => { cargarSolicitudes(); cargarRadar(); }}
+          onClick={cargarDatos}
           className="bg-white border border-neutral-200 text-neutral-700 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-neutral-100 transition-colors shadow-sm flex items-center gap-2"
         >
           ↻ Refrescar Datos
@@ -477,14 +495,47 @@ export default function RadarCentral() {
         </div>
       )}
 
-      {/* CONTENIDO PESTAÑA 3: ACTIVIDAD WEB */}
+      {/* CONTENIDO PESTAÑA 3: ACTIVIDAD WEB (NUEVA UI CON DATOS REALES) */}
       {pestañaActiva === 'web' && (
-        <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 p-10 text-center animate-in fade-in slide-in-from-bottom-2">
-          <div className="text-4xl mb-4 text-[#D1C292]">🌐</div>
-          <h3 className="text-lg font-bold text-neutral-800 mb-2">Tráfico de la Landing Page</h3>
-          <p className="text-neutral-500 max-w-md mx-auto">
-            Próximo paso: Instalaremos el rastreador en la landing page para ver aquí las sesiones de los visitantes anónimos y el tiempo que navegan.
-          </p>
+        <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden animate-in fade-in slide-in-from-bottom-2">
+          <div className="px-6 py-5 border-b border-neutral-100 flex justify-between items-center bg-neutral-50/50">
+            <h3 className="font-bold text-neutral-800">Tráfico en Landing Page</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm text-neutral-600">
+              <thead className="bg-white text-neutral-400 text-xs uppercase tracking-wider border-b">
+                <tr>
+                  <th className="px-6 py-4 font-medium">Fecha y Hora</th>
+                  <th className="px-6 py-4 font-medium">Visitante</th>
+                  <th className="px-6 py-4 font-medium">Acción</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-100">
+                {cargandoWeb ? (
+                  <tr><td colSpan={3} className="px-6 py-10 text-center text-neutral-400">Cargando actividad...</td></tr>
+                ) : actividadWeb.length === 0 ? (
+                  <tr><td colSpan={3} className="px-6 py-10 text-center text-neutral-400 font-medium">No hay visitas registradas aún.</td></tr>
+                ) : (
+                  actividadWeb.map((visita, index) => (
+                    <tr key={index} className="hover:bg-neutral-50/50 transition-colors">
+                      <td className="px-6 py-4 text-xs">
+                        {new Date(visita.created_at).toLocaleDateString('es-EC', { day: '2-digit', month: 'short' })} <br/>
+                        <span className="font-bold text-neutral-800">{new Date(visita.created_at).toLocaleTimeString('es-EC')}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-bold border border-blue-100">
+                          {visita.email_cliente}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-xs text-neutral-500">
+                        {visita.detalle}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
