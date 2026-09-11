@@ -15,6 +15,10 @@ export default function ArienzoLandingPremium() {
   const [brochureDescargado, setBrochureDescargado] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   
+  // Variables para detectar deslizamiento (swipe) en celulares
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchEndX, setTouchEndX] = useState<number | null>(null);
+
   const [formData, setFormData] = useState({
     nombres: '',
     telefono: '',
@@ -181,6 +185,29 @@ export default function ArienzoLandingPremium() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [imagenIndex, imagenesGaleria.length]);
 
+  // Funciones para deslizar con el dedo en celular (Swipe)
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEndX(null);
+    setTouchStartX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEndX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStartX || !touchEndX) return;
+    const distance = touchStartX - touchEndX;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe) {
+      nextImagen();
+    } else if (isRightSwipe) {
+      prevImagen();
+    }
+  };
+
   const abrirModalVIP = () => {
     trackEvent('ABRIO_FORMULARIO', 'Hizo clic en botón Acceso Exclusivo');
     setMostrarModalVip(true);
@@ -200,13 +227,13 @@ export default function ArienzoLandingPremium() {
     const correoLimpio = formData.email.trim().toLowerCase();
 
     try {
-      // Registrar directamente al CRM (Kanban)
       const { error: errorCliente } = await supabase.from('clientes').upsert([{
         nombres: formData.nombres,
         telefono: formData.telefono,
         email: correoLimpio,
         tipo: 'prospecto',
-        origen_captacion: 'Página Web / Landing Page',
+        origen: 'Web Pública - Solicitud Acceso Exclusivo', // RESTAURADO PARA EL RADAR VIP
+        origen_captacion: 'Página Web / Landing Page', // PARA EL KANBAN
         campana: 'Solicitud VIP Landing',
         estado: 'Interesado',
         temperatura: '☀️ Tibio',
@@ -254,12 +281,12 @@ export default function ArienzoLandingPremium() {
     const correoLimpio = formBrochure.email.trim().toLowerCase();
 
     try {
-      // Registrar directamente al CRM (Kanban)
       await supabase.from('clientes').upsert([{
         nombres: formBrochure.nombres,
         telefono: formBrochure.telefono,
         email: correoLimpio,
         tipo: 'prospecto',
+        origen: 'Web Pública - Descarga Brochure', // RESTAURADO
         origen_captacion: 'Página Web / Landing Page',
         campana: 'Descarga Brochure',
         estado: 'Interesado',
@@ -273,7 +300,7 @@ export default function ArienzoLandingPremium() {
         telefono: formBrochure.telefono
       });
 
-      // Abre el PDF en otra pestaña usando tu enlace oficial
+      // Abre el PDF en otra pestaña
       window.open('https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/documentos-publicos/Brochure_Arienzo%20.pdf', '_blank');
       
       setBrochureDescargado(true);
@@ -328,7 +355,7 @@ export default function ArienzoLandingPremium() {
         </div>
       </header>
 
-      {/* 1. HERO INMERSIVO */}
+      {/* 1. HERO INMERSIVO (ACLARADO PARA QUE BRILLE LA ARQUITECTURA) */}
       <section className="relative h-[100vh] min-h-[650px] flex flex-col items-center justify-center">
         <Image 
           src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Fronta.jpg" 
@@ -339,7 +366,8 @@ export default function ArienzoLandingPremium() {
           sizes="100vw"
           className="absolute inset-0 object-cover z-0"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-black/70 z-0"></div>
+        {/* Aquí está la magia de la luz: bajé la opacidad del negro central a 10% */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/10 to-black/60 z-0"></div>
 
         <div className="relative z-10 text-center px-6 w-full max-w-4xl mx-auto pt-20">
           <div className="inline-block px-5 py-2 border border-[#D1C292]/60 backdrop-blur-md rounded-full mb-6 md:mb-8 shadow-[0_0_15px_rgba(209,194,146,0.2)]">
@@ -374,7 +402,7 @@ export default function ArienzoLandingPremium() {
 
         {/* SELLO DE AUTOR DIEZ + MULLER EN LA ESQUINA */}
         <div className="absolute bottom-6 right-6 md:bottom-10 md:right-10 z-20 flex flex-col items-end opacity-90 hover:opacity-100 transition-opacity">
-          <span className="text-[6px] md:text-[8px] font-medium text-white/70 uppercase tracking-[0.3em] mb-1 drop-shadow-md">Diseño Arquitectónico</span>
+          <span className="text-[6px] md:text-[8px] font-medium text-white/80 uppercase tracking-[0.3em] mb-1 drop-shadow-md">Diseño Arquitectónico</span>
           <div className="flex items-center gap-2">
             <div className="w-4 md:w-8 h-[1px] bg-[#D1C292] shadow-sm"></div>
             <span className="text-[9px] md:text-[11px] font-bold tracking-[0.2em] text-[#D1C292] uppercase drop-shadow-md">Diez + Muller</span>
@@ -526,7 +554,7 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* 5. GALERÍA DEL PROYECTO (COMPACTA) CON DESCARGA DE BROCHURE */}
+      {/* 5. GALERÍA DEL PROYECTO CON DESCARGA DE BROCHURE */}
       <section className="py-16 md:py-20 bg-[#21242E] text-center px-6 relative overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[7rem] md:text-[14rem] font-black text-white/[0.03] whitespace-nowrap pointer-events-none select-none z-0">
           ARQUITECTURA
@@ -549,7 +577,7 @@ export default function ArienzoLandingPremium() {
             ))}
           </div>
 
-          {/* CALL TO ACTION DEL BROCHURE (SUTIL Y FINO) */}
+          {/* CALL TO ACTION DEL BROCHURE */}
           <div className="pt-6 border-t border-white/10 max-w-lg mx-auto flex flex-col items-center">
             <button 
               onClick={() => setMostrarModalBrochure(true)}
@@ -561,12 +589,19 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* LIGHTBOX MODAL CON NAVEGACIÓN Y TECLADO */}
+      {/* LIGHTBOX MODAL (AHORA CON SOPORTE TÁCTIL PARA CELULARES) */}
       {imagenIndex !== null && (
-        <div className="fixed inset-0 bg-[#21242E]/98 z-[70] flex items-center justify-center p-4 md:p-8 backdrop-blur-md animate-in fade-in" onClick={() => setImagenIndex(null)}>
+        <div 
+          className="fixed inset-0 bg-[#21242E]/98 z-[70] flex items-center justify-center p-4 md:p-8 backdrop-blur-md animate-in fade-in" 
+          onClick={() => setImagenIndex(null)}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
           <button className="absolute top-6 right-6 text-white/50 hover:text-white text-4xl font-light transition-colors z-50">&times;</button>
           
-          <button onClick={prevImagen} className="absolute left-2 md:left-10 text-white/40 hover:text-white text-5xl md:text-7xl p-4 z-50 transition-all hover:scale-110 select-none hidden md:block">
+          {/* Botones de navegación lateral visibles también en móvil pero más pequeños */}
+          <button onClick={prevImagen} className="absolute left-2 md:left-10 text-white/40 hover:text-white text-4xl md:text-7xl p-2 md:p-4 z-50 transition-all hover:scale-110 select-none">
             &#8249;
           </button>
 
@@ -575,11 +610,11 @@ export default function ArienzoLandingPremium() {
               src={imagenesGaleria[imagenIndex]} 
               alt="Vista Ampliada" 
               fill
-              className="object-contain rounded-md shadow-2xl animate-in zoom-in-95" 
+              className="object-contain rounded-md shadow-2xl animate-in zoom-in-95 pointer-events-none" 
             />
           </div>
 
-          <button onClick={nextImagen} className="absolute right-2 md:right-10 text-white/40 hover:text-white text-5xl md:text-7xl p-4 z-50 transition-all hover:scale-110 select-none hidden md:block">
+          <button onClick={nextImagen} className="absolute right-2 md:right-10 text-white/40 hover:text-white text-4xl md:text-7xl p-2 md:p-4 z-50 transition-all hover:scale-110 select-none">
             &#8250;
           </button>
         </div>
@@ -661,7 +696,6 @@ export default function ArienzoLandingPremium() {
           </p>
           
           <div className="flex flex-col sm:flex-row justify-center gap-4 w-full sm:w-auto">
-            {/* BOTÓN AGENDAR ACTUALIZADO */}
             <button 
               onClick={abrirCalendly}
               className="group w-full sm:w-auto bg-[#964B36] text-white px-6 py-3.5 md:px-8 md:py-4 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] transition-all duration-300 shadow-[0_4px_20px_rgba(150,75,54,0.4)] hover:shadow-[0_8px_30px_rgba(150,75,54,0.6)] hover:-translate-y-1 flex items-center justify-center gap-2"
@@ -678,7 +712,6 @@ export default function ArienzoLandingPremium() {
             </button>
           </div>
 
-          {/* BOTÓN WHATSAPP MÁS GRANDE Y "EN LÍNEA" */}
           <div className="mt-10 md:mt-12 flex justify-center">
             <a 
               href="https://wa.me/593979469472?text=Hola,%20me%20gustaría%20recibir%20más%20información%20sobre%20el%20proyecto%20Arienzo."
@@ -695,7 +728,6 @@ export default function ArienzoLandingPremium() {
               Hablar con un asesor
             </a>
           </div>
-
         </div>
       </section>
 
