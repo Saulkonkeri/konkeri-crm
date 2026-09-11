@@ -2,26 +2,49 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
-  // Usamos nextUrl.hostname que es 100% exacto y no se deja engañar por Vercel
   const hostname = request.nextUrl.hostname || '';
+  const pathname = request.nextUrl.pathname;
   
   const isReservaDomain = hostname.includes('reserva.arienzoliving.com');
   const isMainDomain = hostname === 'arienzoliving.com' || hostname === 'www.arienzoliving.com';
 
-  // 1. Si entran a reserva.arienzoliving.com directo, inyectamos la carpeta /reserva
-  if (isReservaDomain && request.nextUrl.pathname === '/') {
+  // ==========================================
+  // 1. BARRERAS DE DOMINIOS CRUZADOS (NUEVO)
+  // ==========================================
+  
+  // Si están en el subdominio de reserva pero buscan la landing o acceso, los mandamos al dominio oficial
+  if (isReservaDomain && (pathname.startsWith('/inicio') || pathname.startsWith('/acceso'))) {
+    // Si buscaban /inicio, los mandamos a la raíz limpia de arienzoliving.com
+    const destino = pathname.startsWith('/inicio') ? '/' : pathname;
+    return NextResponse.redirect(`https://arienzoliving.com${destino}`);
+  }
+
+  // Si están en el dominio principal pero buscan el inventario o login, los mandamos al subdominio oficial
+  if (isMainDomain && (pathname.startsWith('/reserva') || pathname.startsWith('/login'))) {
+    return NextResponse.redirect(`https://reserva.arienzoliving.com${pathname}`);
+  }
+
+  // ==========================================
+  // 2. INYECCIÓN DE RUTAS RAÍZ ("/")
+  // ==========================================
+  
+  // Si entran a reserva.arienzoliving.com directo, inyectamos la carpeta /reserva
+  if (isReservaDomain && pathname === '/') {
     const url = request.nextUrl.clone();
     url.pathname = '/reserva';
     return NextResponse.rewrite(url);
   }
 
-  // 2. Si entran a arienzoliving.com directo, inyectamos la carpeta /inicio (tu landing)
-  if (isMainDomain && request.nextUrl.pathname === '/') {
+  // Si entran a arienzoliving.com directo, inyectamos la carpeta /inicio (tu landing)
+  if (isMainDomain && pathname === '/') {
     const url = request.nextUrl.clone();
     url.pathname = '/inicio';
     return NextResponse.rewrite(url);
   }
 
+  // ==========================================
+  // 3. SEGURIDAD SUPABASE
+  // ==========================================
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -43,18 +66,16 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  // 3. LA LISTA BLANCA (Rutas de libre acceso)
   const isPublicRoute = 
-    request.nextUrl.pathname.startsWith('/login') ||
-    request.nextUrl.pathname.startsWith('/auth') ||
-    request.nextUrl.pathname.startsWith('/reserva') ||
-    request.nextUrl.pathname.startsWith('/acceso') || // <-- RUTA SQUEEZE PAGE
-    request.nextUrl.pathname.startsWith('/inicio') ||
-    request.nextUrl.pathname.startsWith('/api') ||
-    request.nextUrl.pathname.startsWith('/_next') ||
-    isMainDomain; // Toda la landing y páginas de arienzoliving.com son públicas
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/auth') ||
+    pathname.startsWith('/reserva') ||
+    pathname.startsWith('/acceso') || 
+    pathname.startsWith('/inicio') ||
+    pathname.startsWith('/api') ||
+    pathname.startsWith('/_next') ||
+    isMainDomain; 
 
-  // 4. Protección final del CRM
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
@@ -64,7 +85,7 @@ export async function middleware(request: NextRequest) {
   return supabaseResponse;
 }
 
-// 5. OPTIMIZACIÓN: Le decimos al middleware que ignore los archivos estáticos para que la web sea más rápida
+// OPTIMIZACIÓN DE VELOCIDAD
 export const config = {
   matcher: [
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
