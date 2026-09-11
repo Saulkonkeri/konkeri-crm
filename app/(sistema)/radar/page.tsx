@@ -270,7 +270,8 @@ export default function RadarCentral() {
       const { data } = await supabase
         .from('tracking_inventario')
         .select('*')
-        .not('accion', 'in', '("SOLICITUD_ACCESO_VIP","ABRIO_CALENDLY","VISITA_LANDING","ABRIO_FORMULARIO","CLIC_WHATSAPP","REGISTRO_COMPLETADO","CLIC_DISPONIBILIDAD")')
+        // 👇 AQUÍ AÑADIMOS DESCARGA_BROCHURE PARA OCULTARLO DEL INVENTARIO
+        .not('accion', 'in', '("SOLICITUD_ACCESO_VIP","ABRIO_CALENDLY","VISITA_LANDING","ABRIO_FORMULARIO","CLIC_WHATSAPP","REGISTRO_COMPLETADO","CLIC_DISPONIBILIDAD","DESCARGA_BROCHURE")')
         .not('accion', 'like', 'SCROLL_%')
         .not('accion', 'like', 'VIO_%')
         .not('detalle', 'ilike', '%LANDING%') 
@@ -344,6 +345,7 @@ export default function RadarCentral() {
     'ABRIO_FORMULARIO': 6,
     'ABRIO_CALENDLY': 8,
     'CLIC_WHATSAPP': 10,
+    'DESCARGA_BROCHURE': 12,
     'REGISTRO_COMPLETADO': 15,
   };
 
