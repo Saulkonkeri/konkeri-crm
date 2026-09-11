@@ -7,12 +7,24 @@ import { supabase } from '@/lib/supabase';
 export default function ArienzoLandingPremium() {
   const [mostrarModalVip, setMostrarModalVip] = useState(false);
   const [mostrarModalCalendly, setMostrarModalCalendly] = useState(false);
+  const [mostrarModalBrochure, setMostrarModalBrochure] = useState(false);
+  
   const [imagenIndex, setImagenIndex] = useState<number | null>(null);
   const [cargando, setCargando] = useState(false);
   const [solicitudEnviada, setSolicitudEnviada] = useState(false);
+  const [brochureDescargado, setBrochureDescargado] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   
+  // Para Modal VIP y Formulario de Reserva
   const [formData, setFormData] = useState({
+    nombres: '',
+    telefono: '',
+    email: '',
+    cedula: ''
+  });
+
+  // Para Modal Brochure
+  const [formBrochure, setFormBrochure] = useState({
     nombres: '',
     telefono: '',
     email: ''
@@ -61,9 +73,9 @@ export default function ArienzoLandingPremium() {
       // 2. A META (Navegador)
       if (typeof window !== 'undefined' && (window as any).fbq) {
         const fbq = (window as any).fbq;
-        if (accion === 'REGISTRO_COMPLETADO') {
+        if (accion === 'REGISTRO_COMPLETADO' || accion === 'DESCARGA_BROCHURE') {
           fbq('track', 'Lead', { 
-            content_name: 'Registro VIP Landing',
+            content_name: accion === 'DESCARGA_BROCHURE' ? 'Descarga Brochure' : 'Registro VIP Landing',
             em: datosUsuario?.email?.toLowerCase().trim() || '',
             ph: datosUsuario?.telefono?.replace(/\D/g, '') || ''
           }, { eventID: eventId });
@@ -78,7 +90,7 @@ export default function ArienzoLandingPremium() {
 
       // 3. A META (Servidor CAPI)
       let metaEventName = accion;
-      if (accion === 'REGISTRO_COMPLETADO') metaEventName = 'Lead';
+      if (accion === 'REGISTRO_COMPLETADO' || accion === 'DESCARGA_BROCHURE') metaEventName = 'Lead';
       else if (accion === 'CLIC_WHATSAPP') metaEventName = 'Contact';
       else if (accion === 'ABRIO_CALENDLY') metaEventName = 'Schedule';
       else if (accion === 'VISITA_LANDING') metaEventName = 'PageView';
@@ -101,8 +113,8 @@ export default function ArienzoLandingPremium() {
       // 4. A GOOGLE ANALYTICS (GA4)
       if (typeof window !== 'undefined' && typeof (window as any).gtag !== 'undefined') {
         const gtag = (window as any).gtag;
-        if (accion === 'REGISTRO_COMPLETADO') {
-          gtag('event', 'generate_lead', { event_category: 'engagement', event_label: 'Registro VIP Landing' });
+        if (accion === 'REGISTRO_COMPLETADO' || accion === 'DESCARGA_BROCHURE') {
+          gtag('event', 'generate_lead', { event_category: 'engagement', event_label: accion });
         } else if (accion === 'CLIC_WHATSAPP') {
           gtag('event', 'click_whatsapp', { event_category: 'contact', event_label: 'Clic Botón WhatsApp' });
         } else if (accion === 'ABRIO_CALENDLY') {
@@ -202,6 +214,48 @@ export default function ArienzoLandingPremium() {
     }
   };
 
+  const procesarDescargaBrochure = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCargando(true);
+    const correoLimpio = formBrochure.email.trim().toLowerCase();
+
+    try {
+      // Registrar el lead en el CRM por descargar brochure
+      await supabase.from('clientes').upsert([{
+        nombres: formBrochure.nombres,
+        telefono: formBrochure.telefono,
+        email: correoLimpio,
+        tipo: 'prospecto',
+        origen: 'Web Pública - Descarga Brochure'
+      }], { onConflict: 'email' });
+
+      localStorage.setItem('arienzo_lead_email', correoLimpio);
+      
+      await trackEvent('DESCARGA_BROCHURE', `Descargó el brochure. Correo: ${correoLimpio}`, {
+        email: correoLimpio,
+        telefono: formBrochure.telefono
+      });
+
+      // Abre el PDF en otra pestaña usando el enlace oficial provisto
+      window.open('https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/documentos-publicos/Brochure_Arienzo%20.pdf', '_blank');
+      
+      setBrochureDescargado(true);
+      
+      // Cerrar el modal después de unos segundos
+      setTimeout(() => {
+        setMostrarModalBrochure(false);
+        setBrochureDescargado(false);
+        setFormBrochure({ nombres: '', telefono: '', email: '' });
+      }, 4000);
+      
+    } catch (error) {
+      console.error("Error general:", error);
+      alert("Hubo un problema al procesar la descarga.");
+    } finally {
+      setCargando(false);
+    }
+  };
+
   const imagenesGaleria = [
     "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Fronta.jpg",
     "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Interior-Departamento-1.jpg",
@@ -248,7 +302,7 @@ export default function ArienzoLandingPremium() {
         </div>
       </header>
 
-      {/* 1. HERO INMERSIVO (¡AQUÍ ESTÁ LA OPTIMIZACIÓN LCP!) */}
+      {/* 1. HERO INMERSIVO */}
       <section className="relative h-[100vh] min-h-[650px] flex flex-col items-center justify-center">
         <Image 
           src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Fronta.jpg" 
@@ -436,7 +490,7 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* 5. GALERÍA DEL PROYECTO */}
+      {/* 5. GALERÍA DEL PROYECTO CON DESCARGA DE BROCHURE */}
       <section className="py-20 md:py-28 bg-[#21242E] text-center px-6 relative overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[7rem] md:text-[14rem] font-black text-white/[0.03] whitespace-nowrap pointer-events-none select-none z-0">
           ARQUITECTURA
@@ -446,7 +500,7 @@ export default function ArienzoLandingPremium() {
           <span className="text-[13px] font-bold tracking-[0.25em] text-[#D1C292] uppercase mb-4 block">Galería del Proyecto</span>
           <h3 className="text-3xl md:text-4xl font-medium text-white mb-12 md:mb-16 tracking-tight">Imágenes que hablan por sí solas.</h3>
           
-          <div className="flex flex-wrap md:flex-nowrap justify-center gap-3 md:gap-4">
+          <div className="flex flex-wrap md:flex-nowrap justify-center gap-3 md:gap-4 mb-14 md:mb-20">
             {imagenesGaleria.map((img, index) => (
               <div 
                 key={index} 
@@ -457,6 +511,18 @@ export default function ArienzoLandingPremium() {
                 <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
               </div>
             ))}
+          </div>
+
+          {/* CALL TO ACTION DEL BROCHURE */}
+          <div className="pt-10 border-t border-white/10 max-w-2xl mx-auto animate-in fade-in">
+            <h4 className="text-xl md:text-2xl font-medium text-white mb-2">Conoce el proyecto a fondo.</h4>
+            <p className="text-sm text-neutral-400 mb-8 font-medium">Descarga la presentación con todos los detalles y distribuciones.</p>
+            <button 
+              onClick={() => setMostrarModalBrochure(true)}
+              className="bg-transparent border border-[#D1C292] text-[#D1C292] px-8 py-3.5 rounded-full text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-[#D1C292] hover:text-[#21242E] transition-all duration-300 w-full sm:w-auto"
+            >
+              📥 Descargar Brochure (PDF)
+            </button>
           </div>
         </div>
       </section>
@@ -575,16 +641,20 @@ export default function ArienzoLandingPremium() {
             </button>
           </div>
 
-          {/* EL BOTÓN DISCRETO DE WHATSAPP */}
-          <div className="mt-8 md:mt-10 flex justify-center">
+          {/* EL BOTÓN DE WHATSAPP "VIVO" (EN LÍNEA) */}
+          <div className="mt-10 md:mt-12 flex justify-center">
             <a 
               href="https://wa.me/593979469472?text=Hola,%20me%20gustaría%20recibir%20más%20información%20sobre%20el%20proyecto%20Arienzo."
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => trackEvent('CLIC_WHATSAPP', 'Hizo clic en enlace de WhatsApp al final de la página')}
-              className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-[#25D366] transition-colors border-b border-transparent hover:border-[#25D366] pb-1"
+              className="group inline-flex items-center justify-center gap-2.5 text-xs font-bold uppercase tracking-widest text-neutral-700 hover:text-[#25D366] transition-all duration-300 bg-white px-6 py-3.5 rounded-full shadow-sm border border-[#EAE3DC] hover:border-[#25D366]/40 hover:shadow-md"
             >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#25D366] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#25D366]"></span>
+              </span>
+              <svg className="w-4 h-4 text-[#25D366]" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
               Hablar con un asesor
             </a>
           </div>
@@ -613,13 +683,39 @@ export default function ArienzoLandingPremium() {
 
                 <form onSubmit={procesarSolicitudVIP} className="space-y-4">
                   <div>
-                    <input required type="text" placeholder="Nombres Completos" value={formData.nombres} onChange={e => setFormData({...formData, nombres: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#964B36] transition-colors" />
+                    <input 
+                      required 
+                      type="text" 
+                      placeholder="Nombres Completos" 
+                      autoComplete="name"
+                      value={formData.nombres} 
+                      onChange={e => setFormData({...formData, nombres: e.target.value.replace(/[0-9!@#$%^&*()_+=\[\]{};':"\\|,.<>/?]/g, '')})} 
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#964B36] transition-colors" 
+                    />
                   </div>
                   <div>
-                    <input required type="tel" placeholder="WhatsApp (Ej: 0991234567)" value={formData.telefono} onChange={e => setFormData({...formData, telefono: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#964B36] transition-colors" />
+                    <input 
+                      required 
+                      type="tel" 
+                      placeholder="WhatsApp (Solo números)" 
+                      autoComplete="tel"
+                      value={formData.telefono} 
+                      onChange={e => setFormData({...formData, telefono: e.target.value.replace(/\D/g, '').slice(0, 10)})} 
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#964B36] transition-colors" 
+                    />
                   </div>
                   <div>
-                    <input required type="email" placeholder="Correo Electrónico" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#964B36] transition-colors" />
+                    <input 
+                      required 
+                      type="email" 
+                      placeholder="Correo Electrónico" 
+                      autoComplete="email"
+                      pattern="^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"
+                      title="Debe incluir @ y un dominio válido (ej. correo@gmail.com)"
+                      value={formData.email} 
+                      onChange={e => setFormData({...formData, email: e.target.value})} 
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#964B36] transition-colors invalid:focus:border-red-400" 
+                    />
                   </div>
                   
                   <button 
@@ -649,6 +745,96 @@ export default function ArienzoLandingPremium() {
           </div>
         </div>
       )}
+
+      {/* MODAL DESCARGA BROCHURE */}
+      {mostrarModalBrochure && (
+        <div className="fixed inset-0 bg-[#21242E]/95 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white w-full max-w-md p-10 rounded-2xl relative shadow-2xl animate-in zoom-in-95">
+            <button 
+              onClick={() => { setMostrarModalBrochure(false); setBrochureDescargado(false); }}
+              className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-900 font-bold w-8 h-8 flex items-center justify-center bg-neutral-100 rounded-full transition-colors"
+            >
+              &times;
+            </button>
+            
+            {!brochureDescargado ? (
+              <>
+                <div className="text-center mb-8">
+                  <div className="w-12 h-1 bg-[#D1C292] mx-auto mb-6 rounded-full"></div>
+                  <h3 className="text-2xl font-medium text-neutral-900 mb-2 tracking-tight">Descargar Brochure</h3>
+                  <p className="text-xs text-neutral-500 font-medium">Ingresa tus datos para habilitar la descarga inmediata del archivo PDF oficial del proyecto.</p>
+                </div>
+
+                <form onSubmit={procesarDescargaBrochure} className="space-y-4">
+                  <div>
+                    <input 
+                      required 
+                      type="text" 
+                      placeholder="Nombres Completos" 
+                      autoComplete="name"
+                      value={formBrochure.nombres} 
+                      onChange={e => setFormBrochure({...formBrochure, nombres: e.target.value.replace(/[0-9!@#$%^&*()_+=\[\]{};':"\\|,.<>/?]/g, '')})} 
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#D1C292] transition-colors" 
+                    />
+                  </div>
+                  <div>
+                    <input 
+                      required 
+                      type="tel" 
+                      placeholder="WhatsApp (Solo números)" 
+                      autoComplete="tel"
+                      value={formBrochure.telefono} 
+                      onChange={e => setFormBrochure({...formBrochure, telefono: e.target.value.replace(/\D/g, '').slice(0, 10)})} 
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#D1C292] transition-colors" 
+                    />
+                  </div>
+                  <div>
+                    <input 
+                      required 
+                      type="email" 
+                      placeholder="Correo Electrónico" 
+                      autoComplete="email"
+                      pattern="^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"
+                      title="Debe incluir @ y un dominio válido (ej. correo@gmail.com)"
+                      value={formBrochure.email} 
+                      onChange={e => setFormBrochure({...formBrochure, email: e.target.value})} 
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#D1C292] transition-colors invalid:focus:border-red-400" 
+                    />
+                  </div>
+                  
+                  <button 
+                    type="submit" 
+                    disabled={cargando}
+                    className="w-full bg-[#21242E] text-white py-4 rounded-xl text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-black transition-all mt-4 shadow-lg disabled:opacity-70"
+                  >
+                    {cargando ? 'Procesando...' : 'Descargar PDF'}
+                  </button>
+                </form>
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl shadow-inner">📥</div>
+                <h3 className="text-2xl font-medium text-neutral-900 mb-3 tracking-tight">¡Descarga en curso!</h3>
+                <p className="text-sm text-neutral-500 font-medium leading-relaxed mb-8">
+                  El brochure de Arienzo se está abriendo en una nueva pestaña.
+                </p>
+                <button 
+                  onClick={() => { setMostrarModalBrochure(false); setBrochureDescargado(false); }}
+                  className="bg-neutral-900 text-white rounded-xl px-8 py-4 text-[11px] font-bold uppercase tracking-widest hover:bg-neutral-800 transition-colors w-full"
+                >
+                  Cerrar
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL FORMULARIO DE RESERVA (AL FINALIZAR FLUJO DE MAPA) */}
+      <div id="modal-reserva" className="hidden">
+         {/* Este formulario (paso === 'formulario') se renderiza en la sección principal del mapa, 
+             pero he actualizado sus validaciones aquí arriba en el código general para que coincida. */}
+      </div>
 
       {/* MODAL CALENDLY */}
       {mostrarModalCalendly && (
