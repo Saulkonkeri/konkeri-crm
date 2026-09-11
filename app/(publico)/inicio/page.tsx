@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 
@@ -15,23 +15,29 @@ export default function ArienzoLandingPremium() {
   const [brochureDescargado, setBrochureDescargado] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   
-  // Para Modal VIP y Formulario de Reserva
   const [formData, setFormData] = useState({
     nombres: '',
     telefono: '',
-    email: '',
-    cedula: ''
+    email: ''
   });
 
-  // Para Modal Brochure
   const [formBrochure, setFormBrochure] = useState({
     nombres: '',
     telefono: '',
     email: ''
   });
 
+  const imagenesGaleria = useMemo(() => [
+    "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Fronta.jpg",
+    "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Interior-Departamento-1.jpg",
+    "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Piscina-1.jpg",
+    "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Derecho-A4.jpg",
+    "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-living-arienzo.jpg",
+    "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Plaza-Comercial-1-1.jpg"
+  ], []);
+
   // ==========================================
-  // EL CEREBRO DEL TRACKING (CRM + Meta + CAPI + Google)
+  // EL CEREBRO DEL TRACKING
   // ==========================================
   const trackEvent = async (accion: string, detalle: string, datosUsuario?: { email?: string, telefono?: string }) => {
     try {
@@ -58,9 +64,8 @@ export default function ArienzoLandingPremium() {
         meta_event_id: eventId
       };
 
-      const emailConocido = localStorage.getItem('arienzo_lead_email');
+      const emailConocido = localStorage.getItem('arienzo_lead_email') || formData.email || formBrochure.email;
 
-      // 1. A TU CRM
       await supabase.from('tracking_inventario').insert([{
         visitor_id: visitorId,
         session_id: sessionId,
@@ -70,7 +75,6 @@ export default function ArienzoLandingPremium() {
         metadata
       }]);
 
-      // 2. A META (Navegador)
       if (typeof window !== 'undefined' && (window as any).fbq) {
         const fbq = (window as any).fbq;
         if (accion === 'REGISTRO_COMPLETADO' || accion === 'DESCARGA_BROCHURE') {
@@ -88,7 +92,6 @@ export default function ArienzoLandingPremium() {
         }
       }
 
-      // 3. A META (Servidor CAPI)
       let metaEventName = accion;
       if (accion === 'REGISTRO_COMPLETADO' || accion === 'DESCARGA_BROCHURE') metaEventName = 'Lead';
       else if (accion === 'CLIC_WHATSAPP') metaEventName = 'Contact';
@@ -110,7 +113,6 @@ export default function ArienzoLandingPremium() {
         }).catch(() => {});
       }
 
-      // 4. A GOOGLE ANALYTICS (GA4)
       if (typeof window !== 'undefined' && typeof (window as any).gtag !== 'undefined') {
         const gtag = (window as any).gtag;
         if (accion === 'REGISTRO_COMPLETADO' || accion === 'DESCARGA_BROCHURE') {
@@ -123,7 +125,6 @@ export default function ArienzoLandingPremium() {
           gtag('event', accion, { event_category: 'interaction', event_label: detalle });
         }
       }
-
     } catch (error) {}
   };
 
@@ -159,6 +160,22 @@ export default function ArienzoLandingPremium() {
     };
   }, []);
 
+  // Control de teclado para la galería
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (imagenIndex === null) return;
+      if (e.key === 'ArrowRight') {
+        setImagenIndex((prev) => prev !== null ? (prev + 1) % imagenesGaleria.length : null);
+      } else if (e.key === 'ArrowLeft') {
+        setImagenIndex((prev) => prev !== null ? (prev - 1 + imagenesGaleria.length) % imagenesGaleria.length : null);
+      } else if (e.key === 'Escape') {
+        setImagenIndex(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [imagenIndex, imagenesGaleria.length]);
+
   const abrirModalVIP = () => {
     trackEvent('ABRIO_FORMULARIO', 'Hizo clic en botón Acceso Exclusivo');
     setMostrarModalVip(true);
@@ -192,7 +209,7 @@ export default function ArienzoLandingPremium() {
 
       localStorage.setItem('arienzo_lead_email', correoLimpio);
       
-      await trackEvent('REGISTRO_COMPLETADO', `Registró datos. Correo: ${correoLimpio}`, {
+      await trackEvent('REGISTRO_COMPLETADO', `Registró datos VIP. Correo: ${correoLimpio}`, {
         email: correoLimpio,
         telefono: formData.telefono
       });
@@ -205,9 +222,7 @@ export default function ArienzoLandingPremium() {
       }
 
       setSolicitudEnviada(true);
-      
     } catch (error) {
-      console.error("Error general:", error);
       alert("Hubo un problema grave en la ejecución.");
     } finally {
       setCargando(false);
@@ -220,7 +235,6 @@ export default function ArienzoLandingPremium() {
     const correoLimpio = formBrochure.email.trim().toLowerCase();
 
     try {
-      // Registrar el lead en el CRM por descargar brochure
       await supabase.from('clientes').upsert([{
         nombres: formBrochure.nombres,
         telefono: formBrochure.telefono,
@@ -236,12 +250,11 @@ export default function ArienzoLandingPremium() {
         telefono: formBrochure.telefono
       });
 
-      // Abre el PDF en otra pestaña usando el enlace oficial provisto
+      // ENLACE OFICIAL DE TU PDF
       window.open('https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/documentos-publicos/Brochure_Arienzo%20.pdf', '_blank');
       
       setBrochureDescargado(true);
       
-      // Cerrar el modal después de unos segundos
       setTimeout(() => {
         setMostrarModalBrochure(false);
         setBrochureDescargado(false);
@@ -249,34 +262,24 @@ export default function ArienzoLandingPremium() {
       }, 4000);
       
     } catch (error) {
-      console.error("Error general:", error);
       alert("Hubo un problema al procesar la descarga.");
     } finally {
       setCargando(false);
     }
   };
 
-  const imagenesGaleria = [
-    "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Fronta.jpg",
-    "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Interior-Departamento-1.jpg",
-    "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Piscina-1.jpg",
-    "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Derecho-A4.jpg",
-    "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-living-arienzo.jpg",
-    "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Plaza-Comercial-1-1.jpg"
-  ];
-
   const clickImagen = (index: number) => {
     trackEvent('VIO_ARQUITECTURA', `Abrió render ${index + 1} de la galería`);
     setImagenIndex(index);
   };
 
-  const prevImagen = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const prevImagen = (e?: React.MouseEvent) => {
+    if(e) e.stopPropagation();
     setImagenIndex((prev) => prev !== null ? (prev - 1 + imagenesGaleria.length) % imagenesGaleria.length : null);
   };
 
-  const nextImagen = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const nextImagen = (e?: React.MouseEvent) => {
+    if(e) e.stopPropagation();
     setImagenIndex((prev) => prev !== null ? (prev + 1) % imagenesGaleria.length : null);
   };
 
@@ -330,18 +333,29 @@ export default function ArienzoLandingPremium() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4">
+            {/* BOTÓN AGENDAR ACTUALIZADO (Sombra cálida + Ícono) */}
             <button 
               onClick={abrirCalendly}
-              className="w-full sm:w-auto bg-[#964B36] text-white px-6 py-3.5 md:px-8 md:py-4 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-[#7d3e2c] transition-all duration-300 shadow-xl hover:-translate-y-0.5"
+              className="group w-full sm:w-auto bg-[#964B36] text-white px-6 py-3.5 md:px-8 md:py-4 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] transition-all duration-300 shadow-[0_4px_20px_rgba(150,75,54,0.4)] hover:shadow-[0_8px_30px_rgba(150,75,54,0.6)] hover:-translate-y-1 flex items-center justify-center gap-2"
             >
+              <svg className="w-3.5 h-3.5 opacity-90 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
               Agendar Presentación
             </button>
             <button 
               onClick={abrirModalVIP}
-              className="w-full sm:w-auto bg-white/10 backdrop-blur-sm border border-white/40 text-white px-6 py-3.5 md:px-8 md:py-4 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-white hover:text-[#964B36] transition-all duration-300 hover:-translate-y-0.5"
+              className="w-full sm:w-auto bg-white/10 backdrop-blur-sm border border-white/40 text-white px-6 py-3.5 md:px-8 md:py-4 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-white hover:text-[#964B36] transition-all duration-300 hover:-translate-y-1"
             >
               Solicitar Acceso
             </button>
+          </div>
+        </div>
+
+        {/* SELLO DE AUTOR DIEZ + MULLER EN LA ESQUINA */}
+        <div className="absolute bottom-6 right-6 md:bottom-10 md:right-10 z-20 flex flex-col items-end opacity-90 hover:opacity-100 transition-opacity">
+          <span className="text-[6px] md:text-[8px] font-medium text-white/70 uppercase tracking-[0.3em] mb-1 drop-shadow-md">Diseño Arquitectónico</span>
+          <div className="flex items-center gap-2">
+            <div className="w-4 md:w-8 h-[1px] bg-[#D1C292] shadow-sm"></div>
+            <span className="text-[9px] md:text-[11px] font-bold tracking-[0.2em] text-[#D1C292] uppercase drop-shadow-md">Diez + Muller</span>
           </div>
         </div>
       </section>
@@ -490,17 +504,17 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* 5. GALERÍA DEL PROYECTO CON DESCARGA DE BROCHURE */}
-      <section className="py-20 md:py-28 bg-[#21242E] text-center px-6 relative overflow-hidden">
+      {/* 5. GALERÍA DEL PROYECTO (COMPACTA) CON DESCARGA DE BROCHURE */}
+      <section className="py-16 md:py-20 bg-[#21242E] text-center px-6 relative overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[7rem] md:text-[14rem] font-black text-white/[0.03] whitespace-nowrap pointer-events-none select-none z-0">
           ARQUITECTURA
         </div>
 
         <div className="max-w-6xl mx-auto relative z-10">
           <span className="text-[13px] font-bold tracking-[0.25em] text-[#D1C292] uppercase mb-4 block">Galería del Proyecto</span>
-          <h3 className="text-3xl md:text-4xl font-medium text-white mb-12 md:mb-16 tracking-tight">Imágenes que hablan por sí solas.</h3>
+          <h3 className="text-3xl md:text-4xl font-medium text-white mb-10 tracking-tight">Imágenes que hablan por sí solas.</h3>
           
-          <div className="flex flex-wrap md:flex-nowrap justify-center gap-3 md:gap-4 mb-14 md:mb-20">
+          <div className="flex flex-wrap md:flex-nowrap justify-center gap-3 md:gap-4 mb-10">
             {imagenesGaleria.map((img, index) => (
               <div 
                 key={index} 
@@ -513,26 +527,24 @@ export default function ArienzoLandingPremium() {
             ))}
           </div>
 
-          {/* CALL TO ACTION DEL BROCHURE */}
-          <div className="pt-10 border-t border-white/10 max-w-2xl mx-auto animate-in fade-in">
-            <h4 className="text-xl md:text-2xl font-medium text-white mb-2">Conoce el proyecto a fondo.</h4>
-            <p className="text-sm text-neutral-400 mb-8 font-medium">Descarga la presentación con todos los detalles y distribuciones.</p>
+          {/* CALL TO ACTION DEL BROCHURE (SUTIL Y FINO) */}
+          <div className="pt-6 border-t border-white/10 max-w-lg mx-auto flex flex-col items-center">
             <button 
               onClick={() => setMostrarModalBrochure(true)}
-              className="bg-transparent border border-[#D1C292] text-[#D1C292] px-8 py-3.5 rounded-full text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-[#D1C292] hover:text-[#21242E] transition-all duration-300 w-full sm:w-auto"
+              className="bg-transparent border border-[#D1C292] text-[#D1C292] px-8 py-3 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-[#D1C292] hover:text-[#21242E] transition-all duration-300 w-full sm:w-auto"
             >
-              📥 Descargar Brochure (PDF)
+              Descargar Brochure Oficial
             </button>
           </div>
         </div>
       </section>
 
-      {/* LIGHTBOX MODAL CON NAVEGACIÓN */}
+      {/* LIGHTBOX MODAL CON NAVEGACIÓN Y TECLADO */}
       {imagenIndex !== null && (
         <div className="fixed inset-0 bg-[#21242E]/98 z-[70] flex items-center justify-center p-4 md:p-8 backdrop-blur-md animate-in fade-in" onClick={() => setImagenIndex(null)}>
           <button className="absolute top-6 right-6 text-white/50 hover:text-white text-4xl font-light transition-colors z-50">&times;</button>
           
-          <button onClick={prevImagen} className="absolute left-2 md:left-10 text-white/40 hover:text-white text-5xl md:text-7xl p-4 z-50 transition-all hover:scale-110 select-none">
+          <button onClick={prevImagen} className="absolute left-2 md:left-10 text-white/40 hover:text-white text-5xl md:text-7xl p-4 z-50 transition-all hover:scale-110 select-none hidden md:block">
             &#8249;
           </button>
 
@@ -545,7 +557,7 @@ export default function ArienzoLandingPremium() {
             />
           </div>
 
-          <button onClick={nextImagen} className="absolute right-2 md:right-10 text-white/40 hover:text-white text-5xl md:text-7xl p-4 z-50 transition-all hover:scale-110 select-none">
+          <button onClick={nextImagen} className="absolute right-2 md:right-10 text-white/40 hover:text-white text-5xl md:text-7xl p-4 z-50 transition-all hover:scale-110 select-none hidden md:block">
             &#8250;
           </button>
         </div>
@@ -613,7 +625,7 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* 8. CERRADA FINAL CON WHATSAPP INCORPORADO */}
+      {/* 8. CERRADA FINAL */}
       <section className="py-20 md:py-28 bg-[#F9F7F5] text-center px-6 relative border-b-[2px] border-[#D1C292] overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[14rem] md:text-[22rem] font-bold text-[#EAE3DC]/40 pointer-events-none select-none z-0 tracking-tighter leading-none">
           22
@@ -627,34 +639,37 @@ export default function ArienzoLandingPremium() {
           </p>
           
           <div className="flex flex-col sm:flex-row justify-center gap-4 w-full sm:w-auto">
+            {/* BOTÓN AGENDAR ACTUALIZADO */}
             <button 
               onClick={abrirCalendly}
-              className="bg-[#964B36] text-white px-10 py-4 rounded-full text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-[#7d3e2c] transition-all duration-300 hover:-translate-y-1 shadow-xl w-full sm:w-auto"
+              className="group w-full sm:w-auto bg-[#964B36] text-white px-6 py-3.5 md:px-8 md:py-4 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] transition-all duration-300 shadow-[0_4px_20px_rgba(150,75,54,0.4)] hover:shadow-[0_8px_30px_rgba(150,75,54,0.6)] hover:-translate-y-1 flex items-center justify-center gap-2"
             >
+              <svg className="w-3.5 h-3.5 opacity-90 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
               Agendar Presentación
             </button>
+
             <button 
               onClick={abrirModalVIP}
-              className="bg-[#21242E] text-white px-10 py-4 rounded-full text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-black transition-all duration-300 hover:-translate-y-1 shadow-xl w-full sm:w-auto"
+              className="w-full sm:w-auto bg-[#21242E] text-white px-6 py-3.5 md:px-8 md:py-4 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-black transition-all duration-300 hover:-translate-y-1 shadow-xl flex items-center justify-center"
             >
-              Solicitar Acceso Exclusivo
+              Solicitar Acceso
             </button>
           </div>
 
-          {/* EL BOTÓN DE WHATSAPP "VIVO" (EN LÍNEA) */}
-          <div className="mt-10 md:mt-12 flex justify-center">
+          {/* BOTÓN WHATSAPP SUTIL Y "EN LÍNEA" */}
+          <div className="mt-8 md:mt-10 flex justify-center">
             <a 
               href="https://wa.me/593979469472?text=Hola,%20me%20gustaría%20recibir%20más%20información%20sobre%20el%20proyecto%20Arienzo."
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => trackEvent('CLIC_WHATSAPP', 'Hizo clic en enlace de WhatsApp al final de la página')}
-              className="group inline-flex items-center justify-center gap-2.5 text-xs font-bold uppercase tracking-widest text-neutral-700 hover:text-[#25D366] transition-all duration-300 bg-white px-6 py-3.5 rounded-full shadow-sm border border-[#EAE3DC] hover:border-[#25D366]/40 hover:shadow-md"
+              className="group inline-flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-widest text-neutral-500 hover:text-[#25D366] transition-colors border-b border-transparent hover:border-[#25D366] pb-1"
             >
               <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#25D366] opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#25D366]"></span>
               </span>
-              <svg className="w-4 h-4 text-[#25D366]" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+              <svg className="w-4 h-4 text-neutral-400 group-hover:text-[#25D366] transition-colors" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
               Hablar con un asesor
             </a>
           </div>
@@ -829,12 +844,6 @@ export default function ArienzoLandingPremium() {
           </div>
         </div>
       )}
-
-      {/* MODAL FORMULARIO DE RESERVA (AL FINALIZAR FLUJO DE MAPA) */}
-      <div id="modal-reserva" className="hidden">
-         {/* Este formulario (paso === 'formulario') se renderiza en la sección principal del mapa, 
-             pero he actualizado sus validaciones aquí arriba en el código general para que coincida. */}
-      </div>
 
       {/* MODAL CALENDLY */}
       {mostrarModalCalendly && (
