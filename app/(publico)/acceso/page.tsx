@@ -142,7 +142,8 @@ export default function PaginaAccesoDirecto() {
             <>
               <div className="text-center mb-8">
                 <div className="w-12 h-1 bg-[#964B36] mx-auto mb-6 rounded-full"></div>
-                <h1 className="text-2xl font-medium text-neutral-900 mb-2 tracking-tight">Acceso al Inventario</h1>
+                {/* AQUÍ ESTÁ EL CAMBIO DE TÍTULO PARA DIFERENCIARLO */}
+                <h1 className="text-2xl font-medium text-neutral-900 mb-2 tracking-tight">Registro Directo VIP</h1>
                 <p className="text-xs text-neutral-500 font-medium">
                   Validaremos tu perfil para habilitar el acceso seguro a los <strong>planos, disponibilidad y precios de lanzamiento.</strong>
                 </p>
