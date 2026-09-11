@@ -2,19 +2,22 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function updateSession(request: NextRequest) {
-  // 1. Detectamos por qué "puerta" entra el usuario (Verificamos ambas cabeceras por si Vercel las cambia)
+  // 1. Detectamos por qué "puerta" entra el usuario
   const hostname = request.headers.get('host') || request.headers.get('x-forwarded-host') || '';
-  const isArienzoDomain = hostname.includes('reserva.arienzoliving.com');
+  
+  // Separamos los dominios para darle instrucciones claras al sistema
+  const isReservaDomain = hostname.includes('reserva.arienzoliving.com');
+  const isDominioPrincipal = hostname.includes('arienzoliving.com'); // <-- ESTO ES NUEVO: Cubre arienzoliving.com y www.arienzoliving.com
 
-  // 2. MAGIA: Si entra por el dominio de Arienzo a la raíz ("/"), 
+  // 2. MAGIA: Si entra por el subdominio de reserva a la raíz ("/"), 
   // le inyectamos la página "/reserva" inmediatamente y lo dejamos pasar.
-  if (isArienzoDomain && request.nextUrl.pathname === '/') {
+  if (isReservaDomain && request.nextUrl.pathname === '/') {
     const url = request.nextUrl.clone();
     url.pathname = '/reserva';
     return NextResponse.rewrite(url);
   }
 
-  // 3. FLUJO NORMAL DEL CRM (Para los que NO entran por Arienzo)
+  // 3. FLUJO NORMAL DEL CRM (Para los que entran al sistema interno)
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -50,8 +53,10 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.startsWith('/login') &&
     !request.nextUrl.pathname.startsWith('/auth') &&
     !request.nextUrl.pathname.startsWith('/reserva') &&
+    !request.nextUrl.pathname.startsWith('/acceso') && // <-- ¡AQUÍ LE DAMOS PASE LIBRE A TU FORMULARIO!
+    !request.nextUrl.pathname.startsWith('/inicio') && 
     !request.nextUrl.pathname.startsWith('/api') &&
-    !isArienzoDomain
+    !isDominioPrincipal // <-- Y AQUÍ LE DECIMOS QUE TODA LA PÁGINA PRINCIPAL ES PÚBLICA
   ) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
