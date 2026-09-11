@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-export async function updateSession(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   // Usamos nextUrl.hostname que es 100% exacto y no se deja engañar por Vercel
   const hostname = request.nextUrl.hostname || '';
   
@@ -62,4 +62,11 @@ export async function updateSession(request: NextRequest) {
   }
 
   return supabaseResponse;
+}
+
+// 5. OPTIMIZACIÓN: Le decimos al middleware que ignore los archivos estáticos para que la web sea más rápida
+export const config = {
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 }
