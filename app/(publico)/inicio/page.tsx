@@ -432,7 +432,6 @@ export default function ArienzoLandingPremium() {
             <div className="md:col-span-7 relative order-1 md:order-2">
               <div className="absolute -inset-4 bg-[#D1C292]/20 rounded-2xl transform translate-x-4 translate-y-4 hidden md:block z-0"></div>
               
-              {/* Contenedor de la imagen ahora VERTICAL (aspect-[3/4]) */}
               <div className="relative aspect-[3/4] w-full rounded-xl overflow-hidden shadow-2xl group z-10">
                 <Image 
                   src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/ubicacion%20arienzo3.jpg" 
@@ -443,19 +442,18 @@ export default function ArienzoLandingPremium() {
                   className="object-cover"
                 />
                 
-                {/* 📍 EL PUNTO QUE TITILA (Pin de Ubicación) */}
-                <div className="absolute top-[50%] left-[50%] z-30 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-                  <div className="relative flex h-6 w-6 md:h-8 md:w-8">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#964B36] opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-full w-full bg-[#964B36] border-2 border-white shadow-[0_0_15px_rgba(150,75,54,0.8)]"></span>
+                {/* 📍 EL PUNTO QUE TITILA (VERDE, MÁS PEQUEÑO Y REUBICADO) */}
+                <div className="absolute top-[80%] left-[60%] z-30 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+                  <div className="relative flex h-4 w-4 md:h-5 md:w-5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#25D366] opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-full w-full bg-[#25D366] border-2 border-white shadow-[0_0_15px_rgba(37,211,102,0.8)]"></span>
                   </div>
-                  <span className="mt-2 bg-white/95 backdrop-blur-sm text-[#964B36] text-[9px] md:text-[11px] font-bold px-3 py-1.5 rounded-full shadow-xl uppercase tracking-widest border border-white">
+                  <span className="mt-2 bg-white/95 backdrop-blur-sm text-[#25D366] text-[8px] md:text-[10px] font-bold px-3 py-1.5 rounded-full shadow-xl uppercase tracking-widest border border-white">
                     Ubicación Arienzo
                   </span>
                 </div>
               </div>
               
-              {/* Tarjeta flotante inferior */}
               <div className="absolute -bottom-6 -left-2 md:-left-8 z-40 bg-white/95 backdrop-blur-xl px-6 py-4 rounded-xl shadow-2xl border border-neutral-100 flex items-center gap-4 hover:scale-105 transition-transform duration-300">
                 <div className="w-2 h-8 bg-[#964B36] rounded-full"></div>
                 <div>
