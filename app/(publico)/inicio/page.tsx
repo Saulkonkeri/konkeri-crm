@@ -344,7 +344,7 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* 2. UBICACIÓN (NUEVAS COORDENADAS MILIMÉTRICAS) */}
+      {/* 2. UBICACIÓN */}
       <section className="py-20 md:py-32 px-6 bg-[#F9F7F5] relative overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:40px_40px]"></div>
 
@@ -379,7 +379,7 @@ export default function ArienzoLandingPremium() {
                   className="object-cover"
                 />
                 
-                {/* 📍 ANCLA RE-CALIBRADA: Bajamos al 86% y movemos a la derecha al 58% */}
+                {/* 📍 ANCLA RE-CALIBRADA: 86% abajo y 58% a la derecha */}
                 <div className="absolute top-[86%] left-[58%] z-30">
                   
                   {/* PUNTO VERDE (Centrado exactamente en el ancla) */}
@@ -397,14 +397,16 @@ export default function ArienzoLandingPremium() {
                   </div>
 
                 </div>
-              </div>
-              
-              <div className="absolute -bottom-6 -left-2 md:-left-8 z-40 bg-white/95 backdrop-blur-xl px-6 py-4 rounded-xl shadow-2xl border border-neutral-100 flex items-center gap-4 hover:scale-105 transition-transform duration-300">
-                <div className="w-2 h-8 bg-[#964B36] rounded-full"></div>
-                <div>
-                  <span className="block text-[9px] md:text-[10px] text-neutral-500 font-bold uppercase tracking-widest mb-0.5">Zona Estratégica</span>
-                  <span className="block text-sm md:text-base font-bold text-neutral-900 uppercase tracking-wide">Alta Plusvalía</span>
+                
+                {/* NUEVA TARJETA FLOTANTE: Reducida y posicionada arriba a la izquierda para aprovechar el mar */}
+                <div className="absolute top-4 left-4 md:top-6 md:left-6 z-40 bg-white/95 backdrop-blur-xl px-4 py-3 md:px-5 md:py-3.5 rounded-xl shadow-2xl border border-neutral-100 flex items-center gap-3 hover:scale-105 transition-transform duration-300">
+                  <div className="w-1.5 h-6 md:h-7 bg-[#964B36] rounded-full"></div>
+                  <div>
+                    <span className="block text-[8px] md:text-[9px] text-neutral-500 font-bold uppercase tracking-widest mb-0.5">Ubicación Privilegiada</span>
+                    <span className="block text-xs md:text-sm font-bold text-neutral-900 uppercase tracking-wide">Alta Plusvalía</span>
+                  </div>
                 </div>
+
               </div>
             </div>
           </div>
