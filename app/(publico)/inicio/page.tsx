@@ -379,35 +379,31 @@ export default function ArienzoLandingPremium() {
                   className="object-cover"
                 />
                 
-                {/* 📍 ANCLA RE-CALIBRADA: 86% abajo y 58% a la derecha */}
+                {/* 📍 ANCLA Y RADAR VERDE PERFECTO */}
                 <div className="absolute top-[86%] left-[58%] z-30">
-                  
-                  {/* PUNTO VERDE (Centrado exactamente en el ancla) */}
                   <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex h-4 w-4 md:h-5 md:w-5">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#25D366] opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-full w-full bg-[#25D366] border-[1.5px] border-white shadow-[0_0_10px_rgba(37,211,102,0.8)]"></span>
                   </div>
 
-                  {/* ETIQUETA Y LÍNEA (Ancladas a la izquierda del punto y perfectamente centradas horizontalmente) */}
                   <div className="absolute top-1/2 right-1/2 mr-3 md:mr-4 transform -translate-y-1/2 flex items-center">
                     <span className="bg-white/90 backdrop-blur-sm text-neutral-800 text-[8px] md:text-[10px] font-bold px-3 py-1.5 rounded shadow-sm uppercase tracking-widest whitespace-nowrap">
                       Ubicación Arienzo
                     </span>
                     <div className="w-4 md:w-6 h-[1.5px] bg-white"></div>
                   </div>
-
                 </div>
-                
-                {/* NUEVA TARJETA FLOTANTE: Reducida y posicionada arriba a la izquierda para aprovechar el mar */}
-                <div className="absolute top-4 left-4 md:top-6 md:left-6 z-40 bg-white/95 backdrop-blur-xl px-4 py-3 md:px-5 md:py-3.5 rounded-xl shadow-2xl border border-neutral-100 flex items-center gap-3 hover:scale-105 transition-transform duration-300">
-                  <div className="w-1.5 h-6 md:h-7 bg-[#964B36] rounded-full"></div>
-                  <div>
-                    <span className="block text-[8px] md:text-[9px] text-neutral-500 font-bold uppercase tracking-widest mb-0.5">Ubicación Privilegiada</span>
-                    <span className="block text-xs md:text-sm font-bold text-neutral-900 uppercase tracking-wide">Alta Plusvalía</span>
-                  </div>
-                </div>
-
               </div>
+              
+              {/* NUEVA TARJETA FLOTANTE: Ahora está afuera del overflow-hidden para que quede "salidita" */}
+              <div className="absolute -top-6 -left-2 md:-top-6 md:-left-8 z-40 bg-white/95 backdrop-blur-xl px-4 py-3 md:px-5 md:py-3.5 rounded-xl shadow-2xl border border-neutral-100 flex items-center gap-3 hover:scale-105 transition-transform duration-300">
+                <div className="w-1.5 h-6 md:h-7 bg-[#964B36] rounded-full"></div>
+                <div>
+                  <span className="block text-[8px] md:text-[9px] text-neutral-500 font-bold uppercase tracking-widest mb-0.5">Ubicación Privilegiada</span>
+                  <span className="block text-xs md:text-sm font-bold text-neutral-900 uppercase tracking-wide">Alta Plusvalía</span>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
