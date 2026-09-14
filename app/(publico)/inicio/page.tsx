@@ -15,21 +15,11 @@ export default function ArienzoLandingPremium() {
   const [brochureDescargado, setBrochureDescargado] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   
-  // Variables para detectar deslizamiento (swipe) en celulares
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchEndX, setTouchEndX] = useState<number | null>(null);
 
-  const [formData, setFormData] = useState({
-    nombres: '',
-    telefono: '',
-    email: ''
-  });
-
-  const [formBrochure, setFormBrochure] = useState({
-    nombres: '',
-    telefono: '',
-    email: ''
-  });
+  const [formData, setFormData] = useState({ nombres: '', telefono: '', email: '' });
+  const [formBrochure, setFormBrochure] = useState({ nombres: '', telefono: '', email: '' });
 
   const imagenesGaleria = useMemo(() => [
     "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Fronta.jpg",
@@ -40,9 +30,6 @@ export default function ArienzoLandingPremium() {
     "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Plaza-Comercial-1-1.jpg"
   ], []);
 
-  // ==========================================
-  // EL CEREBRO DEL TRACKING (CRM + Meta + CAPI + Google)
-  // ==========================================
   const trackEvent = async (accion: string, detalle: string, datosUsuario?: { email?: string, telefono?: string }) => {
     try {
       let visitorId = localStorage.getItem('arienzo_visitor_id');
@@ -70,7 +57,6 @@ export default function ArienzoLandingPremium() {
 
       const emailConocido = localStorage.getItem('arienzo_lead_email') || formData.email || formBrochure.email;
 
-      // 1. A TU CRM (Tracking Visual)
       await supabase.from('tracking_inventario').insert([{
         visitor_id: visitorId,
         session_id: sessionId,
@@ -80,7 +66,6 @@ export default function ArienzoLandingPremium() {
         metadata
       }]);
 
-      // 2. A META (Navegador)
       if (typeof window !== 'undefined' && (window as any).fbq) {
         const fbq = (window as any).fbq;
         if (accion === 'REGISTRO_COMPLETADO' || accion === 'DESCARGA_BROCHURE') {
@@ -98,7 +83,6 @@ export default function ArienzoLandingPremium() {
         }
       }
 
-      // 3. A META (Servidor CAPI)
       let metaEventName = accion;
       if (accion === 'REGISTRO_COMPLETADO' || accion === 'DESCARGA_BROCHURE') metaEventName = 'Lead';
       else if (accion === 'CLIC_WHATSAPP') metaEventName = 'Contact';
@@ -120,7 +104,6 @@ export default function ArienzoLandingPremium() {
         }).catch(() => {});
       }
 
-      // 4. A GOOGLE ANALYTICS (GA4)
       if (typeof window !== 'undefined' && typeof (window as any).gtag !== 'undefined') {
         const gtag = (window as any).gtag;
         if (accion === 'REGISTRO_COMPLETADO' || accion === 'DESCARGA_BROCHURE') {
@@ -169,58 +152,32 @@ export default function ArienzoLandingPremium() {
     };
   }, []);
 
-  // Control de teclado para la galería
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (imagenIndex === null) return;
-      if (e.key === 'ArrowRight') {
-        setImagenIndex((prev) => prev !== null ? (prev + 1) % imagenesGaleria.length : null);
-      } else if (e.key === 'ArrowLeft') {
-        setImagenIndex((prev) => prev !== null ? (prev - 1 + imagenesGaleria.length) % imagenesGaleria.length : null);
-      } else if (e.key === 'Escape') {
-        setImagenIndex(null);
-      }
+      if (e.key === 'ArrowRight') setImagenIndex((prev) => prev !== null ? (prev + 1) % imagenesGaleria.length : null);
+      else if (e.key === 'ArrowLeft') setImagenIndex((prev) => prev !== null ? (prev - 1 + imagenesGaleria.length) % imagenesGaleria.length : null);
+      else if (e.key === 'Escape') setImagenIndex(null);
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [imagenIndex, imagenesGaleria.length]);
 
-  // Funciones para deslizar con el dedo en celular (Swipe)
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchEndX(null);
     setTouchStartX(e.targetTouches[0].clientX);
   };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEndX(e.targetTouches[0].clientX);
-  };
-
+  const handleTouchMove = (e: React.TouchEvent) => setTouchEndX(e.targetTouches[0].clientX);
   const handleTouchEnd = () => {
     if (!touchStartX || !touchEndX) return;
     const distance = touchStartX - touchEndX;
-    const isLeftSwipe = distance > 50;
-    const isRightSwipe = distance < -50;
-
-    if (isLeftSwipe) {
-      nextImagen();
-    } else if (isRightSwipe) {
-      prevImagen();
-    }
+    if (distance > 50) nextImagen();
+    else if (distance < -50) prevImagen();
   };
 
-  const abrirModalVIP = () => {
-    trackEvent('ABRIO_FORMULARIO', 'Hizo clic en botón Acceso Exclusivo');
-    setMostrarModalVip(true);
-  };
+  const abrirModalVIP = () => { trackEvent('ABRIO_FORMULARIO', 'Hizo clic en botón Acceso Exclusivo'); setMostrarModalVip(true); };
+  const abrirCalendly = () => { trackEvent('ABRIO_CALENDLY', 'Abrió modal de agendamiento'); setMostrarModalCalendly(true); };
 
-  const abrirCalendly = () => {
-    trackEvent('ABRIO_CALENDLY', 'Abrió modal de agendamiento');
-    setMostrarModalCalendly(true);
-  };
-
-  // ==========================================
-  // FUNCIONES DE CAPTACIÓN DE LEADS
-  // ==========================================
   const procesarSolicitudVIP = async (e: React.FormEvent) => {
     e.preventDefault();
     setCargando(true);
@@ -254,20 +211,14 @@ export default function ArienzoLandingPremium() {
 
       localStorage.setItem('arienzo_lead_email', correoLimpio);
       
-      await trackEvent('REGISTRO_COMPLETADO', `Registró datos VIP. Correo: ${correoLimpio}`, {
-        email: correoLimpio,
-        telefono: formData.telefono
-      });
+      await trackEvent('REGISTRO_COMPLETADO', `Registró datos VIP. Correo: ${correoLimpio}`, { email: correoLimpio, telefono: formData.telefono });
 
       const visitorId = localStorage.getItem('arienzo_visitor_id');
       if (visitorId) {
-        await supabase.from('tracking_inventario')
-          .update({ email_cliente: correoLimpio })
-          .eq('visitor_id', visitorId);
+        await supabase.from('tracking_inventario').update({ email_cliente: correoLimpio }).eq('visitor_id', visitorId);
       }
 
       setSolicitudEnviada(true);
-      
     } catch (error) {
       alert("Hubo un problema grave en la ejecución.");
     } finally {
@@ -295,10 +246,7 @@ export default function ArienzoLandingPremium() {
 
       localStorage.setItem('arienzo_lead_email', correoLimpio);
       
-      await trackEvent('DESCARGA_BROCHURE', `Descargó el brochure. Correo: ${correoLimpio}`, {
-        email: correoLimpio,
-        telefono: formBrochure.telefono
-      });
+      await trackEvent('DESCARGA_BROCHURE', `Descargó el brochure. Correo: ${correoLimpio}`, { email: correoLimpio, telefono: formBrochure.telefono });
 
       window.open('https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/documentos-publicos/Brochure_Arienzo%20.pdf', '_blank');
       
@@ -317,20 +265,9 @@ export default function ArienzoLandingPremium() {
     }
   };
 
-  const clickImagen = (index: number) => {
-    trackEvent('VIO_ARQUITECTURA', `Abrió render ${index + 1} de la galería`);
-    setImagenIndex(index);
-  };
-
-  const prevImagen = (e?: React.MouseEvent) => {
-    if(e) e.stopPropagation();
-    setImagenIndex((prev) => prev !== null ? (prev - 1 + imagenesGaleria.length) % imagenesGaleria.length : null);
-  };
-
-  const nextImagen = (e?: React.MouseEvent) => {
-    if(e) e.stopPropagation();
-    setImagenIndex((prev) => prev !== null ? (prev + 1) % imagenesGaleria.length : null);
-  };
+  const clickImagen = (index: number) => { trackEvent('VIO_ARQUITECTURA', `Abrió render ${index + 1} de la galería`); setImagenIndex(index); };
+  const prevImagen = (e?: React.MouseEvent) => { if(e) e.stopPropagation(); setImagenIndex((prev) => prev !== null ? (prev - 1 + imagenesGaleria.length) % imagenesGaleria.length : null); };
+  const nextImagen = (e?: React.MouseEvent) => { if(e) e.stopPropagation(); setImagenIndex((prev) => prev !== null ? (prev + 1) % imagenesGaleria.length : null); };
 
   return (
     <div className="min-h-screen bg-[#F9F7F5] text-neutral-800 selection:bg-[#964B36] selection:text-white overflow-x-hidden" style={{ fontFamily: 'Montserrat, sans-serif' }}>
@@ -407,7 +344,7 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* 2. UBICACIÓN (ACTUALIZADA) */}
+      {/* 2. UBICACIÓN (NUEVO AJUSTE DEL PUNTO) */}
       <section className="py-20 md:py-32 px-6 bg-[#F9F7F5] relative overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:40px_40px]"></div>
 
@@ -442,22 +379,29 @@ export default function ArienzoLandingPremium() {
                   className="object-cover"
                 />
                 
-                {/* 📍 EL PUNTO QUE TITILA (VERDE, MÁS PEQUEÑO Y REUBICADO) */}
-                <div className="absolute top-[80%] left-[60%] z-30 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-                  <div className="relative flex h-4 w-4 md:h-5 md:w-5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#25D366] opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-full w-full bg-[#25D366] border-2 border-white shadow-[0_0_15px_rgba(37,211,102,0.8)]"></span>
+                {/* 📍 PUNTO VERDE Y ETIQUETA SEPARADA HACIA LA IZQUIERDA */}
+                <div className="absolute top-[85%] left-[52%] z-30">
+                  {/* Etiqueta flotante con estilo cristal, alineada a la izquierda del punto */}
+                  <div className="absolute top-1/2 right-full mr-3 md:mr-4 -translate-y-1/2 flex items-center">
+                    <span className="bg-white/80 backdrop-blur-sm text-neutral-700 text-[8px] md:text-[10px] font-bold px-3 py-1.5 rounded shadow-sm uppercase tracking-widest whitespace-nowrap">
+                      Ubicación Arienzo
+                    </span>
+                    <div className="w-2 h-[1px] bg-white/80"></div> {/* Línea sutil que conecta al punto */}
                   </div>
-                  <span className="mt-2 bg-white/95 backdrop-blur-sm text-[#25D366] text-[8px] md:text-[10px] font-bold px-3 py-1.5 rounded-full shadow-xl uppercase tracking-widest border border-white">
-                    Ubicación Arienzo
-                  </span>
+                  
+                  {/* El punto verde centrado exactamente en la coordenada */}
+                  <div className="relative transform -translate-x-1/2 -translate-y-1/2 flex h-4 w-4 md:h-5 md:w-5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#25D366] opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-full w-full bg-[#25D366] border border-white shadow-[0_0_10px_rgba(37,211,102,0.8)]"></span>
+                  </div>
                 </div>
               </div>
               
+              {/* Tarjeta inferior actualizada para evitar repetir Barbasquillo */}
               <div className="absolute -bottom-6 -left-2 md:-left-8 z-40 bg-white/95 backdrop-blur-xl px-6 py-4 rounded-xl shadow-2xl border border-neutral-100 flex items-center gap-4 hover:scale-105 transition-transform duration-300">
                 <div className="w-2 h-8 bg-[#964B36] rounded-full"></div>
                 <div>
-                  <span className="block text-[9px] md:text-[10px] text-neutral-500 font-bold uppercase tracking-widest mb-0.5">Barrio Barbasquillo</span>
+                  <span className="block text-[9px] md:text-[10px] text-neutral-500 font-bold uppercase tracking-widest mb-0.5">Zona Estratégica</span>
                   <span className="block text-sm md:text-base font-bold text-neutral-900 uppercase tracking-wide">Alta Plusvalía</span>
                 </div>
               </div>
