@@ -232,8 +232,8 @@ export default function ArienzoLandingPremium() {
         telefono: formData.telefono,
         email: correoLimpio,
         tipo: 'prospecto',
-        origen: 'Web Pública - Solicitud Acceso Exclusivo', // RESTAURADO PARA EL RADAR VIP
-        origen_captacion: 'Página Web / Landing Page', // PARA EL KANBAN
+        origen: 'Web Pública - Solicitud Acceso Exclusivo',
+        origen_captacion: 'Página Web / Landing Page',
         campana: 'Solicitud VIP Landing',
         estado: 'Interesado',
         temperatura: '☀️ Tibio',
@@ -286,7 +286,7 @@ export default function ArienzoLandingPremium() {
         telefono: formBrochure.telefono,
         email: correoLimpio,
         tipo: 'prospecto',
-        origen: 'Web Pública - Descarga Brochure', // RESTAURADO
+        origen: 'Web Pública - Descarga Brochure',
         origen_captacion: 'Página Web / Landing Page',
         campana: 'Descarga Brochure',
         estado: 'Interesado',
@@ -300,7 +300,6 @@ export default function ArienzoLandingPremium() {
         telefono: formBrochure.telefono
       });
 
-      // Abre el PDF en otra pestaña
       window.open('https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/documentos-publicos/Brochure_Arienzo%20.pdf', '_blank');
       
       setBrochureDescargado(true);
@@ -355,7 +354,7 @@ export default function ArienzoLandingPremium() {
         </div>
       </header>
 
-      {/* 1. HERO INMERSIVO (ACLARADO PARA QUE BRILLE LA ARQUITECTURA) */}
+      {/* 1. HERO INMERSIVO */}
       <section className="relative h-[100vh] min-h-[650px] flex flex-col items-center justify-center">
         <Image 
           src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Fronta.jpg" 
@@ -366,7 +365,6 @@ export default function ArienzoLandingPremium() {
           sizes="100vw"
           className="absolute inset-0 object-cover z-0"
         />
-        {/* Aquí está la magia de la luz: bajé la opacidad del negro central a 10% */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/10 to-black/60 z-0"></div>
 
         <div className="relative z-10 text-center px-6 w-full max-w-4xl mx-auto pt-20">
@@ -400,7 +398,6 @@ export default function ArienzoLandingPremium() {
           </div>
         </div>
 
-        {/* SELLO DE AUTOR DIEZ + MULLER EN LA ESQUINA */}
         <div className="absolute bottom-6 right-6 md:bottom-10 md:right-10 z-20 flex flex-col items-end opacity-90 hover:opacity-100 transition-opacity">
           <span className="text-[6px] md:text-[8px] font-medium text-white/80 uppercase tracking-[0.3em] mb-1 drop-shadow-md">Diseño Arquitectónico</span>
           <div className="flex items-center gap-2">
@@ -410,7 +407,7 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* 2. UBICACIÓN */}
+      {/* 2. UBICACIÓN (ACTUALIZADA) */}
       <section className="py-20 md:py-32 px-6 bg-[#F9F7F5] relative overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:40px_40px]"></div>
 
@@ -433,24 +430,36 @@ export default function ArienzoLandingPremium() {
             </div>
 
             <div className="md:col-span-7 relative order-1 md:order-2">
-              <div className="absolute -inset-4 bg-[#D1C292]/20 rounded-2xl transform translate-x-4 translate-y-4 hidden md:block"></div>
-              <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden shadow-2xl">
+              <div className="absolute -inset-4 bg-[#D1C292]/20 rounded-2xl transform translate-x-4 translate-y-4 hidden md:block z-0"></div>
+              
+              {/* Contenedor de la imagen ahora VERTICAL (aspect-[3/4]) */}
+              <div className="relative aspect-[3/4] w-full rounded-xl overflow-hidden shadow-2xl group z-10">
                 <Image 
-                  src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/ubicacion-arienzo-1.jpg" 
+                  src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/ubicacion%20arienzo3.jpg" 
                   alt="Ubicación Manta" 
                   fill
+                  quality={85}
                   sizes="(max-width: 768px) 100vw, 50vw"
                   className="object-cover"
                 />
+                
+                {/* 📍 EL PUNTO QUE TITILA (Pin de Ubicación) */}
+                <div className="absolute top-[50%] left-[50%] z-30 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+                  <div className="relative flex h-6 w-6 md:h-8 md:w-8">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#964B36] opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-full w-full bg-[#964B36] border-2 border-white shadow-[0_0_15px_rgba(150,75,54,0.8)]"></span>
+                  </div>
+                  <span className="mt-2 bg-white/95 backdrop-blur-sm text-[#964B36] text-[9px] md:text-[11px] font-bold px-3 py-1.5 rounded-full shadow-xl uppercase tracking-widest border border-white">
+                    Ubicación Arienzo
+                  </span>
+                </div>
               </div>
               
-              <div className="absolute -bottom-6 -left-2 md:-left-8 z-20 bg-white/95 backdrop-blur-xl px-5 md:px-6 py-4 rounded-xl shadow-2xl border border-white/50 flex items-center gap-4 hover:scale-105 transition-transform duration-300">
-                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center relative">
-                  <span className="w-3 h-3 rounded-full bg-green-500 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]"></span>
-                  <span className="absolute w-3 h-3 rounded-full bg-green-500"></span>
-                </div>
+              {/* Tarjeta flotante inferior */}
+              <div className="absolute -bottom-6 -left-2 md:-left-8 z-40 bg-white/95 backdrop-blur-xl px-6 py-4 rounded-xl shadow-2xl border border-neutral-100 flex items-center gap-4 hover:scale-105 transition-transform duration-300">
+                <div className="w-2 h-8 bg-[#964B36] rounded-full"></div>
                 <div>
-                  <span className="block text-[9px] md:text-[10px] text-neutral-500 font-bold uppercase tracking-widest mb-0.5">Zona Consolidada</span>
+                  <span className="block text-[9px] md:text-[10px] text-neutral-500 font-bold uppercase tracking-widest mb-0.5">Barrio Barbasquillo</span>
                   <span className="block text-sm md:text-base font-bold text-neutral-900 uppercase tracking-wide">Alta Plusvalía</span>
                 </div>
               </div>
@@ -554,7 +563,7 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* 5. GALERÍA DEL PROYECTO CON DESCARGA DE BROCHURE */}
+      {/* 5. GALERÍA DEL PROYECTO */}
       <section className="py-16 md:py-20 bg-[#21242E] text-center px-6 relative overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[7rem] md:text-[14rem] font-black text-white/[0.03] whitespace-nowrap pointer-events-none select-none z-0">
           ARQUITECTURA
@@ -577,7 +586,6 @@ export default function ArienzoLandingPremium() {
             ))}
           </div>
 
-          {/* CALL TO ACTION DEL BROCHURE */}
           <div className="pt-6 border-t border-white/10 max-w-lg mx-auto flex flex-col items-center">
             <button 
               onClick={() => setMostrarModalBrochure(true)}
@@ -589,7 +597,7 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* LIGHTBOX MODAL (AHORA CON SOPORTE TÁCTIL PARA CELULARES) */}
+      {/* LIGHTBOX MODAL */}
       {imagenIndex !== null && (
         <div 
           className="fixed inset-0 bg-[#21242E]/98 z-[70] flex items-center justify-center p-4 md:p-8 backdrop-blur-md animate-in fade-in" 
@@ -599,12 +607,7 @@ export default function ArienzoLandingPremium() {
           onTouchEnd={handleTouchEnd}
         >
           <button className="absolute top-6 right-6 text-white/50 hover:text-white text-4xl font-light transition-colors z-50">&times;</button>
-          
-          {/* Botones de navegación lateral visibles también en móvil pero más pequeños */}
-          <button onClick={prevImagen} className="absolute left-2 md:left-10 text-white/40 hover:text-white text-4xl md:text-7xl p-2 md:p-4 z-50 transition-all hover:scale-110 select-none">
-            &#8249;
-          </button>
-
+          <button onClick={prevImagen} className="absolute left-2 md:left-10 text-white/40 hover:text-white text-4xl md:text-7xl p-2 md:p-4 z-50 transition-all hover:scale-110 select-none">&#8249;</button>
           <div className="relative w-full max-w-5xl h-[80vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
             <Image 
               src={imagenesGaleria[imagenIndex]} 
@@ -613,10 +616,7 @@ export default function ArienzoLandingPremium() {
               className="object-contain rounded-md shadow-2xl animate-in zoom-in-95 pointer-events-none" 
             />
           </div>
-
-          <button onClick={nextImagen} className="absolute right-2 md:right-10 text-white/40 hover:text-white text-4xl md:text-7xl p-2 md:p-4 z-50 transition-all hover:scale-110 select-none">
-            &#8250;
-          </button>
+          <button onClick={nextImagen} className="absolute right-2 md:right-10 text-white/40 hover:text-white text-4xl md:text-7xl p-2 md:p-4 z-50 transition-all hover:scale-110 select-none">&#8250;</button>
         </div>
       )}
 
