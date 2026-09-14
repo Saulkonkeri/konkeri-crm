@@ -344,7 +344,7 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* 2. UBICACIÓN (NUEVO AJUSTE DEL PUNTO) */}
+      {/* 2. UBICACIÓN (PUNTO Y ETIQUETA PERFECTAMENTE ALINEADOS) */}
       <section className="py-20 md:py-32 px-6 bg-[#F9F7F5] relative overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:40px_40px]"></div>
 
@@ -379,25 +379,26 @@ export default function ArienzoLandingPremium() {
                   className="object-cover"
                 />
                 
-                {/* 📍 PUNTO VERDE Y ETIQUETA SEPARADA HACIA LA IZQUIERDA */}
-                <div className="absolute top-[85%] left-[52%] z-30">
-                  {/* Etiqueta flotante con estilo cristal, alineada a la izquierda del punto */}
-                  <div className="absolute top-1/2 right-full mr-3 md:mr-4 -translate-y-1/2 flex items-center">
-                    <span className="bg-white/80 backdrop-blur-sm text-neutral-700 text-[8px] md:text-[10px] font-bold px-3 py-1.5 rounded shadow-sm uppercase tracking-widest whitespace-nowrap">
+                {/* 📍 ANCLA PRINCIPAL: Este div se posiciona exactamente sobre la raíz de la flecha blanca */}
+                <div className="absolute top-[88%] left-[56%] z-30">
+                  
+                  {/* PUNTO VERDE (Centrado exactamente en el ancla) */}
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex h-4 w-4 md:h-5 md:w-5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#25D366] opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-full w-full bg-[#25D366] border-[1.5px] border-white shadow-[0_0_10px_rgba(37,211,102,0.8)]"></span>
+                  </div>
+
+                  {/* ETIQUETA Y LÍNEA (Ancladas a la izquierda del punto y perfectamente centradas horizontalmente) */}
+                  <div className="absolute top-1/2 right-1/2 mr-3 md:mr-4 transform -translate-y-1/2 flex items-center">
+                    <span className="bg-white/90 backdrop-blur-sm text-neutral-800 text-[8px] md:text-[10px] font-bold px-3 py-1.5 rounded shadow-sm uppercase tracking-widest whitespace-nowrap">
                       Ubicación Arienzo
                     </span>
-                    <div className="w-2 h-[1px] bg-white/80"></div> {/* Línea sutil que conecta al punto */}
+                    <div className="w-4 md:w-6 h-[1.5px] bg-white"></div>
                   </div>
-                  
-                  {/* El punto verde centrado exactamente en la coordenada */}
-                  <div className="relative transform -translate-x-1/2 -translate-y-1/2 flex h-4 w-4 md:h-5 md:w-5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#25D366] opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-full w-full bg-[#25D366] border border-white shadow-[0_0_10px_rgba(37,211,102,0.8)]"></span>
-                  </div>
+
                 </div>
               </div>
               
-              {/* Tarjeta inferior actualizada para evitar repetir Barbasquillo */}
               <div className="absolute -bottom-6 -left-2 md:-left-8 z-40 bg-white/95 backdrop-blur-xl px-6 py-4 rounded-xl shadow-2xl border border-neutral-100 flex items-center gap-4 hover:scale-105 transition-transform duration-300">
                 <div className="w-2 h-8 bg-[#964B36] rounded-full"></div>
                 <div>
