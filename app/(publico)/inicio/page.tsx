@@ -344,7 +344,7 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* 2. UBICACIÓN (COORDENADAS AJUSTADAS MÁS ABAJO Y A LA IZQUIERDA) */}
+      {/* 2. UBICACIÓN (NUEVAS COORDENADAS MILIMÉTRICAS) */}
       <section className="py-20 md:py-32 px-6 bg-[#F9F7F5] relative overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:40px_40px]"></div>
 
@@ -379,8 +379,8 @@ export default function ArienzoLandingPremium() {
                   className="object-cover"
                 />
                 
-                {/* 📍 ANCLA RE-CALIBRADA: Bajamos al 82% y movemos un poco a la izquierda al 57% */}
-                <div className="absolute top-[82%] left-[57%] z-30">
+                {/* 📍 ANCLA RE-CALIBRADA: Bajamos al 86% y movemos a la derecha al 58% */}
+                <div className="absolute top-[86%] left-[58%] z-30">
                   
                   {/* PUNTO VERDE (Centrado exactamente en el ancla) */}
                   <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex h-4 w-4 md:h-5 md:w-5">
