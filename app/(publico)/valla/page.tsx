@@ -4,35 +4,32 @@ import Image from 'next/image';
 
 export default function VallaObraArienzo() {
   return (
-    <div className="min-h-screen bg-neutral-900 flex flex-col items-center justify-center p-4 md:p-10" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+    <div className="min-h-screen bg-neutral-900 flex flex-col items-center justify-center p-4 md:p-8" style={{ fontFamily: 'Montserrat, sans-serif' }}>
       
-      <div className="text-center mb-8 text-white">
-        <h2 className="text-2xl md:text-3xl font-bold mb-2">Simulador de Valla Monumental</h2>
+      <div className="text-center mb-6 text-white">
+        <h2 className="text-2xl md:text-3xl font-bold mb-2">Valla Monumental: Diseño Premium</h2>
         <p className="text-[#D1C292] font-bold tracking-widest text-sm md:text-base mb-1">
-          MEDIDAS REALES: 24m de largo x 2.6m de alto
+          ESCALA REAL: 24.00m x 2.60m
         </p>
         <p className="text-neutral-400 text-xs md:text-sm">
-          Ábrelo en pantalla completa. El diseño escala de forma paramétrica según la altura (cqh).
+          Abre tu navegador a pantalla completa. Diseño optimizado para lectura a 60 km/h.
         </p>
       </div>
 
-      {/* CONTENEDOR PRINCIPAL DE LA VALLA 24 x 2.6 */}
-      {/* Aspect ratio exacto: 24 / 2.6 */}
+      {/* CONTENEDOR PRINCIPAL - PROPORCIÓN MATEMÁTICA EXACTA 24:2.6 */}
       <div 
-        style={{ containerType: 'size' }} 
-        className="w-full max-w-[2000px] aspect-[24/2.6] bg-[#964B36] relative overflow-hidden flex flex-col rounded-sm shadow-[0_30px_60px_rgba(0,0,0,0.8)] border-[3px] border-black/30"
+        style={{ aspectRatio: '24 / 2.6', containerType: 'size' }} 
+        className="w-full max-w-[2400px] bg-[#21242E] relative overflow-hidden flex flex-col shadow-[0_40px_80px_rgba(0,0,0,0.9)] border-4 border-black/50"
       >
         
-        {/* 1. SECCIÓN DERECHA: RENDER DE FACHADA (Toma el 60% del espacio visual por ser tan larga) */}
-        <div className="absolute right-0 top-0 bottom-[16%] w-[60%] z-0">
-          {/* Degradado más suave para fusionar los 24 metros */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#964B36] via-[#964B36]/80 to-transparent z-10 w-[50%]"></div>
-          {/* Sombra inferior para separar la franja oscura */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#21242E] to-transparent opacity-50 z-10 h-full"></div>
+        {/* 1. EL RENDER GIGANTE (Fondo panorámico) */}
+        <div className="absolute right-0 top-0 h-full w-[80%] z-0">
+          {/* Degradado oscuro profundo que va de negro a transparente para fundir la imagen */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#21242E] via-[#21242E]/90 to-transparent z-10 w-[60%]"></div>
           
           <Image 
             src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Fronta.jpg" 
-            alt="Render Fachada Arienzo" 
+            alt="Fachada Arienzo" 
             fill
             quality={100}
             className="object-cover object-[center_35%]"
@@ -40,64 +37,70 @@ export default function VallaObraArienzo() {
           />
         </div>
 
-        {/* 2. SECCIÓN IZQUIERDA: TEXTOS PRINCIPALES */}
-        <div className="relative z-20 flex-1 flex flex-col justify-center px-[4%] w-[45%] mb-[3%]">
+        {/* 2. TEXTOS DE ALTO IMPACTO (Lado Izquierdo) */}
+        {/* Usamos cqh (Container Query Height) para que las letras sean inmensas y escalen perfecto */}
+        <div className="relative z-20 flex-1 flex flex-col justify-center px-[4cqw] pt-[2cqh]">
           
-          {/* LOGO ARIENZO (Basado en la altura para no deformarse) */}
-          <div style={{ width: '85cqh', marginBottom: '8cqh' }}>
+          {/* LOGO EN DORADO (Resalta espectacular sobre el fondo oscuro) */}
+          <div style={{ height: '24cqh', marginBottom: '8cqh' }}>
             <Image 
-              src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-blanco.svg" 
+              src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/logo-dorado-arienzo.svg" 
               alt="Arienzo Logo" 
-              width={500} 
-              height={150} 
-              className="w-full h-auto drop-shadow-2xl"
+              width={800} 
+              height={200} 
+              className="h-full w-auto drop-shadow-2xl"
             />
           </div>
 
-          {/* TEXTO DE IMPACTO */}
           <div>
-            <h1 
-              style={{ fontSize: '18cqh' }} 
-              className="text-white font-black uppercase tracking-[0.1em] drop-shadow-2xl leading-none"
+            {/* TAGLINE: Qué es y dónde es */}
+            <span 
+              style={{ fontSize: '7cqh', marginBottom: '2cqh' }} 
+              className="block text-[#D1C292] font-bold tracking-[0.3em] uppercase drop-shadow-md"
             >
-              Próximamente
+              Barbasquillo, Manta
+            </span>
+
+            {/* CALL TO ACTION PRINCIPAL */}
+            <h1 
+              style={{ fontSize: '15cqh' }} 
+              className="text-white font-black uppercase tracking-[0.05em] drop-shadow-2xl leading-none mb-[3cqh]"
+            >
+              Lanzamiento en Planos
             </h1>
             
-            <div 
-              style={{ width: '40cqh', height: '1.2cqh', marginTop: '5cqh', marginBottom: '5cqh' }} 
-              className="bg-[#D1C292] shadow-md"
-            ></div>
-            
+            {/* CARACTERÍSTICA ESTRELLA */}
             <h2 
-              style={{ fontSize: '8.5cqh' }} 
-              className="text-white/95 font-medium tracking-wide drop-shadow-md leading-snug"
+              style={{ fontSize: '9cqh' }} 
+              className="text-neutral-300 font-medium tracking-wide drop-shadow-md"
             >
-              Departamentos exclusivos de <br/>
-              <strong className="text-white font-bold">1, 2 y 3 dormitorios.</strong>
+              Colección exclusiva de <strong className="text-white font-bold">22 residencias.</strong>
             </h2>
           </div>
 
         </div>
 
-        {/* 3. FRANJA INFERIOR OSCURA (CONTACTO Y RESPALDO) */}
-        {/* Altura del 16% de la valla */}
-        <div className="absolute bottom-0 w-full h-[16%] bg-[#21242E] z-30 flex items-center justify-between px-[4%] border-t-[0.8cqh] border-[#D1C292]">
+        {/* 3. ZÓCALO INFERIOR (La base que sostiene el diseño) */}
+        <div 
+          style={{ height: '20cqh' }}
+          className="absolute bottom-0 left-0 w-full bg-[#964B36] z-30 flex items-center justify-between px-[4cqw] shadow-inner"
+        >
           
           {/* SITIO WEB */}
           <div 
-            style={{ fontSize: '5.5cqh' }} 
-            className="text-white font-bold uppercase tracking-[0.15em] drop-shadow-md"
+            style={{ fontSize: '7cqh' }} 
+            className="text-white font-bold uppercase tracking-[0.2em] drop-shadow-md"
           >
             arienzoliving.com
           </div>
 
-          {/* WHATSAPP */}
+          {/* CONTACTO (WhatsApp) */}
           <div 
-            style={{ fontSize: '6cqh' }} 
-            className="flex items-center text-white font-bold tracking-wider drop-shadow-md"
+            style={{ fontSize: '8cqh' }} 
+            className="flex items-center text-white font-bold tracking-widest drop-shadow-md"
           >
             <svg 
-              style={{ width: '7cqh', height: '7cqh', marginRight: '2cqh' }} 
+              style={{ width: '8cqh', height: '8cqh', marginRight: '2cqh' }} 
               className="text-[#25D366]" 
               fill="currentColor" 
               viewBox="0 0 24 24"
@@ -107,25 +110,45 @@ export default function VallaObraArienzo() {
             097 946 9472
           </div>
 
-          {/* LOGOS DE RESPALDO (A la derecha) */}
-          <div className="flex items-center" style={{ gap: '6cqh' }}>
-            <div className="text-center">
-              <span style={{ fontSize: '2.5cqh', marginBottom: '0.5cqh' }} className="block text-[#D1C292] uppercase tracking-[0.2em] font-bold">
+          {/* FIRMAS INSTITUCIONALES (Respaldo) */}
+          <div className="flex items-center" style={{ gap: '4cqw' }}>
+            
+            {/* Konkeri */}
+            <div className="flex flex-col items-end justify-center">
+              <span style={{ fontSize: '3.5cqh', marginBottom: '0.5cqh' }} className="text-[#D1C292] uppercase tracking-[0.25em] font-bold">
                 Desarrolla
               </span>
-              <span style={{ fontSize: '4.5cqh' }} className="block text-white font-bold tracking-[0.15em]">
+              <span style={{ fontSize: '5.5cqh' }} className="text-white font-bold tracking-[0.2em] leading-none">
                 KONKERI
               </span>
             </div>
-            <div style={{ width: '2px', height: '8cqh' }} className="bg-white/20"></div>
-            <div className="text-center">
-              <span style={{ fontSize: '2.5cqh', marginBottom: '0.5cqh' }} className="block text-[#D1C292] uppercase tracking-[0.2em] font-bold">
+            
+            {/* Separador */}
+            <div style={{ width: '2px', height: '10cqh' }} className="bg-white/30 rounded-full"></div>
+            
+            {/* Diez+Muller */}
+            <div className="flex flex-col items-start justify-center">
+              <span style={{ fontSize: '3.5cqh', marginBottom: '0.5cqh' }} className="text-[#D1C292] uppercase tracking-[0.25em] font-bold">
                 Arquitectura
               </span>
-              <span style={{ fontSize: '4.5cqh' }} className="block text-white font-bold tracking-[0.15em]">
+              <span style={{ fontSize: '5.5cqh' }} className="text-white font-bold tracking-[0.2em] leading-none">
                 DIEZ+MULLER
               </span>
             </div>
+
+            {/* Separador */}
+            <div style={{ width: '2px', height: '10cqh' }} className="bg-white/30 rounded-full hidden lg:block"></div>
+
+            {/* Carrasco */}
+            <div className="flex flex-col items-start justify-center hidden lg:flex">
+              <span style={{ fontSize: '3.5cqh', marginBottom: '0.5cqh' }} className="text-[#D1C292] uppercase tracking-[0.25em] font-bold">
+                Construye
+              </span>
+              <span style={{ fontSize: '5.5cqh' }} className="text-white font-bold tracking-[0.2em] leading-none">
+                CARRASCO
+              </span>
+            </div>
+
           </div>
 
         </div>
