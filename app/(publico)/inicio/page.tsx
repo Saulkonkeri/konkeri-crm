@@ -15,9 +15,6 @@ export default function ArienzoLandingPremium() {
   const [brochureDescargado, setBrochureDescargado] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  const [touchStartX, setTouchStartX] = useState<number | null>(null);
-  const [touchEndX, setTouchEndX] = useState<number | null>(null);
-
   const [formData, setFormData] = useState({ nombres: '', telefono: '', email: '' });
   const [formBrochure, setFormBrochure] = useState({ nombres: '', telefono: '', email: '' });
 
@@ -157,7 +154,7 @@ export default function ArienzoLandingPremium() {
     };
   }, []);
 
-  // Efecto Maestro para centrar el carrusel en la foto 60 al cargar la página
+  // Centrar el carrusel en la foto 60 al cargar la página
   useEffect(() => {
     const centrarCarruselRotativo = () => {
       const carousel = document.getElementById('carrusel-arquitectura');
@@ -179,33 +176,35 @@ export default function ArienzoLandingPremium() {
     };
   }, [imagenesInfinitas.length]);
 
+  // Manejo inteligente del Teclado (Para la galería modal y para el carrusel principal)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (imagenIndex === null) return;
-      if (e.key === 'ArrowRight') setImagenIndex((prev) => prev !== null ? (prev + 1) % imagenesGaleria.length : null);
-      else if (e.key === 'ArrowLeft') setImagenIndex((prev) => prev !== null ? (prev - 1 + imagenesGaleria.length) % imagenesGaleria.length : null);
-      else if (e.key === 'Escape') setImagenIndex(null);
+      // Ignorar si el usuario está escribiendo en un formulario
+      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
+
+      if (imagenIndex !== null) {
+        // SI EL MODAL ESTÁ ABIERTO: Navegar por la foto ampliada
+        if (e.key === 'ArrowRight') setImagenIndex((prev) => prev !== null ? (prev + 1) % imagenesGaleria.length : null);
+        else if (e.key === 'ArrowLeft') setImagenIndex((prev) => prev !== null ? (prev - 1 + imagenesGaleria.length) % imagenesGaleria.length : null);
+        else if (e.key === 'Escape') setImagenIndex(null);
+      } else {
+        // SI EL MODAL ESTÁ CERRADO: Mover el carrusel de la página web
+        const carousel = document.getElementById('carrusel-arquitectura');
+        if (carousel && carousel.firstElementChild) {
+          const gap = window.innerWidth < 768 ? 16 : 24; // Aproximación del gap en px
+          const scrollAmount = (carousel.firstElementChild as HTMLElement).offsetWidth + gap;
+          
+          if (e.key === 'ArrowRight') {
+            carousel.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+          } else if (e.key === 'ArrowLeft') {
+            carousel.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+          }
+        }
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [imagenIndex, imagenesGaleria.length]);
-
-  // FUNCIONES RESTAURADAS PARA EL DESLIZAMIENTO DEL LIGHTBOX
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchEndX(null);
-    setTouchStartX(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEndX(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchEnd = () => {
-    if (!touchStartX || !touchEndX) return;
-    const distance = touchStartX - touchEndX;
-    if (distance > 50) nextImagen();
-    else if (distance < -50) prevImagen();
-  };
 
   const abrirModalVIP = () => { trackEvent('ABRIO_FORMULARIO', 'Hizo clic en botón Acceso Exclusivo'); setMostrarModalVip(true); };
   const abrirCalendly = () => { trackEvent('ABRIO_CALENDLY', 'Abrió modal de agendamiento'); setMostrarModalCalendly(true); };
@@ -416,6 +415,7 @@ export default function ArienzoLandingPremium() {
                   className="object-cover"
                 />
                 
+                {/* 📍 ANCLA Y RADAR VERDE PERFECTO - BLINDADO EN 86% / 58% */}
                 <div className="absolute top-[86%] left-[58%] z-30">
                   <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex h-4 w-4 md:h-5 md:w-5">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#25D366] opacity-75"></span>
@@ -539,9 +539,10 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* 5. GALERÍA DEL PROYECTO */}
-      <section className="py-12 md:py-16 bg-[#21242E] relative overflow-hidden text-center">
+      {/* 5. GALERÍA DEL PROYECTO (FONDO COLOR SÓLIDO Y CARRUSEL INFINITO CON TECLADO) */}
+      <section className="py-12 md:py-16 bg-[#21242E] relative text-center">
         
+        {/* Título y Subtítulo Original */}
         <div className="max-w-6xl mx-auto relative z-10 px-6 mb-6">
           <span className="text-[11px] font-bold tracking-[0.25em] text-[#D1C292] uppercase mb-3 block">Galería del Proyecto</span>
           <h3 className="text-2xl md:text-3xl font-medium text-white tracking-tight">Imágenes que hablan por sí solas.</h3>
@@ -568,6 +569,7 @@ export default function ArienzoLandingPremium() {
                 />
                 <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-300"></div>
                 
+                {/* Lupa de ampliación */}
                 <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-md rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
                 </div>
@@ -575,11 +577,12 @@ export default function ArienzoLandingPremium() {
             ))}
           </div>
           
+          {/* Instrucción visual */}
           <div className="max-w-6xl mx-auto px-6 mt-4 relative z-10 flex justify-center">
             <span className="flex items-center justify-center gap-2 text-[9px] font-bold tracking-[0.2em] text-white/40 uppercase">
-              <svg className="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-              Desliza para explorar
-              <svg className="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+              <svg className="w-4 h-4 animate-pulse hidden md:block" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+              Usa las flechas para explorar
+              <svg className="w-4 h-4 animate-pulse hidden md:block" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
             </span>
           </div>
         </div>
@@ -599,9 +602,6 @@ export default function ArienzoLandingPremium() {
         <div 
           className="fixed inset-0 bg-[#21242E]/98 z-[70] flex items-center justify-center p-4 md:p-8 backdrop-blur-md animate-in fade-in" 
           onClick={() => setImagenIndex(null)}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
         >
           <button className="absolute top-6 right-6 text-white/50 hover:text-white text-4xl font-light transition-colors z-50">&times;</button>
           <button onClick={prevImagen} className="absolute left-2 md:left-10 text-white/40 hover:text-white text-4xl md:text-7xl p-2 md:p-4 z-50 transition-all hover:scale-110 select-none">&#8249;</button>
