@@ -30,6 +30,11 @@ export default function ArienzoLandingPremium() {
     "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Plaza-Comercial-1-1.jpg"
   ], []);
 
+  // Multiplicamos la galería para dar el efecto de scroll "infinito" (24 imágenes en bucle)
+  const imagenesInfinitas = useMemo(() => [
+    ...imagenesGaleria, ...imagenesGaleria, ...imagenesGaleria, ...imagenesGaleria
+  ], [imagenesGaleria]);
+
   const trackEvent = async (accion: string, detalle: string, datosUsuario?: { email?: string, telefono?: string }) => {
     try {
       let visitorId = localStorage.getItem('arienzo_visitor_id');
@@ -152,6 +157,21 @@ export default function ArienzoLandingPremium() {
     };
   }, []);
 
+  // Efecto para centrar el carrusel en el segundo bloque y dar la sensación infinita
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const carousel = document.getElementById('carrusel-arquitectura');
+      if (carousel && carousel.children.length >= imagenesGaleria.length) {
+        // Iniciamos en la imagen que es el inicio del segundo ciclo (índice 6)
+        const startItem = carousel.children[imagenesGaleria.length] as HTMLElement;
+        if (startItem) {
+          carousel.scrollLeft = startItem.offsetLeft - (carousel.clientWidth - startItem.offsetWidth) / 2;
+        }
+      }
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [imagenesGaleria.length]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (imagenIndex === null) return;
@@ -265,7 +285,13 @@ export default function ArienzoLandingPremium() {
     }
   };
 
-  const clickImagen = (index: number) => { trackEvent('VIO_ARQUITECTURA', `Abrió render ${index + 1} de la galería`); setImagenIndex(index); };
+  const clickImagen = (index: number) => { 
+    // Utilizamos módulo para que sin importar qué índice infinito toquen (ej. el 15), abra la imagen original correcta en el modal.
+    const realIndex = index % imagenesGaleria.length;
+    trackEvent('VIO_ARQUITECTURA', `Abrió render ${realIndex + 1} de la galería`); 
+    setImagenIndex(realIndex); 
+  };
+  
   const prevImagen = (e?: React.MouseEvent) => { if(e) e.stopPropagation(); setImagenIndex((prev) => prev !== null ? (prev - 1 + imagenesGaleria.length) % imagenesGaleria.length : null); };
   const nextImagen = (e?: React.MouseEvent) => { if(e) e.stopPropagation(); setImagenIndex((prev) => prev !== null ? (prev + 1) % imagenesGaleria.length : null); };
 
@@ -503,33 +529,33 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* 5. GALERÍA DEL PROYECTO (TEXTOS CENTRADOS Y CARRUSEL NETFLIX) */}
-      <section className="py-12 md:py-16 bg-[#21242E] relative overflow-hidden">
-        {/* Marca de agua al fondo */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[7rem] md:text-[14rem] font-black text-white/[0.03] whitespace-nowrap pointer-events-none select-none z-0">
-          ARQUITECTURA
-        </div>
-
-        {/* Título (Perfectamente Centrado) */}
-        <div className="max-w-6xl mx-auto relative z-10 px-6 mb-6 text-center">
+      {/* 5. GALERÍA DEL PROYECTO (DISEÑO LIMPIO, UN SOLO FONDO Y CARRUSEL INFINITO) */}
+      <section className="py-12 md:py-16 bg-[#21242E] relative overflow-hidden text-center">
+        
+        {/* Título y Subtítulo Original (Perfectamente Centrados) */}
+        <div className="max-w-6xl mx-auto relative z-10 px-6 mb-6">
           <span className="text-[11px] font-bold tracking-[0.25em] text-[#D1C292] uppercase mb-3 block">Galería del Proyecto</span>
-          <h3 className="text-2xl md:text-3xl font-medium text-white tracking-tight">Espacios de diseño.</h3>
+          <h3 className="text-2xl md:text-3xl font-medium text-white tracking-tight">Imágenes que hablan por sí solas.</h3>
         </div>
 
-        {/* CONTENEDOR CARRUSEL */}
+        {/* CONTENEDOR CARRUSEL INFINITO */}
         <div className="relative w-full z-20 mb-8">
-          <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-6 pl-6 pr-6 lg:pl-[calc((100vw-1152px)/2+24px)] lg:pr-[calc((100vw-1152px)/2+24px)] py-4 scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            {imagenesGaleria.map((img, index) => (
+          <div 
+            id="carrusel-arquitectura"
+            /* Los paddings px-[15vw] (en movil) centran la imagen activa dejando asomar los bordes prev/next */
+            className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-6 px-[15vw] md:px-[30vw] py-4 items-center scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+          >
+            {imagenesInfinitas.map((img, index) => (
               <div 
                 key={index} 
                 onClick={() => clickImagen(index)} 
-                className="relative shrink-0 snap-start w-[82vw] sm:w-[50vw] md:w-[40vw] max-w-[650px] aspect-[4/3] md:aspect-[16/9] rounded-xl overflow-hidden cursor-pointer shadow-[0_15px_40px_rgba(0,0,0,0.4)] transition-all duration-500 hover:scale-[1.02] bg-[#1a1d24] group"
+                className="relative shrink-0 snap-center w-[70vw] md:w-[40vw] max-w-[650px] aspect-[4/3] md:aspect-[16/9] rounded-xl overflow-hidden cursor-pointer shadow-[0_15px_40px_rgba(0,0,0,0.4)] transition-all duration-500 hover:scale-[1.02] bg-[#1a1d24] group"
               >
                 <Image 
                   src={img} 
-                  alt={`Render ${index + 1}`} 
+                  alt={`Render ${(index % imagenesGaleria.length) + 1}`} 
                   fill 
-                  sizes="(max-width: 768px) 82vw, 40vw" 
+                  sizes="(max-width: 768px) 70vw, 40vw" 
                   className="object-cover opacity-85 group-hover:opacity-100 transition-opacity duration-500" 
                 />
                 <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-300"></div>
@@ -542,7 +568,7 @@ export default function ArienzoLandingPremium() {
             ))}
           </div>
           
-          {/* Instrucción visual (Perfectamente Centrada con dobles flechas) */}
+          {/* Instrucción visual (Perfectamente Centrada con dobles flechas animadas) */}
           <div className="max-w-6xl mx-auto px-6 mt-4 relative z-10 flex justify-center">
             <span className="flex items-center justify-center gap-2 text-[9px] font-bold tracking-[0.2em] text-white/40 uppercase">
               <svg className="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
