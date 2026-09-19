@@ -386,7 +386,6 @@ export default function ArienzoLandingPremium() {
                     <span className="relative inline-flex rounded-full h-full w-full bg-[#25D366] border-[1.5px] border-white shadow-[0_0_10px_rgba(37,211,102,0.8)]"></span>
                   </div>
 
-                  {/* La línea arranca exactamente desde el borde del radar */}
                   <div className="absolute top-1/2 right-2 md:right-[10px] transform -translate-y-1/2 flex items-center">
                     <span className="bg-white/90 backdrop-blur-sm text-neutral-800 text-[8px] md:text-[10px] font-bold px-3 py-1.5 rounded shadow-sm uppercase tracking-widest whitespace-nowrap">
                       Ubicación Arienzo
@@ -504,28 +503,26 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* 5. GALERÍA DEL PROYECTO (DISEÑO TIPO NETFLIX - HORIZONTAL BLEED) */}
+      {/* 5. GALERÍA DEL PROYECTO (TEXTOS CENTRADOS Y CARRUSEL NETFLIX) */}
       <section className="py-12 md:py-16 bg-[#21242E] relative overflow-hidden">
         {/* Marca de agua al fondo */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[7rem] md:text-[14rem] font-black text-white/[0.03] whitespace-nowrap pointer-events-none select-none z-0">
           ARQUITECTURA
         </div>
 
-        {/* Título (Alineado con el margen general de la web) */}
-        <div className="max-w-6xl mx-auto relative z-10 px-6 mb-6">
+        {/* Título (Perfectamente Centrado) */}
+        <div className="max-w-6xl mx-auto relative z-10 px-6 mb-6 text-center">
           <span className="text-[11px] font-bold tracking-[0.25em] text-[#D1C292] uppercase mb-3 block">Galería del Proyecto</span>
           <h3 className="text-2xl md:text-3xl font-medium text-white tracking-tight">Espacios de diseño.</h3>
         </div>
 
         {/* CONTENEDOR CARRUSEL */}
         <div className="relative w-full z-20 mb-8">
-          {/* El padding left pl-6 alinea la primera imagen al margen, y el pr-[10vw] deja que la última se asome */}
           <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-6 pl-6 pr-6 lg:pl-[calc((100vw-1152px)/2+24px)] lg:pr-[calc((100vw-1152px)/2+24px)] py-4 scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {imagenesGaleria.map((img, index) => (
               <div 
                 key={index} 
                 onClick={() => clickImagen(index)} 
-                /* w-[82vw] asegura que la primera foto ocupe el 82% de la pantalla móvil, forzando a la segunda foto a asomarse un 14% por la derecha */
                 className="relative shrink-0 snap-start w-[82vw] sm:w-[50vw] md:w-[40vw] max-w-[650px] aspect-[4/3] md:aspect-[16/9] rounded-xl overflow-hidden cursor-pointer shadow-[0_15px_40px_rgba(0,0,0,0.4)] transition-all duration-500 hover:scale-[1.02] bg-[#1a1d24] group"
               >
                 <Image 
@@ -545,11 +542,12 @@ export default function ArienzoLandingPremium() {
             ))}
           </div>
           
-          {/* Instrucción visual para arrastrar */}
-          <div className="max-w-6xl mx-auto px-6 mt-2 relative z-10">
-            <span className="flex items-center gap-2 text-[9px] font-bold tracking-[0.2em] text-white/40 uppercase">
+          {/* Instrucción visual (Perfectamente Centrada con dobles flechas) */}
+          <div className="max-w-6xl mx-auto px-6 mt-4 relative z-10 flex justify-center">
+            <span className="flex items-center justify-center gap-2 text-[9px] font-bold tracking-[0.2em] text-white/40 uppercase">
+              <svg className="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
               Desliza para explorar
-              <svg className="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+              <svg className="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
             </span>
           </div>
         </div>
