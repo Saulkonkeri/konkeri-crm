@@ -15,6 +15,9 @@ export default function ArienzoLandingPremium() {
   const [brochureDescargado, setBrochureDescargado] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchEndX, setTouchEndX] = useState<number | null>(null);
+
   const [formData, setFormData] = useState({ nombres: '', telefono: '', email: '' });
   const [formBrochure, setFormBrochure] = useState({ nombres: '', telefono: '', email: '' });
 
@@ -154,7 +157,7 @@ export default function ArienzoLandingPremium() {
     };
   }, []);
 
-  // Centrar el carrusel en la foto 60 al cargar la página
+  // Centrar el carrusel en la foto 60 al cargar la página (Efecto infinito)
   useEffect(() => {
     const centrarCarruselRotativo = () => {
       const carousel = document.getElementById('carrusel-arquitectura');
@@ -205,6 +208,23 @@ export default function ArienzoLandingPremium() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [imagenIndex, imagenesGaleria.length]);
+
+  // Funciones para deslizar el dedo en el Lightbox abierto
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEndX(null);
+    setTouchStartX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEndX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStartX || !touchEndX) return;
+    const distance = touchStartX - touchEndX;
+    if (distance > 50) nextImagen();
+    else if (distance < -50) prevImagen();
+  };
 
   const abrirModalVIP = () => { trackEvent('ABRIO_FORMULARIO', 'Hizo clic en botón Acceso Exclusivo'); setMostrarModalVip(true); };
   const abrirCalendly = () => { trackEvent('ABRIO_CALENDLY', 'Abrió modal de agendamiento'); setMostrarModalCalendly(true); };
@@ -431,6 +451,7 @@ export default function ArienzoLandingPremium() {
                 </div>
               </div>
               
+              {/* Tarjeta flotante superior izquierda */}
               <div className="absolute -top-6 -left-2 md:-top-6 md:-left-8 z-40 bg-white/95 backdrop-blur-xl px-4 py-3 md:px-5 md:py-3.5 rounded-xl shadow-2xl border border-neutral-100 flex items-center gap-3 hover:scale-105 transition-transform duration-300">
                 <div className="w-1.5 h-6 md:h-7 bg-[#964B36] rounded-full"></div>
                 <div>
@@ -539,10 +560,10 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* 5. GALERÍA DEL PROYECTO (FONDO COLOR SÓLIDO Y CARRUSEL INFINITO CON TECLADO) */}
+      {/* 5. GALERÍA DEL PROYECTO (FONDO COLOR SÓLIDO, SIN MARCA DE AGUA) */}
       <section className="py-12 md:py-16 bg-[#21242E] relative text-center">
         
-        {/* Título y Subtítulo Original */}
+        {/* Título y Subtítulo Original (Perfectamente Centrados) */}
         <div className="max-w-6xl mx-auto relative z-10 px-6 mb-6">
           <span className="text-[11px] font-bold tracking-[0.25em] text-[#D1C292] uppercase mb-3 block">Galería del Proyecto</span>
           <h3 className="text-2xl md:text-3xl font-medium text-white tracking-tight">Imágenes que hablan por sí solas.</h3>
@@ -602,6 +623,9 @@ export default function ArienzoLandingPremium() {
         <div 
           className="fixed inset-0 bg-[#21242E]/98 z-[70] flex items-center justify-center p-4 md:p-8 backdrop-blur-md animate-in fade-in" 
           onClick={() => setImagenIndex(null)}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
           <button className="absolute top-6 right-6 text-white/50 hover:text-white text-4xl font-light transition-colors z-50">&times;</button>
           <button onClick={prevImagen} className="absolute left-2 md:left-10 text-white/40 hover:text-white text-4xl md:text-7xl p-2 md:p-4 z-50 transition-all hover:scale-110 select-none">&#8249;</button>
