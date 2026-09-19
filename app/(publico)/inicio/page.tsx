@@ -379,23 +379,26 @@ export default function ArienzoLandingPremium() {
                   className="object-cover"
                 />
                 
-                {/* 📍 ANCLA Y RADAR VERDE PERFECTO */}
-                <div className="absolute top-[86%] left-[58%] z-30">
+                {/* 📍 ANCLA Y RADAR VERDE (UNIÓN PERFECTA) */}
+                <div className="absolute top-[82%] left-[57%] z-30">
+                  {/* Punto verde centrado */}
                   <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex h-4 w-4 md:h-5 md:w-5">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#25D366] opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-full w-full bg-[#25D366] border-[1.5px] border-white shadow-[0_0_10px_rgba(37,211,102,0.8)]"></span>
                   </div>
 
-                  <div className="absolute top-1/2 right-1/2 mr-3 md:mr-4 transform -translate-y-1/2 flex items-center">
+                  {/* Etiqueta y línea conectadas EXACTAMENTE al borde izquierdo del punto verde */}
+                  {/* Usamos right-2 (8px) en móvil y right-[10px] en desktop, que es el radio exacto del punto verde */}
+                  <div className="absolute top-1/2 right-2 md:right-[10px] transform -translate-y-1/2 flex items-center">
                     <span className="bg-white/90 backdrop-blur-sm text-neutral-800 text-[8px] md:text-[10px] font-bold px-3 py-1.5 rounded shadow-sm uppercase tracking-widest whitespace-nowrap">
                       Ubicación Arienzo
                     </span>
-                    <div className="w-4 md:w-6 h-[1.5px] bg-white"></div>
+                    <div className="w-4 md:w-8 h-[1.5px] bg-white"></div>
                   </div>
                 </div>
               </div>
               
-              {/* NUEVA TARJETA FLOTANTE: Ahora está afuera del overflow-hidden para que quede "salidita" */}
+              {/* Tarjeta Superior Izquierda */}
               <div className="absolute -top-6 -left-2 md:-top-6 md:-left-8 z-40 bg-white/95 backdrop-blur-xl px-4 py-3 md:px-5 md:py-3.5 rounded-xl shadow-2xl border border-neutral-100 flex items-center gap-3 hover:scale-105 transition-transform duration-300">
                 <div className="w-1.5 h-6 md:h-7 bg-[#964B36] rounded-full"></div>
                 <div>
@@ -504,41 +507,63 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* 5. GALERÍA DEL PROYECTO */}
-      <section className="py-16 md:py-20 bg-[#21242E] text-center px-6 relative overflow-hidden">
+      {/* 5. GALERÍA DEL PROYECTO (ACTUALIZADO A CARRUSEL INTERACTIVO) */}
+      <section className="py-16 md:py-24 bg-[#21242E] text-center relative overflow-hidden">
+        {/* Texto de fondo flotante */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[7rem] md:text-[14rem] font-black text-white/[0.03] whitespace-nowrap pointer-events-none select-none z-0">
           ARQUITECTURA
         </div>
 
-        <div className="max-w-6xl mx-auto relative z-10">
+        <div className="max-w-6xl mx-auto relative z-10 px-6">
           <span className="text-[13px] font-bold tracking-[0.25em] text-[#D1C292] uppercase mb-4 block">Galería del Proyecto</span>
-          <h3 className="text-3xl md:text-4xl font-medium text-white mb-10 tracking-tight">Imágenes que hablan por sí solas.</h3>
-          
-          <div className="flex flex-wrap md:flex-nowrap justify-center gap-3 md:gap-4 mb-10">
+          <h3 className="text-3xl md:text-4xl font-medium text-white mb-6 md:mb-10 tracking-tight">Imágenes que hablan por sí solas.</h3>
+        </div>
+
+        {/* CONTENEDOR DEL CARRUSEL DE DESPLAZAMIENTO (Ocupa todo el ancho) */}
+        <div className="relative w-full z-20 mb-10">
+          <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-8 px-[7.5vw] md:px-[20vw] py-8 items-center scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {imagenesGaleria.map((img, index) => (
               <div 
                 key={index} 
                 onClick={() => clickImagen(index)} 
-                className="relative group w-[140px] sm:w-[180px] md:w-full md:flex-1 aspect-[4/3] rounded-md overflow-hidden cursor-pointer shadow-lg bg-[#1a1d24]"
+                className="relative shrink-0 snap-center w-[85vw] md:w-[60vw] max-w-[1000px] aspect-[4/3] md:aspect-[16/9] rounded-xl overflow-hidden cursor-pointer shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-500 hover:scale-[1.02] bg-[#1a1d24] group"
               >
-                <Image src={img} alt={`Render ${index + 1}`} fill sizes="(max-width: 768px) 50vw, 20vw" className="object-cover transition-transform duration-500 group-hover:scale-110 opacity-80 group-hover:opacity-100" />
-                <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
+                <Image 
+                  src={img} 
+                  alt={`Render ${index + 1}`} 
+                  fill 
+                  sizes="(max-width: 768px) 85vw, 60vw" 
+                  className="object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500" 
+                />
+                <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-300"></div>
+                
+                {/* Ícono de ampliación sutil al pasar el cursor */}
+                <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-md rounded-full p-2 md:p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <svg className="w-4 h-4 md:w-5 md:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
+                </div>
               </div>
             ))}
           </div>
-
-          <div className="pt-6 border-t border-white/10 max-w-lg mx-auto flex flex-col items-center">
-            <button 
-              onClick={() => setMostrarModalBrochure(true)}
-              className="bg-transparent border border-[#D1C292] text-[#D1C292] px-8 py-3 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-[#D1C292] hover:text-[#21242E] transition-all duration-300 w-full sm:w-auto"
-            >
-              Descargar Brochure Oficial
-            </button>
+          
+          {/* Indicador visual para deslizar animado */}
+          <div className="flex justify-center items-center gap-3 text-white/40 pointer-events-none mt-2">
+            <svg className="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            <span className="text-[10px] font-bold tracking-[0.2em] uppercase">Desliza para explorar</span>
+            <svg className="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
           </div>
+        </div>
+
+        <div className="pt-6 border-t border-white/10 max-w-lg mx-auto flex flex-col items-center relative z-10 px-6">
+          <button 
+            onClick={() => setMostrarModalBrochure(true)}
+            className="bg-transparent border border-[#D1C292] text-[#D1C292] px-8 py-3 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-[#D1C292] hover:text-[#21242E] transition-all duration-300 w-full sm:w-auto"
+          >
+            Descargar Brochure Oficial
+          </button>
         </div>
       </section>
 
-      {/* LIGHTBOX MODAL */}
+      {/* LIGHTBOX MODAL (SIN CAMBIOS, FUNCIONA PERFECTO) */}
       {imagenIndex !== null && (
         <div 
           className="fixed inset-0 bg-[#21242E]/98 z-[70] flex items-center justify-center p-4 md:p-8 backdrop-blur-md animate-in fade-in" 
