@@ -14,9 +14,6 @@ export default function ArienzoLandingPremium() {
   const [solicitudEnviada, setSolicitudEnviada] = useState(false);
   const [brochureDescargado, setBrochureDescargado] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  
-  const [touchStartX, setTouchStartX] = useState<number | null>(null);
-  const [touchEndX, setTouchEndX] = useState<number | null>(null);
 
   const [formData, setFormData] = useState({ nombres: '', telefono: '', email: '' });
   const [formBrochure, setFormBrochure] = useState({ nombres: '', telefono: '', email: '' });
@@ -30,10 +27,10 @@ export default function ArienzoLandingPremium() {
     "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Plaza-Comercial-1-1.jpg"
   ], []);
 
-  // Multiplicamos la galería para dar el efecto de scroll "infinito" (24 imágenes en bucle)
-  const imagenesInfinitas = useMemo(() => [
-    ...imagenesGaleria, ...imagenesGaleria, ...imagenesGaleria, ...imagenesGaleria
-  ], [imagenesGaleria]);
+  // EL TRUCO DEL CÍRCULO INFINITO: 20 copias idénticas (120 imágenes en total)
+  const imagenesInfinitas = useMemo(() => {
+    return Array(20).fill(imagenesGaleria).flat();
+  }, [imagenesGaleria]);
 
   const trackEvent = async (accion: string, detalle: string, datosUsuario?: { email?: string, telefono?: string }) => {
     try {
@@ -157,20 +154,32 @@ export default function ArienzoLandingPremium() {
     };
   }, []);
 
-  // Efecto para centrar el carrusel en el segundo bloque y dar la sensación infinita
+  // Efecto Maestro para centrar el carrusel en la foto 60 al cargar la página
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const centrarCarruselRotativo = () => {
       const carousel = document.getElementById('carrusel-arquitectura');
-      if (carousel && carousel.children.length >= imagenesGaleria.length) {
-        // Iniciamos en la imagen que es el inicio del segundo ciclo (índice 6)
-        const startItem = carousel.children[imagenesGaleria.length] as HTMLElement;
-        if (startItem) {
-          carousel.scrollLeft = startItem.offsetLeft - (carousel.clientWidth - startItem.offsetWidth) / 2;
+      if (carousel && carousel.children.length > 60) {
+        // Nos posicionamos exactamente en la mitad del array de 120 (índice 60)
+        const itemCentral = carousel.children[60] as HTMLElement;
+        if (itemCentral) {
+          // Cálculo preciso para centrar la imagen en la pantalla
+          const centroPosicion = itemCentral.offsetLeft - (carousel.clientWidth - itemCentral.offsetWidth) / 2;
+          carousel.scrollLeft = centroPosicion;
         }
       }
-    }, 200);
-    return () => clearTimeout(timer);
-  }, [imagenesGaleria.length]);
+    };
+
+    // Damos un milisegundo para que la pantalla pinte los elementos y centramos
+    const timer = setTimeout(centrarCarruselRotativo, 100);
+    
+    // Si voltean el celular, lo vuelve a centrar
+    window.addEventListener('resize', centrarCarruselRotativo);
+    
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', centrarCarruselRotativo);
+    };
+  }, [imagenesInfinitas.length]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -182,18 +191,6 @@ export default function ArienzoLandingPremium() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [imagenIndex, imagenesGaleria.length]);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchEndX(null);
-    setTouchStartX(e.targetTouches[0].clientX);
-  };
-  const handleTouchMove = (e: React.TouchEvent) => setTouchEndX(e.targetTouches[0].clientX);
-  const handleTouchEnd = () => {
-    if (!touchStartX || !touchEndX) return;
-    const distance = touchStartX - touchEndX;
-    if (distance > 50) nextImagen();
-    else if (distance < -50) prevImagen();
-  };
 
   const abrirModalVIP = () => { trackEvent('ABRIO_FORMULARIO', 'Hizo clic en botón Acceso Exclusivo'); setMostrarModalVip(true); };
   const abrirCalendly = () => { trackEvent('ABRIO_CALENDLY', 'Abrió modal de agendamiento'); setMostrarModalCalendly(true); };
@@ -285,11 +282,11 @@ export default function ArienzoLandingPremium() {
     }
   };
 
+  // Al hacer clic, garantizamos que el modal lightbox abra la foto correcta
   const clickImagen = (index: number) => { 
-    // Utilizamos módulo para que sin importar qué índice infinito toquen (ej. el 15), abra la imagen original correcta en el modal.
-    const realIndex = index % imagenesGaleria.length;
-    trackEvent('VIO_ARQUITECTURA', `Abrió render ${realIndex + 1} de la galería`); 
-    setImagenIndex(realIndex); 
+    const indexReal = index % imagenesGaleria.length;
+    trackEvent('VIO_ARQUITECTURA', `Abrió render ${indexReal + 1} de la galería`); 
+    setImagenIndex(indexReal); 
   };
   
   const prevImagen = (e?: React.MouseEvent) => { if(e) e.stopPropagation(); setImagenIndex((prev) => prev !== null ? (prev - 1 + imagenesGaleria.length) % imagenesGaleria.length : null); };
@@ -529,7 +526,7 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* 5. GALERÍA DEL PROYECTO (DISEÑO LIMPIO, UN SOLO FONDO Y CARRUSEL INFINITO) */}
+      {/* 5. GALERÍA DEL PROYECTO (ROTACIÓN VERDADERA Y TEXTOS ORIGINALES) */}
       <section className="py-12 md:py-16 bg-[#21242E] relative overflow-hidden text-center">
         
         {/* Título y Subtítulo Original (Perfectamente Centrados) */}
@@ -538,12 +535,12 @@ export default function ArienzoLandingPremium() {
           <h3 className="text-2xl md:text-3xl font-medium text-white tracking-tight">Imágenes que hablan por sí solas.</h3>
         </div>
 
-        {/* CONTENEDOR CARRUSEL INFINITO */}
+        {/* CONTENEDOR CARRUSEL INFINITO - ROTACIÓN VERDADERA */}
         <div className="relative w-full z-20 mb-8">
           <div 
             id="carrusel-arquitectura"
-            /* Los paddings px-[15vw] (en movil) centran la imagen activa dejando asomar los bordes prev/next */
-            className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-6 px-[15vw] md:px-[30vw] py-4 items-center scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+            /* Quitamos scroll-smooth de aquí para que el salto de inicio sea instantáneo, pero mantenemos el snap-mandatory para la fricción manual */
+            className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-6 px-[15vw] md:px-[30vw] py-4 items-center [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
           >
             {imagenesInfinitas.map((img, index) => (
               <div 
