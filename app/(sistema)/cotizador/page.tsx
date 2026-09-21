@@ -1,4 +1,3 @@
-// Actualizacion para Vercel - Cotizador con Llenado Rápido y Corrección TypeScript
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -458,101 +457,97 @@ export default function CotizadorPage() {
 
   if (cargando) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F4F4F4]">
-        <p className="text-sm font-light tracking-widest text-[#B94A36] uppercase animate-pulse">Cargando Unidades Arienzo...</p>
+      <div className="flex min-h-screen items-center justify-center bg-[#dce3eb]">
+        <p className="text-sm font-bold tracking-widest text-[#ea0029] uppercase animate-pulse">Cargando Unidades Arienzo...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F4F4F4] px-8 py-12 font-sans text-neutral-800">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* COLUMNA IZQUIERDA: CONFIGURADOR */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="border-b border-neutral-200 pb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-            
-            <div>
-              <span className="text-xs font-semibold tracking-widest text-[#B94A36] uppercase">Estructurador Comercial</span>
-              <h1 className="text-3xl font-light tracking-tight text-neutral-900 mt-1">ARIENZO Boutique Living</h1>
-            </div>
-            
-            {propiedadSeleccionada && (
-              <div className="flex bg-neutral-200 p-1 rounded-lg text-xs font-medium shadow-inner">
-                <button 
-                  onClick={() => setPestañaActiva('configurar')} 
-                  className={`px-4 py-2 rounded-md transition duration-200 ${pestañaActiva === 'configurar' ? 'bg-white text-neutral-950 shadow-sm font-semibold' : 'text-neutral-600 hover:text-neutral-900'}`}
-                >
-                  ⚙️ Configurar Plan
-                </button>
-                <button 
-                  onClick={() => setPestañaActiva('previsualizar')} 
-                  className={`px-4 py-2 rounded-md transition duration-200 ${pestañaActiva === 'previsualizar' ? 'bg-white text-[#B94A36] shadow-sm font-bold' : 'text-neutral-600 hover:text-neutral-900'}`}
-                >
-                  👁️ Ver Cotización
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm">
-            <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">Asesor / Comercial Emisor</h2>
-            <input
-              type="text"
-              value={nombreAsesor}
-              onChange={(e) => setNombreAsesor(e.target.value)}
-              className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-sm font-medium focus:outline-none focus:border-[#B94A36]"
-              placeholder="Ej. Saúl Intriago / Debbi Mera"
-            />
-          </div>
-
-          <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm space-y-3">
-            <h2 className="text-xs font-semibold text-[#B94A36] uppercase tracking-wider">Validez de la Cotización (Caducidad)</h2>
-            <div className="flex flex-col sm:flex-row gap-3 items-center">
-              <input 
-                type="date" 
-                value={fechaCaducidad} 
-                onChange={(e) => setFechaCaducidad(e.target.value)} 
-                className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-2.5 text-sm font-semibold outline-none focus:border-[#B94A36]" 
-              />
-              <div className="flex bg-neutral-100 p-1 rounded-lg text-[11px] font-medium w-full sm:w-auto flex-shrink-0">
-                <button type="button" onClick={() => setDiasCaducidad(7)} className="px-3 py-1.5 rounded hover:bg-white hover:shadow-sm transition text-neutral-700 font-semibold">7 Días</button>
-                <button type="button" onClick={() => setDiasCaducidad(15)} className="px-3 py-1.5 rounded hover:bg-white hover:shadow-sm transition text-neutral-700 font-semibold">15 Días</button>
-              </div>
-            </div>
-            <p className="text-[10px] text-neutral-400">Esta fecha aparecerá en el documento impreso para generar urgencia de compra.</p>
-          </div>
-
-          <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm space-y-3">
-            <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Asociar Inversionista</h2>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-neutral-400 text-xs">🔍</span>
-              <input 
-                type="text" 
-                placeholder="Escribe para buscar cliente por nombre o teléfono..." 
-                value={busquedaCliente} 
-                onChange={(e) => setBusquedaCliente(e.target.value)} 
-                className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-2.5 pl-9 pr-3 text-xs font-medium focus:outline-none focus:border-[#B94A36]" 
-              />
-            </div>
-            <select
-              value={clienteSeleccionado}
-              onChange={(e) => setClienteSeleccionado(e.target.value)}
-              className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-sm font-medium focus:outline-none focus:border-[#B94A36]"
-            >
-              <option value="">— Sin registrar / Cliente Anónimo (Consulta Rápida) —</option>
-              {clientesFiltrados.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.nombres} {c.apellidos} {c.tipo === 'prospecto' ? '(Prospecto)' : '(Cliente)'}
-                </option>
-              ))}
-            </select>
+    <div className="min-h-screen bg-[#dce3eb] p-4 md:p-6 font-sans text-[#415364]">
+      
+      <div className="w-full flex-shrink-0 mb-6 space-y-3">
+        <div className="bg-white rounded-2xl border border-neutral-200/60 p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <span className="text-[10px] font-bold tracking-widest text-[#ea0029] uppercase">Estructurador Comercial</span>
+            <h1 className="text-2xl font-bold tracking-tight text-[#415364] mt-1">Cotizador Konkeri</h1>
           </div>
           
-          <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm">
-            <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-4">1. Inmueble Seleccionado</h2>
+          {propiedadSeleccionada && (
+            <div className="flex bg-[#dce3eb]/50 p-1.5 rounded-xl border border-[#415364]/10 shadow-inner">
+              <button 
+                onClick={() => setPestañaActiva('configurar')} 
+                className={`px-4 py-2 rounded-lg text-xs transition-all flex items-center gap-2 ${pestañaActiva === 'configurar' ? 'bg-white text-[#ea0029] shadow-sm font-bold' : 'text-[#415364]/70 hover:text-[#415364] font-semibold'}`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                Configurar Plan
+              </button>
+              <button 
+                onClick={() => setPestañaActiva('previsualizar')} 
+                className={`px-4 py-2 rounded-lg text-xs transition-all flex items-center gap-2 ${pestañaActiva === 'previsualizar' ? 'bg-white text-[#ea0029] shadow-sm font-bold' : 'text-[#415364]/70 hover:text-[#415364] font-semibold'}`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                Ver Documento
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="w-full mx-auto grid grid-cols-1 xl:grid-cols-3 gap-6">
+        
+        {/* COLUMNA IZQUIERDA: CONFIGURADOR */}
+        <div className="xl:col-span-2 space-y-5">
+          
+          <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-sm flex flex-col md:flex-row gap-6">
+            <div className="flex-1">
+              <h2 className="text-[10px] font-bold text-[#415364]/60 uppercase tracking-widest mb-3">Asesor / Comercial Emisor</h2>
+              <input
+                type="text"
+                value={nombreAsesor}
+                onChange={(e) => setNombreAsesor(e.target.value)}
+                className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs font-bold text-[#415364] focus:outline-none focus:border-[#ea0029] transition-colors"
+                placeholder="Ej. Saúl Intriago / Debbi Mera"
+              />
+            </div>
+            
+            <div className="flex-1">
+              <h2 className="text-[10px] font-bold text-[#415364]/60 uppercase tracking-widest mb-3">Asociar Inversionista</h2>
+              <div className="relative mb-2">
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#415364]/40">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </span>
+                <input 
+                  type="text" 
+                  placeholder="Buscar cliente por nombre o teléfono..." 
+                  value={busquedaCliente} 
+                  onChange={(e) => setBusquedaCliente(e.target.value)} 
+                  className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl py-2.5 pl-10 pr-4 text-xs font-medium focus:outline-none focus:border-[#ea0029] transition-all text-[#415364]" 
+                />
+              </div>
+              <select
+                value={clienteSeleccionado}
+                onChange={(e) => setClienteSeleccionado(e.target.value)}
+                className="w-full bg-[#415364]/5 border border-[#415364]/20 rounded-xl p-3 text-xs font-bold text-[#415364] focus:outline-none focus:border-[#ea0029]"
+              >
+                <option value="">— Cliente Anónimo (Consulta Rápida) —</option>
+                {clientesFiltrados.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.nombres} {c.apellidos} {c.tipo === 'prospecto' ? '(Prospecto)' : '(Cliente)'}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-[#D1C292] p-6 shadow-sm relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1.5 h-full bg-[#D1C292]"></div>
+            <h2 className="text-[11px] font-bold text-[#21242E] uppercase tracking-widest mb-4 flex items-center gap-2">
+              <svg className="w-4 h-4 text-[#D1C292]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+              1. Selección de Inventario
+            </h2>
             <select
-              className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-sm font-medium mb-4 focus:outline-none"
+              className="w-full bg-[#F9F7F5] border border-[#D1C292]/50 rounded-xl p-3.5 text-sm font-bold text-[#21242E] mb-4 focus:outline-none focus:border-[#ea0029] transition-colors"
               value={propiedadSeleccionada?.id || ''}
               onChange={(e) => {
                 const val = e.target.value;
@@ -564,30 +559,30 @@ export default function CotizadorPage() {
                 }
               }}
             >
-              <option value="">-- Selecciona una Unidad de la Lista --</option>
+              <option value="">-- Selecciona una Unidad para Estructurar --</option>
               {propiedades && propiedades.map((prop) => (
                 <option key={prop.id} value={prop.id}>Unidad {prop.unidad || prop.numero} — {prop.categoria || 'Departamento'} ({prop.tipologia || 'S/T'})</option>
               ))}
             </select>
 
             {propiedadSeleccionada && (
-              <div className={`grid grid-cols-2 ${esLocal ? 'sm:grid-cols-4' : 'sm:grid-cols-5'} gap-2 pt-4 border-t border-neutral-100 text-center text-xs`}>
-                <div className="border-r border-neutral-100">
-                  <span className="text-[10px] text-neutral-400 uppercase block mb-0.5">Distribución</span>
-                  <span className="font-semibold text-neutral-800">{tipologia}</span>
+              <div className={`grid grid-cols-2 ${esLocal ? 'sm:grid-cols-4' : 'sm:grid-cols-5'} gap-3 pt-4 border-t border-[#415364]/10 text-center text-xs`}>
+                <div className="border-r border-[#415364]/10">
+                  <span className="text-[9px] text-[#415364]/50 font-bold uppercase tracking-wider block mb-1">Distribución</span>
+                  <span className="font-bold text-[#415364]">{tipologia}</span>
                 </div>
-                <div className="border-r border-neutral-100">
-                  <span className="text-[10px] text-neutral-400 uppercase block mb-0.5">Complementos</span>
-                  <span className="font-semibold text-neutral-800 block truncate" title={`${parqueaderoTexto} / ${bodegaAsignada}`}>P: {parqueaderoTexto}</span>
+                <div className="border-r border-[#415364]/10">
+                  <span className="text-[9px] text-[#415364]/50 font-bold uppercase tracking-wider block mb-1">Complementos</span>
+                  <span className="font-bold text-[#415364] block truncate" title={`${parqueaderoTexto} / ${bodegaAsignada}`}>P: {parqueaderoTexto}</span>
                 </div>
-                <div className={esLocal ? "" : "border-r border-neutral-100"}>
-                  <span className="text-[10px] text-neutral-400 uppercase block mb-0.5">Área Total</span>
-                  <span className="font-semibold text-neutral-800">{areaTotal}m²</span>
+                <div className={esLocal ? "" : "border-r border-[#415364]/10"}>
+                  <span className="text-[9px] text-[#415364]/50 font-bold uppercase tracking-wider block mb-1">Área Total</span>
+                  <span className="font-bold text-[#415364]">{areaTotal}m²</span>
                 </div>
                 {!esLocal && (
                   <div>
-                    <span className="text-[10px] text-neutral-400 uppercase block mb-0.5">Valor m² (Pre Lanz.)</span>
-                    <span className="font-bold text-[#B94A36]">${valorM2Lanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    <span className="text-[9px] text-[#ea0029]/80 font-bold uppercase tracking-wider block mb-1">M² Lanzamiento</span>
+                    <span className="font-bold font-mono text-[#ea0029]">${valorM2Lanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                   </div>
                 )}
               </div>
@@ -595,11 +590,14 @@ export default function CotizadorPage() {
           </div>
 
           {!propiedadSeleccionada ? (
-            <div className="bg-white rounded-xl border border-dashed border-neutral-300 p-12 text-center text-neutral-400">
-              <p className="text-sm font-medium">Por favor, selecciona una unidad en el panel superior.</p>
+            <div className="bg-white rounded-2xl border border-dashed border-[#415364]/20 p-16 text-center text-[#415364]/40">
+              <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+              <p className="text-sm font-bold uppercase tracking-widest">Selecciona una unidad para habilitar el cotizador.</p>
             </div>
           ) : pestañaActiva === 'previsualizar' ? (
-            <div className="bg-neutral-800 p-6 rounded-xl shadow-inner flex justify-center border border-neutral-700 overflow-x-auto">
+            <div className="bg-[#1a1c23] p-6 rounded-2xl shadow-inner flex justify-center border border-[#415364]/30 overflow-x-auto">
+              
+              {/* --- INICIO PDF (INTOCABLE) --- */}
               <div id="plantilla-pdf-arienzo" className="bg-white w-[210mm] min-h-[297mm] p-10 flex flex-col justify-between text-neutral-900 rounded-sm shadow-2xl scale-95 sm:scale-100 origin-top transform">
                 <div>
                   <div className="bg-[#B94A36] px-8 py-5 flex justify-between items-center rounded-t-sm">
@@ -799,209 +797,207 @@ export default function CotizadorPage() {
                   </div>
                 </div>
               </div>
+              {/* --- FIN PDF --- */}
             </div>
           ) : (
             <>
+              <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-sm space-y-5">
+                
+                <h2 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest border-b border-neutral-100 pb-2">2. Descuento Extraordinario (Opcional)</h2>
+                
+                <div className="flex bg-[#dce3eb]/50 p-1.5 rounded-xl border border-[#415364]/10 w-fit">
+                  <button type="button" onClick={() => { setTipoDescuento('porcentaje'); setValorDescuento(0); }} className={`px-4 py-2 rounded-lg text-xs transition-all font-bold ${tipoDescuento === 'porcentaje' ? 'bg-white text-[#415364] shadow-sm' : 'text-[#415364]/50 hover:text-[#415364]'}`}>
+                    Porcentaje (%)
+                  </button>
+                  <button type="button" onClick={() => { setTipoDescuento('valor'); setValorDescuento(0); }} className={`px-4 py-2 rounded-lg text-xs transition-all font-bold ${tipoDescuento === 'valor' ? 'bg-white text-[#415364] shadow-sm' : 'text-[#415364]/50 hover:text-[#415364]'}`}>
+                    Valor Fijo ($)
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 items-end">
+                  <div className="sm:col-span-1">
+                    <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">
+                      {tipoDescuento === 'porcentaje' ? 'Descuento (%)' : 'Descuento ($)'}
+                    </label>
+                    <input type="number" min="0" value={valorDescuento || ''} onChange={(e) => setValorDescuento(Math.max(0, Number(e.target.value)))} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-sm font-mono font-bold outline-none focus:border-[#ea0029]" placeholder="0" />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Justificación de Gerencia</label>
+                    <input type="text" value={motivoDescuento} onChange={(e) => setMotivoDescuento(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-sm font-medium text-[#415364] outline-none focus:border-[#ea0029]" placeholder="Ej. Promoción de feria, Pago de contado..." />
+                  </div>
+                </div>
+              </div>
+
               {!esLocal && propiedadSeleccionada && (
-                <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm space-y-4">
-                  <h2 className="text-xs font-semibold text-[#B94A36] uppercase tracking-wider">Presentación de Extras (PDF)</h2>
+                <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-sm space-y-4">
+                  <h2 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest border-b border-neutral-100 pb-2">3. Presentación de Extras (PDF)</h2>
                   
-                  <div className="flex items-center justify-between bg-neutral-50 border border-neutral-200 p-3 rounded-lg transition-colors hover:border-[#B94A36]/30">
-                    <div className="flex items-center gap-3">
-                      <input 
-                        type="checkbox" 
-                        checked={incluirClima} 
-                        onChange={(e) => setIncluirClima(e.target.checked)} 
-                        className="w-4 h-4 text-[#B94A36] border-gray-300 rounded focus:ring-[#B94A36] cursor-pointer" 
-                      />
-                      <div className="cursor-pointer select-none" onClick={() => setIncluirClima(!incluirClima)}>
-                        <p className="text-xs font-bold text-neutral-800">Mostrar Climatización Estética en el PDF</p>
-                        <p className="text-[10px] text-neutral-500">Agrega el texto descriptivo del aire acondicionado en los Valores Agregados.</p>
-                      </div>
+                  <div className="flex items-center gap-3 bg-[#415364]/5 border border-[#415364]/10 p-4 rounded-xl cursor-pointer hover:border-[#ea0029]/40 transition-colors" onClick={() => setIncluirClima(!incluirClima)}>
+                    <input type="checkbox" checked={incluirClima} onChange={() => {}} className="w-4 h-4 text-[#ea0029] rounded focus:ring-[#ea0029] cursor-pointer" />
+                    <div>
+                      <p className="text-xs font-bold text-[#415364]">Mostrar Climatización Estética</p>
+                      <p className="text-[10px] font-medium text-[#415364]/60">Detalla en el PDF que la unidad incluye aire central empotrado.</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between bg-neutral-50 border border-neutral-200 p-3 rounded-lg transition-colors hover:border-[#B94A36]/30">
-                    <div className="flex items-center gap-3">
-                      <input 
-                        type="checkbox" 
-                        checked={incluirBbq} 
-                        onChange={(e) => setIncluirBbq(e.target.checked)} 
-                        className="w-4 h-4 text-[#B94A36] border-gray-300 rounded focus:ring-[#B94A36] cursor-pointer" 
-                      />
-                      <div className="cursor-pointer select-none" onClick={() => setIncluirBbq(!incluirBbq)}>
-                        <p className="text-xs font-bold text-neutral-800">Mostrar Área de BBQ en el PDF</p>
-                        <p className="text-[10px] text-neutral-500">Agrega el texto sobre el mesón en la terraza (sin incluir equipos).</p>
-                      </div>
+                  <div className="flex items-center gap-3 bg-[#415364]/5 border border-[#415364]/10 p-4 rounded-xl cursor-pointer hover:border-[#ea0029]/40 transition-colors" onClick={() => setIncluirBbq(!incluirBbq)}>
+                    <input type="checkbox" checked={incluirBbq} onChange={() => {}} className="w-4 h-4 text-[#ea0029] rounded focus:ring-[#ea0029] cursor-pointer" />
+                    <div>
+                      <p className="text-xs font-bold text-[#415364]">Mostrar Área de BBQ (Terraza)</p>
+                      <p className="text-[10px] font-medium text-[#415364]/60">Agrega el texto descriptivo del mesón en la terraza.</p>
                     </div>
                   </div>
                 </div>
               )}
 
-              <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm space-y-4">
-                <div className="flex justify-between items-center border-b pb-2">
-                  <h2 className="text-xs font-semibold text-[#B94A36] uppercase tracking-wider">Descuento Adicional (Opcional)</h2>
-                  <div className="flex bg-neutral-100 p-0.5 rounded-md text-[11px] font-medium">
-                    <button type="button" onClick={() => { setTipoDescuento('porcentaje'); setValorDescuento(0); }} className={`px-2 py-1 rounded ${tipoDescuento === 'porcentaje' ? 'bg-white text-neutral-900 shadow-xs font-bold' : 'text-neutral-500'}`}>
-                      Porcentaje (%)
-                    </button>
-                    <button type="button" onClick={() => { setTipoDescuento('valor'); setValorDescuento(0); }} className={`px-2 py-1 rounded ${tipoDescuento === 'valor' ? 'bg-white text-neutral-900 shadow-xs font-bold' : 'text-neutral-500'}`}>
-                      Valor (USD)
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
-                  <div className="sm:col-span-1">
-                    <label className="block text-xs font-medium text-neutral-500 uppercase mb-1">
-                      {tipoDescuento === 'porcentaje' ? 'Porcentaje %' : 'Valor Descuento ($)'}
-                    </label>
-                    <input type="number" min="0" value={valorDescuento || ''} onChange={(e) => setValorDescuento(Math.max(0, Number(e.target.value)))} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-2.5 text-sm font-mono font-bold outline-none focus:border-[#B94A36]" placeholder="0" />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs font-medium text-neutral-500 uppercase mb-1">Motivo (Ej. Pago Contado)</label>
-                    <input type="text" value={motivoDescuento} onChange={(e) => setMotivoDescuento(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-2.5 text-sm outline-none focus:border-[#B94A36]" placeholder="Descuento extra por pronto pago..." />
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm">
-                <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">Modalidad del Plan Temporal</h2>
-                <div className="grid grid-cols-2 gap-3 bg-neutral-100 p-1 rounded-lg">
-                  <button type="button" onClick={() => setIncluirFechas(true)} className={`py-2.5 text-xs font-semibold rounded-md transition-all ${incluirFechas ? 'bg-[#B94A36] text-white shadow-xs' : 'text-neutral-600 hover:text-neutral-900'}`}>
-                    📅 Incluir Fechas de Hitos
+              <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-sm space-y-5">
+                <h2 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest border-b border-neutral-100 pb-2">4. Modalidad del Plan</h2>
+                <div className="grid grid-cols-2 gap-3 bg-[#dce3eb]/50 p-1.5 rounded-xl border border-[#415364]/10">
+                  <button type="button" onClick={() => setIncluirFechas(true)} className={`py-3 text-xs font-bold rounded-lg transition-all ${incluirFechas ? 'bg-white text-[#ea0029] shadow-sm border border-[#ea0029]/20' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
+                    📅 Configurar Fechas Reales
                   </button>
-                  <button type="button" onClick={() => setIncluirFechas(false)} className={`py-2.5 text-xs font-semibold rounded-md transition-all ${!incluirFechas ? 'bg-[#B94A36] text-white shadow-xs' : 'text-neutral-600 hover:text-neutral-900'}`}>
-                    🚫 Cotizar Sin Fechas (Solo Valores)
+                  <button type="button" onClick={() => setIncluirFechas(false)} className={`py-3 text-xs font-bold rounded-lg transition-all ${!incluirFechas ? 'bg-white text-[#ea0029] shadow-sm border border-[#ea0029]/20' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
+                    🚫 Solo Cotizar Valores
                   </button>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row gap-5 items-center bg-[#415364]/5 p-4 rounded-xl border border-[#415364]/10">
+                  <div className="w-full sm:w-1/2">
+                    <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Validez (Caducidad del PDF)</label>
+                    <input type="date" value={fechaCaducidad} onChange={(e) => setFechaCaducidad(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-lg p-2.5 text-xs font-bold text-[#415364] outline-none focus:border-[#ea0029]" />
+                  </div>
+                  <div className="flex bg-[#dce3eb]/50 p-1 rounded-lg text-[10px] font-bold w-full sm:w-auto mt-4 sm:mt-5">
+                    <button type="button" onClick={() => setDiasCaducidad(7)} className="px-4 py-2 rounded-md hover:bg-white text-[#415364] hover:shadow-sm transition-all">7 Días</button>
+                    <button type="button" onClick={() => setDiasCaducidad(15)} className="px-4 py-2 rounded-md hover:bg-white text-[#415364] hover:shadow-sm transition-all">15 Días</button>
+                  </div>
                 </div>
               </div>
 
               {incluirFechas && (
-                <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm space-y-6">
+                <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-sm space-y-6">
                   <div>
-                    <h2 className="text-xs font-semibold text-[#B94A36] uppercase tracking-wider mb-3">Fechas de Hitos Iniciales</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <h2 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest border-b border-neutral-100 pb-2 mb-4">Hitos Contractuales</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                       <div>
-                        <label className="block text-xs font-medium text-neutral-500 uppercase mb-1">Fecha Cuota de Reserva</label>
-                        <input type="date" value={fechaReserva} onChange={(e) => setFechaReserva(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-2.5 text-sm font-semibold outline-none" />
+                        <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Fecha Firma Reserva</label>
+                        <input type="date" value={fechaReserva} onChange={(e) => setFechaReserva(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs font-bold text-[#415364] outline-none focus:border-[#ea0029]" />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-neutral-500 uppercase mb-1">Fecha Firma Promesa</label>
-                        <input type="date" value={fechaFirmaPromesa} onChange={(e) => setFechaFirmaPromesa(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-2.5 text-sm font-semibold outline-none" />
+                        <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Fecha Firma Promesa</label>
+                        <input type="date" value={fechaFirmaPromesa} onChange={(e) => setFechaFirmaPromesa(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs font-bold text-[#415364] outline-none focus:border-[#ea0029]" />
                       </div>
                     </div>
                   </div>
 
-                  <div className="border-t border-neutral-100 pt-4">
-                    <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">Plazos del Financiamiento de Obra</h2>
-                    <div className="grid grid-cols-3 gap-4">
+                  <div className="border-t border-[#415364]/10 pt-4">
+                    <h2 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest mb-4">Fechas Financiamiento Obra</h2>
+                    <div className="grid grid-cols-3 gap-5">
                       <div>
-                        <label className="block text-xs font-medium text-neutral-500 uppercase mb-1">Día Fijo Cuotas</label>
-                        <input type="number" min="1" max="31" value={diaPago} onChange={(e) => setDiaPago(Number(e.target.value))} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-2.5 text-sm font-semibold outline-none" />
+                        <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Día de Pago</label>
+                        <input type="number" min="1" max="31" value={diaPago} onChange={(e) => setDiaPago(Number(e.target.value))} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs font-bold text-[#415364] outline-none focus:border-[#ea0029]" />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-neutral-500 uppercase mb-1">Mes de Inicio</label>
-                        <select value={mesInicio} onChange={(e) => setMesInicio(Number(e.target.value))} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-2.5 text-sm font-semibold outline-none">
+                        <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Mes Inicio</label>
+                        <select value={mesInicio} onChange={(e) => setMesInicio(Number(e.target.value))} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs font-bold text-[#415364] outline-none focus:border-[#ea0029]">
                           {['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'].map((m, idx) => (
                             <option key={idx} value={idx + 1}>{m}</option>
                           ))}
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-neutral-500 uppercase mb-1">Año</label>
-                        <input type="number" value={anioInicio} onChange={(e) => setAnioInicio(Number(e.target.value))} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-2.5 text-sm font-semibold outline-none" />
+                        <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Año</label>
+                        <input type="number" value={anioInicio} onChange={(e) => setAnioInicio(Number(e.target.value))} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs font-bold text-[#415364] outline-none focus:border-[#ea0029]" />
                       </div>
                     </div>
                   </div>
                 </div>
               )}
 
-              <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm space-y-4">
-                <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Control de Valores del Plan</h2>
+              <div className="bg-[#21242E] rounded-2xl border border-neutral-800 p-6 shadow-xl space-y-6">
+                <h2 className="text-[11px] font-bold text-[#D1C292] uppercase tracking-widest border-b border-white/10 pb-2">5. Estructura de Pagos (Flujo de Caja)</h2>
+                
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                   
                   <div className="space-y-2">
-                    <label className="block text-xs font-medium text-neutral-500 uppercase mt-1 mb-1">Reserva (USD)</label>
-                    <input type="number" min="0" value={reservaValor || ''} onChange={(e) => setReservaValor(Number(e.target.value))} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-2.5 text-sm font-semibold outline-none mt-1 focus:border-[#B94A36]" />
+                    <label className="block text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">Monto de Reserva ($)</label>
+                    <input type="number" min="0" value={reservaValor || ''} onChange={(e) => setReservaValor(Number(e.target.value))} className="w-full bg-white/10 border border-white/20 rounded-xl p-3 text-sm font-mono font-bold text-white outline-none focus:border-[#D1C292] transition-colors" />
                   </div>
 
-                  <div className="space-y-2 border border-neutral-100 p-2.5 rounded-lg bg-white shadow-sm">
-                    <div className="flex justify-between items-center mb-2">
-                      <label className="text-xs font-bold text-[#B94A36] uppercase">Abono Inicial</label>
-                      <div className="flex bg-neutral-100 p-0.5 rounded text-[10px] font-medium">
-                        <button type="button" onClick={() => setTipoInicial('porcentaje')} className={`px-1.5 py-0.5 rounded ${tipoInicial === 'porcentaje' ? 'bg-white shadow-sm font-bold' : 'text-neutral-500'}`}>%</button>
-                        <button type="button" onClick={() => setTipoInicial('valor')} className={`px-1.5 py-0.5 rounded ${tipoInicial === 'valor' ? 'bg-white shadow-sm font-bold' : 'text-neutral-500'}`}>$</button>
+                  <div className="space-y-2 border border-white/10 p-3.5 rounded-xl bg-[#1a1c23]">
+                    <div className="flex justify-between items-center mb-3">
+                      <label className="text-[10px] font-bold text-white uppercase tracking-widest">Abono Inicial</label>
+                      <div className="flex bg-white/10 p-1 rounded-lg text-[10px] font-bold">
+                        <button type="button" onClick={() => setTipoInicial('porcentaje')} className={`px-2 py-1 rounded-md transition-all ${tipoInicial === 'porcentaje' ? 'bg-[#ea0029] text-white shadow-sm' : 'text-white/50 hover:text-white'}`}>%</button>
+                        <button type="button" onClick={() => setTipoInicial('valor')} className={`px-2 py-1 rounded-md transition-all ${tipoInicial === 'valor' ? 'bg-[#ea0029] text-white shadow-sm' : 'text-white/50 hover:text-white'}`}>$</button>
                       </div>
                     </div>
-                    <input type="number" min="0" value={valorInicial || ''} onChange={(e) => setValorInicial(Number(e.target.value))} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-2 text-sm font-semibold outline-none focus:border-[#B94A36]" />
+                    <input type="number" min="0" value={valorInicial || ''} onChange={(e) => setValorInicial(Number(e.target.value))} className="w-full bg-white border border-transparent rounded-lg p-2.5 text-sm font-mono font-bold text-[#21242E] outline-none focus:ring-2 focus:ring-[#ea0029]" />
                     
-                    <div className="flex justify-between items-center pt-2 mt-2 border-t border-neutral-100">
-                      <label className="text-[10px] font-medium text-neutral-500 uppercase">Diferir en (Meses):</label>
-                      <input type="number" min="1" max="12" value={mesesInicial} onChange={(e) => setMesesInicial(Math.max(1, Number(e.target.value)))} className="w-16 bg-neutral-50 border border-neutral-200 rounded-lg p-1.5 text-xs font-semibold outline-none text-center focus:border-[#B94A36]" />
+                    <div className="flex justify-between items-center pt-3 mt-3 border-t border-white/10">
+                      <label className="text-[10px] font-bold text-white/50 uppercase">Diferir en (Meses):</label>
+                      <input type="number" min="1" max="12" value={mesesInicial} onChange={(e) => setMesesInicial(Math.max(1, Number(e.target.value)))} className="w-16 bg-white/10 border border-white/20 text-white rounded-lg p-2 text-xs font-bold outline-none text-center focus:border-[#D1C292]" />
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <label className="text-xs font-medium text-neutral-500 uppercase">Cuotas Obra</label>
-                      <div className="flex bg-neutral-100 p-0.5 rounded text-[10px] font-medium">
-                        <button type="button" onClick={() => setTipoEntrada('porcentaje')} className={`px-1.5 py-0.5 rounded ${tipoEntrada === 'porcentaje' ? 'bg-white shadow-sm font-bold' : 'text-neutral-500'}`}>%</button>
-                        <button type="button" onClick={() => setTipoEntrada('valor')} className={`px-1.5 py-0.5 rounded ${tipoEntrada === 'valor' ? 'bg-white shadow-sm font-bold' : 'text-neutral-500'}`}>$</button>
+                      <label className="text-[10px] font-bold text-white/60 uppercase tracking-widest">Entrada Obra</label>
+                      <div className="flex bg-white/10 p-1 rounded-lg text-[10px] font-bold">
+                        <button type="button" onClick={() => setTipoEntrada('porcentaje')} className={`px-2 py-1 rounded-md transition-all ${tipoEntrada === 'porcentaje' ? 'bg-[#ea0029] text-white shadow-sm' : 'text-white/50 hover:text-white'}`}>%</button>
+                        <button type="button" onClick={() => setTipoEntrada('valor')} className={`px-2 py-1 rounded-md transition-all ${tipoEntrada === 'valor' ? 'bg-[#ea0029] text-white shadow-sm' : 'text-white/50 hover:text-white'}`}>$</button>
                       </div>
                     </div>
-                    <input type="number" min="0" value={valorEntrada || ''} onChange={(e) => setValorEntrada(Number(e.target.value))} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-2.5 text-sm font-semibold outline-none focus:border-[#B94A36]" />
+                    <input type="number" min="0" value={valorEntrada || ''} onChange={(e) => setValorEntrada(Number(e.target.value))} className="w-full bg-white/10 border border-white/20 rounded-xl p-3 text-sm font-mono font-bold text-white outline-none focus:border-[#D1C292]" />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="block text-xs font-medium text-neutral-500 uppercase mt-1 mb-1">Meses Plazo Obra</label>
-                    <input type="number" min="1" max="48" value={mesesConstruccion} onChange={(e) => setMesesConstruccion(Math.min(48, Number(e.target.value)))} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-2.5 text-sm font-semibold outline-none mt-1 focus:border-[#B94A36]" />
+                    <label className="block text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">Plazo de Obra (Meses)</label>
+                    <input type="number" min="1" max="48" value={mesesConstruccion} onChange={(e) => setMesesConstruccion(Math.min(48, Number(e.target.value)))} className="w-full bg-white/10 border border-white/20 rounded-xl p-3 text-sm font-mono font-bold text-white outline-none focus:border-[#D1C292]" />
                   </div>
                   
                 </div>
               </div>
 
-              {/* VISTA Y AJUSTE DE CUOTAS CON LLENADO RÁPIDO */}
               {entradaDiferirTotal > 0 && (
-                <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm">
-                  <div className="flex justify-between items-center mb-4 border-b border-neutral-100 pb-3">
-                    <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Vista y Ajuste de Cuotas de Obra</h2>
+                <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-sm">
+                  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-5 border-b border-neutral-100 pb-4">
+                    <h2 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest">Vista y Ajuste de Cronograma de Obra</h2>
                     <div className="flex gap-2">
-                      <button onClick={reiniciarCuotas} className="text-[10px] text-neutral-500 hover:text-neutral-800 font-bold uppercase tracking-wider">
+                      <button onClick={reiniciarCuotas} className="text-[10px] text-[#415364]/60 hover:text-[#415364] font-bold uppercase tracking-wider bg-[#dce3eb]/50 px-3 py-2 rounded-lg transition-colors">
                         ↻ Reiniciar
                       </button>
-                      <button onClick={() => setMostrarCalculadoraRefuerzos(!mostrarCalculadoraRefuerzos)} className="text-[10px] bg-[#B94A36]/10 text-[#B94A36] px-2 py-1 rounded hover:bg-[#B94A36]/20 font-bold uppercase tracking-wider transition-colors">
-                        ⚡ Llenado Rápido
+                      <button onClick={() => setMostrarCalculadoraRefuerzos(!mostrarCalculadoraRefuerzos)} className="text-[10px] bg-[#ea0029] text-white px-4 py-2 rounded-lg hover:bg-[#c90022] font-bold uppercase tracking-wider transition-colors shadow-sm">
+                        ⚡ Calcular Cuota Balón
                       </button>
                     </div>
                   </div>
 
                   {mostrarCalculadoraRefuerzos && (
-                    <div className="mb-4 p-3 bg-orange-50 border border-orange-100 rounded-lg flex flex-col gap-3 animate-in fade-in">
-                       <p className="text-[10px] text-orange-800 font-medium">Configura una cuota base fija. El saldo sobrante se dividirá y sumará automáticamente a tus meses de refuerzo (ej. mes de utilidades o bonos).</p>
-                       <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
+                    <div className="mb-5 p-5 bg-[#415364] border border-[#21242E] rounded-xl flex flex-col gap-4 animate-in fade-in shadow-inner">
+                       <p className="text-[10px] text-[#dce3eb] font-medium leading-relaxed">Configura una <strong className="text-white">cuota base fija</strong> para todo el plan. El saldo sobrante se dividirá automáticamente en tus <strong className="text-white">meses de refuerzo</strong> (ej. utilidades, bonos, venta de activos).</p>
+                       <div className="flex flex-col sm:flex-row gap-4 sm:items-end">
                           <div className="flex-1">
-                            <label className="text-[9px] font-bold text-orange-700 uppercase mb-1 block">Cuota Fija Base ($)</label>
-                            <input type="number" value={cuotaBaseRapida} onChange={e => setCuotaBaseRapida(e.target.value === '' ? '' : Number(e.target.value))} placeholder="Ej: 1500" className="w-full bg-white border border-orange-200 p-2 text-xs font-mono rounded outline-none focus:border-orange-400"/>
+                            <label className="text-[9px] font-bold text-[#dce3eb]/70 uppercase mb-1.5 block">Cuota Fija Base ($)</label>
+                            <input type="number" value={cuotaBaseRapida} onChange={e => setCuotaBaseRapida(e.target.value === '' ? '' : Number(e.target.value))} placeholder="Ej: 1500" className="w-full bg-white/10 border border-white/20 p-2.5 text-xs font-mono font-bold text-white rounded-lg outline-none focus:border-white transition-colors"/>
                           </div>
                           <div className="flex-1">
-                            <label className="text-[9px] font-bold text-orange-700 uppercase mb-1 block">Meses de Refuerzo</label>
-                            <input type="text" value={mesesRefuerzoRapido} onChange={e => setMesesRefuerzoRapido(e.target.value)} placeholder="Ej: 12, 24" className="w-full bg-white border border-orange-200 p-2 text-xs font-mono rounded outline-none focus:border-orange-400"/>
+                            <label className="text-[9px] font-bold text-[#dce3eb]/70 uppercase mb-1.5 block">Meses de Refuerzo (Separar con coma)</label>
+                            <input type="text" value={mesesRefuerzoRapido} onChange={e => setMesesRefuerzoRapido(e.target.value)} placeholder="Ej: 12, 24" className="w-full bg-white/10 border border-white/20 p-2.5 text-xs font-mono font-bold text-white rounded-lg outline-none focus:border-white transition-colors"/>
                           </div>
-                          <button onClick={aplicarPlanRefuerzos} className="bg-orange-600 text-white px-4 py-2 rounded text-xs font-bold hover:bg-orange-700 uppercase tracking-wider w-full sm:w-auto transition-colors">
-                            Aplicar
+                          <button onClick={aplicarPlanRefuerzos} className="bg-[#ea0029] text-white px-6 py-2.5 rounded-lg text-[11px] font-bold hover:bg-[#c90022] uppercase tracking-wider w-full sm:w-auto transition-colors shadow-md">
+                            Aplicar Cálculo
                           </button>
                        </div>
                     </div>
                   )}
 
-                  <div className="max-h-80 overflow-y-auto border border-neutral-100 rounded-lg divide-y divide-neutral-100">
+                  <div className="max-h-80 overflow-y-auto border border-[#415364]/10 rounded-xl divide-y divide-[#415364]/5 custom-scrollbar">
                     {cronogramaCuotas.map((cuota) => (
-                      <div key={cuota.numeroCuota} className={`flex justify-between items-center p-3 ${cuota.esEditable ? 'bg-[#B94A36] text-white' : 'bg-white'}`}>
-                        <span className="text-xs font-medium">Cuota {cuota.numeroCuota} — {cuota.fechaPago}</span>
-                        <div className="flex items-center border-b py-0.5 border-neutral-200">
-                          <span className="text-xs opacity-50 mr-1">$</span>
-                          <input type="number" step="0.01" value={cuota.valor === 0 ? '' : Number(cuota.valor.toFixed(2))} onChange={(e) => actualizarValorCuota(cuota.numeroCuota, Number(e.target.value))} className="w-24 bg-transparent text-right text-xs font-semibold outline-none font-mono" />
+                      <div key={cuota.numeroCuota} className={`flex justify-between items-center p-4 transition-colors ${cuota.esEditable ? 'bg-[#ea0029]/10' : 'bg-white hover:bg-[#dce3eb]/20'}`}>
+                        <span className={`text-[11px] font-bold ${cuota.esEditable ? 'text-[#ea0029]' : 'text-[#415364]'}`}>Cuota {cuota.numeroCuota} — <span className="font-medium opacity-70">{cuota.fechaPago}</span></span>
+                        <div className={`flex items-center border-b border-dashed pb-0.5 ${cuota.esEditable ? 'border-[#ea0029]/40' : 'border-[#415364]/30'}`}>
+                          <span className={`text-xs mr-1 font-bold ${cuota.esEditable ? 'text-[#ea0029]' : 'text-[#415364]/50'}`}>$</span>
+                          <input type="number" step="0.01" value={cuota.valor === 0 ? '' : Number(cuota.valor.toFixed(2))} onChange={(e) => actualizarValorCuota(cuota.numeroCuota, Number(e.target.value))} className={`w-28 bg-transparent text-right text-sm font-bold outline-none font-mono ${cuota.esEditable ? 'text-[#ea0029]' : 'text-[#415364]'}`} />
                         </div>
                       </div>
                     ))}
@@ -1013,77 +1009,82 @@ export default function CotizadorPage() {
         </div>
 
         {/* COLUMNA DERECHA: RESUMEN FIJO */}
-        <div className="space-y-6">
-          <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm sticky top-6 space-y-6">
+        <div className="xl:col-span-1 space-y-6">
+          <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-xl sticky top-6 space-y-6 flex flex-col min-h-[500px]">
             <div>
-              <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-2">Resumen Financiero</h2>
+              <h2 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest mb-3 border-b border-neutral-100 pb-2">Resumen Financiero</h2>
               {montoDescuentoCalculado > 0 && (
-                <div className="text-xs text-neutral-400 line-through font-mono mb-0.5">
+                <div className="text-[11px] text-[#415364]/40 line-through font-mono font-bold mb-1">
                   Lista Base: ${precioListaOriginal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                 </div>
               )}
-              <div className="text-3xl font-light tracking-tight text-neutral-900 font-mono">
+              <div className="text-4xl font-bold tracking-tight text-[#415364] font-mono">
                 ${precioTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
               </div>
-              <p className="text-xs text-neutral-400 mt-1">Valor Total de Venta de la Unidad</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#415364]/50 mt-1">Valor Total de Venta de la Unidad</p>
             </div>
 
-            <div className="space-y-3 pt-4 border-t border-neutral-100 text-sm">
-              <div className="flex justify-between">
-                <span className="text-neutral-500">Cuota Inicial Total ({Number(pctInicialReal.toFixed(1))}%):</span>
-                <span className="font-semibold text-neutral-900 font-mono">${cuotaInicialTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+            <div className="space-y-4 pt-5 border-t border-[#415364]/10 text-sm flex-1">
+              
+              <div className="flex justify-between items-center">
+                <span className="text-[11px] font-bold text-[#415364] uppercase tracking-wider">Cuota Inicial ({Number(pctInicialReal.toFixed(1))}%)</span>
+                <span className="font-bold text-[#415364] font-mono">${cuotaInicialTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
               </div>
-              <div className="flex justify-between pl-3 text-xs text-neutral-500 border-l-2 border-neutral-200">
+              <div className="flex justify-between pl-4 text-[11px] text-[#415364]/70 border-l-2 border-[#ea0029]/30 font-medium">
                 <span>Reserva Inmediata:</span>
-                <span className="font-mono">${reservaValor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                <span className="font-mono font-bold">${reservaValor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
               </div>
-              <div className="flex justify-between pl-3 text-xs text-neutral-500 border-l-2 border-neutral-200">
-                <span>Saldo Firma Promesa:</span>
-                <span className="font-medium text-neutral-800 font-mono">
+              <div className="flex justify-between pl-4 text-[11px] text-[#415364]/70 border-l-2 border-[#ea0029]/30 font-medium">
+                <span>Firma de Promesa:</span>
+                <span className="font-mono font-bold text-[#415364]">
                   ${saldoFirmaPromesa > 0 ? saldoFirmaPromesa.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}
                 </span>
               </div>
+              
               {mesesInicial > 1 && saldoFirmaPromesa > 0 && (
-                <div className="flex justify-between pl-6 pr-1 py-1 text-[10px] text-[#B94A36] bg-[#B94A36]/5 rounded">
-                  <span>↳ Dividido en {mesesInicial} pagos de:</span>
-                  <span className="font-mono font-bold">${cuotaInicialMensual.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} c/u</span>
+                <div className="flex justify-between pl-4 pr-3 py-2 text-[10px] font-bold text-[#ea0029] bg-[#ea0029]/5 rounded-lg border border-[#ea0029]/10">
+                  <span>↳ Dividido en {mesesInicial} pagos:</span>
+                  <span className="font-mono">${cuotaInicialMensual.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} c/u</span>
                 </div>
               )}
-              <div className="flex justify-between border-t border-dashed border-neutral-100 pt-2">
-                <span className="text-neutral-500">Monto Financiamiento Obra ({Number(pctEntradaReal.toFixed(1))}%):</span>
-                <span className="font-semibold text-neutral-900 font-mono">${entradaDiferirTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+              
+              <div className="flex justify-between items-center border-t border-[#415364]/10 pt-4">
+                <span className="text-[11px] font-bold text-[#415364] uppercase tracking-wider">Diferido Obra ({Number(pctEntradaReal.toFixed(1))}%)</span>
+                <span className="font-bold text-[#415364] font-mono">${entradaDiferirTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
               </div>
               
               {entradaDiferirTotal > 0 && (
-                <div className="flex justify-between text-xs text-neutral-400 lifted pl-3">
+                <div className="flex justify-between text-[11px] text-[#415364]/60 font-medium bg-[#dce3eb]/30 px-3 py-2 rounded-lg border border-[#415364]/5">
                   <span>{mesesConstruccion} cuotas promedio de:</span>
-                  <span className="font-mono">
+                  <span className="font-mono font-bold">
                     ${cronogramaCuotas.length > 0 ? (entradaDiferirTotal / mesesConstruccion).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}
                   </span>
                 </div>
               )}
               
-              <div className="flex justify-between border-t border-neutral-100 pt-3 text-base">
-                <span className="font-medium text-[#B94A36]">Contra Entrega ({Number(pctContraEntregaReal.toFixed(1))}%):</span>
-                <span className="font-bold text-[#B94A36] font-mono">${contraEntrega.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+              <div className="flex justify-between items-center border-t-2 border-[#21242E] pt-4 mt-2">
+                <span className="text-[12px] font-bold text-[#21242E] uppercase tracking-widest">Contra Entrega ({Number(pctContraEntregaReal.toFixed(1))}%)</span>
+                <span className="font-bold text-[#21242E] text-lg font-mono">${contraEntrega.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
               </div>
             </div>
 
             {propiedadSeleccionada && (
-              <div className="space-y-3 pt-4 border-t border-neutral-100">
+              <div className="space-y-3 pt-6 border-t border-[#415364]/10 mt-auto">
                 <button
                   onClick={descargarPdfComercial}
                   disabled={generandoPdf}
-                  className="w-full bg-[#B94A36] text-white rounded-lg p-3 text-xs font-semibold uppercase tracking-wider hover:bg-[#9B3B2B] transition disabled:opacity-50"
+                  className="w-full bg-white border-2 border-[#21242E] text-[#21242E] rounded-xl p-3.5 text-[11px] font-bold uppercase tracking-widest hover:bg-[#21242E] hover:text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {generandoPdf ? 'Generando Documento...' : '📥 Descargar PDF Comercial'}
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path></svg>
+                  {generandoPdf ? 'Generando PDF...' : 'Generar Comercial'}
                 </button>
                 <button
                   onClick={guardarCotizacionEnSistema}
                   disabled={guardando}
-                  className="w-full bg-neutral-900 text-white rounded-lg p-3 text-xs font-semibold uppercase tracking-wider hover:bg-neutral-800 transition disabled:opacity-50"
+                  className="w-full bg-[#ea0029] text-white rounded-xl p-3.5 text-[11px] font-bold uppercase tracking-widest hover:bg-[#c90022] transition-colors shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {guardando ? 'Guardando Registro...' : '💾 Guardar Cotización'}
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                  {guardando ? 'Guardando Registro...' : 'Guardar Cotización'}
                 </button>
               </div>
             )}
