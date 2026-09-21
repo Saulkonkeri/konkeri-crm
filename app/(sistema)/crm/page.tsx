@@ -1,4 +1,4 @@
-// Actualizacion forzada para Vercel - CRM con Pases VIP Dinámicos (Selector de Tiempo)
+// Actualizacion forzada para Vercel - CRM Premium Konkeri con Módulo de Email
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -101,12 +101,18 @@ export default function CRMPage() {
   const [busquedaLlamada, setBusquedaLlamada] = useState('');
   const [mostrarOpcionesLlamada, setMostrarOpcionesLlamada] = useState(false);
 
+  // PLANTILLAS WHATSAPP
   const [plantillaMensaje, setPlantillaMensaje] = useState(
     "Hola {nombre}, le saluda Saúl Intriago de Arienzo Boutique Living. Recibí su solicitud de información y le comparto el brochure del proyecto. ¿A qué hora le viene bien que conversemos unos minutos?"
   );
-  
   const [plantillaCampana, setPlantillaCampana] = useState(
     "Hola {nombre}, le escribo de Arienzo Boutique Living. Hoy lanzamos un beneficio especial para elegir las mejores unidades. ¿Le gustaría que le envíe el inventario actualizado?"
+  );
+
+  // PLANTILLAS CORREO (NUEVO)
+  const [plantillaCorreoAsunto, setPlantillaCorreoAsunto] = useState("Información Exclusiva - Arienzo Boutique Living");
+  const [plantillaCorreoCuerpo, setPlantillaCorreoCuerpo] = useState(
+    "Hola {nombre},\n\nGracias por su interés en Arienzo Boutique Living. Adjunto la información detallada del proyecto para que pueda revisarla con calma.\n\nQuedo a su entera disposición para agendar una breve llamada y resolver cualquier inquietud.\n\nSaludos cordiales,\nSaúl Intriago\nKonkeri Real Estate"
   );
 
   // ESTADOS VIP
@@ -117,14 +123,19 @@ export default function CRMPage() {
   const origenes = ['Página Web / Landing Page', 'Referido / Directo', 'Llamada Telefónica', 'WhatsApp Orgánico', 'Instagram / Facebook', 'Meta Ads', 'Feria / Evento', 'Otro'];
   const motivos = ['Por definir', 'Para Vivir', 'Para Invertir', 'Segunda Residencia'];
   const intereses = ['Por definir', 'Suite', '2 Dormitorios', '3 Dormitorios', 'Local Comercial', 'Penthouse'];
-  const tiposAccion = ['Llamada Telefónica', 'Reunión Presencial', 'Mensaje WhatsApp', 'Enviar Cotización'];
+  const tiposAccion = ['Llamada Telefónica', 'Reunión Presencial', 'Mensaje WhatsApp', 'Enviar Cotización', 'Enviar Correo'];
 
   useEffect(() => {
     cargarClientes();
     const plantillaGuardada = localStorage.getItem('plantilla_bienvenida_arienzo');
     const campanaGuardada = localStorage.getItem('plantilla_campana_arienzo');
+    const correoAsuntoGuardado = localStorage.getItem('plantilla_correo_asunto');
+    const correoCuerpoGuardado = localStorage.getItem('plantilla_correo_cuerpo');
+    
     if (plantillaGuardada) setPlantillaMensaje(plantillaGuardada);
     if (campanaGuardada) setPlantillaCampana(campanaGuardada);
+    if (correoAsuntoGuardado) setPlantillaCorreoAsunto(correoAsuntoGuardado);
+    if (correoCuerpoGuardado) setPlantillaCorreoCuerpo(correoCuerpoGuardado);
   }, []);
 
   useEffect(() => {
@@ -140,15 +151,14 @@ export default function CRMPage() {
     }
   }, [clienteSeleccionado]);
 
-  // === FUNCIÓN AJUSTADA: OTORGAR ACCESO VIP DINÁMICO ===
+  // OTORGAR ACCESO VIP DINÁMICO
   const otorgarAccesoVIP = async (emailCliente?: string) => {
     if (!emailCliente) {
-      alert("El cliente no tiene un correo electrónico registrado. Actualiza sus datos primero.");
+      alert("El prospecto no tiene un correo electrónico registrado. Actualiza sus datos primero.");
       return;
     }
     setActivandoVIP(true);
     try {
-      // AJUSTE: Sumamos exactamente las horas seleccionadas
       const fechaExpiracion = new Date();
       fechaExpiracion.setHours(fechaExpiracion.getHours() + tiempoVIP); 
 
@@ -341,18 +351,6 @@ export default function CRMPage() {
     return Array.from(setCiudades).sort();
   }, [clientes]);
 
-  const tipologiasDisponibles = useMemo(() => {
-    const setTipos = new Set<string>();
-    clientes.forEach(c => { if (c.tipologia_interes) setTipos.add(c.tipologia_interes.trim()); });
-    return Array.from(setTipos).sort();
-  }, [clientes]);
-
-  const campanasDisponibles = useMemo(() => {
-    const setCampanas = new Set<string>();
-    clientes.forEach(c => { if (c.campana) setCampanas.add(c.campana.trim()); });
-    return Array.from(setCampanas).sort();
-  }, [clientes]);
-
   const handleDragStart = (e: React.DragEvent, clienteId: string) => { e.dataTransfer.setData('clienteId', clienteId); };
   const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); };
 
@@ -418,8 +416,10 @@ export default function CRMPage() {
   const guardarPlantilla = () => {
     localStorage.setItem('plantilla_bienvenida_arienzo', plantillaMensaje);
     localStorage.setItem('plantilla_campana_arienzo', plantillaCampana);
+    localStorage.setItem('plantilla_correo_asunto', plantillaCorreoAsunto);
+    localStorage.setItem('plantilla_correo_cuerpo', plantillaCorreoCuerpo);
     setMostrarModalPlantilla(false);
-    alert('Mensajes actualizados correctamente.');
+    alert('Mensajes y plantillas actualizadas correctamente.');
   };
 
   const actualizarCampoRapido = async (id: string, campo: string, valor: string) => {
@@ -475,6 +475,14 @@ export default function CRMPage() {
     window.open(`https://wa.me/${num}${txt}`, '_blank');
   };
 
+  // FUNCIÓN PARA ENVIAR CORREO (NUEVA)
+  const abrirCorreo = (cliente: Cliente) => {
+    if (!cliente.email) { alert("Este cliente no tiene correo electrónico registrado."); return; }
+    const asunto = encodeURIComponent(plantillaCorreoAsunto.replace('{nombre}', cliente.nombres));
+    const cuerpo = encodeURIComponent(plantillaCorreoCuerpo.replace('{nombre}', cliente.nombres));
+    window.location.href = `mailto:${cliente.email}?subject=${asunto}&body=${cuerpo}`;
+  };
+
   const verHistorialCotizaciones = async (cliente: Cliente) => {
     setMostrarModalHistorial(true);
     setCargandoHistorial(true);
@@ -492,59 +500,76 @@ export default function CRMPage() {
     mes: 'Últimos 30 Días'
   };
 
-  if (cargando) return <div className="flex min-h-screen items-center justify-center bg-[#F4F4F4]"><p className="text-sm font-light tracking-widest text-[#B94A36] uppercase animate-pulse">Sincronizando...</p></div>;
+  if (cargando) return <div className="flex min-h-screen items-center justify-center bg-[#dce3eb]"><p className="text-sm font-bold tracking-widest text-[#ea0029] uppercase animate-pulse">Sincronizando Radar...</p></div>;
 
   return (
-    <div className="min-h-screen bg-[#F4F4F4] px-4 md:px-6 py-6 font-sans text-neutral-800 flex flex-col h-screen overflow-hidden">
+    <div className="min-h-screen bg-[#dce3eb] p-4 md:p-6 font-sans text-[#415364] flex flex-col h-screen overflow-hidden">
       
       {/* 1. HEADER PRINCIPAL Y VISTAS */}
-      <div className="w-full flex-shrink-0 mb-3 space-y-3">
-        <div className="bg-white rounded-xl border border-neutral-200 p-4 shadow-sm flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div className="w-full flex-shrink-0 mb-4 space-y-3">
+        <div className="bg-white rounded-2xl border border-neutral-200/60 p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <span className="text-[10px] font-bold tracking-widest text-[#B94A36] uppercase">Gestión Comercial Arienzo</span>
-            <h1 className="text-xl font-medium tracking-tight text-neutral-900 mt-1">Pipeline de Prospectos</h1>
+            <span className="text-[10px] font-bold tracking-widest text-[#ea0029] uppercase">Gestión Comercial Arienzo</span>
+            <h1 className="text-2xl font-bold tracking-tight text-[#415364] mt-1">Radar de Leads</h1>
           </div>
           
-          <div className="flex bg-neutral-100 p-1 rounded-lg border border-neutral-200">
-            <button onClick={() => setVista('kanban')} className={`px-4 py-2 rounded-md text-xs font-bold transition-colors ${vista === 'kanban' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}>📋 Tablero</button>
-            <button onClick={() => setVista('lista')} className={`px-4 py-2 rounded-md text-xs font-bold transition-colors ${vista === 'lista' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}>🗄️ Lista</button>
-            <button onClick={() => setVista('actividad')} className={`px-4 py-2 rounded-md text-xs font-bold transition-colors ${vista === 'actividad' ? 'bg-[#B94A36] text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}>⚡ Actividad</button>
+          <div className="flex bg-[#dce3eb]/50 p-1.5 rounded-xl border border-[#415364]/10">
+            <button onClick={() => setVista('kanban')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-2 ${vista === 'kanban' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path></svg>
+              Tablero
+            </button>
+            <button onClick={() => setVista('lista')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-2 ${vista === 'lista' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+              Lista
+            </button>
+            <button onClick={() => setVista('actividad')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-2 ${vista === 'actividad' ? 'bg-[#ea0029] text-white shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              Actividad
+            </button>
           </div>
 
-          <div className="flex gap-2">
-            <button onClick={() => setMostrarModalPlantilla(true)} className="px-3 py-2 bg-neutral-100 text-neutral-700 text-xs font-bold rounded-lg hover:bg-neutral-200 transition">⚙️ Mensajes</button>
-            <button onClick={() => setMostrarModalNuevo(true)} className="px-4 py-2 bg-neutral-900 text-white text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-black transition shadow-md">+ Prospecto</button>
+          <div className="flex gap-3">
+            <button onClick={() => setMostrarModalPlantilla(true)} className="px-4 py-2.5 bg-white border border-[#415364]/20 text-[#415364] text-xs font-bold rounded-xl hover:bg-[#415364]/5 transition-colors flex items-center gap-2 shadow-sm">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+              Mensajes
+            </button>
+            <button onClick={() => setMostrarModalNuevo(true)} className="px-5 py-2.5 bg-[#415364] text-white text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-[#21242E] transition-colors shadow-md flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+              Prospecto
+            </button>
           </div>
         </div>
 
         {/* 2. BARRA DE FILTROS */}
-        <div className="bg-white p-3 rounded-xl border border-neutral-200 shadow-sm flex flex-wrap items-center gap-3">
+        <div className="bg-white p-4 rounded-2xl border border-neutral-200/60 shadow-sm flex flex-wrap items-center gap-4">
           <div className="relative flex-1 min-w-[220px]">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-neutral-400">🔍</span>
+            <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-[#415364]/40">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </span>
             <input 
               type="text" 
               placeholder="Buscar prospecto por nombre, ciudad o teléfono..." 
               value={busqueda} 
               onChange={(e) => setBusqueda(e.target.value)} 
-              className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-2 pl-9 pr-3 text-xs focus:outline-none focus:border-[#B94A36]" 
+              className="w-full bg-[#dce3eb]/30 border border-[#415364]/10 rounded-xl py-2.5 pl-10 pr-4 text-xs font-medium focus:outline-none focus:border-[#ea0029] focus:ring-1 focus:ring-[#ea0029]/20 transition-all text-[#415364]" 
             />
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs">
-            <span className="text-neutral-400 font-medium text-[10px] uppercase">Ciudad:</span>
-            <select value={filtroCiudad} onChange={(e) => setFiltroCiudad(e.target.value)} className="bg-neutral-50 border border-neutral-200 rounded-lg py-2 px-2.5 text-xs font-semibold text-neutral-700 outline-none focus:border-[#B94A36]">
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-[#415364]/50 font-bold text-[10px] uppercase tracking-widest">Ciudad:</span>
+            <select value={filtroCiudad} onChange={(e) => setFiltroCiudad(e.target.value)} className="bg-white border border-[#415364]/20 rounded-lg py-2 px-3 text-xs font-bold text-[#415364] outline-none focus:border-[#ea0029] cursor-pointer">
               <option value="Todas">Todas</option>
               {ciudadesDisponibles.map(ciu => <option key={ciu} value={ciu}>{ciu}</option>)}
             </select>
           </div>
 
-          <div className="flex items-center border-l border-neutral-200 pl-3">
+          <div className="flex items-center border-l border-[#415364]/10 pl-4">
             <button 
               onClick={() => setFiltroPendientes(!filtroPendientes)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all border ${filtroPendientes ? 'bg-red-50 text-red-700 border-red-200 shadow-sm' : 'bg-white text-neutral-500 border-neutral-200 hover:bg-neutral-50'}`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${filtroPendientes ? 'bg-[#ea0029]/10 text-[#ea0029] border-[#ea0029]/30 shadow-sm' : 'bg-white text-[#415364]/60 border-[#415364]/20 hover:bg-[#415364]/5'}`}
             >
-              <span className={`text-[14px] ${filtroPendientes ? 'animate-pulse' : ''}`}>🎯</span>
-              {filtroPendientes ? 'Filtro: Tareas de Hoy' : 'Modo Cacería (Off)'}
+              <svg className={`w-4 h-4 ${filtroPendientes ? 'animate-pulse' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+              {filtroPendientes ? 'Filtrando Tareas de Hoy' : 'Modo Cacería (Off)'}
             </button>
           </div>
         </div>
@@ -554,16 +579,16 @@ export default function CRMPage() {
       <div className="w-full flex-1 min-h-0 overflow-hidden relative">
         
         {vista === 'kanban' && (
-          <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-7 gap-2 h-full overflow-y-auto pb-4 custom-scrollbar px-1">
+          <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-7 gap-3 h-full overflow-y-auto pb-4 custom-scrollbar pr-1">
             {estados.map(estado => {
               const leads = clientesFiltrados.filter(c => c.estado === estado);
               return (
-                <div key={estado} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, estado)} className="bg-neutral-200/40 rounded-xl p-2 flex flex-col h-full overflow-hidden border border-neutral-200/60">
-                  <div className="flex justify-between items-center mb-2 px-1 flex-shrink-0">
-                    <h3 className="text-[10px] font-bold uppercase tracking-wider text-neutral-600 truncate pr-2">{estado}</h3>
-                    <span className="bg-white text-neutral-500 text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">{leads.length}</span>
+                <div key={estado} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, estado)} className="bg-white/50 backdrop-blur-sm rounded-2xl p-2.5 flex flex-col h-full overflow-hidden border border-[#415364]/10 shadow-sm">
+                  <div className="flex justify-between items-center mb-3 px-1.5 flex-shrink-0">
+                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#415364] truncate pr-2">{estado}</h3>
+                    <span className="bg-[#415364] text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">{leads.length}</span>
                   </div>
-                  <div className="space-y-2 overflow-y-auto flex-1 pr-1 custom-scrollbar">
+                  <div className="space-y-3 overflow-y-auto flex-1 pr-1 custom-scrollbar">
                     {leads.map(cliente => {
                       const diasInactivos = obtenerDiasInactivos(cliente.notas);
                       const abandonado = diasInactivos > 4 && cliente.estado !== 'Descartado' && cliente.estado !== 'Cierre (Ganado)';
@@ -575,27 +600,28 @@ export default function CRMPage() {
                           draggable 
                           onDragStart={(e) => handleDragStart(e, cliente.id)} 
                           onClick={() => setClienteSeleccionado(cliente)} 
-                          className={`bg-white p-2.5 rounded-lg shadow-sm cursor-pointer transition-all relative cursor-grab border-[1.5px] ${agendadoVencido ? 'border-red-500' : abandonado ? 'border-orange-400' : 'border-transparent'} hover:border-[#B94A36]`}
+                          className={`bg-white p-3.5 rounded-xl shadow-sm cursor-pointer transition-all relative cursor-grab border-[1.5px] group hover:shadow-md ${agendadoVencido ? 'border-[#ea0029]/60' : abandonado ? 'border-amber-400' : 'border-transparent hover:border-[#ea0029]/30'}`}
                         >
-                          {cliente.temperatura && <span className="absolute top-2 right-2 text-[10px]">{cliente.temperatura.split(' ')[0]}</span>}
-                          <h4 className="font-bold text-neutral-900 text-[11px] pr-4 leading-tight">{cliente.nombres} {cliente.apellidos}</h4>
-                          <p className="text-[9px] text-neutral-500 font-mono mt-0.5 mb-1">{cliente.telefono || 'Sin celular'}</p>
+                          {cliente.temperatura && <span className="absolute top-3 right-3 text-[10px] bg-[#dce3eb]/50 rounded-full px-1.5 py-0.5">{cliente.temperatura.split(' ')[0]}</span>}
+                          <h4 className="font-bold text-[#415364] text-[12px] pr-5 leading-tight group-hover:text-[#ea0029] transition-colors">{cliente.nombres} {cliente.apellidos}</h4>
+                          <p className="text-[9px] text-[#415364]/60 font-mono mt-1 mb-2 font-medium">{cliente.telefono || 'Sin celular'}</p>
                           
                           {cliente.tipologia_interes && cliente.tipologia_interes !== 'Por definir' && (
-                            <span className="inline-block mt-1 bg-purple-50 text-purple-700 border border-purple-200 text-[8px] font-bold px-1.5 py-0.5 rounded mr-1">
-                              {cliente.tipologia_interes.includes('Suite') ? '🏢' : '🛏️'} {cliente.tipologia_interes}
+                            <span className="inline-block bg-[#415364]/5 text-[#415364] border border-[#415364]/10 text-[9px] font-bold px-2 py-0.5 rounded-md mr-1 uppercase tracking-wider">
+                               {cliente.tipologia_interes}
                             </span>
                           )}
 
                           {cliente.proximo_contacto && (
-                            <div className={`mt-1 text-[8px] font-bold px-1.5 py-0.5 inline-block rounded border ${agendadoVencido ? 'bg-red-50 text-red-700 border-red-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
-                              📅 Agendado: {new Date(cliente.proximo_contacto).toLocaleDateString('es-EC', {day:'2-digit', month:'short'})}
+                            <div className={`mt-2 text-[9px] font-bold px-2 py-1 flex items-center gap-1.5 rounded-md border ${agendadoVencido ? 'bg-[#ea0029]/10 text-[#ea0029] border-[#ea0029]/20' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                              {new Date(cliente.proximo_contacto).toLocaleDateString('es-EC', {day:'2-digit', month:'short'})}
                             </div>
                           )}
 
-                          <div className="mt-1.5 pt-1.5 border-t border-neutral-100 flex justify-between items-center">
-                            <span className={`text-[8px] font-bold ${abandonado ? 'text-orange-600' : 'text-neutral-400'}`}>
-                              {diasInactivos === 0 ? 'Última acción: Hoy' : diasInactivos === 1 ? 'Última acción: Ayer' : diasInactivos > 300 ? 'Sin registros recientes' : `Inactivo: ${diasInactivos} días`}
+                          <div className="mt-2.5 pt-2 border-t border-[#415364]/5 flex justify-between items-center">
+                            <span className={`text-[9px] font-bold tracking-wide ${abandonado ? 'text-amber-600' : 'text-[#415364]/40'}`}>
+                              {diasInactivos === 0 ? 'Actividad: Hoy' : diasInactivos === 1 ? 'Actividad: Ayer' : diasInactivos > 300 ? 'Sin registros' : `Inactivo: ${diasInactivos} días`}
                             </span>
                             {abandonado && <span className="text-[10px] animate-pulse" title="Lead enfriándose">⚠️</span>}
                           </div>
@@ -610,31 +636,31 @@ export default function CRMPage() {
         )}
 
         {vista === 'lista' && (
-          <div className="bg-white rounded-xl border border-neutral-200 shadow-sm h-full overflow-auto w-full">
+          <div className="bg-white rounded-2xl border border-neutral-200/60 shadow-sm h-full overflow-auto w-full">
             <table className="w-full text-left text-sm border-collapse min-w-[800px]">
-              <thead className="sticky top-0 bg-neutral-900 z-10">
-                <tr className="text-white text-[10px] uppercase tracking-wider">
-                  <th className="px-4 py-3 font-semibold">Prospecto</th>
-                  <th className="px-4 py-3 font-semibold">Interés</th>
-                  <th className="px-4 py-3 font-semibold">Estado</th>
-                  <th className="px-4 py-3 font-semibold">Tarea Pendiente</th>
+              <thead className="sticky top-0 bg-[#21242E] z-10 shadow-sm">
+                <tr className="text-white text-[10px] uppercase tracking-widest">
+                  <th className="px-5 py-4 font-bold">Prospecto</th>
+                  <th className="px-5 py-4 font-bold">Interés</th>
+                  <th className="px-5 py-4 font-bold">Fase de Venta</th>
+                  <th className="px-5 py-4 font-bold">Tarea Pendiente</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-100 text-neutral-700">
+              <tbody className="divide-y divide-neutral-100 text-[#415364]">
                 {clientesFiltrados.map((cliente) => (
-                  <tr key={cliente.id} onClick={() => setClienteSeleccionado(cliente)} className="hover:bg-neutral-50 cursor-pointer">
-                    <td className="px-4 py-3">
-                      <div className="font-bold text-neutral-900 text-xs">{cliente.nombres} {cliente.apellidos}</div>
-                      <div className="text-[10px] text-neutral-400 font-mono">{cliente.telefono}</div>
+                  <tr key={cliente.id} onClick={() => setClienteSeleccionado(cliente)} className="hover:bg-[#dce3eb]/30 cursor-pointer transition-colors">
+                    <td className="px-5 py-4">
+                      <div className="font-bold text-[#415364] text-[13px]">{cliente.nombres} {cliente.apellidos}</div>
+                      <div className="text-[10px] text-[#415364]/60 font-mono mt-0.5 font-medium">{cliente.telefono}</div>
                     </td>
-                    <td className="px-4 py-3 text-xs font-semibold text-purple-700">{cliente.tipologia_interes}</td>
-                    <td className="px-4 py-3"><div className="text-[10px] font-bold text-neutral-700 bg-neutral-100 inline-block px-1.5 py-0.5 rounded">{cliente.estado}</div></td>
-                    <td className="px-4 py-3">
+                    <td className="px-5 py-4 text-xs font-bold text-[#ea0029]">{cliente.tipologia_interes}</td>
+                    <td className="px-5 py-4"><div className="text-[10px] font-bold text-[#415364] bg-[#415364]/10 inline-block px-2.5 py-1 rounded-md uppercase tracking-wider">{cliente.estado}</div></td>
+                    <td className="px-5 py-4">
                       {cliente.proximo_contacto ? (
-                         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${esFechaVencida(cliente.proximo_contacto) ? 'bg-red-100 text-red-700' : 'bg-blue-50 text-blue-700'}`}>
+                         <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider ${esFechaVencida(cliente.proximo_contacto) ? 'bg-[#ea0029]/10 text-[#ea0029]' : 'bg-blue-50 text-blue-700'}`}>
                            {new Date(cliente.proximo_contacto).toLocaleDateString('es-EC')}
                          </span>
-                      ) : <span className="text-[10px] text-neutral-400">Sin agendar</span>}
+                      ) : <span className="text-[10px] text-[#415364]/40 font-bold uppercase tracking-wider">Sin agendar</span>}
                     </td>
                   </tr>
                 ))}
@@ -645,125 +671,133 @@ export default function CRMPage() {
 
         {/* === VISTA 3: BITÁCORA MULTICANAL CON AGENDAMIENTO === */}
         {vista === 'actividad' && (
-          <div className="flex flex-col h-full gap-4">
+          <div className="flex flex-col h-full gap-5">
             
-            <div className="bg-white p-3 rounded-xl border border-neutral-200 shadow-sm flex items-center justify-between flex-shrink-0">
+            <div className="bg-white p-5 rounded-2xl border border-neutral-200/60 shadow-sm flex flex-col md:flex-row items-center justify-between flex-shrink-0 gap-4">
                <div>
-                 <h2 className="text-sm font-bold text-neutral-900 tracking-wide">Reporte de Productividad</h2>
-                 <p className="text-[10px] text-neutral-500 mt-0.5">Analiza el rendimiento sin saturar la vista</p>
+                 <h2 className="text-lg font-bold text-[#415364] tracking-tight">Reporte de Productividad</h2>
+                 <p className="text-[11px] text-[#415364]/60 mt-0.5">Analiza el rendimiento del equipo de ventas.</p>
                </div>
                
-               <div className="flex bg-neutral-100 p-1 rounded-lg border border-neutral-200">
-                 <button onClick={() => setFiltroTiempo('hoy')} className={`px-4 py-1.5 rounded-md text-[11px] font-bold transition-all ${filtroTiempo === 'hoy' ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'}`}>Hoy</button>
-                 <button onClick={() => setFiltroTiempo('ayer')} className={`px-4 py-1.5 rounded-md text-[11px] font-bold transition-all ${filtroTiempo === 'ayer' ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'}`}>Ayer</button>
-                 <button onClick={() => setFiltroTiempo('semana')} className={`px-4 py-1.5 rounded-md text-[11px] font-bold transition-all ${filtroTiempo === 'semana' ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'}`}>7 Días</button>
-                 <button onClick={() => setFiltroTiempo('mes')} className={`px-4 py-1.5 rounded-md text-[11px] font-bold transition-all ${filtroTiempo === 'mes' ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'}`}>30 Días</button>
+               <div className="flex bg-[#dce3eb]/50 p-1.5 rounded-xl border border-[#415364]/10">
+                 <button onClick={() => setFiltroTiempo('hoy')} className={`px-4 py-2 rounded-lg text-[11px] font-bold transition-all ${filtroTiempo === 'hoy' ? 'bg-white shadow-sm text-[#ea0029]' : 'text-[#415364]/70 hover:text-[#415364]'}`}>Hoy</button>
+                 <button onClick={() => setFiltroTiempo('ayer')} className={`px-4 py-2 rounded-lg text-[11px] font-bold transition-all ${filtroTiempo === 'ayer' ? 'bg-white shadow-sm text-[#ea0029]' : 'text-[#415364]/70 hover:text-[#415364]'}`}>Ayer</button>
+                 <button onClick={() => setFiltroTiempo('semana')} className={`px-4 py-2 rounded-lg text-[11px] font-bold transition-all ${filtroTiempo === 'semana' ? 'bg-white shadow-sm text-[#ea0029]' : 'text-[#415364]/70 hover:text-[#415364]'}`}>7 Días</button>
+                 <button onClick={() => setFiltroTiempo('mes')} className={`px-4 py-2 rounded-lg text-[11px] font-bold transition-all ${filtroTiempo === 'mes' ? 'bg-white shadow-sm text-[#ea0029]' : 'text-[#415364]/70 hover:text-[#415364]'}`}>30 Días</button>
                </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-shrink-0">
-              <div className="bg-white p-4 rounded-xl border border-neutral-200 shadow-sm text-center transition-all hover:border-[#B94A36]/30">
-                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Total Acciones</p>
-                <p className="text-3xl font-light text-neutral-900 mt-1">{actividadesDia.length}</p>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-5 flex-shrink-0">
+              <div className="bg-white p-5 rounded-2xl border border-neutral-200/60 shadow-sm text-center transition-all hover:border-[#415364]/30 group">
+                <p className="text-[10px] font-bold text-[#415364]/50 uppercase tracking-widest">Total Acciones</p>
+                <p className="text-4xl font-light text-[#415364] mt-2 group-hover:scale-105 transition-transform">{actividadesDia.length}</p>
               </div>
-              <div className="bg-white p-4 rounded-xl border border-neutral-200 shadow-sm text-center transition-all hover:border-green-300">
+              <div className="bg-white p-5 rounded-2xl border border-neutral-200/60 shadow-sm text-center transition-all hover:border-green-300 group">
                 <p className="text-[10px] font-bold text-green-600 uppercase tracking-widest">Éxito / Efectivas</p>
-                <p className="text-3xl font-light text-green-600 mt-1">
+                <p className="text-4xl font-light text-green-600 mt-2 group-hover:scale-105 transition-transform">
                   {actividadesDia.filter(a => a.resultado === 'Contestó' || a.resultado === 'Respondio' || a.resultado === 'Efectivo').length}
                 </p>
               </div>
-              <div className="bg-white p-4 rounded-xl border border-neutral-200 shadow-sm flex flex-col justify-center space-y-1">
-                <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest text-center border-b border-neutral-100 pb-1 mb-1">Impacto Por Canal</p>
+              <div className="bg-[#21242E] p-5 rounded-2xl border border-neutral-800 shadow-sm flex flex-col justify-center space-y-2 text-white">
+                <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest text-center border-b border-white/10 pb-1.5 mb-1.5">Impacto Por Canal</p>
                 <div className="flex justify-between items-center">
-                  <span className="text-[11px] font-bold text-neutral-600">📞 / 📹 Llamadas y Zoom</span>
-                  <span className="text-sm font-bold text-neutral-900">{actividadesDia.filter(a => a.tipo_contacto === 'Llamada' || a.tipo_contacto === 'Zoom').length}</span>
+                  <span className="text-[11px] font-bold text-white/80">Llamadas / Zoom</span>
+                  <span className="text-sm font-bold text-[#ea0029]">{actividadesDia.filter(a => a.tipo_contacto === 'Llamada' || a.tipo_contacto === 'Zoom').length}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-[11px] font-bold text-neutral-600">💬 WhatsApps</span>
-                  <span className="text-sm font-bold text-neutral-900">{actividadesDia.filter(a => a.tipo_contacto === 'WhatsApp').length}</span>
+                  <span className="text-[11px] font-bold text-white/80">WhatsApp / Email</span>
+                  <span className="text-sm font-bold text-[#ea0029]">{actividadesDia.filter(a => a.tipo_contacto === 'WhatsApp' || a.tipo_contacto === 'Email').length}</span>
                 </div>
               </div>
-              <div className="bg-white p-4 rounded-xl border border-neutral-200 shadow-sm flex flex-col justify-center space-y-1">
-                <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest text-center border-b border-neutral-100 pb-1 mb-1">Rendimiento Agente</p>
+              <div className="bg-[#21242E] p-5 rounded-2xl border border-neutral-800 shadow-sm flex flex-col justify-center space-y-2 text-white">
+                <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest text-center border-b border-white/10 pb-1.5 mb-1.5">Rendimiento Agente</p>
                 <div className="flex justify-between items-center">
-                  <span className="text-[11px] font-bold text-neutral-600">Saúl</span>
-                  <span className="text-sm font-bold text-neutral-900">{actividadesDia.filter(a => a.agente.includes('Saúl')).length}</span>
+                  <span className="text-[11px] font-bold text-white/80">Saúl Intriago</span>
+                  <span className="text-sm font-bold text-[#dce3eb]">{actividadesDia.filter(a => a.agente.includes('Saúl')).length}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-[11px] font-bold text-neutral-600">Debbi</span>
-                  <span className="text-sm font-bold text-neutral-900">{actividadesDia.filter(a => a.agente.includes('Debbi') || a.agente.includes('Debbie') || a.agente.includes('Débora')).length}</span>
+                  <span className="text-[11px] font-bold text-white/80">Debbi Mera</span>
+                  <span className="text-sm font-bold text-[#dce3eb]">{actividadesDia.filter(a => a.agente.includes('Debbi') || a.agente.includes('Debbie') || a.agente.includes('Débora')).length}</span>
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-4 flex-1 min-h-0">
+            <div className="flex flex-col md:flex-row gap-5 flex-1 min-h-0">
               
-              <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-5 w-full md:w-1/3 flex flex-col flex-shrink-0 overflow-y-auto custom-scrollbar">
-                <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wide border-b border-neutral-100 pb-3 mb-4">⚡ Acción y Agendamiento</h3>
-                <form onSubmit={registrarActividadRapida} className="flex-1 flex flex-col space-y-3">
+              <div className="bg-white rounded-2xl border border-neutral-200/60 shadow-sm p-6 w-full md:w-[35%] flex flex-col flex-shrink-0 overflow-y-auto custom-scrollbar">
+                <h3 className="text-sm font-bold text-[#415364] uppercase tracking-wider border-b border-neutral-100 pb-3 mb-5 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-[#ea0029]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                  Registro Rápido
+                </h3>
+                <form onSubmit={registrarActividadRapida} className="flex-1 flex flex-col space-y-4">
                   
                   <div className="relative">
-                    <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Buscar Cliente</label>
-                    <input 
-                      type="text" 
-                      placeholder="🔍 Escribe nombre o teléfono..."
-                      value={busquedaLlamada}
-                      onChange={(e) => {
-                        setBusquedaLlamada(e.target.value);
-                        setMostrarOpcionesLlamada(true);
-                        setLlamadaClienteId(''); 
-                      }}
-                      onFocus={() => setMostrarOpcionesLlamada(true)}
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]"
-                    />
-                    {busquedaLlamada && !llamadaClienteId && <p className="text-[9px] text-[#B94A36] mt-1 font-bold">⚠️ Haz clic en un prospecto abajo</p>}
+                    <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Buscar Cliente</label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#415364]/40">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                      </span>
+                      <input 
+                        type="text" 
+                        placeholder="Escribe nombre o teléfono..."
+                        value={busquedaLlamada}
+                        onChange={(e) => {
+                          setBusquedaLlamada(e.target.value);
+                          setMostrarOpcionesLlamada(true);
+                          setLlamadaClienteId(''); 
+                        }}
+                        onFocus={() => setMostrarOpcionesLlamada(true)}
+                        className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl py-2.5 pl-9 pr-3 text-xs font-medium focus:outline-none focus:border-[#ea0029] text-[#415364]"
+                      />
+                    </div>
+                    {busquedaLlamada && !llamadaClienteId && <p className="text-[9px] text-[#ea0029] mt-1.5 font-bold">⚠️ Haz clic en un prospecto abajo</p>}
                     {mostrarOpcionesLlamada && !llamadaClienteId && (
-                      <ul className="absolute z-10 w-full mt-1 bg-white border border-neutral-200 rounded-md shadow-lg max-h-48 overflow-y-auto custom-scrollbar">
+                      <ul className="absolute z-10 w-full mt-1.5 bg-white border border-neutral-200/80 rounded-xl shadow-xl max-h-48 overflow-y-auto custom-scrollbar">
                         {prospectosFiltradosParaLlamada.length > 0 ? (
                           prospectosFiltradosParaLlamada.map(c => (
                             <li 
                               key={c.id} 
-                              className="p-2 text-xs hover:bg-neutral-50 cursor-pointer border-b border-neutral-100 last:border-0 flex flex-col"
+                              className="p-3 text-xs hover:bg-[#dce3eb]/30 cursor-pointer border-b border-neutral-100 last:border-0 flex flex-col transition-colors"
                               onClick={() => {
                                 setLlamadaClienteId(c.id);
                                 setBusquedaLlamada(`${c.nombres} ${c.apellidos}`);
                                 setMostrarOpcionesLlamada(false);
                               }}
                             >
-                              <span className="font-bold text-neutral-800">{c.nombres} {c.apellidos}</span>
-                              <span className="text-[10px] text-neutral-500 font-mono">{c.telefono}</span>
+                              <span className="font-bold text-[#415364]">{c.nombres} {c.apellidos}</span>
+                              <span className="text-[10px] text-[#415364]/60 font-mono mt-0.5">{c.telefono}</span>
                             </li>
                           ))
                         ) : (
-                          <li className="p-2 text-xs text-neutral-400 text-center">No encontrado</li>
+                          <li className="p-3 text-xs text-[#415364]/40 text-center font-medium">No encontrado</li>
                         )}
                       </ul>
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Asesor</label>
-                      <select value={llamadaAgente} onChange={(e) => setLlamadaAgente(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none">
+                      <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Asesor</label>
+                      <select value={llamadaAgente} onChange={(e) => setLlamadaAgente(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-xl p-2.5 text-xs font-bold text-[#415364] focus:outline-none focus:border-[#ea0029]">
                         <option value="Saúl Intriago">Saúl</option>
                         <option value="Debbi Mera">Debbi</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Vía (Incluye Zoom)</label>
-                      <select value={tipoContacto} onChange={(e) => setTipoContacto(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs font-bold focus:outline-none">
-                        <option value="Llamada">📞 Llamada</option>
-                        <option value="WhatsApp">💬 WhatsApp</option>
-                        <option value="Zoom">📹 Videollamada Zoom</option>
-                        <option value="Email">📧 Email</option>
-                        <option value="Reunión">🤝 Presencial</option>
+                      <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Canal</label>
+                      <select value={tipoContacto} onChange={(e) => setTipoContacto(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-xl p-2.5 text-xs font-bold text-[#415364] focus:outline-none focus:border-[#ea0029]">
+                        <option value="Llamada">Llamada</option>
+                        <option value="WhatsApp">WhatsApp</option>
+                        <option value="Zoom">Zoom</option>
+                        <option value="Email">Email</option>
+                        <option value="Reunión">Presencial</option>
                       </select>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Resultado</label>
-                    <select value={llamadaResultado} onChange={(e) => setLlamadaResultado(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs font-bold focus:outline-none">
+                    <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Resultado</label>
+                    <select value={llamadaResultado} onChange={(e) => setLlamadaResultado(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-2.5 text-xs font-bold text-[#415364] focus:outline-none focus:border-[#ea0029]">
                       {tipoContacto === 'Llamada' || tipoContacto === 'Zoom' ? (
                         <>
                           <option value="Contestó">✅ Contestó / Asistió</option>
@@ -786,70 +820,77 @@ export default function CRMPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">¿Qué pasó hoy?</label>
-                    <textarea rows={2} value={llamadaNota} onChange={(e) => setLlamadaNota(e.target.value)} placeholder="Ej: Le gustó la suite, pide descuento..." className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none resize-none"></textarea>
+                    <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Notas del Contacto</label>
+                    <textarea rows={2} value={llamadaNota} onChange={(e) => setLlamadaNota(e.target.value)} placeholder="Ej: Le gustó la suite, pide descuento..." className="w-full bg-white border border-[#415364]/20 rounded-xl p-3 text-xs font-medium text-[#415364] focus:outline-none focus:border-[#ea0029] resize-none transition-all"></textarea>
                   </div>
                   
-                  <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg mt-2">
-                    <label className="block text-[10px] font-bold text-blue-700 uppercase mb-2">📅 ¿Agendar Siguiente Paso?</label>
-                    <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-[#415364]/5 border border-[#415364]/10 p-4 rounded-xl mt-2">
+                    <label className="block text-[10px] font-bold text-[#415364] uppercase mb-2.5 flex items-center gap-1.5">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                      Agendar Siguiente Paso
+                    </label>
+                    <div className="grid grid-cols-2 gap-2.5">
                       <input 
                         type="date" 
                         value={proximaFechaRapida} 
                         onChange={(e) => setProximaFechaRapida(e.target.value)} 
-                        className="w-full bg-white border border-blue-200 rounded-md p-1.5 text-xs text-neutral-700 outline-none focus:border-blue-400" 
+                        className="w-full bg-white border border-[#415364]/20 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]" 
                       />
                       <select 
                         value={proximaAccionRapida} 
                         onChange={(e) => setProximaAccionRapida(e.target.value)} 
-                        className="w-full bg-white border border-blue-200 rounded-md p-1.5 text-xs text-neutral-700 outline-none focus:border-blue-400"
+                        className="w-full bg-white border border-[#415364]/20 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]"
                       >
-                        <option value="">-- Qué hacer --</option>
+                        <option value="">-- Acción --</option>
                         <option value="Llamar">Llamar</option>
-                        <option value="WhatsApp">Escribir WhatsApp</option>
+                        <option value="WhatsApp">WhatsApp</option>
                         <option value="Reunión">Reunión / Zoom</option>
-                        <option value="Cotización">Enviar Cotización</option>
+                        <option value="Cotización">Cotización</option>
                       </select>
                     </div>
                   </div>
 
-                  <button type="submit" disabled={guardandoActividadRapida || !llamadaClienteId} className={`w-full py-3 mt-auto text-white text-[11px] font-bold uppercase tracking-widest rounded-lg transition shadow-sm ${!llamadaClienteId ? 'bg-neutral-400 cursor-not-allowed' : 'bg-[#B94A36] hover:bg-[#9B3B2B]'}`}>
-                    {guardandoActividadRapida ? 'Procesando...' : '💾 Guardar y Actualizar'}
+                  <button type="submit" disabled={guardandoActividadRapida || !llamadaClienteId} className={`w-full py-3.5 mt-auto text-white text-[11px] font-bold uppercase tracking-widest rounded-xl transition shadow-md ${!llamadaClienteId ? 'bg-[#415364]/30 cursor-not-allowed' : 'bg-[#ea0029] hover:bg-[#c90022]'}`}>
+                    {guardandoActividadRapida ? 'Procesando...' : 'Guardar y Actualizar'}
                   </button>
                 </form>
               </div>
 
-              <div className="bg-white rounded-xl border border-neutral-200 shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
-                <div className="p-4 border-b border-neutral-100 bg-neutral-50 flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wide">📋 {tituloActividad[filtroTiempo]}</h3>
+              <div className="bg-white rounded-2xl border border-neutral-200/60 shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
+                <div className="p-5 border-b border-neutral-100 flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-[#415364] uppercase tracking-wide flex items-center gap-2">
+                    <svg className="w-5 h-5 text-[#ea0029]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                    {tituloActividad[filtroTiempo]}
+                  </h3>
                 </div>
-                <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
                   {actividadesDia.length === 0 ? (
-                    <div className="h-full flex items-center justify-center">
-                      <p className="text-neutral-400 text-xs text-center">No hay flujo registrado para este periodo.<br/>¡A encender los motores!</p>
+                    <div className="h-full flex flex-col items-center justify-center text-center p-6">
+                      <svg className="w-12 h-12 text-[#415364]/20 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                      <p className="text-[#415364]/50 text-xs font-bold uppercase tracking-wider">No hay flujo registrado<br/>para este periodo.</p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {actividadesDia.map((act) => (
-                        <div key={act.id} className="flex gap-4 p-3 bg-neutral-50 border border-neutral-100 rounded-lg hover:border-neutral-200 transition-colors">
-                          <div className="text-center pt-1 min-w-[50px]">
+                        <div key={act.id} className="flex gap-4 p-4 bg-white border border-[#415364]/10 rounded-xl hover:shadow-md transition-shadow group">
+                          <div className="text-center pt-1 min-w-[55px]">
                             {filtroTiempo !== 'hoy' && filtroTiempo !== 'ayer' ? (
                               <>
-                                <span className="block text-[9px] font-bold text-neutral-500 mb-0.5">{new Date(act.created_at).toLocaleDateString('es-EC', {day:'2-digit', month:'short'})}</span>
-                                <span className="text-[9px] font-mono text-neutral-400">{new Date(act.created_at).toLocaleTimeString('es-EC', {hour: '2-digit', minute:'2-digit'})}</span>
+                                <span className="block text-[10px] font-bold text-[#415364]/60 mb-0.5">{new Date(act.created_at).toLocaleDateString('es-EC', {day:'2-digit', month:'short'})}</span>
+                                <span className="text-[10px] font-mono font-bold text-[#ea0029]">{new Date(act.created_at).toLocaleTimeString('es-EC', {hour: '2-digit', minute:'2-digit'})}</span>
                               </>
                             ) : (
-                              <span className="text-[10px] font-mono text-neutral-400">{new Date(act.created_at).toLocaleTimeString('es-EC', {hour: '2-digit', minute:'2-digit'})}</span>
+                              <span className="text-[11px] font-mono font-bold text-[#ea0029]">{new Date(act.created_at).toLocaleTimeString('es-EC', {hour: '2-digit', minute:'2-digit'})}</span>
                             )}
                           </div>
-                          <div className="flex-1 border-l border-neutral-200 pl-4">
-                            <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <span className="text-xs font-bold text-neutral-900">{act.clientes?.nombres} {act.clientes?.apellidos}</span>
-                              <span className="text-[12px]">{act.tipo_contacto === 'WhatsApp' ? '💬' : act.tipo_contacto === 'Email' ? '📧' : act.tipo_contacto === 'Zoom' ? '📹' : act.tipo_contacto === 'Reunión' ? '🤝' : '📞'}</span>
-                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${act.resultado.includes('Contestó') || act.resultado.includes('Respondio') || act.resultado.includes('Efectivo') ? 'bg-green-100 text-green-700' : 'bg-neutral-200 text-neutral-600'}`}>{act.resultado}</span>
+                          <div className="flex-1 border-l border-[#415364]/10 pl-4">
+                            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                              <span className="text-sm font-bold text-[#415364]">{act.clientes?.nombres} {act.clientes?.apellidos}</span>
+                              <span className="text-[12px] opacity-70 group-hover:opacity-100 transition-opacity">{act.tipo_contacto === 'WhatsApp' ? '💬' : act.tipo_contacto === 'Email' ? '📧' : act.tipo_contacto === 'Zoom' ? '📹' : act.tipo_contacto === 'Reunión' ? '🤝' : '📞'}</span>
+                              <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider border ${act.resultado.includes('Contestó') || act.resultado.includes('Respondio') || act.resultado.includes('Efectivo') ? 'bg-green-50 text-green-700 border-green-200' : 'bg-neutral-100 text-neutral-600 border-neutral-200'}`}>{act.resultado}</span>
                             </div>
-                            <p className="text-[11px] text-neutral-600 leading-relaxed">{act.notas || 'Sin notas adicionales'}</p>
-                            <p className="text-[9px] font-bold text-neutral-400 mt-1 uppercase tracking-wider">Agente: {act.agente}</p>
+                            <p className="text-[12px] text-[#415364]/80 leading-relaxed font-medium">{act.notas || 'Sin notas adicionales'}</p>
+                            <p className="text-[9px] font-bold text-[#415364]/40 mt-2 uppercase tracking-widest">Agente: {act.agente}</p>
                           </div>
                         </div>
                       ))}
@@ -863,93 +904,83 @@ export default function CRMPage() {
         )}
       </div>
 
-      {/* --- MODALES Y PANEL LATERAL --- */}
+      {/* --- MODALES Y PANEL LATERAL (DRAWER PREMIUM) --- */}
       {clienteSeleccionado && (
-        <div className="fixed inset-0 bg-neutral-900/40 z-40 transition-opacity backdrop-blur-[2px]" onClick={() => setClienteSeleccionado(null)}></div>
+        <div className="fixed inset-0 bg-[#21242E]/80 z-40 transition-opacity backdrop-blur-sm" onClick={() => setClienteSeleccionado(null)}></div>
       )}
 
-      <div className={`fixed top-0 right-0 h-full w-full max-w-[360px] bg-white shadow-2xl border-l border-neutral-200 transform transition-transform duration-300 z-50 flex flex-col ${clienteSeleccionado ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div className={`fixed top-0 right-0 h-full w-full max-w-[400px] bg-[#F9F7F5] shadow-2xl border-l border-neutral-200 transform transition-transform duration-300 z-50 flex flex-col ${clienteSeleccionado ? 'translate-x-0' : 'translate-x-full'}`}>
         {clienteSeleccionado && (
           <>
-            <div className="p-5 border-b border-neutral-100 bg-neutral-50 relative flex-shrink-0">
-              <button onClick={() => setClienteSeleccionado(null)} className="absolute top-3 right-4 text-neutral-400 hover:text-neutral-900 text-xl font-bold">&times;</button>
-              <h2 className="text-lg font-bold text-neutral-900 pr-6 leading-tight">
-                {clienteSeleccionado.tipo === 'cliente' && <span className="text-[#B94A36] mr-1" title="Inversionista Formal">👑</span>}
+            <div className="p-6 bg-[#21242E] relative flex-shrink-0 shadow-md">
+              <button onClick={() => setClienteSeleccionado(null)} className="absolute top-4 right-4 text-white/50 hover:text-white bg-white/10 rounded-full w-8 h-8 flex items-center justify-center transition-colors">✕</button>
+              <h2 className="text-xl font-bold text-white pr-8 leading-tight">
+                {clienteSeleccionado.tipo === 'cliente' && <span className="text-[#D1C292] mr-1" title="Inversionista KYC">👑</span>}
                 {clienteSeleccionado.nombres} {clienteSeleccionado.apellidos}
               </h2>
-              <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                <span className="bg-white border border-neutral-200 text-neutral-600 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">{clienteSeleccionado.origen_captacion || 'Sin origen'}</span>
+              <div className="flex flex-wrap items-center gap-2 mt-3">
+                <span className="bg-white/10 text-white border border-white/20 text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">{clienteSeleccionado.origen_captacion || 'Sin origen'}</span>
                 {clienteSeleccionado.ciudad_residencia && (
-                  <span className="bg-neutral-100 text-neutral-700 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">📍 {clienteSeleccionado.ciudad_residencia}</span>
-                )}
-                {clienteSeleccionado.campana && (
-                  <span className="bg-purple-50 border border-purple-200 text-purple-700 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">📢 {clienteSeleccionado.campana}</span>
+                  <span className="bg-[#ea0029]/20 text-[#ea0029] border border-[#ea0029]/30 text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">📍 {clienteSeleccionado.ciudad_residencia}</span>
                 )}
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5 space-y-6">
-              <div className="space-y-2">
-                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1">Acciones de Contacto</p>
-                <div className="flex gap-2">
-                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'bienvenida')} className="flex-1 flex flex-col items-center justify-center gap-1 bg-[#25D366] hover:bg-[#1DA851] text-white py-2 rounded-lg transition shadow-sm border border-transparent">
-                    <span className="text-xs font-bold leading-none mt-1">👋 Welcome</span>
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+              
+              {/* BOTONES DE CONTACTO DIRECTO (AHORA CON EMAIL) */}
+              <div className="bg-white p-4 rounded-xl border border-neutral-200/60 shadow-sm space-y-3">
+                <p className="text-[10px] font-bold text-[#415364]/60 uppercase tracking-widest border-b border-neutral-100 pb-2">Acciones de Contacto</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'bienvenida')} className="flex flex-col items-center justify-center gap-1 bg-[#25D366] hover:bg-[#1DA851] text-white py-2.5 rounded-xl transition shadow-sm border border-transparent">
+                    <span className="text-[11px] font-bold uppercase tracking-wider mt-1">👋 Welcome</span>
                   </button>
-                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'campana')} className="flex-1 flex flex-col items-center justify-center gap-1 bg-[#128C7E] hover:bg-[#075E54] text-white py-2 rounded-lg transition shadow-sm border border-transparent">
-                    <span className="text-xs font-bold leading-none mt-1">📢 Campaña</span>
+                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'campana')} className="flex flex-col items-center justify-center gap-1 bg-[#128C7E] hover:bg-[#075E54] text-white py-2.5 rounded-xl transition shadow-sm border border-transparent">
+                    <span className="text-[11px] font-bold uppercase tracking-wider mt-1">📢 Campaña</span>
                   </button>
-                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'libre')} className="flex-1 flex flex-col items-center justify-center gap-1 bg-white hover:bg-neutral-50 text-neutral-700 py-2 rounded-lg transition shadow-sm border border-neutral-200">
-                    <span className="text-xs font-bold leading-none mt-1">💬 Chat</span>
+                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'libre')} className="flex flex-col items-center justify-center gap-1 bg-white hover:bg-neutral-50 text-[#415364] py-2.5 rounded-xl transition shadow-sm border border-[#415364]/20">
+                    <span className="text-[11px] font-bold uppercase tracking-wider mt-1">💬 Chat Libre</span>
+                  </button>
+                  {/* NUEVO BOTON EMAIL */}
+                  <button onClick={() => abrirCorreo(clienteSeleccionado)} className="flex flex-col items-center justify-center gap-1 bg-[#415364] hover:bg-[#21242E] text-white py-2.5 rounded-xl transition shadow-sm border border-transparent">
+                    <span className="text-[11px] font-bold uppercase tracking-wider mt-1">✉️ Enviar Correo</span>
                   </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Fase Embudo</label>
-                  <select value={clienteSeleccionado.estado} onChange={(e) => actualizarCampoRapido(clienteSeleccionado.id, 'estado', e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-1.5 text-[11px] font-bold text-neutral-800 outline-none focus:border-[#B94A36]">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white p-4 rounded-xl border border-neutral-200/60 shadow-sm">
+                  <label className="block text-[9px] font-bold text-[#415364]/60 uppercase tracking-widest mb-1.5">Fase Embudo</label>
+                  <select value={clienteSeleccionado.estado} onChange={(e) => actualizarCampoRapido(clienteSeleccionado.id, 'estado', e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/10 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]">
                     {estados.map(est => <option key={est} value={est}>{est}</option>)}
                   </select>
                 </div>
-                <div>
-                  <label className="block text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Termómetro</label>
-                  <select value={clienteSeleccionado.temperatura || '❄️ Frío'} onChange={(e) => actualizarCampoRapido(clienteSeleccionado.id, 'temperatura', e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-1.5 text-[11px] font-bold text-neutral-800 outline-none focus:border-[#B94A36]">
+                <div className="bg-white p-4 rounded-xl border border-neutral-200/60 shadow-sm">
+                  <label className="block text-[9px] font-bold text-[#415364]/60 uppercase tracking-widest mb-1.5">Termómetro</label>
+                  <select value={clienteSeleccionado.temperatura || '❄️ Frío'} onChange={(e) => actualizarCampoRapido(clienteSeleccionado.id, 'temperatura', e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/10 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]">
                     <option value="🔥 Caliente">🔥 Caliente</option>
                     <option value="☀️ Tibio">☀️ Tibio</option>
                     <option value="❄️ Frío">❄️ Frío</option>
                   </select>
                 </div>
-                <div className="col-span-2">
-                  <label className="block text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Campaña Asociada</label>
-                  <input 
-                    type="text" 
-                    list="lista-campanas" 
-                    defaultValue={clienteSeleccionado.campana || ''} 
-                    onBlur={(e) => {
-                      if (e.target.value !== clienteSeleccionado.campana) {
-                        actualizarCampoRapido(clienteSeleccionado.id, 'campana', e.target.value);
-                      }
-                    }}
-                    className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-1.5 text-[11px] font-bold text-neutral-800 outline-none focus:border-[#B94A36]" 
-                    placeholder="Escribe o selecciona de la lista..." 
-                  />
-                </div>
               </div>
 
-              {/* === BLOQUE ACTUALIZADO: PASE VIP DINÁMICO === */}
-              <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl mt-4 space-y-2 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-500"></div>
-                <h3 className="text-[11px] font-bold text-amber-900 flex items-center gap-1.5 uppercase tracking-wider">
-                  🔑 Pase VIP: Inventario
+              {/* === PASE VIP CON OPCIÓN DE 2 HORAS === */}
+              <div className="bg-white border border-[#D1C292] p-5 rounded-2xl shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1.5 h-full bg-[#D1C292]"></div>
+                <h3 className="text-[11px] font-bold text-[#21242E] flex items-center gap-2 uppercase tracking-widest mb-1">
+                  <svg className="w-4 h-4 text-[#D1C292]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                  Pase VIP: Inventario
                 </h3>
-                <p className="text-[9px] text-amber-700 leading-tight">Autoriza el email de este cliente para ver precios y disponibilidad web.</p>
-                <div className="pt-1 flex gap-2">
+                <p className="text-[10px] text-[#415364]/70 leading-relaxed mb-3">Autoriza el email del prospecto para ver precios y planos arquitectónicos en la web.</p>
+                <div className="flex gap-2">
                   <select
                     value={tiempoVIP}
                     onChange={(e) => setTiempoVIP(Number(e.target.value))}
-                    className="w-[35%] bg-white border border-amber-200 text-amber-900 rounded-lg p-2 text-[10px] font-bold outline-none focus:border-amber-400"
+                    className="w-[35%] bg-[#dce3eb]/30 border border-[#415364]/20 text-[#415364] rounded-xl p-2 text-[11px] font-bold outline-none focus:border-[#ea0029]"
                   >
                     <option value={1}>1 Hora</option>
+                    <option value={2}>2 Horas</option>
                     <option value={12}>12 Horas</option>
                     <option value={24}>24 Horas</option>
                     <option value={48}>48 Horas</option>
@@ -957,60 +988,65 @@ export default function CRMPage() {
                   <button 
                     onClick={() => otorgarAccesoVIP(clienteSeleccionado.email)}
                     disabled={activandoVIP || !clienteSeleccionado.email}
-                    className={`w-[65%] py-2 text-white rounded-lg text-[10px] font-bold transition shadow-sm uppercase tracking-wider ${!clienteSeleccionado.email ? 'bg-neutral-400 cursor-not-allowed' : 'bg-amber-600 hover:bg-amber-700'}`}
+                    className={`w-[65%] py-2.5 text-white rounded-xl text-[10px] font-bold transition-all shadow-md uppercase tracking-wider ${!clienteSeleccionado.email ? 'bg-[#415364]/30 cursor-not-allowed' : 'bg-[#21242E] hover:bg-black border border-[#D1C292]/30'}`}
                   >
                     {activandoVIP ? 'Generando...' : !clienteSeleccionado.email ? '❌ Sin Email' : 'Generar Pase'}
                   </button>
                 </div>
               </div>
 
-              <div className="bg-blue-50/50 border border-blue-100 p-4 rounded-xl space-y-3 mt-4">
-                <h3 className="text-[11px] font-bold text-blue-800 flex items-center gap-1.5 uppercase tracking-wider mb-2">
-                  📅 Agendar Siguiente Paso
+              <div className="bg-white border border-neutral-200/60 p-5 rounded-2xl shadow-sm space-y-3">
+                <h3 className="text-[11px] font-bold text-[#ea0029] flex items-center gap-1.5 uppercase tracking-widest border-b border-neutral-100 pb-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                  Agendar Siguiente Paso
                 </h3>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[9px] font-bold text-neutral-500 uppercase mb-1">Fecha</label>
-                    <input type="date" value={fechaAccion} onChange={(e) => setFechaAccion(e.target.value)} className="w-full bg-white border border-neutral-200 rounded-md p-1.5 text-[11px] font-medium outline-none focus:border-blue-400" />
+                    <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Fecha</label>
+                    <input type="date" value={fechaAccion} onChange={(e) => setFechaAccion(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]" />
                   </div>
                   <div>
-                    <label className="block text-[9px] font-bold text-neutral-500 uppercase mb-1">Tipo de Acción</label>
-                    <select value={tipoAccion} onChange={(e) => setTipoAccion(e.target.value)} className="w-full bg-white border border-neutral-200 rounded-md p-1.5 text-[11px] font-medium outline-none focus:border-blue-400">
+                    <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Tipo de Acción</label>
+                    <select value={tipoAccion} onChange={(e) => setTipoAccion(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]">
                       {tiposAccion.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[9px] font-bold text-neutral-500 uppercase mb-1">Objetivo / Detalles</label>
-                  <input type="text" value={detalleAccion} onChange={(e) => setDetalleAccion(e.target.value)} placeholder="Ej: Preguntar qué opinó la mamá..." className="w-full bg-white border border-neutral-200 rounded-md p-2 text-[11px] outline-none focus:border-blue-400" />
+                  <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Objetivo / Detalles</label>
+                  <input type="text" value={detalleAccion} onChange={(e) => setDetalleAccion(e.target.value)} placeholder="Ej: Llamar para confirmar cita..." className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg p-2 text-[11px] font-medium text-[#415364] outline-none focus:border-[#ea0029]" />
                 </div>
                 <div className="flex justify-end pt-1">
-                  <button id="btn-guardar-tarea" onClick={guardarProximaTarea} disabled={guardandoTarea} className="px-3 py-1.5 bg-blue-600 text-white text-[10px] font-bold rounded-md hover:bg-blue-700 transition shadow-sm">
-                    {guardandoTarea ? 'Guardando...' : '💾 Guardar Tarea'}
+                  <button id="btn-guardar-tarea" onClick={guardarProximaTarea} disabled={guardandoTarea} className="px-4 py-2 bg-[#415364] text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-[#21242E] transition-colors shadow-sm">
+                    {guardandoTarea ? 'Guardando...' : 'Guardar Tarea'}
                   </button>
                 </div>
               </div>
 
-              <div className="pt-2">
-                <label className="block text-[11px] font-bold text-neutral-900 tracking-wider mb-2 uppercase">Log de Seguimiento</label>
-                <div className="flex flex-col gap-2 mb-3">
-                  <textarea rows={2} value={nuevaNotaTexto} onChange={(e) => setNuevaNotaTexto(e.target.value)} placeholder="¿Qué ocurrió en el contacto de hoy?" className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-2 text-xs focus:outline-none focus:border-neutral-400 resize-none" />
-                  <button onClick={agregarNotaBitacora} disabled={!nuevaNotaTexto.trim() || guardandoNota} className="self-end px-3 py-1 bg-neutral-800 text-white text-[10px] font-bold rounded-md disabled:opacity-50 hover:bg-black transition">
-                    {guardandoNota ? 'Registrando...' : '+ Agregar Registro'}
+              <div className="bg-white border border-neutral-200/60 p-5 rounded-2xl shadow-sm">
+                <label className="block text-[11px] font-bold text-[#415364] tracking-widest mb-3 uppercase flex items-center gap-2 border-b border-neutral-100 pb-2">
+                  <svg className="w-4 h-4 text-[#ea0029]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                  Log de Seguimiento
+                </label>
+                <div className="flex flex-col gap-3 mb-4">
+                  <textarea rows={2} value={nuevaNotaTexto} onChange={(e) => setNuevaNotaTexto(e.target.value)} placeholder="Escribe aquí el resumen de tu conversación..." className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs font-medium text-[#415364] focus:outline-none focus:border-[#ea0029] resize-none transition-colors" />
+                  <button onClick={agregarNotaBitacora} disabled={!nuevaNotaTexto.trim() || guardandoNota} className="self-end px-4 py-2 bg-[#ea0029] text-white text-[10px] font-bold uppercase tracking-widest rounded-lg disabled:opacity-50 hover:bg-[#c90022] transition-colors shadow-sm">
+                    {guardandoNota ? 'Registrando...' : 'Agregar Registro'}
                   </button>
                 </div>
-                <div className="bg-neutral-50 p-3 rounded-xl border border-neutral-200 h-[150px] overflow-y-auto custom-scrollbar shadow-inner">
+                <div className="bg-[#F9F7F5] p-4 rounded-xl border border-[#415364]/10 h-[180px] overflow-y-auto custom-scrollbar shadow-inner">
                   {clienteSeleccionado.notas ? (
-                    <div className="text-[11px] text-neutral-700 whitespace-pre-wrap leading-relaxed">{clienteSeleccionado.notas}</div>
+                    <div className="text-[11px] text-[#415364] whitespace-pre-wrap leading-relaxed font-medium">{clienteSeleccionado.notas}</div>
                   ) : (
-                    <p className="text-[11px] text-neutral-400 text-center italic mt-10">Sin actividad registrada aún.</p>
+                    <p className="text-[11px] text-[#415364]/40 text-center italic mt-12 font-bold">Sin actividad registrada aún.</p>
                   )}
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-neutral-100 pb-6">
-                <button onClick={() => verHistorialCotizaciones(clienteSeleccionado)} className="w-full py-2 bg-neutral-100 text-neutral-700 rounded-lg text-[11px] font-bold hover:bg-neutral-200 transition">
-                  📄 Ver Cotizaciones Generadas
+              <div className="pb-6">
+                <button onClick={() => verHistorialCotizaciones(clienteSeleccionado)} className="w-full py-3.5 bg-white border border-[#415364]/20 text-[#415364] rounded-xl text-[11px] font-bold uppercase tracking-widest hover:border-[#ea0029] hover:text-[#ea0029] transition-colors shadow-sm flex items-center justify-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                  Ver Cotizaciones Generadas
                 </button>
               </div>
 
@@ -1020,123 +1056,145 @@ export default function CRMPage() {
       </div>
 
       {mostrarModalNuevo && (
-        <div className="fixed inset-0 bg-neutral-900/60 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl p-6">
-            <div className="flex justify-between items-center mb-4 border-b border-neutral-100 pb-3">
-              <h2 className="text-lg font-bold text-neutral-900">Registro de Prospecto</h2>
-              <button onClick={() => setMostrarModalNuevo(false)} className="text-neutral-400 hover:text-neutral-900 text-xl font-bold">&times;</button>
+        <div className="fixed inset-0 bg-[#21242E]/80 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8">
+            <div className="flex justify-between items-center mb-6 border-b border-neutral-100 pb-4">
+              <h2 className="text-xl font-bold text-[#415364]">Registro de Prospecto</h2>
+              <button onClick={() => setMostrarModalNuevo(false)} className="text-[#415364]/40 hover:text-[#ea0029] text-2xl font-bold transition-colors">&times;</button>
             </div>
-            <form onSubmit={guardarNuevoCliente} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <form onSubmit={guardarNuevoCliente} className="space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Nombres <span className="text-[#B94A36]">*</span></label>
-                  <input required type="text" value={nuevoNombre} onChange={e => setNuevoNombre(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]" />
+                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Nombres <span className="text-[#ea0029]">*</span></label>
+                  <input required type="text" value={nuevoNombre} onChange={e => setNuevoNombre(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-2.5 text-xs text-[#415364] font-medium focus:outline-none focus:border-[#ea0029]" />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Apellidos</label>
-                  <input type="text" value={nuevoApellido} onChange={e => setNuevoApellido(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]" />
+                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Apellidos</label>
+                  <input type="text" value={nuevoApellido} onChange={e => setNuevoApellido(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-2.5 text-xs text-[#415364] font-medium focus:outline-none focus:border-[#ea0029]" />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Teléfono <span className="text-[#B94A36]">*</span></label>
-                  <input required type="tel" value={nuevoTelefono} onChange={e => setNuevoTelefono(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]" />
+                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Teléfono <span className="text-[#ea0029]">*</span></label>
+                  <input required type="tel" value={nuevoTelefono} onChange={e => setNuevoTelefono(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-2.5 text-xs text-[#415364] font-medium focus:outline-none focus:border-[#ea0029]" />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Email</label>
-                  <input type="email" value={nuevoEmail} onChange={e => setNuevoEmail(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]" />
+                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Email</label>
+                  <input type="email" value={nuevoEmail} onChange={e => setNuevoEmail(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-2.5 text-xs text-[#415364] font-medium focus:outline-none focus:border-[#ea0029]" />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Ciudad Residencia</label>
-                  <input type="text" value={nuevaCiudad} onChange={e => setNuevaCiudad(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]" />
+                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Ciudad Residencia</label>
+                  <input type="text" value={nuevaCiudad} onChange={e => setNuevaCiudad(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-2.5 text-xs text-[#415364] font-medium focus:outline-none focus:border-[#ea0029]" />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Ingresado Por (Asesor)</label>
-                  <input type="text" value={nuevoIngresadoPor} onChange={e => setNuevoIngresadoPor(e.target.value)} placeholder="Ej: Saúl Intriago / Debbi Mera" className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs font-semibold focus:outline-none focus:border-[#B94A36]" />
+                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Ingresado Por (Asesor)</label>
+                  <input type="text" value={nuevoIngresadoPor} onChange={e => setNuevoIngresadoPor(e.target.value)} className="w-full bg-[#415364]/5 border border-[#415364]/20 rounded-xl p-2.5 text-xs text-[#415364] font-bold focus:outline-none focus:border-[#ea0029]" />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Origen</label>
-                  <select value={nuevoOrigen} onChange={e => setNuevoOrigen(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]">
+                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Origen</label>
+                  <select value={nuevoOrigen} onChange={e => setNuevoOrigen(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-xl p-2.5 text-xs text-[#415364] font-bold focus:outline-none focus:border-[#ea0029]">
                     {origenes.map(o => <option key={o} value={o}>{o}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Campaña (Opcional)</label>
-                  <input 
-                    type="text" 
-                    list="lista-campanas" 
-                    value={nuevoCampana} 
-                    onChange={e => setNuevoCampana(e.target.value)} 
-                    placeholder="Ej: Lanzamiento Fase 1" 
-                    className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]" 
-                  />
+                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Campaña (Opcional)</label>
+                  <input type="text" list="lista-campanas" value={nuevoCampana} onChange={e => setNuevoCampana(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-xl p-2.5 text-xs text-[#415364] font-bold focus:outline-none focus:border-[#ea0029]" />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Motivo Compra</label>
-                  <select value={nuevoMotivo} onChange={e => setNuevoMotivo(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]">
+                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Motivo Compra</label>
+                  <select value={nuevoMotivo} onChange={e => setNuevoMotivo(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-xl p-2.5 text-xs text-[#415364] font-bold focus:outline-none focus:border-[#ea0029]">
                     {motivos.map(m => <option key={m} value={m}>{m}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Interés</label>
-                  <select value={nuevoInteres} onChange={e => setNuevoInteres(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-md p-2 text-xs focus:outline-none focus:border-[#B94A36]">
+                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Interés</label>
+                  <select value={nuevoInteres} onChange={e => setNuevoInteres(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-xl p-2.5 text-xs text-[#415364] font-bold focus:outline-none focus:border-[#ea0029]">
                     {intereses.map(i => <option key={i} value={i}>{i}</option>)}
                   </select>
                 </div>
               </div>
-              <div className="pt-4 flex justify-end gap-3">
-                <button type="button" onClick={() => setMostrarModalNuevo(false)} className="px-4 py-2 text-xs font-semibold text-neutral-500">Cancelar</button>
-                <button type="submit" disabled={guardandoCliente} className="px-5 py-2 bg-[#B94A36] text-white rounded-md text-xs font-bold uppercase tracking-wider hover:bg-[#9B3B2B] disabled:opacity-50">Guardar</button>
+              <div className="pt-6 flex justify-end gap-4 border-t border-neutral-100">
+                <button type="button" onClick={() => setMostrarModalNuevo(false)} className="px-6 py-2.5 text-xs font-bold text-[#415364] border border-[#415364]/20 rounded-xl hover:bg-[#415364]/5 transition-colors">Cancelar</button>
+                <button type="submit" disabled={guardandoCliente} className="px-8 py-2.5 bg-[#ea0029] text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-[#c90022] transition-colors shadow-md disabled:opacity-50">Guardar Prospecto</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
+      {/* === NUEVO MODAL DE PLANTILLAS (INCLUYE EMAILS) === */}
       {mostrarModalPlantilla && (
-        <div className="fixed inset-0 bg-neutral-900/60 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6">
-            <h2 className="text-lg font-bold text-neutral-900 mb-2">Configuración de Plantillas WhatsApp</h2>
-            <p className="text-[10px] text-neutral-500 mb-4">Usa <strong className="text-neutral-800">{`{nombre}`}</strong> donde deba aparecer el prospecto.</p>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-neutral-700 mb-1">👋 Mensaje Inicial / Bienvenida</label>
-                <textarea rows={3} value={plantillaMensaje} onChange={e => setPlantillaMensaje(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-sm focus:outline-none focus:border-[#B94A36]" />
+        <div className="fixed inset-0 bg-[#21242E]/80 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <h2 className="text-xl font-bold text-[#415364] mb-1">Configuración de Plantillas y Automatización</h2>
+            <p className="text-[11px] text-[#415364]/60 font-medium mb-6 pb-4 border-b border-[#415364]/10">Usa el código <strong className="text-[#ea0029] bg-[#ea0029]/10 px-1 py-0.5 rounded">{`{nombre}`}</strong> donde deba insertarse el nombre del cliente automáticamente.</p>
+            
+            <div className="space-y-6">
+              {/* Sección WhatsApp */}
+              <div className="space-y-4">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-[#25D366] flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                  Plantillas de WhatsApp
+                </h3>
+                <div>
+                  <label className="block text-[10px] font-bold text-[#415364]/60 mb-1.5 uppercase">Mensaje Inicial / Bienvenida</label>
+                  <textarea rows={3} value={plantillaMensaje} onChange={e => setPlantillaMensaje(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs font-medium text-[#415364] focus:outline-none focus:border-[#25D366] resize-none" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-[#415364]/60 mb-1.5 uppercase">Mensaje de Campaña (Promociones)</label>
+                  <textarea rows={3} value={plantillaCampana} onChange={e => setPlantillaCampana(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs font-medium text-[#415364] focus:outline-none focus:border-[#25D366] resize-none" />
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-[#128C7E] mb-1">📢 Mensaje de Campaña / Seguimiento Masivo</label>
-                <textarea rows={3} value={plantillaCampana} onChange={e => setPlantillaCampana(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-sm focus:outline-none focus:border-[#128C7E]" />
+
+              {/* Sección Correo Electrónico */}
+              <div className="space-y-4 pt-4 border-t border-[#415364]/10">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-[#415364] flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                  Plantilla de Correo de Seguimiento
+                </h3>
+                <div>
+                  <label className="block text-[10px] font-bold text-[#415364]/60 mb-1.5 uppercase">Asunto del Correo</label>
+                  <input type="text" value={plantillaCorreoAsunto} onChange={e => setPlantillaCorreoAsunto(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs font-bold text-[#415364] focus:outline-none focus:border-[#415364]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-[#415364]/60 mb-1.5 uppercase">Cuerpo del Correo</label>
+                  <textarea rows={6} value={plantillaCorreoCuerpo} onChange={e => setPlantillaCorreoCuerpo(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs font-medium text-[#415364] focus:outline-none focus:border-[#415364] resize-none" />
+                </div>
               </div>
             </div>
-            <div className="flex justify-end gap-3 mt-4">
-              <button onClick={() => setMostrarModalPlantilla(false)} className="px-4 py-2 text-xs font-semibold text-neutral-600">Cancelar</button>
-              <button onClick={guardarPlantilla} className="px-5 py-2 bg-neutral-900 text-white text-xs font-bold rounded-lg hover:bg-neutral-800">Guardar Plantillas</button>
+            
+            <div className="flex justify-end gap-4 mt-8">
+              <button onClick={() => setMostrarModalPlantilla(false)} className="px-6 py-2.5 text-xs font-bold text-[#415364] border border-[#415364]/20 rounded-xl hover:bg-[#415364]/5 transition-colors">Cancelar</button>
+              <button onClick={guardarPlantilla} className="px-8 py-2.5 bg-[#415364] text-white text-xs font-bold uppercase tracking-widest rounded-xl shadow-md hover:bg-[#21242E] transition-colors">Guardar Plantillas</button>
             </div>
           </div>
         </div>
       )}
 
       {mostrarModalHistorial && clienteSeleccionado && (
-        <div className="fixed inset-0 bg-neutral-900/60 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl p-6">
-            <div className="flex justify-between items-center mb-4 border-b border-neutral-100 pb-3">
-              <h2 className="text-lg font-bold text-neutral-900">Cotizaciones Emitidas</h2>
-              <button onClick={() => setMostrarModalHistorial(false)} className="text-neutral-400 hover:text-neutral-900 text-xl font-bold">&times;</button>
+        <div className="fixed inset-0 bg-[#21242E]/80 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8">
+            <div className="flex justify-between items-center mb-6 border-b border-neutral-100 pb-4">
+              <h2 className="text-xl font-bold text-[#415364] flex items-center gap-2">
+                <svg className="w-5 h-5 text-[#ea0029]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                Cotizaciones Emitidas
+              </h2>
+              <button onClick={() => setMostrarModalHistorial(false)} className="text-[#415364]/40 hover:text-[#ea0029] text-2xl font-bold transition-colors">&times;</button>
             </div>
-            <div className="min-h-[150px] max-h-[400px] overflow-y-auto">
+            <div className="min-h-[150px] max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
               {cargandoHistorial ? (
-                <p className="text-center text-xs text-neutral-400 mt-10">Buscando...</p>
+                <p className="text-center text-xs font-bold tracking-widest uppercase text-[#415364]/40 mt-10">Buscando documentos...</p>
               ) : cotizacionesCliente.length === 0 ? (
-                <p className="text-center text-xs text-neutral-400 mt-10">Sin cotizaciones generadas.</p>
+                <p className="text-center text-xs font-bold tracking-widest uppercase text-[#415364]/40 mt-10">Sin cotizaciones generadas.</p>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {cotizacionesCliente.map((cot, i) => (
-                    <div key={i} className="flex justify-between items-center bg-neutral-50 p-3 rounded-lg border border-neutral-200">
+                    <div key={i} className="flex justify-between items-center bg-[#dce3eb]/30 p-4 rounded-xl border border-[#415364]/10 hover:shadow-md transition-shadow">
                       <div>
-                        <p className="text-sm font-bold text-neutral-900">Unidad {cot.unidad_numero}</p>
-                        <p className="text-[10px] text-neutral-500 mt-0.5">{new Date(cot.created_at).toLocaleDateString('es-EC')}</p>
+                        <p className="text-sm font-bold text-[#415364]">Unidad {cot.unidad_numero}</p>
+                        <p className="text-[10px] font-bold text-[#415364]/50 mt-1">{new Date(cot.created_at).toLocaleDateString('es-EC')}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-[10px] text-neutral-400 uppercase tracking-wider mb-0.5">Precio Cierre</p>
-                        <p className="text-sm font-mono font-bold text-[#B94A36]">${cot.precio_total.toLocaleString('en-US')}</p>
+                        <p className="text-[9px] font-bold text-[#415364]/40 uppercase tracking-wider mb-0.5">Precio de Cierre</p>
+                        <p className="text-base font-mono font-bold text-[#ea0029]">${cot.precio_total.toLocaleString('en-US')}</p>
                       </div>
                     </div>
                   ))}
