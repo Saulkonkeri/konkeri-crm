@@ -7,7 +7,6 @@ import React from 'react';
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  // Lista de menús con la ruta correcta para el Dashboard ( / )
   const menuItems = [
     { 
       name: 'Centro de Operaciones', 
@@ -41,7 +40,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     },
     { 
       name: 'Registrar Operación', 
-      path: '/registrar', 
+      path: '/ventas', // <-- ¡AQUÍ ESTÁ LA CORRECCIÓN!
       icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
     },
     { 
@@ -71,7 +70,6 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         {/* NAVEGACIÓN */}
         <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto custom-scrollbar">
           {menuItems.map((item) => {
-            // Lógica corregida para detectar la pestaña activa
             const isActive = pathname === item.path;
             
             return (
