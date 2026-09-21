@@ -1,3 +1,4 @@
+// Actualizacion para Vercel - Gestor de Operaciones y Reservas Konkeri
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -245,28 +246,28 @@ export default function GestorOperacionesPage() {
 
   if (cargando) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#FCFBFA]">
-        <p className="text-[10px] font-bold tracking-[0.2em] text-[#B94A36] uppercase animate-pulse">Sincronizando Sistema...</p>
+      <div className="flex min-h-screen items-center justify-center bg-[#dce3eb]">
+        <p className="text-sm font-bold tracking-widest text-[#ea0029] uppercase animate-pulse">Sincronizando Sistema...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#FCFBFA] text-[#333333] antialiased py-8 px-4 sm:px-8">
+    <div className="min-h-screen bg-[#dce3eb] p-4 md:p-8 font-sans text-[#415364]">
       <div className="max-w-6xl mx-auto space-y-8">
         
         {/* CABECERA CORPORATIVA PRINCIPAL */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-[#EAE3DC] pb-5 gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-[#415364]/10 pb-6 gap-4">
           <div>
-            <span className="text-[9px] font-bold tracking-[0.4em] text-[#B94A36] uppercase block">Gestor Comercial Inmobiliario</span>
-            <h1 className="text-2xl font-light mt-1">ARIENZO Boutique Living</h1>
+            <span className="text-[10px] font-bold tracking-widest text-[#ea0029] uppercase block">Gestor Comercial Inmobiliario</span>
+            <h1 className="text-3xl font-bold tracking-tight text-[#415364] mt-1">Registrar Operación</h1>
           </div>
 
-          <div className="flex bg-[#F2EFEB] p-1 rounded-xl w-full md:w-auto overflow-x-auto border border-[#EAE3DC]">
-            <button onClick={() => setActiveTab('reserva')} className={`flex-1 md:flex-initial text-center px-6 py-2.5 text-[10px] font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'reserva' ? 'bg-white text-[#B94A36] shadow-sm' : 'text-[#8C8A87] hover:text-[#333333]'}`}>
+          <div className="flex bg-[#dce3eb]/50 p-1.5 rounded-xl w-full md:w-auto overflow-x-auto border border-[#415364]/10 shadow-inner">
+            <button onClick={() => setActiveTab('reserva')} className={`flex-1 md:flex-initial text-center px-6 py-2.5 text-xs font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'reserva' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
               1. Módulo de Reserva
             </button>
-            <button onClick={() => setActiveTab('cierre_venta')} className={`flex-1 md:flex-initial text-center px-6 py-2.5 text-[10px] font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'cierre_venta' ? 'bg-white text-[#B94A36] shadow-sm' : 'text-[#8C8A87] hover:text-[#333333]'}`}>
+            <button onClick={() => setActiveTab('cierre_venta')} className={`flex-1 md:flex-initial text-center px-6 py-2.5 text-xs font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'cierre_venta' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
               2. Cierre y Venta Definitiva
             </button>
           </div>
@@ -276,26 +277,26 @@ export default function GestorOperacionesPage() {
             MÓDULO 1: RESERVA Y GENERACIÓN DE RECIBO
            ========================================================================= */}
         {activeTab === 'reserva' && (
-          <div className="bg-white border border-[#EAE3DC] rounded-xl p-6 md:p-8 shadow-sm max-w-4xl mx-auto">
+          <div className="bg-white border border-neutral-200/60 rounded-2xl p-6 md:p-8 shadow-sm max-w-4xl mx-auto">
             
-            <div className="mb-6 border-b border-[#EAE3DC] pb-4">
-              <h3 className="text-sm font-bold text-[#333333] uppercase tracking-wider">Registro de Ingreso y Bloqueo de Inventario</h3>
-              <p className="text-[11px] text-[#8C8A87] mt-1">Llene los datos de la transferencia para apartar la unidad comercialmente.</p>
+            <div className="mb-6 border-b border-neutral-100 pb-4">
+              <h3 className="text-sm font-bold text-[#415364] uppercase tracking-wider">Registro de Ingreso y Bloqueo de Inventario</h3>
+              <p className="text-xs text-[#415364]/60 mt-1">Llene los datos de la transferencia para apartar la unidad comercialmente.</p>
             </div>
 
             <div className="space-y-6">
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-[#FCFBFA] p-5 rounded-lg border border-[#EAE3DC]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-[#dce3eb]/30 p-5 rounded-xl border border-[#415364]/10">
                 <div>
-                  <label className="text-[10px] font-bold text-[#8C8A87] uppercase block mb-1.5">Cliente / Inversionista</label>
-                  <select value={reservaForm.clienteId} onChange={(e) => setReservaForm({...reservaForm, clienteId: e.target.value})} className="w-full text-xs bg-white border border-[#EAE3DC] p-3 rounded-lg outline-none font-medium focus:border-[#B94A36]">
+                  <label className="text-[10px] font-bold text-[#415364]/60 uppercase block mb-1.5">Cliente / Inversionista</label>
+                  <select value={reservaForm.clienteId} onChange={(e) => setReservaForm({...reservaForm, clienteId: e.target.value})} className="w-full text-xs bg-white border border-[#415364]/20 p-3 rounded-xl outline-none font-bold text-[#415364] focus:border-[#ea0029]">
                     <option value="">-- Seleccionar de Cartera --</option>
                     {clientes.map(c => <option key={c.id} value={c.id}>{c.nombres} {c.apellidos}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-[#8C8A87] uppercase block mb-1.5">Unidad a Bloquear</label>
-                  <select value={reservaForm.propiedadId} onChange={(e) => setReservaForm({...reservaForm, propiedadId: e.target.value})} className="w-full text-xs bg-white border border-[#EAE3DC] p-3 rounded-lg outline-none font-medium focus:border-[#B94A36]">
+                  <label className="text-[10px] font-bold text-[#415364]/60 uppercase block mb-1.5">Unidad a Bloquear</label>
+                  <select value={reservaForm.propiedadId} onChange={(e) => setReservaForm({...reservaForm, propiedadId: e.target.value})} className="w-full text-xs bg-white border border-[#415364]/20 p-3 rounded-xl outline-none font-bold text-[#415364] focus:border-[#ea0029]">
                     <option value="">-- Seleccionar Inventario Disponible --</option>
                     {propiedades.map(p => <option key={p.id} value={p.id}>Unidad {p.unidad || p.numero} ({p.estado})</option>)}
                   </select>
@@ -304,12 +305,12 @@ export default function GestorOperacionesPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
                 <div>
-                  <label className="text-[10px] font-bold text-[#8C8A87] uppercase block mb-1.5">Valor Recibido ($)</label>
-                  <input type="number" value={reservaForm.montoReserva} onChange={(e) => setReservaForm({...reservaForm, montoReserva: Number(e.target.value)})} className="w-full text-sm bg-white border border-[#EAE3DC] p-2.5 rounded-lg font-mono font-bold text-[#B94A36] outline-none focus:border-[#B94A36]" />
+                  <label className="text-[10px] font-bold text-[#415364]/60 uppercase block mb-1.5">Valor Recibido ($)</label>
+                  <input type="number" value={reservaForm.montoReserva} onChange={(e) => setReservaForm({...reservaForm, montoReserva: Number(e.target.value)})} className="w-full text-sm bg-white border border-[#415364]/20 p-3 rounded-xl font-mono font-bold text-[#ea0029] outline-none focus:border-[#ea0029]" />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-[#8C8A87] uppercase block mb-1.5">Método de Pago</label>
-                  <select value={reservaForm.formaPago} onChange={(e) => setReservaForm({...reservaForm, formaPago: e.target.value})} className="w-full text-xs bg-white border border-[#EAE3DC] p-3 rounded-lg outline-none focus:border-[#B94A36]">
+                  <label className="text-[10px] font-bold text-[#415364]/60 uppercase block mb-1.5">Método de Pago</label>
+                  <select value={reservaForm.formaPago} onChange={(e) => setReservaForm({...reservaForm, formaPago: e.target.value})} className="w-full text-xs bg-white border border-[#415364]/20 p-3 rounded-xl outline-none font-bold text-[#415364] focus:border-[#ea0029]">
                     <option>Transferencia Bancaria</option>
                     <option>Depósito en Efectivo</option>
                     <option>Cheque</option>
@@ -317,28 +318,29 @@ export default function GestorOperacionesPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-[#8C8A87] uppercase block mb-1.5">Banco Origen</label>
-                  <input type="text" placeholder="Ej. Banco Pichincha" value={reservaForm.bancoOrigen} onChange={(e) => setReservaForm({...reservaForm, bancoOrigen: e.target.value})} className="w-full text-xs bg-white border border-[#EAE3DC] p-3 rounded-lg outline-none focus:border-[#B94A36]" />
+                  <label className="text-[10px] font-bold text-[#415364]/60 uppercase block mb-1.5">Banco Origen</label>
+                  <input type="text" placeholder="Ej. Banco Pichincha" value={reservaForm.bancoOrigen} onChange={(e) => setReservaForm({...reservaForm, bancoOrigen: e.target.value})} className="w-full text-xs bg-white border border-[#415364]/20 p-3 rounded-xl outline-none font-medium text-[#415364] focus:border-[#ea0029]" />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-[#8C8A87] uppercase block mb-1.5">Ref / Comprobante</label>
-                  <input type="text" placeholder="N° Documento" value={reservaForm.numeroComprobante} onChange={(e) => setReservaForm({...reservaForm, numeroComprobante: e.target.value})} className="w-full text-xs bg-white border border-[#EAE3DC] p-3 rounded-lg outline-none font-mono focus:border-[#B94A36]" />
+                  <label className="text-[10px] font-bold text-[#415364]/60 uppercase block mb-1.5">Ref / Comprobante</label>
+                  <input type="text" placeholder="N° Documento" value={reservaForm.numeroComprobante} onChange={(e) => setReservaForm({...reservaForm, numeroComprobante: e.target.value})} className="w-full text-xs bg-white border border-[#415364]/20 p-3 rounded-xl outline-none font-mono text-[#415364] focus:border-[#ea0029]" />
                 </div>
               </div>
 
               {!reservaExitosa ? (
-                <button onClick={procesarReserva} disabled={guardando} className="w-full bg-[#B94A36] text-white text-[11px] uppercase tracking-widest font-bold py-4 rounded-lg mt-4 shadow-sm hover:bg-[#9B3B2B] transition-colors disabled:opacity-50">
+                <button onClick={procesarReserva} disabled={guardando} className="w-full bg-[#ea0029] text-white text-xs uppercase tracking-widest font-bold py-4 rounded-xl mt-4 shadow-md hover:bg-[#c90022] transition-colors disabled:opacity-50">
                   {guardando ? 'Verificando...' : 'Aplicar Ingreso y Bloquear Unidad'}
                 </button>
               ) : (
-                <div className="mt-6 bg-[#F2EFEB] p-5 rounded-lg border border-[#EAE3DC] flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="mt-6 bg-[#21242E] p-6 rounded-2xl border border-neutral-800 flex flex-col md:flex-row items-center justify-between gap-4 text-white shadow-xl">
                   <div>
-                    <span className="text-[#B94A36] font-bold text-xs uppercase flex items-center gap-2">
-                      <span>✓</span> Unidad Bloqueada Exitosamente
+                    <span className="text-[#D1C292] font-bold text-xs uppercase tracking-wider flex items-center gap-2">
+                      <svg className="w-4 h-4 text-[#D1C292]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+                      Unidad Bloqueada Exitosamente
                     </span>
-                    <p className="text-[11px] text-[#8C8A87] mt-1">Puede proceder a la impresión de los documentos iniciales.</p>
+                    <p className="text-[11px] text-white/70 mt-1">Puede proceder a la impresión de los documentos iniciales.</p>
                   </div>
-                  <button onClick={imprimirPaqueteReserva} className="w-full md:w-auto bg-[#333333] hover:bg-[#1a1a1a] text-white px-6 py-3 rounded-lg font-bold text-[10px] tracking-wider uppercase transition-colors shadow-sm">
+                  <button onClick={imprimirPaqueteReserva} className="w-full md:w-auto bg-white hover:bg-neutral-100 text-[#21242E] px-6 py-3 rounded-xl font-bold text-xs tracking-wider uppercase transition-colors shadow-sm">
                     🖨️ Generar Recibo y Formularios
                   </button>
                 </div>
@@ -348,15 +350,15 @@ export default function GestorOperacionesPage() {
         )}
 
         {/* =========================================================================
-            MÓDULO 2: CIERRE DE VENTA (Futuro Desarrollo)
+            MÓDULO 2: CIERRE DE VENTA
            ========================================================================= */}
         {activeTab === 'cierre_venta' && (
-          <div className="bg-white border border-[#EAE3DC] rounded-xl p-10 shadow-sm text-center">
-             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#F2EFEB] mb-4">
-               <span className="text-2xl">📝</span>
+          <div className="bg-white border border-neutral-200/60 rounded-2xl p-12 shadow-sm text-center max-w-3xl mx-auto">
+             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#415364]/10 text-[#415364] mb-4">
+               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
              </div>
-             <h3 className="text-sm font-bold text-[#333333] uppercase tracking-wider mb-2">Módulo de Promesa y Expediente UAFE</h3>
-             <p className="text-xs text-[#8C8A87] max-w-md mx-auto">
+             <h3 className="text-base font-bold text-[#415364] uppercase tracking-wider mb-2">Módulo de Promesa y Expediente UAFE</h3>
+             <p className="text-xs text-[#415364]/70 max-w-md mx-auto leading-relaxed">
                Esta sección cargará las reservas activas para estructurar el plan de pagos final, los porcentajes diferidos y generar la documentación legal definitiva (PEP, Licitud de Fondos, etc).
              </p>
           </div>
@@ -438,7 +440,12 @@ export default function GestorOperacionesPage() {
               </div>
             </div>
 
-            <div className="mt-24 grid grid-cols-2 gap-16 px-12">
+            {/* CLÁUSULA DE RESERVA (AÑADIDA AQUí EN LETRA PEQUEÑA) */}
+            <div className="mt-6 p-4 bg-neutral-50 border border-neutral-200 rounded-md text-[6.5pt] leading-tight text-justify text-neutral-500">
+              <p><strong>Nota importante / Cláusula de Reserva:</strong> El valor entregado en concepto de reserva implica la aceptación formal de la unidad y su respectivo bloqueo comercial. Se entiende y acepta que, en caso de desistimiento o retiros voluntarios por motivos ajenos a la promotora (Konkeri S.A.S.), dicho valor no será reembolsado, destinándose íntegramente a cubrir los gastos administrativos y de lucro cesante generados por la desincorporación temporal del inventario del proyecto Arienzo Boutique Living.</p>
+            </div>
+
+            <div className="mt-12 grid grid-cols-2 gap-16 px-12">
               <div className="text-center border-t border-[#8C8A87] pt-2">
                 <p className="text-[9px] font-bold uppercase tracking-wider">{clienteSeleccionado?.nombres || 'Firma del Cliente'} {clienteSeleccionado?.apellidos || ''}</p>
                 <p className="text-[8px] text-[#8C8A87]">C.C. {clienteSeleccionado?.cedula || clienteSeleccionado?.identificacion}</p>
