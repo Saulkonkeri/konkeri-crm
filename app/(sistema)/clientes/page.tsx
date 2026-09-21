@@ -217,7 +217,6 @@ export default function ClientesPage() {
   const handleGuardar = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // --- PROTECCIÓN ANTI-DUPLICADOS ---
     const normalizarTelefono = (tel: string) => {
       if (!tel) return '';
       let num = tel.replace(/\D/g, '');
@@ -247,7 +246,6 @@ export default function ClientesPage() {
       alert(`⚠️ ¡ATENCIÓN! Este correo electrónico ya está registrado.\n\nPertenece a: ${clienteDuplicadoEmail.nombres} ${clienteDuplicadoEmail.apellidos}\nTipo: ${clienteDuplicadoEmail.tipo === 'cliente' ? 'Inversionista' : 'Prospecto'}\n\nPor favor, búscalo en el directorio para actualizarlo en lugar de duplicarlo.`);
       return;
     }
-    // --- FIN PROTECCIÓN ANTI-DUPLICADOS ---
     
     const datosRegistro: any = {
       nombres: nombres.trim(), 
@@ -338,101 +336,116 @@ export default function ClientesPage() {
   }, [clientes, vistaActual, busquedaTexto]);
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8 font-sans text-neutral-800">
+    <div className="p-4 md:p-8 font-sans text-[#415364] w-full max-w-7xl mx-auto">
       
+      {/* NAVEGACIÓN SUPERIOR */}
       {vistaActual !== 'hub' && (
-        <div className="flex justify-between items-center">
+        <div className="mb-4">
           <button 
             onClick={() => { setVistaActual('hub'); setBusquedaTexto(''); }}
-            className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-neutral-500 hover:text-neutral-900 transition"
+            className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-[#415364]/50 hover:text-[#ea0029] transition-colors"
           >
-            ← Volver al Panel de Clientes
+            ← Volver al Hub
           </button>
         </div>
       )}
 
-      <div className="border-b border-neutral-200 pb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
+      {/* ENCABEZADO Y BUSCADOR */}
+      <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#415364]/10 pb-6">
         <div>
-          <span className="text-xs font-bold tracking-widest text-[#B94A36] uppercase">Arienzo Boutique Living</span>
-          <h1 className="text-3xl font-light tracking-tight text-neutral-900 mt-1">
-            {vistaActual === 'hub' && 'Gestión de Clientes y Leads'}
-            {vistaActual === 'lista_general' && 'Directorio General de Leads Activos'}
-            {vistaActual === 'lista_clientes' && 'Expedientes de Clientes Inversionistas'}
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-[#415364]">
+            {vistaActual === 'hub' && 'Gestión de Contactos'}
+            {vistaActual === 'lista_general' && 'Directorio de Prospectos'}
+            {vistaActual === 'lista_clientes' && 'Expedientes Inversionistas'}
           </h1>
+          <p className="text-sm text-[#415364]/70 mt-1">
+            {vistaActual === 'hub' && 'Administra perfiles y documentos KYC.'}
+            {vistaActual !== 'hub' && 'Busca y edita la información de tus leads.'}
+          </p>
         </div>
 
         {vistaActual !== 'hub' && (
           <div className="relative w-full md:w-80">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-neutral-400 text-xs">🔍</span>
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#415364]/40">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </span>
             <input 
               type="text" 
-              placeholder="Buscar por nombre, teléfono, asesor..." 
+              placeholder="Buscar nombre, teléfono, asesor..." 
               value={busquedaTexto} 
               onChange={(e) => setBusquedaTexto(e.target.value)}
-              className="w-full bg-white border border-neutral-200 rounded-lg py-2 pl-9 pr-3 text-xs font-medium focus:outline-none focus:border-[#B94A36] shadow-xs"
+              className="w-full bg-white/60 backdrop-blur-sm border border-[#415364]/20 rounded-xl py-2.5 pl-10 pr-4 text-sm font-medium focus:outline-none focus:border-[#ea0029] focus:ring-1 focus:ring-[#ea0029]/20 transition-all text-[#415364]"
             />
           </div>
         )}
       </div>
 
-      {/* --- HUB DE CLIENTES --- */}
+      {/* --- HUB DE CLIENTES (TARJETAS GRANDES) --- */}
       {vistaActual === 'hub' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
-          <div className="bg-white border border-neutral-200 rounded-xl p-6 flex flex-col justify-between space-y-6 shadow-xs hover:border-neutral-300 transition-all">
-            <div className="space-y-2">
-              <div className="flex justify-between items-start">
-                <span className="text-2xl">💼</span>
-                <span className="text-xs font-medium text-neutral-500 bg-neutral-100 px-2.5 py-1 rounded-full">
+          {/* Tarjeta Leads */}
+          <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 sm:p-8 flex flex-col justify-between shadow-sm hover:shadow-lg transition-all group overflow-hidden relative">
+            <div className="absolute top-0 left-0 w-1 h-full bg-[#415364]"></div>
+            <div>
+              <div className="flex justify-between items-start mb-4">
+                <div className="bg-[#415364]/5 p-3 rounded-xl text-[#415364]">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                </div>
+                <span className="text-[10px] font-bold text-[#415364] bg-[#415364]/10 px-3 py-1 rounded-full uppercase tracking-widest">
                   {cargando ? '...' : `${totalProspectos} registros`}
                 </span>
               </div>
-              <h2 className="text-lg font-semibold text-neutral-900">Directorio General de Leads</h2>
-              <p className="text-sm text-neutral-500 font-light leading-relaxed">
-                Administra los perfiles de todos los prospectos activos, verifica quién los ingresó y actualiza su información comercial.
+              <h2 className="text-xl font-bold text-[#415364] mb-2">Directorio de Prospectos</h2>
+              <p className="text-sm text-[#415364]/60 leading-relaxed mb-6">
+                Administra los perfiles de todos los leads que entran por campañas. Actualiza su información de contacto y preferencias de compra.
               </p>
             </div>
-            <div className="flex gap-3 pt-2 text-sm font-medium">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => { limpiarFormulario(); setModoModal('crear'); setModalTipo('prospecto'); setIsModalOpen(true); }}
-                className="flex-1 bg-neutral-950 text-white py-2.5 px-4 rounded-lg hover:bg-neutral-800 transition"
+                className="flex-1 bg-[#415364] text-white py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-[#21242E] transition-colors shadow-sm"
               >
-                + Registrar Lead
+                + Nuevo Lead
               </button>
               <button
                 onClick={() => { setBusquedaTexto(''); setVistaActual('lista_general'); }}
-                className="flex-1 border border-neutral-200 text-neutral-700 py-2.5 px-4 rounded-lg hover:bg-neutral-50 transition"
+                className="flex-1 bg-white border border-[#415364]/20 text-[#415364] py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-[#415364]/5 transition-colors"
               >
                 Ver Directorio
               </button>
             </div>
           </div>
 
-          <div className="bg-white border border-neutral-200 rounded-xl p-6 flex flex-col justify-between space-y-6 shadow-xs hover:border-neutral-300 transition-all">
-            <div className="space-y-2">
-              <div className="flex justify-between items-start">
-                <span className="text-2xl">🏢</span>
-                <span className="text-xs font-medium text-[#B94A36] bg-[#B94A36]/10 px-2.5 py-1 rounded-full">
+          {/* Tarjeta Inversionistas */}
+          <div className="bg-[#21242E] rounded-2xl border border-neutral-800 p-6 sm:p-8 flex flex-col justify-between shadow-sm hover:shadow-lg transition-all group overflow-hidden relative">
+            <div className="absolute top-0 left-0 w-1 h-full bg-[#ea0029]"></div>
+            <div>
+              <div className="flex justify-between items-start mb-4">
+                <div className="bg-white/5 p-3 rounded-xl text-white">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                </div>
+                <span className="text-[10px] font-bold text-[#ea0029] bg-[#ea0029]/10 px-3 py-1 rounded-full uppercase tracking-widest border border-[#ea0029]/20">
                   {cargando ? '...' : `${totalClientes} formalizados`}
                 </span>
               </div>
-              <h2 className="text-lg font-semibold text-neutral-900">Expedientes de Inversionistas</h2>
-              <p className="text-sm text-neutral-500 font-light leading-relaxed">
-                Registros patrimoniales, datos conyugales y documentación de compradores que avanzaron hacia el cierre o reserva.
+              <h2 className="text-xl font-bold text-white mb-2">Expedientes KYC</h2>
+              <p className="text-sm text-white/50 leading-relaxed mb-6">
+                Documentación profunda de inversionistas. Incluye registros patrimoniales, información conyugal y estructuración contractual.
               </p>
             </div>
-            <div className="flex gap-3 pt-2 text-sm font-medium">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => { limpiarFormulario(); setModoModal('crear'); setModalTipo('cliente'); setIsModalOpen(true); }}
-                className="flex-1 bg-neutral-950 text-white py-2.5 px-4 rounded-lg hover:bg-neutral-800 transition"
+                className="flex-1 bg-[#ea0029] text-white py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-[#c90022] transition-colors shadow-sm"
               >
-                + Registrar Cliente
+                + Nuevo KYC
               </button>
               <button
                 onClick={() => { setBusquedaTexto(''); setVistaActual('lista_clientes'); }}
-                className="flex-1 border border-neutral-200 text-neutral-700 py-2.5 px-4 rounded-lg hover:bg-neutral-50 transition"
+                className="flex-1 bg-transparent border border-white/20 text-white py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-white/10 transition-colors"
               >
-                Ver Inversionistas
+                Ver Expedientes
               </button>
             </div>
           </div>
@@ -440,106 +453,102 @@ export default function ClientesPage() {
         </div>
       )}
 
-      {/* --- TABLAS DE DATOS --- */}
+      {/* --- TABLAS DE DATOS (ESTILO LISTA MODERNA) --- */}
       {vistaActual !== 'hub' && (
-        <div className="bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-xs animate-in fade-in duration-200">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-neutral-200 text-left text-xs sm:text-sm">
-              <thead className="bg-neutral-50 text-neutral-500 font-medium uppercase tracking-wider text-[10px]">
-                <tr>
-                  <th className="px-6 py-3.5">Nombre Completo</th>
-                  <th className="px-6 py-3.5">Contacto</th>
-                  <th className="px-6 py-3.5">Asesor Emisor</th>
-                  <th className="px-6 py-3.5">Fase / Estado</th>
-                  <th className="px-6 py-3.5 text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-100 text-neutral-700">
-                {listadoFiltrado.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="text-center py-12 text-neutral-400 italic font-light">
-                      No se encontraron registros en esta sección.
-                    </td>
-                  </tr>
-                ) : (
-                  listadoFiltrado.map((item) => (
-                    <tr key={item.id} className="hover:bg-neutral-50/60 transition-colors">
-                      <td className="px-6 py-4 font-semibold text-neutral-900">{item.nombres} {item.apellidos}</td>
-                      <td className="px-6 py-4 space-y-0.5">
-                        <span className="block text-neutral-800 font-medium">{item.telefono || '—'}</span>
-                        <span className="block text-neutral-400 text-xs font-light">{item.email || '—'}</span>
-                      </td>
-                      <td className="px-6 py-4 text-xs font-semibold text-[#B94A36]">
-                        {item.ingresado_por || '—'}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-2 py-1 rounded text-[10px] font-bold border ${item.tipo === 'cliente' ? 'bg-[#B94A36]/10 text-[#B94A36] border-[#B94A36]/20' : 'bg-neutral-100 text-neutral-800 border-neutral-200/60'}`}>
-                          {item.tipo === 'cliente' ? 'Inversionista' : (item.estado || 'Interesado')}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right space-x-3">
-                        {item.tipo === 'prospecto' && (
-                          <button
-                            onClick={() => convertirACliente(item)}
-                            className="text-[#B94A36] hover:text-[#9B3B2B] font-bold text-xs transition"
-                          >
-                            + Convertir a Inversionista
-                          </button>
-                        )}
-                        <button
-                          onClick={() => abrirEditarModal(item)}
-                          className="text-neutral-500 hover:text-neutral-950 font-medium underline text-xs transition"
-                        >
-                          Editar perfil
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+        <div className="space-y-4">
+          {listadoFiltrado.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-[#415364]/10 p-12 text-center">
+              <p className="text-sm font-medium text-[#415364]/50">No hay registros que coincidan con tu búsqueda.</p>
+            </div>
+          ) : (
+            listadoFiltrado.map((item) => (
+              <div key={item.id} className="bg-white rounded-2xl border border-[#415364]/10 p-5 sm:p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col md:flex-row md:items-center justify-between gap-4">
+                
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-sm uppercase tracking-widest ${item.tipo === 'cliente' ? 'bg-[#ea0029]/10 text-[#ea0029]' : 'bg-[#415364]/5 text-[#415364]/60'}`}>
+                      {item.tipo === 'cliente' ? 'INVERSIONISTA KYC' : (item.estado || 'PROSPECTO')}
+                    </span>
+                    <span className="text-[10px] font-bold text-[#ea0029] uppercase">
+                      • {item.ingresado_por || 'Origen Web'}
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-bold text-[#415364]">{item.nombres} {item.apellidos}</h3>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-[#415364]/70 font-medium">
+                    <span className="flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                      {item.telefono || 'Sin número'}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                      {item.email || 'Sin correo'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row md:flex-col lg:flex-row items-stretch md:items-end lg:items-center gap-2 md:w-auto">
+                  {item.tipo === 'prospecto' && (
+                    <button
+                      onClick={() => convertirACliente(item)}
+                      className="px-4 py-2 bg-[#ea0029]/10 text-[#ea0029] hover:bg-[#ea0029] hover:text-white rounded-xl text-[10px] font-bold uppercase tracking-widest transition-colors whitespace-nowrap"
+                    >
+                      Convertir a KYC
+                    </button>
+                  )}
+                  <button
+                    onClick={() => abrirEditarModal(item)}
+                    className="px-4 py-2 bg-white border border-[#415364]/20 text-[#415364] hover:bg-[#415364] hover:text-white rounded-xl text-[10px] font-bold uppercase tracking-widest transition-colors whitespace-nowrap text-center"
+                  >
+                    Editar Perfil
+                  </button>
+                </div>
+
+              </div>
+            ))
+          )}
         </div>
       )}
 
-      {/* --- MODAL --- */}
+      {/* --- MODAL DE EXPEDIENTE --- */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-neutral-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          {/* Ajuste de max-w-3xl para que no se vea tan ancho en pantallas grandes */}
-          <div className="bg-white rounded-xl border border-neutral-200 shadow-2xl max-w-3xl w-full overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 bg-[#21242E]/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
             
-            <div className="px-6 py-4 bg-neutral-50 border-b border-neutral-200 flex justify-between items-center shrink-0">
+            {/* Header del Modal */}
+            <div className="px-6 py-5 bg-[#21242E] flex justify-between items-center shrink-0">
               <div>
-                <h2 className="text-base font-bold text-neutral-900">
+                <h2 className="text-lg font-bold text-white">
                   {modoModal === 'crear' 
-                    ? (modalTipo === 'prospecto' ? 'Alta de Prospecto Comercial' : 'Expediente Único de Cliente Inversionista')
-                    : `Modificar Perfil: ${nombres} ${apellidos}`}
+                    ? (modalTipo === 'prospecto' ? 'Alta de Nuevo Lead' : 'Expediente Único KYC')
+                    : `Editando: ${nombres} ${apellidos}`}
                 </h2>
-                <p className="text-[11px] text-neutral-400 font-light mt-0.5">Asegura ingresar la información verídica para auditorías del proyecto.</p>
+                <p className="text-[10px] text-white/50 uppercase tracking-widest mt-1">Gestión Segura de Datos Konkeri</p>
               </div>
-              <button onClick={() => setIsModalOpen(false)} className="text-neutral-400 hover:text-neutral-600 text-sm p-1">✕</button>
+              <button onClick={() => setIsModalOpen(false)} className="text-white/50 hover:text-white bg-white/10 rounded-full w-8 h-8 flex items-center justify-center transition-colors">✕</button>
             </div>
             
-            <form onSubmit={handleGuardar} className="flex-1 overflow-y-auto p-6 space-y-6 text-left custom-scrollbar">
+            {/* Cuerpo del Formulario */}
+            <form onSubmit={handleGuardar} className="flex-1 overflow-y-auto p-6 space-y-8 bg-[#dce3eb]/30 text-left custom-scrollbar">
               
-              <div className="space-y-4">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 border-b pb-1">1. Datos Personales de Contacto</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Sección 1 */}
+              <div className="bg-white p-6 rounded-2xl border border-[#415364]/10 shadow-sm space-y-4">
+                <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#415364] border-b border-[#415364]/10 pb-2">1. Datos Personales y Contacto</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
-                    <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Nombres *</label>
-                    <input type="text" required value={nombres} onChange={(e) => setNombres(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-neutral-50 focus:bg-white focus:border-[#B94A36] outline-none transition-all" />
+                    <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Nombres *</label>
+                    <input type="text" required value={nombres} onChange={(e) => setNombres(e.target.value)} className="w-full px-4 py-2.5 border border-[#415364]/20 rounded-xl text-sm bg-white focus:border-[#ea0029] focus:ring-1 focus:ring-[#ea0029]/20 outline-none transition-all text-[#415364]" />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Apellidos *</label>
-                    <input type="text" required value={apellidos} onChange={(e) => setApellidos(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-neutral-50 focus:bg-white focus:border-[#B94A36] outline-none transition-all" />
+                    <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Apellidos *</label>
+                    <input type="text" required value={apellidos} onChange={(e) => setApellidos(e.target.value)} className="w-full px-4 py-2.5 border border-[#415364]/20 rounded-xl text-sm bg-white focus:border-[#ea0029] focus:ring-1 focus:ring-[#ea0029]/20 outline-none transition-all text-[#415364]" />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">WhatsApp / Celular *</label>
-                    <input type="tel" required value={telefono} onChange={(e) => setTelefono(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-neutral-50 focus:bg-white focus:border-[#B94A36] outline-none transition-all" placeholder="Ej. 0991234567" />
+                    <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">WhatsApp / Celular *</label>
+                    <input type="tel" required value={telefono} onChange={(e) => setTelefono(e.target.value)} className="w-full px-4 py-2.5 border border-[#415364]/20 rounded-xl text-sm bg-white focus:border-[#ea0029] focus:ring-1 focus:ring-[#ea0029]/20 outline-none transition-all text-[#415364] font-medium" placeholder="Ej. 0991234567" />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Correo Electrónico</label>
-                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-neutral-50 focus:bg-white focus:border-[#B94A36] outline-none transition-all" placeholder="cliente@correo.com" />
+                    <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Correo Electrónico</label>
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-2.5 border border-[#415364]/20 rounded-xl text-sm bg-white focus:border-[#ea0029] focus:ring-1 focus:ring-[#ea0029]/20 outline-none transition-all text-[#415364]" placeholder="cliente@correo.com" />
                   </div>
                 </div>
               </div>
@@ -547,32 +556,33 @@ export default function ClientesPage() {
               {/* BLOQUE KYC EXTENDIDO (SOLO CLIENTES) */}
               {modalTipo === 'cliente' && (
                 <>
-                  <div className="space-y-4 pt-2">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-[#B94A36] border-b pb-1">2. Documentación e Identidad (KYC)</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Sección 2 */}
+                  <div className="bg-white p-6 rounded-2xl border border-[#415364]/10 shadow-sm space-y-4">
+                    <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#ea0029] border-b border-[#ea0029]/20 pb-2">2. Documentación Oficial (KYC)</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                       <div>
-                        <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Tipo ID</label>
-                        <select value={tipoIdentificacion} onChange={(e) => setTipoIdentificacion(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-neutral-50 focus:bg-white focus:border-[#B94A36] outline-none font-medium">
+                        <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Tipo ID</label>
+                        <select value={tipoIdentificacion} onChange={(e) => setTipoIdentificacion(e.target.value)} className="w-full px-4 py-2.5 border border-[#415364]/20 rounded-xl text-sm bg-white focus:border-[#ea0029] outline-none font-medium text-[#415364]">
                           <option value="Cédula">Cédula</option>
                           <option value="RUC">RUC</option>
                           <option value="Pasaporte">Pasaporte</option>
                         </select>
                       </div>
                       <div className="sm:col-span-2">
-                        <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Número de Documento *</label>
-                        <input type="text" required={modalTipo === 'cliente'} value={identificacion} onChange={(e) => setIdentificacion(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-neutral-50 focus:bg-white focus:border-[#B94A36] outline-none transition-all font-mono" placeholder="Ej. 131xxxxxxx" />
+                        <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Número de Documento *</label>
+                        <input type="text" required={modalTipo === 'cliente'} value={identificacion} onChange={(e) => setIdentificacion(e.target.value)} className="w-full px-4 py-2.5 border border-[#415364]/20 rounded-xl text-sm bg-white focus:border-[#ea0029] outline-none transition-all font-mono text-[#415364]" placeholder="Ej. 131..." />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Nacionalidad</label>
-                        <input type="text" value={nacionalidad} onChange={(e) => setNacionalidad(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-neutral-50 focus:bg-white focus:border-[#B94A36] outline-none transition-all" placeholder="Ej. Ecuatoriana" />
+                        <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Nacionalidad</label>
+                        <input type="text" value={nacionalidad} onChange={(e) => setNacionalidad(e.target.value)} className="w-full px-4 py-2.5 border border-[#415364]/20 rounded-xl text-sm bg-white focus:border-[#ea0029] outline-none transition-all text-[#415364]" />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Fecha Nacimiento</label>
-                        <input type="date" value={fechaNacimiento} onChange={(e) => setFechaNacimiento(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-neutral-50 focus:bg-white focus:border-[#B94A36] outline-none transition-all" />
+                        <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Fecha Nacimiento</label>
+                        <input type="date" value={fechaNacimiento} onChange={(e) => setFechaNacimiento(e.target.value)} className="w-full px-4 py-2.5 border border-[#415364]/20 rounded-xl text-sm bg-white focus:border-[#ea0029] outline-none transition-all text-[#415364]" />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Estado Civil</label>
-                        <select value={estadoCivil} onChange={(e) => setEstadoCivil(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-neutral-50 focus:bg-white focus:border-[#B94A36] outline-none font-medium">
+                        <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Estado Civil</label>
+                        <select value={estadoCivil} onChange={(e) => setEstadoCivil(e.target.value)} className="w-full px-4 py-2.5 border border-[#415364]/20 rounded-xl text-sm bg-white focus:border-[#ea0029] outline-none font-medium text-[#415364]">
                           <option value="Soltero/a">Soltero/a</option>
                           <option value="Casado/a">Casado/a</option>
                           <option value="Divorciado/a">Divorciado/a</option>
@@ -580,150 +590,97 @@ export default function ClientesPage() {
                           <option value="Viudo/a">Viudo/a</option>
                         </select>
                       </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div className="sm:col-span-2">
-                        <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Dirección Domiciliaria Exacta</label>
-                        <input type="text" value={direccionDomicilio} onChange={(e) => setDireccionDomicilio(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-neutral-50 focus:bg-white focus:border-[#B94A36] outline-none" placeholder="Ciudad, calles, número" />
+                        <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Dirección Domiciliaria Exacta</label>
+                        <input type="text" value={direccionDomicilio} onChange={(e) => setDireccionDomicilio(e.target.value)} className="w-full px-4 py-2.5 border border-[#415364]/20 rounded-xl text-sm bg-white focus:border-[#ea0029] outline-none text-[#415364]" placeholder="Ciudad, calles, número" />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Cargas Familiares</label>
-                        <input type="number" min="0" value={cargasFamiliares} onChange={(e) => setCargasFamiliares(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-neutral-50 focus:bg-white focus:border-[#B94A36] outline-none" placeholder="0" />
+                        <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Cargas Familiares</label>
+                        <input type="number" min="0" value={cargasFamiliares} onChange={(e) => setCargasFamiliares(e.target.value)} className="w-full px-4 py-2.5 border border-[#415364]/20 rounded-xl text-sm bg-white focus:border-[#ea0029] outline-none text-[#415364]" placeholder="0" />
                       </div>
                     </div>
 
+                    {/* Sub-sección Cónyuge */}
                     {(estadoCivil === 'Casado/a' || estadoCivil === 'Unión de Hecho') && (
-                      <div className="bg-neutral-50 p-5 rounded-lg border border-neutral-200 space-y-4">
-                        <span className="text-[10px] font-bold text-[#B94A36] uppercase tracking-wider block border-b border-neutral-200 pb-1.5">Información de la Cónyuge / Esposa</span>
+                      <div className="bg-[#415364]/5 p-5 rounded-xl border border-[#415364]/10 mt-4">
+                        <span className="text-[10px] font-bold text-[#415364] uppercase tracking-widest block mb-4">Información del Cónyuge</span>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-[9px] font-bold text-neutral-500 uppercase mb-1">Nombres Completos</label>
-                            <input type="text" value={nombresConyuge} onChange={(e) => setNombresConyuge(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-white outline-none focus:border-[#B94A36]" />
+                            <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Nombres Completos</label>
+                            <input type="text" value={nombresConyuge} onChange={(e) => setNombresConyuge(e.target.value)} className="w-full px-3 py-2 border border-[#415364]/20 rounded-lg text-sm bg-white outline-none focus:border-[#ea0029] text-[#415364]" />
                           </div>
                           <div>
-                            <label className="block text-[9px] font-bold text-neutral-500 uppercase mb-1">Apellidos Completos</label>
-                            <input type="text" value={apellidosConyuge} onChange={(e) => setApellidosConyuge(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-white outline-none focus:border-[#B94A36]" />
+                            <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Apellidos Completos</label>
+                            <input type="text" value={apellidosConyuge} onChange={(e) => setApellidosConyuge(e.target.value)} className="w-full px-3 py-2 border border-[#415364]/20 rounded-lg text-sm bg-white outline-none focus:border-[#ea0029] text-[#415364]" />
                           </div>
                           <div>
-                            <label className="block text-[9px] font-bold text-neutral-500 uppercase mb-1">Identificación</label>
-                            <input type="text" value={identificacionConyuge} onChange={(e) => setIdentificacionConyuge(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-white outline-none font-mono focus:border-[#B94A36]" />
+                            <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Identificación</label>
+                            <input type="text" value={identificacionConyuge} onChange={(e) => setIdentificacionConyuge(e.target.value)} className="w-full px-3 py-2 border border-[#415364]/20 rounded-lg text-sm bg-white outline-none font-mono focus:border-[#ea0029] text-[#415364]" />
                           </div>
                           <div>
-                            <label className="block text-[9px] font-bold text-neutral-500 uppercase mb-1">Nacionalidad</label>
-                            <input type="text" value={nacionalidadConyuge} onChange={(e) => setNacionalidadConyuge(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-white outline-none focus:border-[#B94A36]" />
-                          </div>
-                          <div>
-                            <label className="block text-[9px] font-bold text-neutral-500 uppercase mb-1">Fecha Nacimiento</label>
-                            <input type="date" value={fechaNacimientoConyuge} onChange={(e) => setFechaNacimientoConyuge(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-white outline-none focus:border-[#B94A36]" />
-                          </div>
-                          <div>
-                            <label className="block text-[9px] font-bold text-neutral-500 uppercase mb-1">Celular de Contacto</label>
-                            <input type="tel" value={celularConyuge} onChange={(e) => setCelularConyuge(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-white outline-none font-mono focus:border-[#B94A36]" />
+                            <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Celular de Contacto</label>
+                            <input type="tel" value={celularConyuge} onChange={(e) => setCelularConyuge(e.target.value)} className="w-full px-3 py-2 border border-[#415364]/20 rounded-lg text-sm bg-white outline-none font-mono focus:border-[#ea0029] text-[#415364]" />
                           </div>
                         </div>
                       </div>
                     )}
                   </div>
 
-                  <div className="space-y-4 pt-2">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 border-b pb-1">3. Perfil Laboral y Contacto Alterno</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Sección 3 */}
+                  <div className="bg-white p-6 rounded-2xl border border-[#415364]/10 shadow-sm space-y-4">
+                    <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#415364] border-b border-[#415364]/10 pb-2">3. Perfil Financiero y Respaldo</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                       <div>
-                        <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Empresa de Trabajo</label>
-                        <input type="text" value={empresaTrabajo} onChange={(e) => setEmpresaTrabajo(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-neutral-50 focus:bg-white focus:border-[#B94A36] outline-none" />
+                        <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Empresa de Trabajo</label>
+                        <input type="text" value={empresaTrabajo} onChange={(e) => setEmpresaTrabajo(e.target.value)} className="w-full px-4 py-2.5 border border-[#415364]/20 rounded-xl text-sm bg-white focus:border-[#ea0029] outline-none text-[#415364]" />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Cargo que Ocupa</label>
-                        <input type="text" value={cargo} onChange={(e) => setCargo(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-neutral-50 focus:bg-white focus:border-[#B94A36] outline-none" />
+                        <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Cargo que Ocupa</label>
+                        <input type="text" value={cargo} onChange={(e) => setCargo(e.target.value)} className="w-full px-4 py-2.5 border border-[#415364]/20 rounded-xl text-sm bg-white focus:border-[#ea0029] outline-none text-[#415364]" />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Ingresos Mensuales ($)</label>
-                        <input type="number" step="0.01" value={ingresosMensuales} onChange={(e) => setIngresosMensuales(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-neutral-50 focus:bg-white focus:border-[#B94A36] outline-none font-mono" placeholder="0.00" />
+                        <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Ingresos Mensuales ($)</label>
+                        <input type="number" step="0.01" value={ingresosMensuales} onChange={(e) => setIngresosMensuales(e.target.value)} className="w-full px-4 py-2.5 border border-[#415364]/20 rounded-xl text-sm bg-white focus:border-[#ea0029] outline-none font-mono text-[#415364]" placeholder="0.00" />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Gastos Mensuales ($)</label>
-                        <input type="number" step="0.01" value={gastosMensuales} onChange={(e) => setGastosMensuales(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-neutral-50 focus:bg-white focus:border-[#B94A36] outline-none font-mono" placeholder="0.00" />
-                      </div>
-                    </div>
-
-                    <div className="bg-neutral-50 p-5 rounded-lg border border-neutral-200 space-y-4">
-                      <span className="text-[10px] font-bold text-neutral-600 uppercase tracking-wider block border-b border-neutral-200 pb-1.5">Familiar de Contacto (Que no viva con usted)</span>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="sm:col-span-2">
-                          <label className="block text-[9px] font-bold text-neutral-500 uppercase mb-1">Nombre Completo del Familiar</label>
-                          <input type="text" value={familiarNombre} onChange={(e) => setFamiliarNombre(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-white outline-none focus:border-[#B94A36]" />
-                        </div>
-                        <div>
-                          <label className="block text-[9px] font-bold text-neutral-500 uppercase mb-1">Celular / Teléfono</label>
-                          <input type="tel" value={familiarCelular} onChange={(e) => setFamiliarCelular(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-white outline-none font-mono focus:border-[#B94A36]" />
-                        </div>
-                        <div>
-                          <label className="block text-[9px] font-bold text-neutral-500 uppercase mb-1">Dirección de Domicilio</label>
-                          <input type="text" value={familiarDireccion} onChange={(e) => setFamiliarDireccion(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-white outline-none focus:border-[#B94A36]" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4 pt-2">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 border-b pb-1">4. Estructuración y Notificaciones</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Emitir Contrato a Nombre de:</label>
-                        <input type="text" value={emitirContratoA} onChange={(e) => setEmitirContratoA(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-neutral-50 focus:bg-white focus:border-[#B94A36] outline-none" placeholder="Titular o Empresa" />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Banco para Precalificación (Si aplica)</label>
-                        <input type="text" value={bancoPrecalificacion} onChange={(e) => setBancoPrecalificacion(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-neutral-50 focus:bg-white focus:border-[#B94A36] outline-none" />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Día de Pago Preferido (Mes)</label>
-                        <input type="number" min="1" max="31" value={diaPago} onChange={(e) => setDiaPago(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-neutral-50 focus:bg-white focus:border-[#B94A36] outline-none" placeholder="Ej. 5" />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Envío de Correspondencia a:</label>
-                        <select value={direccionCorrespondencia} onChange={(e) => setDireccionCorrespondencia(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-neutral-50 focus:bg-white focus:border-[#B94A36] outline-none font-medium">
-                          <option value="Domicilio">Domicilio</option>
-                          <option value="Trabajo">Trabajo</option>
-                        </select>
+                        <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Gastos Mensuales ($)</label>
+                        <input type="number" step="0.01" value={gastosMensuales} onChange={(e) => setGastosMensuales(e.target.value)} className="w-full px-4 py-2.5 border border-[#415364]/20 rounded-xl text-sm bg-white focus:border-[#ea0029] outline-none font-mono text-[#415364]" placeholder="0.00" />
                       </div>
                     </div>
                   </div>
                 </>
               )}
 
-              <div className="space-y-4 pt-2">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 border-b pb-1">
-                  {modalTipo === 'prospecto' ? '2. Preferencias de Compra e Ingreso' : '5. Trazabilidad de Campaña y Asesor'}
+              {/* Sección 4: Configuración Comercial */}
+              <div className="bg-white p-6 rounded-2xl border border-[#415364]/10 shadow-sm space-y-4">
+                <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#415364] border-b border-[#415364]/10 pb-2">
+                  {modalTipo === 'prospecto' ? '2. Gestión Comercial' : '4. Trazabilidad Comercial'}
                 </h3>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div>
-                    <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Ciudad de Origen</label>
-                    <input type="text" placeholder="Ej. Manta, Quito" value={ciudadResidencia} onChange={(e) => setCiudadResidencia(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-neutral-50 focus:bg-white focus:border-[#B94A36] outline-none" />
+                    <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Ciudad Residencia</label>
+                    <input type="text" placeholder="Ej. Manta, Quito" value={ciudadResidencia} onChange={(e) => setCiudadResidencia(e.target.value)} className="w-full px-4 py-2.5 border border-[#415364]/20 rounded-xl text-sm bg-white focus:border-[#ea0029] outline-none text-[#415364]" />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Ingresado Por (Asesor)</label>
-                    <input type="text" value={ingresadoPor} onChange={(e) => setIngresadoPor(e.target.value)} placeholder="Ej. Saúl Intriago" className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm font-semibold bg-neutral-50 focus:bg-white focus:border-[#B94A36] outline-none" />
+                    <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Asesor Responsable</label>
+                    <input type="text" value={ingresadoPor} onChange={(e) => setIngresadoPor(e.target.value)} className="w-full px-4 py-2.5 border border-[#415364]/20 rounded-xl text-sm font-bold bg-[#415364]/5 focus:border-[#ea0029] outline-none text-[#415364]" />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Origen de Captación</label>
-                    <select value={origenCaptacion} onChange={(e) => setOrigenCaptacion(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-neutral-50 focus:bg-white focus:border-[#B94A36] outline-none font-medium text-neutral-700">
-                      <option value="Meta Ads">Meta Ads</option>
-                      <option value="Instagram Ads">Instagram Ads</option>
-                      <option value="Facebook Ads">Facebook Ads</option>
-                      <option value="Valla Publicitaria">Valla Publicitaria</option>
+                    <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Canal de Captación</label>
+                    <select value={origenCaptacion} onChange={(e) => setOrigenCaptacion(e.target.value)} className="w-full px-4 py-2.5 border border-[#415364]/20 rounded-xl text-sm bg-white focus:border-[#ea0029] outline-none font-medium text-[#415364]">
+                      <option value="Meta Ads">Meta Ads (FB/IG)</option>
+                      <option value="Sitio Web">Landing Page</option>
+                      <option value="Valla Publicitaria">Valla Obra</option>
                       <option value="Referido">Referido</option>
-                      <option value="Corredor / Broker">Corredor / Broker</option>
-                      <option value="Sitio Web">Sitio Web</option>
+                      <option value="Broker">Broker Inmobiliario</option>
                       <option value="Otro">Otro</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Tipología Solicitada</label>
-                    <select value={tipologiaInteres} onChange={(e) => setTipologiaInteres(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-neutral-50 focus:bg-white focus:border-[#B94A36] outline-none font-medium text-neutral-700">
-                      <option value="Suite">Suite</option>
+                    <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Tipología Buscada</label>
+                    <select value={tipologiaInteres} onChange={(e) => setTipologiaInteres(e.target.value)} className="w-full px-4 py-2.5 border border-[#415364]/20 rounded-xl text-sm bg-white focus:border-[#ea0029] outline-none font-medium text-[#415364]">
+                      <option value="Suite">Suite (1 Dormitorio)</option>
                       <option value="2 Dormitorios">2 Dormitorios</option>
                       <option value="3 Dormitorios">3 Dormitorios</option>
                       <option value="Penthouse">Penthouse</option>
@@ -731,36 +688,28 @@ export default function ClientesPage() {
                     </select>
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Motivo Comercial</label>
-                    <select value={motivoCompra} onChange={(e) => setMotivoCompra(e.target.value)} className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-neutral-50 focus:bg-white focus:border-[#B94A36] outline-none font-medium text-neutral-700">
-                      <option value="Para Invertir">Para Invertir</option>
-                      <option value="Para Vivir">Para Vivir</option>
-                      <option value="Segunda Residencia">Segunda Residencia</option>
-                    </select>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Notas y Minuta de Seguimiento</label>
-                    <textarea rows={3} value={notas} onChange={(e) => setNotas(e.target.value)} placeholder="Requerimientos específicos..." className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-neutral-50 focus:bg-white focus:border-[#B94A36] outline-none resize-none transition-all" />
+                    <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Notas del Asesor</label>
+                    <textarea rows={3} value={notas} onChange={(e) => setNotas(e.target.value)} placeholder="Agrega requerimientos específicos, historial de llamadas o dudas del cliente..." className="w-full px-4 py-3 border border-[#415364]/20 rounded-xl text-sm bg-white focus:border-[#ea0029] outline-none resize-none transition-all text-[#415364]" />
                   </div>
                 </div>
               </div>
 
             </form>
 
-            <div className="px-6 py-4 bg-neutral-50 border-t border-neutral-200 flex justify-end gap-3 text-sm font-medium shrink-0">
+            {/* Footer Botones */}
+            <div className="px-6 py-5 bg-white border-t border-[#415364]/10 flex justify-end gap-4 shrink-0">
               <button 
                 type="button" 
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 border border-neutral-200 rounded-lg text-neutral-600 hover:bg-neutral-100 transition"
+                className="px-6 py-2.5 border border-[#415364]/20 rounded-xl text-sm font-bold text-[#415364] hover:bg-[#415364]/5 transition-colors"
               >
                 Cancelar
               </button>
               <button 
                 onClick={handleGuardar}
-                className="px-5 py-2 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg transition shadow-sm"
+                className="px-8 py-2.5 bg-[#ea0029] hover:bg-[#c90022] text-white rounded-xl text-sm font-bold tracking-wider transition-colors shadow-md"
               >
-                {modoModal === 'crear' ? 'Guardar Nuevo ' : 'Actualizar '}
-                {modalTipo === 'prospecto' ? 'Prospecto' : 'Expediente'}
+                {modoModal === 'crear' ? 'Guardar Expediente' : 'Actualizar Datos'}
               </button>
             </div>
 
