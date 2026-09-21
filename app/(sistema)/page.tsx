@@ -26,7 +26,6 @@ export default function CentroOperacionesPage() {
 
   const cargarDatosDashboard = async () => {
     try {
-      // 1. Obtener todos los clientes activos (excluyendo 'Descartado' utilizando la columna correcta 'estado')
       const { data: clientesActivos, error: errorClientes } = await supabase
         .from('clientes')
         .select('*')
@@ -39,7 +38,6 @@ export default function CentroOperacionesPage() {
         const calientes = clientesActivos.filter(c => c.temperatura?.includes('Caliente')).length;
         setLeadsCalientes(calientes);
 
-        // 2. Filtrar las tareas programadas exactamente para hoy
         const fechaHoy = new Date();
         fechaHoy.setHours(0, 0, 0, 0);
 
@@ -60,79 +58,100 @@ export default function CentroOperacionesPage() {
 
   if (cargando) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F4F4F4]">
-        <p className="text-sm font-light tracking-widest text-[#B94A36] uppercase animate-pulse">Iniciando Sistema...</p>
+      <div className="flex h-full items-center justify-center bg-[#dce3eb]">
+        <p className="text-sm font-bold tracking-widest text-[#ea0029] uppercase animate-pulse">Iniciando Sistema...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F4F4F4] px-4 md:px-8 py-10 font-sans text-neutral-800 flex flex-col items-center">
+    <div className="p-4 md:p-8 font-sans text-[#415364] w-full max-w-7xl mx-auto">
       
-      <div className="w-full max-w-5xl space-y-8">
+      {/* ENCABEZADO EJECUTIVO */}
+      <div className="mb-8">
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-[#415364]">Panel Comercial</h1>
+        <p className="text-sm text-[#415364]/70 mt-1">Resumen del embudo de ventas y operaciones de Arienzo.</p>
+      </div>
+
+      {/* MÉTRICAS PRINCIPALES (TARJETAS MODERNAS) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {/* Tarjeta 1 */}
+        <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+          <div className="absolute top-0 left-0 w-1 h-full bg-[#415364]"></div>
+          <p className="text-[11px] font-bold text-[#415364]/50 uppercase tracking-widest mb-1">Total Prospectos Activos</p>
+          <p className="text-5xl font-light text-[#415364]">{totalLeads}</p>
+          <div className="absolute bottom-4 right-4 bg-[#dce3eb]/50 rounded-full p-2 text-[#415364] opacity-50 group-hover:scale-110 transition-transform">
+             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+          </div>
+        </div>
+
+        {/* Tarjeta 2 (Destacada) */}
+        <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+          <div className="absolute top-0 left-0 w-1 h-full bg-[#ea0029]"></div>
+          <p className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest mb-1 flex items-center gap-1">
+            Prospectos Calientes 
+            <span className="text-sm">🔥</span>
+          </p>
+          <p className="text-5xl font-bold text-[#415364]">{leadsCalientes}</p>
+          <div className="absolute bottom-4 right-4 bg-[#ea0029]/10 rounded-full p-2 text-[#ea0029] opacity-50 group-hover:scale-110 transition-transform">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+          </div>
+        </div>
+
+        {/* Tarjeta 3 */}
+        <div className="bg-[#21242E] rounded-2xl border border-neutral-800 p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+          <p className="text-[11px] font-bold text-white/50 uppercase tracking-widest mb-1">Inventario Total</p>
+          <div className="flex items-baseline gap-2">
+            <p className="text-5xl font-light text-white">22</p>
+            <p className="text-xs text-white/40 font-medium">Unidades</p>
+          </div>
+          <div className="absolute bottom-4 right-4 bg-white/5 rounded-full p-2 text-white opacity-20 group-hover:scale-110 transition-transform">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* ENCABEZADO */}
-        <div className="bg-white rounded-xl border border-neutral-200 p-8 shadow-sm">
-          <span className="text-xs font-bold tracking-widest text-[#B94A36] uppercase">Arienzo Boutique Living</span>
-          <h1 className="text-3xl font-light tracking-tight text-neutral-900 mt-2">Centro de Operaciones</h1>
-          <p className="text-sm text-neutral-500 mt-2">Bienvenido. Este es el resumen de tu embudo comercial de alto valor hoy.</p>
-        </div>
-
-        {/* MÉTRICAS PRINCIPALES */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm flex flex-col justify-center">
-            <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Total Prospectos Activos</p>
-            <p className="text-4xl font-light text-neutral-900 mt-2">{totalLeads}</p>
-          </div>
-          <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm flex flex-col justify-center">
-            <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Prospectos Calientes 🔥</p>
-            <p className="text-4xl font-light text-[#B94A36] mt-2">{leadsCalientes}</p>
-          </div>
-          <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm flex flex-col justify-center">
-            <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Inventario Total</p>
-            <div className="flex items-baseline gap-2 mt-2">
-              <p className="text-4xl font-light text-neutral-900">22</p>
-              <p className="text-xs text-neutral-400 font-medium">Unidades</p>
-            </div>
-          </div>
-        </div>
-
-        {/* AGENDA DEL DÍA */}
-        <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-neutral-100 bg-neutral-50 flex justify-between items-center">
+        {/* AGENDA DEL DÍA (Ocupa 2 columnas) */}
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-neutral-200/60 shadow-sm overflow-hidden flex flex-col">
+          <div className="p-6 border-b border-neutral-100 flex justify-between items-center">
             <div>
-              <h2 className="text-lg font-bold text-neutral-900">Agenda de Hoy</h2>
-              <p className="text-xs text-neutral-500 mt-0.5">Contactos estratégicos programados para el día.</p>
+              <h2 className="text-lg font-bold text-[#415364]">Agenda Estratégica</h2>
+              <p className="text-xs text-[#415364]/60 mt-0.5">Contactos programados para hoy.</p>
             </div>
-            <div className="bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1 rounded-full">
+            <div className="bg-[#ea0029]/10 text-[#ea0029] text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wider">
               {tareasHoy.length} Pendientes
             </div>
           </div>
           
-          <div className="p-0">
+          <div className="flex-1 overflow-y-auto bg-neutral-50/50">
             {tareasHoy.length === 0 ? (
-              <div className="p-10 text-center">
-                <p className="text-sm text-neutral-400 italic">No tienes llamadas ni tareas agendadas para hoy.</p>
+              <div className="p-12 text-center flex flex-col items-center justify-center h-full">
+                <svg className="w-12 h-12 text-neutral-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                <p className="text-sm font-medium text-neutral-400">Día despejado. No hay tareas agendadas.</p>
               </div>
             ) : (
               <div className="divide-y divide-neutral-100">
                 {tareasHoy.map((tarea) => (
-                  <div key={tarea.id} className="p-6 hover:bg-neutral-50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div key={tarea.id} className="p-5 hover:bg-white transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="bg-neutral-900 text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="bg-[#415364] text-white text-[9px] font-bold px-2 py-0.5 rounded-sm uppercase tracking-widest">
                           {tarea.tipo_accion}
                         </span>
                         {tarea.temperatura && (
-                          <span className="text-[10px] text-neutral-500 font-medium">{tarea.temperatura}</span>
+                          <span className={`text-[10px] font-bold ${tarea.temperatura.includes('Caliente') ? 'text-[#ea0029]' : 'text-neutral-500'}`}>
+                            {tarea.temperatura}
+                          </span>
                         )}
                       </div>
-                      <h3 className="text-base font-bold text-neutral-900">{tarea.nombres} {tarea.apellidos}</h3>
-                      <p className="text-xs text-neutral-600 mt-1 max-w-md">{tarea.detalle_accion || 'Sin detalles adicionales.'}</p>
+                      <h3 className="text-[15px] font-bold text-[#415364]">{tarea.nombres} {tarea.apellidos}</h3>
+                      <p className="text-xs text-[#415364]/70 mt-1 max-w-md line-clamp-1">{tarea.detalle_accion || 'Sin detalles adicionales.'}</p>
                     </div>
                     
-                    <Link href="/crm" className="px-5 py-2.5 bg-white border border-neutral-200 text-neutral-700 rounded-lg text-xs font-bold hover:bg-neutral-100 transition shadow-sm text-center flex-shrink-0">
-                      Ir al CRM &rarr;
+                    <Link href="/crm" className="px-4 py-2 bg-white border border-neutral-200 text-[#415364] rounded-lg text-[11px] font-bold uppercase tracking-wider hover:border-[#ea0029] hover:text-[#ea0029] transition-colors shadow-sm text-center flex-shrink-0">
+                      Gestionar
                     </Link>
                   </div>
                 ))}
@@ -141,29 +160,35 @@ export default function CentroOperacionesPage() {
           </div>
         </div>
 
-        {/* ACCESOS RÁPIDOS */}
-        <h2 className="text-sm font-bold tracking-widest text-neutral-500 uppercase mt-8 mb-4">Herramientas Comerciales</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          
-          <Link href="/crm" className="group bg-white rounded-xl border border-neutral-200 p-6 shadow-sm hover:shadow-md hover:border-[#B94A36] transition-all cursor-pointer flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-bold text-neutral-900 group-hover:text-[#B94A36] transition-colors">Pipeline / CRM</h3>
-              <p className="text-xs text-neutral-500 mt-1">Gestiona prospectos, envía WhatsApp y revisa seguimientos.</p>
-            </div>
-            <span className="text-2xl opacity-50 group-hover:opacity-100 transition-opacity group-hover:translate-x-1 duration-300">📊</span>
-          </Link>
+        {/* ACCESOS RÁPIDOS (Ocupa 1 columna) */}
+        <div className="flex flex-col gap-4">
+          <div className="bg-[#415364] rounded-2xl p-6 shadow-md text-white">
+             <h2 className="text-sm font-bold tracking-widest uppercase mb-6 opacity-80">Accesos Directos</h2>
+             
+             <Link href="/crm" className="group flex items-center justify-between p-4 bg-white/10 rounded-xl hover:bg-white/20 transition-all cursor-pointer mb-3 border border-white/5">
+              <div>
+                <h3 className="text-sm font-bold text-white group-hover:text-white transition-colors">Radar de Leads</h3>
+                <p className="text-[10px] text-white/60 mt-1">Gestiona prospectos y seguimientos.</p>
+              </div>
+              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-[#ea0029] transition-colors">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+              </div>
+            </Link>
 
-          <Link href="/cotizador" className="group bg-white rounded-xl border border-neutral-200 p-6 shadow-sm hover:shadow-md hover:border-[#B94A36] transition-all cursor-pointer flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-bold text-neutral-900 group-hover:text-[#B94A36] transition-colors">Generar Cotización</h3>
-              <p className="text-xs text-neutral-500 mt-1">Calculadora de planes de pago y generación de PDF.</p>
-            </div>
-            <span className="text-2xl opacity-50 group-hover:opacity-100 transition-opacity group-hover:translate-x-1 duration-300">📄</span>
-          </Link>
-
+            <Link href="/cotizador" className="group flex items-center justify-between p-4 bg-white/10 rounded-xl hover:bg-white/20 transition-all cursor-pointer border border-white/5">
+              <div>
+                <h3 className="text-sm font-bold text-white group-hover:text-white transition-colors">Cotizador</h3>
+                <p className="text-[10px] text-white/60 mt-1">Calculadora de planes de pago.</p>
+              </div>
+              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-[#ea0029] transition-colors">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+              </div>
+            </Link>
+          </div>
         </div>
 
       </div>
+
     </div>
   );
 }
