@@ -39,7 +39,7 @@ type VisitanteAgrupado = {
   tiempoAcumuladoMin: number;
   score: number;
   fuentePrincipal: string;
-  nivelInteraccion: '🔥 ALTO' | '⚡ MEDIO' | '🧊 BAJO';
+  nivelInteraccion: 'ALTO' | 'MEDIO' | 'BAJO';
 };
 
 export default function RadarCentral() {
@@ -49,7 +49,6 @@ export default function RadarCentral() {
   const [solicitudes, setSolicitudes] = useState<any[]>([]);
   const [cargandoSolicitudes, setCargandoSolicitudes] = useState(true);
   const [tiemposSeleccionados, setTiemposSeleccionados] = useState<Record<string, string>>({});
-  // Para forzar la actualización del cronómetro cada minuto
   const [ticker, setTicker] = useState(0); 
 
   // ESTADOS PESTAÑA 2: RADAR INVENTARIO
@@ -66,7 +65,6 @@ export default function RadarCentral() {
 
   useEffect(() => {
     cargarDatos();
-    // Inicia un reloj interno para actualizar los tiempos de expiración cada 60 segundos
     const intervalo = setInterval(() => setTicker(t => t + 1), 60000);
     return () => clearInterval(intervalo);
   }, [filtroTiempo]);
@@ -78,7 +76,7 @@ export default function RadarCentral() {
   };
 
   // ==========================================
-  // LÓGICA PESTAÑA 1: SOLICITUDES VIP (MEJORADA CON TIEMPOS)
+  // LÓGICA PESTAÑA 1: SOLICITUDES VIP
   // ==========================================
   const cargarSolicitudes = async () => {
     setCargandoSolicitudes(true);
@@ -93,7 +91,6 @@ export default function RadarCentral() {
       if (errClientes) throw errClientes;
 
       if (clientesData && clientesData.length > 0) {
-        // Obtenemos los correos para buscar si tienen pase VIP en la tabla accesos_inventario
         const emails = clientesData.map(c => c.email?.toLowerCase().trim()).filter(Boolean);
         let mapaAccesos: Record<string, string> = {};
 
@@ -110,7 +107,6 @@ export default function RadarCentral() {
           }
         }
 
-        // Combinamos la información
         const solicitudesCompletas = clientesData.map(c => ({
           ...c,
           expira_en: c.email ? mapaAccesos[c.email.toLowerCase().trim()] : null
@@ -133,13 +129,13 @@ export default function RadarCentral() {
   const calcularTiempoRestante = (expiraEn?: string | null) => {
     if (!expiraEn) return { estado: 'sin_pase', texto: 'Sin pase generado' };
     const diff = new Date(expiraEn).getTime() - new Date().getTime();
-    if (diff <= 0) return { estado: 'caducado', texto: '⚠️ Caducado' };
+    if (diff <= 0) return { estado: 'caducado', texto: 'Caducado' };
     
     const horas = Math.floor(diff / 3600000);
     const min = Math.floor((diff % 3600000) / 60000);
     
-    if (horas > 800) return { estado: 'activo', texto: '⚡ Acceso Ilimitado' };
-    return { estado: 'activo', texto: `⏱️ Vence en ${horas}h ${min}m` };
+    if (horas > 800) return { estado: 'activo', texto: 'Acceso Ilimitado' };
+    return { estado: 'activo', texto: `Vence en ${horas}h ${min}m` };
   };
 
   const handleTiempoChange = (id: string, valor: string) => {
@@ -165,7 +161,6 @@ export default function RadarCentral() {
       const fechaExpiracion = new Date();
       fechaExpiracion.setHours(fechaExpiracion.getHours() + horasNum);
 
-      // 1. FORZAMOS EL RECIBO DE LA TABLA ACCESOS_INVENTARIO
       const { data: dataPase, error: errorPase } = await supabase
         .from('accesos_inventario')
         .upsert({ 
@@ -176,11 +171,10 @@ export default function RadarCentral() {
 
       if (errorPase) throw errorPase;
       if (!dataPase || dataPase.length === 0) {
-        alert("⚠️ ATENCIÓN: Supabase bloqueó la creación del Pase VIP por seguridad. Apaga el RLS de la tabla 'accesos_inventario'.");
+        alert("⚠️ ATENCIÓN: Supabase bloqueó la creación del Pase VIP por seguridad. Revisa los permisos.");
         return;
       }
 
-      // 2. FORZAMOS EL RECIBO DE LA TABLA CLIENTES
       const { data: dataCliente, error: errorCliente } = await supabase
         .from('clientes')
         .update({ estado_acceso: 'aprobado' }) 
@@ -188,21 +182,16 @@ export default function RadarCentral() {
         .select();
 
       if (errorCliente) throw errorCliente;
-      if (!dataCliente || dataCliente.length === 0) {
-        alert("⚠️ ATENCIÓN: Supabase bloqueó la actualización de estado por seguridad. Apaga el RLS de la tabla 'clientes'.");
-        return;
-      }
 
-      // SI LLEGÓ AQUÍ, FUE UN ÉXITO REAL. ACTUALIZAMOS LA PANTALLA.
       setSolicitudes((prev) => 
         prev.map((c) => c.id === cliente.id ? { ...c, estado_acceso: 'aprobado', expira_en: fechaExpiracion.toISOString() } : c)
       );
       
-      alert(`✅ ¡Listo! Acceso activado correctamente para ${cliente.nombres}.`);
+      alert(`Acceso activado correctamente para ${cliente.nombres}.`);
       
     } catch (error) {
       console.error("Error detallado al generar pase VIP:", error);
-      alert("❌ Hubo un error crítico de conexión con la base de datos.");
+      alert("Hubo un error de conexión con la base de datos.");
     }
   };
 
@@ -216,7 +205,7 @@ export default function RadarCentral() {
         body: JSON.stringify({ email: cliente.email, nombres: cliente.nombres, horas: horas }),
       });
       if (response.ok) {
-        alert("¡Correo corporativo enviado con éxito!");
+        alert("Correo corporativo enviado con éxito.");
       } else {
         alert("Hubo un problema de conexión con el servidor de correos de Hostinger.");
       }
@@ -246,8 +235,8 @@ export default function RadarCentral() {
     if (sesion.eventos.length === 0) return "Sin datos suficientes para analizar.";
     let analisis = "";
     if (sesion.minutos < 2) analisis += "Vistazo rápido. Exploró superficialmente. ";
-    else if (sesion.minutos < 10) analisis += "Exploración moderada. Navegó por el inventario. ";
-    else analisis += "Alto nivel de interés. Analizó el proyecto detalladamente. ";
+    else if (sesion.minutos < 10) analisis += "Exploración moderada. Navegó por el inventario de manera fluida. ";
+    else analisis += "Alto nivel de interés. Analizó el proyecto detalladamente y revisó varias opciones. ";
 
     const filtros = sesion.eventos.filter(e => e.accion === 'USO_FILTRO');
     if (filtros.length > 0) {
@@ -259,7 +248,7 @@ export default function RadarCentral() {
     else if (sesion.unidadesVistas.length > 1) analisis += `Comparó ${sesion.unidadesVistas.length} unidades (${sesion.unidadesVistas.join(', ')}). `;
 
     const reserva = sesion.eventos.some(e => e.accion === 'RESERVA_COMPLETADA');
-    if (reserva) analisis += "🎯 ¡ALERTA DE CIERRE! Completó un bloqueo web. ";
+    if (reserva) analisis += "Alerta de Cierre: Completó un bloqueo web de forma autónoma. ";
 
     return analisis;
   };
@@ -270,7 +259,6 @@ export default function RadarCentral() {
       const { data } = await supabase
         .from('tracking_inventario')
         .select('*')
-        // 👇 AQUÍ AÑADIMOS DESCARGA_BROCHURE PARA OCULTARLO DEL INVENTARIO
         .not('accion', 'in', '("SOLICITUD_ACCESO_VIP","ABRIO_CALENDLY","VISITA_LANDING","ABRIO_FORMULARIO","CLIC_WHATSAPP","REGISTRO_COMPLETADO","CLIC_DISPONIBILIDAD","DESCARGA_BROCHURE")')
         .not('accion', 'like', 'SCROLL_%')
         .not('accion', 'like', 'VIO_%')
@@ -335,7 +323,7 @@ export default function RadarCentral() {
   };
 
   // ==========================================
-  // LÓGICA PESTAÑA 3: ACTIVIDAD WEB (LANDING)
+  // LÓGICA PESTAÑA 3: ACTIVIDAD WEB
   // ==========================================
   const PESOS_EVENTOS: Record<string, number> = {
     'VISITA_LANDING': 1,
@@ -388,7 +376,7 @@ export default function RadarCentral() {
           tiempoAcumuladoMin: 0,
           score: 0,
           fuentePrincipal: ev.metadata?.utm_source || ev.metadata?.referrer || 'Directo',
-          nivelInteraccion: '🧊 BAJO'
+          nivelInteraccion: 'BAJO'
         });
       }
 
@@ -417,9 +405,9 @@ export default function RadarCentral() {
       v.tiempoAcumuladoMin = Math.round(minAcumulados);
       if (v.sesiones.size > 1) v.score += 5; 
 
-      if (v.score >= 20) v.nivelInteraccion = '🔥 ALTO';
-      else if (v.score >= 8) v.nivelInteraccion = '⚡ MEDIO';
-      else v.nivelInteraccion = '🧊 BAJO';
+      if (v.score >= 20) v.nivelInteraccion = 'ALTO';
+      else if (v.score >= 8) v.nivelInteraccion = 'MEDIO';
+      else v.nivelInteraccion = 'BAJO';
 
       v.eventos.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       return v;
@@ -433,7 +421,7 @@ export default function RadarCentral() {
     const unicos = visitantesAgrupados.length;
     const totalSesiones = visitantesAgrupados.reduce((acc, v) => acc + v.sesiones.size, 0);
     const recurrentes = visitantesAgrupados.filter(v => v.sesiones.size > 1).length;
-    const altoInteres = visitantesAgrupados.filter(v => v.nivelInteraccion === '🔥 ALTO').length;
+    const altoInteres = visitantesAgrupados.filter(v => v.nivelInteraccion === 'ALTO').length;
     const conversiones = visitantesAgrupados.filter(v => v.email !== null).length;
     
     const funnel = {
@@ -448,73 +436,85 @@ export default function RadarCentral() {
 
 
   return (
-    <div className="p-6 md:p-10 max-w-7xl mx-auto bg-[#F4F4F4] min-h-screen font-sans">
+    <div className="p-4 md:p-8 w-full max-w-7xl mx-auto bg-[#dce3eb] min-h-screen font-sans text-[#415364]">
       
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
+      {/* ENCABEZADO */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4 border-b border-[#415364]/10 pb-6">
         <div>
-          <h1 className="text-3xl font-light text-neutral-900 tracking-tight">Centro de Mando Digital</h1>
-          <p className="text-sm text-neutral-500 mt-1">Control de accesos VIP y monitoreo de actividad en tiempo real.</p>
+          <span className="text-[10px] font-bold tracking-widest text-[#ea0029] uppercase">Analítica y Accesos</span>
+          <h1 className="text-3xl md:text-4xl font-bold text-[#415364] tracking-tight mt-1">Radar Digital</h1>
+          <p className="text-sm text-[#415364]/70 mt-1">Monitoreo de actividad web y gestión de accesos exclusivos al inventario.</p>
         </div>
         <button 
           onClick={cargarDatos}
-          className="bg-white border border-neutral-200 text-neutral-700 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-neutral-100 transition-colors shadow-sm flex items-center gap-2"
+          className="bg-white border border-[#415364]/20 text-[#415364] px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-[#415364]/5 transition-colors shadow-sm flex items-center gap-2"
         >
-          ↻ Refrescar Datos
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+          Refrescar Datos
         </button>
       </div>
 
-      <div className="flex overflow-x-auto space-x-1 bg-white p-1 rounded-xl shadow-sm border border-neutral-200 mb-8 w-fit">
+      {/* PESTAÑAS (TABS) */}
+      <div className="flex overflow-x-auto bg-[#dce3eb]/50 p-1.5 rounded-xl shadow-inner border border-[#415364]/10 mb-8 w-fit custom-scrollbar">
         <button 
           onClick={() => setPestañaActiva('solicitudes')}
-          className={`whitespace-nowrap px-6 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${
-            pestañaActiva === 'solicitudes' ? 'bg-[#21242E] text-white shadow' : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
+          className={`whitespace-nowrap px-6 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+            pestañaActiva === 'solicitudes' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'
           }`}
         >
-          🎯 Solicitudes VIP
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+          Pases VIP
           {solicitudes.filter(s => calcularTiempoRestante(s.expira_en).estado !== 'activo').length > 0 && (
-            <span className="bg-[#964B36] text-white text-[10px] px-2 py-0.5 rounded-full">
+            <span className="bg-[#ea0029] text-white text-[9px] px-2 py-0.5 rounded-md ml-1">
               {solicitudes.filter(s => calcularTiempoRestante(s.expira_en).estado !== 'activo').length}
             </span>
           )}
         </button>
         <button 
           onClick={() => setPestañaActiva('inventario')}
-          className={`whitespace-nowrap px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${
-            pestañaActiva === 'inventario' ? 'bg-[#21242E] text-white shadow' : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
+          className={`whitespace-nowrap px-6 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+            pestañaActiva === 'inventario' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'
           }`}
         >
-          👀 Radar Inventario
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          Radar de Unidades
         </button>
         <button 
           onClick={() => setPestañaActiva('web')}
-          className={`whitespace-nowrap px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${
-            pestañaActiva === 'web' ? 'bg-[#21242E] text-white shadow' : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
+          className={`whitespace-nowrap px-6 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+            pestañaActiva === 'web' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'
           }`}
         >
-          🌐 Actividad Web
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+          Trazabilidad Web
         </button>
       </div>
 
+      {/* ========================================================= */}
+      {/* PESTAÑA 1: SOLICITUDES VIP */}
+      {/* ========================================================= */}
       {pestañaActiva === 'solicitudes' && (
-        <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden animate-in fade-in slide-in-from-bottom-2">
-          <div className="px-6 py-5 border-b border-neutral-100 flex justify-between items-center bg-neutral-50/50">
-            <h3 className="font-bold text-neutral-800">Accesos Web y Control VIP</h3>
+        <div className="bg-white rounded-2xl shadow-sm border border-neutral-200/60 overflow-hidden animate-in fade-in slide-in-from-bottom-2">
+          <div className="px-6 py-5 border-b border-neutral-100 flex justify-between items-center bg-[#21242E]">
+            <h3 className="text-sm font-bold text-white tracking-widest uppercase flex items-center gap-2">
+              Gestión de Accesos al Inventario
+            </h3>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-neutral-600">
-              <thead className="bg-white text-neutral-400 text-xs uppercase tracking-wider border-b">
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left text-sm text-[#415364]">
+              <thead className="bg-neutral-50/50 text-[#415364]/60 text-[10px] uppercase tracking-widest border-b border-neutral-100">
                 <tr>
-                  <th className="px-6 py-4 font-medium">Cliente</th>
-                  <th className="px-6 py-4 font-medium">Estado del Pase VIP</th>
-                  <th className="px-6 py-4 font-medium">Contacto</th>
-                  <th className="px-6 py-4 font-medium text-right">Gestión Rápida</th>
+                  <th className="px-6 py-4 font-bold">Inversionista</th>
+                  <th className="px-6 py-4 font-bold">Estado del Pase</th>
+                  <th className="px-6 py-4 font-bold">Contacto</th>
+                  <th className="px-6 py-4 font-bold text-right">Gestión Rápida</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
                 {cargandoSolicitudes ? (
-                  <tr><td colSpan={4} className="px-6 py-10 text-center text-neutral-400">Cargando datos en vivo...</td></tr>
+                  <tr><td colSpan={4} className="px-6 py-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">Cargando datos en vivo...</td></tr>
                 ) : solicitudes.length === 0 ? (
-                  <tr><td colSpan={4} className="px-6 py-10 text-center text-neutral-400 font-medium">No hay registros desde la web.</td></tr>
+                  <tr><td colSpan={4} className="px-6 py-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">No hay solicitudes pendientes.</td></tr>
                 ) : (
                   solicitudes.map((cliente) => {
                     const statusTiempo = calcularTiempoRestante(cliente.expira_en);
@@ -522,52 +522,52 @@ export default function RadarCentral() {
                     const caducado = statusTiempo.estado === 'caducado';
 
                     return (
-                      <tr key={cliente.id} className={`transition-colors ${activo ? 'bg-green-50/20' : caducado ? 'bg-red-50/20' : 'hover:bg-neutral-50/50'}`}>
+                      <tr key={cliente.id} className={`transition-colors ${activo ? 'bg-green-50/10' : caducado ? 'bg-[#ea0029]/5' : 'hover:bg-[#dce3eb]/30'}`}>
                         <td className="px-6 py-4">
-                          <div className="font-bold text-neutral-900">{cliente.nombres}</div>
-                          <div className="text-[10px] text-neutral-400">Registrado el {new Date(cliente.created_at).toLocaleDateString('es-EC')}</div>
+                          <div className="font-bold text-[#415364]">{cliente.nombres}</div>
+                          <div className="text-[10px] text-[#415364]/50 mt-0.5">Ingresó: {new Date(cliente.created_at).toLocaleDateString('es-EC')}</div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className={`inline-flex items-center text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide border ${
-                            activo ? 'bg-green-100 text-green-800 border-green-200' : 
-                            caducado ? 'bg-red-100 text-red-800 border-red-200' : 
-                            'bg-neutral-100 text-neutral-600 border-neutral-200'
+                          <div className={`inline-flex items-center text-[9px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider border ${
+                            activo ? 'bg-green-50 text-green-700 border-green-200' : 
+                            caducado ? 'bg-[#ea0029]/10 text-[#ea0029] border-[#ea0029]/20' : 
+                            'bg-[#dce3eb]/50 text-[#415364]/60 border-[#415364]/10'
                           }`}>
                             {statusTiempo.texto}
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="text-neutral-900 font-mono text-xs">{cliente.email}</div>
-                          <div className="text-neutral-500">{cliente.telefono}</div>
+                          <div className="text-[#415364] font-mono text-[11px] font-medium">{cliente.email}</div>
+                          <div className="text-[#415364]/60 font-mono text-[10px]">{cliente.telefono}</div>
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <select 
-                              className="bg-white border border-neutral-200 text-neutral-700 rounded-lg text-[11px] p-2 focus:outline-none focus:border-[#964B36] font-bold"
+                              className="bg-white border border-[#415364]/20 text-[#415364] rounded-lg text-[10px] p-2 focus:outline-none focus:border-[#ea0029] font-bold outline-none"
                               value={tiemposSeleccionados[cliente.id] || '24'}
                               onChange={(e) => handleTiempoChange(cliente.id, e.target.value)}
                             >
-                              <option value="2">2 horas</option>
-                              <option value="12">12 horas</option>
-                              <option value="24">24 horas</option>
-                              <option value="48">48 horas</option>
+                              <option value="2">2 hrs</option>
+                              <option value="12">12 hrs</option>
+                              <option value="24">24 hrs</option>
+                              <option value="48">48 hrs</option>
                               <option value="999">Ilimitado</option>
                             </select>
                             
                             <button 
                               onClick={() => aprobarAcceso(cliente)} 
-                              className={`px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm text-white ${
-                                activo ? 'bg-[#D1C292] hover:bg-[#bfae7e]' : 'bg-neutral-800 hover:bg-black'
+                              className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm text-white ${
+                                activo ? 'bg-[#415364] hover:bg-[#21242E]' : 'bg-[#ea0029] hover:bg-[#c90022]'
                               }`}
                             >
-                              {activo ? '↻ Renovar' : 'Aprobar'}
+                              {activo ? 'Renovar' : 'Aprobar'}
                             </button>
 
-                            <button onClick={() => enviarCorreo(cliente)} className="bg-[#964B36] text-white hover:bg-[#7d3e2c] px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm" title="Enviar correo de confirmación">
-                              ✉️
+                            <button onClick={() => enviarCorreo(cliente)} className="bg-[#dce3eb]/50 text-[#415364] hover:bg-[#415364]/10 border border-[#415364]/10 px-3 py-2 rounded-lg transition-colors shadow-sm flex items-center justify-center" title="Enviar Email">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                             </button>
-                            <button onClick={() => abrirWhatsApp(cliente.telefono, cliente.nombres)} className="bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors" title="Escribir por WhatsApp">
-                              💬
+                            <button onClick={() => abrirWhatsApp(cliente.telefono, cliente.nombres)} className="bg-[#25D366]/10 border border-[#25D366]/30 text-[#1DA851] hover:bg-[#25D366]/20 px-3 py-2 rounded-lg transition-colors flex items-center justify-center" title="Escribir por WhatsApp">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
                             </button>
                           </div>
                         </td>
@@ -585,84 +585,86 @@ export default function RadarCentral() {
       {/* PESTAÑA 2: RADAR INVENTARIO */}
       {/* ========================================================= */}
       {pestañaActiva === 'inventario' && (
-        <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2">
+        <div className="bg-white border border-neutral-200/60 rounded-2xl shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2">
           {cargandoRadar && sesiones.length === 0 ? (
-            <div className="p-10 text-center text-neutral-500">Cargando radar...</div>
+            <div className="p-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">Cargando lecturas del radar...</div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-neutral-100 text-neutral-500 border-b border-neutral-200">
-                    <th className="p-4 text-[10px] uppercase tracking-widest font-bold">Prospecto</th>
-                    <th className="p-4 text-[10px] uppercase tracking-widest font-bold">Tiempo</th>
-                    <th className="p-4 text-[10px] uppercase tracking-widest font-bold">Unidades</th>
-                    <th className="p-4 text-[10px] uppercase tracking-widest font-bold">Último Movimiento</th>
-                    <th className="p-4 text-[10px] uppercase tracking-widest font-bold text-center">Acción</th>
+                  <tr className="bg-[#21242E] text-white">
+                    <th className="p-5 text-[10px] uppercase tracking-widest font-bold">Prospecto Monitorizado</th>
+                    <th className="p-5 text-[10px] uppercase tracking-widest font-bold">Estadía</th>
+                    <th className="p-5 text-[10px] uppercase tracking-widest font-bold">Inventario Visto</th>
+                    <th className="p-5 text-[10px] uppercase tracking-widest font-bold">Última Acción</th>
+                    <th className="p-5 text-[10px] uppercase tracking-widest font-bold text-center">Trazabilidad</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-neutral-100">
                   {sesiones.map((sesion) => (
                     <React.Fragment key={sesion.idSesion}>
-                      <tr className="border-b border-neutral-100 hover:bg-neutral-50 transition-colors">
-                        <td className="p-4">
-                          <span className="font-bold text-neutral-900 block text-sm">
+                      <tr className="hover:bg-[#dce3eb]/30 transition-colors">
+                        <td className="p-5">
+                          <span className="font-bold text-[#415364] flex items-center gap-1.5 text-sm">
                             {sesion.nombre ? (
-                              <>{sesion.nombre} <span className="text-[10px] text-green-600 ml-1" title="Registrado en CRM">✓</span></>
-                            ) : ( 'Prospecto Anónimo' )}
+                              <>{sesion.nombre} <svg className="w-3.5 h-3.5 text-[#1DA851]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg></>
+                            ) : ( 'Visitante Anónimo' )}
                           </span>
-                          <span className="text-[10px] text-neutral-500 font-mono block mt-0.5">{sesion.email}</span>
-                          <span className="text-[9px] text-neutral-400 mt-1.5 block">
+                          <span className="text-[10px] text-[#415364]/60 font-mono block mt-1">{sesion.email}</span>
+                          <span className="text-[9px] text-[#415364]/40 mt-1.5 block font-bold uppercase tracking-wider">
                             {new Date().getTime() - sesion.fin.getTime() > 86400000 
                               ? new Date(sesion.fin).toLocaleDateString('es-EC', {day: '2-digit', month:'short'}) 
                               : `Hace ${Math.round((new Date().getTime() - sesion.fin.getTime()) / 60000)} min`}
                           </span>
                         </td>
-                        <td className="p-4">
-                          <span className="bg-[#D1C292]/20 text-[#8A7A55] px-3 py-1 rounded-full text-xs font-bold">
+                        <td className="p-5">
+                          <span className="bg-[#dce3eb]/50 text-[#415364] border border-[#415364]/10 px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider">
                             {sesion.minutos === 0 ? '< 1 min' : `${sesion.minutos} min`}
                           </span>
                         </td>
-                        <td className="p-4">
-                          <div className="flex gap-1 flex-wrap">
+                        <td className="p-5">
+                          <div className="flex gap-1.5 flex-wrap">
                             {sesion.unidadesVistas.length > 0 ? (
                               sesion.unidadesVistas.map(u => (
-                                <span key={u} className="bg-neutral-100 border border-neutral-200 text-neutral-600 text-[10px] font-bold px-2 py-0.5 rounded">{u}</span>
+                                <span key={u} className="bg-white border border-[#415364]/20 text-[#415364] text-[9px] font-bold px-2 py-1 rounded-md shadow-sm">U-{u}</span>
                               ))
-                            ) : ( <span className="text-xs text-neutral-400">-</span> )}
+                            ) : ( <span className="text-xs text-[#415364]/30">-</span> )}
                           </div>
                         </td>
-                        <td className="p-4">
-                          <span className="text-sm text-neutral-600">{sesion.ultimaAccion}</span>
+                        <td className="p-5">
+                          <span className="text-xs font-medium text-[#415364]/80">{sesion.ultimaAccion}</span>
                         </td>
-                        <td className="p-4 text-center">
-                          <button onClick={() => setSesionExpandida(sesionExpandida === sesion.idSesion ? null : sesion.idSesion)} className="text-xs font-bold text-[#B94A36] hover:underline uppercase tracking-wider">
+                        <td className="p-5 text-center">
+                          <button onClick={() => setSesionExpandida(sesionExpandida === sesion.idSesion ? null : sesion.idSesion)} className="text-[10px] font-bold text-[#ea0029] hover:text-[#c90022] bg-[#ea0029]/10 px-3 py-1.5 rounded-lg uppercase tracking-widest transition-colors">
                             {sesionExpandida === sesion.idSesion ? 'Ocultar' : 'Detalles'}
                           </button>
                         </td>
                       </tr>
                       
                       {sesionExpandida === sesion.idSesion && (
-                        <tr className="bg-neutral-50 border-b border-neutral-200 shadow-inner">
-                          <td colSpan={5} className="p-6">
-                            <div className="mb-6 bg-white border border-[#D1C292] rounded-xl p-4 shadow-sm flex items-start gap-4">
-                              <div className="bg-[#D1C292]/20 text-[#8A7A55] w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0">🧠</div>
+                        <tr className="bg-[#F9F7F5] shadow-inner">
+                          <td colSpan={5} className="p-6 md:p-8">
+                            <div className="mb-8 bg-white border border-[#ea0029]/20 rounded-2xl p-5 shadow-sm flex items-start gap-4">
+                              <div className="bg-[#ea0029]/10 text-[#ea0029] w-12 h-12 rounded-full flex items-center justify-center shrink-0">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                              </div>
                               <div>
-                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8A7A55] mb-1">Análisis Comercial Automático</h4>
-                                <p className="text-sm text-neutral-700 leading-relaxed font-medium">{generarAnalisisComercial(sesion)}</p>
+                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#ea0029] mb-1.5">Inteligencia Comercial</h4>
+                                <p className="text-sm text-[#415364] leading-relaxed font-medium">{generarAnalisisComercial(sesion)}</p>
                               </div>
                             </div>
-                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-4 pl-1">Línea de tiempo</h4>
-                            <div className="space-y-3 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-neutral-200 before:to-transparent">
+                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#415364]/40 mb-5 pl-2">Línea de tiempo de navegación</h4>
+                            <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-[#415364]/20 before:to-transparent">
                               {sesion.eventos.map((evento, i) => (
                                 <div key={i} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                                  <div className="flex items-center justify-center w-2 h-2 rounded-full border border-white bg-[#B94A36] shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow sm:mx-0 mx-4 z-10"></div>
-                                  <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white p-3 rounded-lg border border-neutral-200 shadow-sm flex flex-col hover:border-[#B94A36]/30 transition-colors">
-                                    <div className="flex items-center justify-between mb-1">
-                                      <span className="text-[10px] font-bold text-neutral-400">{new Date(evento.created_at).toLocaleTimeString('es-EC')}</span>
-                                      {evento.unidad_id && <span className="text-[9px] bg-neutral-100 text-neutral-500 font-bold px-1.5 py-0.5 rounded">Unidad {evento.unidad_id}</span>}
+                                  <div className="flex items-center justify-center w-2.5 h-2.5 rounded-full border-[2px] border-white bg-[#ea0029] shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm sm:mx-0 mx-4 z-10"></div>
+                                  <div className="w-[calc(100%-4rem)] md:w-[calc(50%-3rem)] bg-white p-4 rounded-xl border border-[#415364]/10 shadow-sm flex flex-col hover:border-[#ea0029]/40 hover:shadow-md transition-all">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <span className="text-[10px] font-bold text-[#415364]/50">{new Date(evento.created_at).toLocaleTimeString('es-EC')}</span>
+                                      {evento.unidad_id && <span className="text-[9px] bg-[#dce3eb]/50 text-[#415364] border border-[#415364]/10 font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">Unidad {evento.unidad_id}</span>}
                                     </div>
-                                    <span className="text-sm font-medium text-neutral-800">{evento.accion.replace(/_/g, ' ')}</span>
-                                    <span className="text-xs text-neutral-500">{evento.detalle}</span>
+                                    <span className="text-xs font-bold text-[#415364]">{evento.accion.replace(/_/g, ' ')}</span>
+                                    <span className="text-[11px] text-[#415364]/70 mt-1 font-medium">{evento.detalle}</span>
                                   </div>
                                 </div>
                               ))}
@@ -673,7 +675,7 @@ export default function RadarCentral() {
                     </React.Fragment>
                   ))}
                   {sesiones.length === 0 && !cargandoRadar && (
-                    <tr><td colSpan={5} className="p-8 text-center text-neutral-400">Aún no hay actividad registrada en el inventario.</td></tr>
+                    <tr><td colSpan={5} className="p-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">Aún no hay actividad registrada en el inventario.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -688,129 +690,143 @@ export default function RadarCentral() {
       {pestañaActiva === 'web' && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
           
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-2 bg-white w-fit ml-auto p-1.5 rounded-xl shadow-sm border border-neutral-200/60">
             {['hoy', '7d', '30d'].map(f => (
               <button 
                 key={f} 
                 onClick={() => setFiltroTiempo(f)}
-                className={`px-4 py-2 text-xs font-bold rounded-lg uppercase tracking-wider transition-colors ${filtroTiempo === f ? 'bg-[#D1C292] text-white' : 'bg-white text-neutral-500 border border-neutral-200'}`}
+                className={`px-4 py-2 text-[10px] font-bold rounded-lg uppercase tracking-wider transition-colors ${filtroTiempo === f ? 'bg-[#415364] text-white shadow-sm' : 'bg-transparent text-[#415364]/60 hover:text-[#415364]'}`}
               >
                 {f === 'hoy' ? 'Hoy' : f === '7d' ? '7 Días' : '30 Días'}
               </button>
             ))}
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm">
-              <span className="text-[10px] uppercase font-bold text-neutral-400 tracking-widest">Visitantes Únicos</span>
-              <div className="text-3xl font-light text-neutral-900 mt-1">{metricas.unicos}</div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-5">
+            <div className="bg-white p-5 rounded-2xl border border-neutral-200/60 shadow-sm transition-transform hover:-translate-y-1">
+              <span className="text-[9px] uppercase font-bold text-[#415364]/50 tracking-widest">Visitantes Únicos</span>
+              <div className="text-3xl font-light text-[#415364] mt-1">{metricas.unicos}</div>
             </div>
-            <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm">
-              <span className="text-[10px] uppercase font-bold text-neutral-400 tracking-widest">Sesiones</span>
-              <div className="text-3xl font-light text-neutral-900 mt-1">{metricas.totalSesiones}</div>
+            <div className="bg-white p-5 rounded-2xl border border-neutral-200/60 shadow-sm transition-transform hover:-translate-y-1">
+              <span className="text-[9px] uppercase font-bold text-[#415364]/50 tracking-widest">Sesiones</span>
+              <div className="text-3xl font-light text-[#415364] mt-1">{metricas.totalSesiones}</div>
             </div>
-            <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm">
-              <span className="text-[10px] uppercase font-bold text-neutral-400 tracking-widest">Recurrentes</span>
-              <div className="text-3xl font-light text-neutral-900 mt-1">{metricas.recurrentes}</div>
+            <div className="bg-white p-5 rounded-2xl border border-neutral-200/60 shadow-sm transition-transform hover:-translate-y-1">
+              <span className="text-[9px] uppercase font-bold text-[#415364]/50 tracking-widest">Recurrentes</span>
+              <div className="text-3xl font-light text-[#415364] mt-1">{metricas.recurrentes}</div>
             </div>
-            <div className="bg-[#21242E] text-white p-5 rounded-2xl shadow-sm">
-              <span className="text-[10px] uppercase font-bold text-[#D1C292] tracking-widest">Alta Intención</span>
+            <div className="bg-[#21242E] text-white p-5 rounded-2xl shadow-md transition-transform hover:-translate-y-1">
+              <span className="text-[9px] uppercase font-bold text-white/50 tracking-widest flex items-center gap-1.5">
+                <svg className="w-3 h-3 text-[#ea0029]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                Alta Intención
+              </span>
               <div className="text-3xl font-light mt-1">{metricas.altoInteres}</div>
             </div>
-            <div className="bg-[#964B36] text-white p-5 rounded-2xl shadow-sm">
-              <span className="text-[10px] uppercase font-bold text-white/70 tracking-widest">Registros (Leads)</span>
-              <div className="text-3xl font-light mt-1">{metricas.conversiones}</div>
+            <div className="bg-[#ea0029] text-white p-5 rounded-2xl shadow-md transition-transform hover:-translate-y-1">
+              <span className="text-[9px] uppercase font-bold text-white/70 tracking-widest">Leads (Registros)</span>
+              <div className="text-3xl font-light mt-1 font-bold">{metricas.conversiones}</div>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4 text-center">
+          <div className="bg-white p-6 md:p-8 rounded-2xl border border-neutral-200/60 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 text-center">
             <div className="flex-1">
-              <div className="text-2xl font-light text-neutral-900">{metricas.funnel.visitas}</div>
-              <div className="text-[10px] font-bold uppercase text-neutral-400 tracking-widest">Visitas</div>
+              <div className="text-3xl font-light text-[#415364]">{metricas.funnel.visitas}</div>
+              <div className="text-[10px] font-bold uppercase text-[#415364]/50 tracking-widest mt-1">Visitas Web</div>
             </div>
-            <div className="text-[#D1C292]">→</div>
-            <div className="flex-1">
-              <div className="text-2xl font-light text-neutral-900">{metricas.funnel.scroll50}</div>
-              <div className="text-[10px] font-bold uppercase text-neutral-400 tracking-widest">Scroll 50%</div>
+            <div className="hidden md:block text-[#415364]/20">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
             </div>
-            <div className="text-[#D1C292]">→</div>
             <div className="flex-1">
-              <div className="text-2xl font-light text-[#964B36]">{metricas.funnel.intentosContacto}</div>
-              <div className="text-[10px] font-bold uppercase text-neutral-400 tracking-widest">Intento de Contacto</div>
-              <div className="text-[8px] text-neutral-400 mt-1">(WhatsApp, Calendly o VIP)</div>
+              <div className="text-3xl font-light text-[#415364]">{metricas.funnel.scroll50}</div>
+              <div className="text-[10px] font-bold uppercase text-[#415364]/50 tracking-widest mt-1">Navegación +50%</div>
             </div>
-            <div className="text-[#D1C292]">→</div>
+            <div className="hidden md:block text-[#415364]/20">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
+            </div>
             <div className="flex-1">
-              <div className="text-2xl font-light text-green-600">{metricas.funnel.registros}</div>
-              <div className="text-[10px] font-bold uppercase text-neutral-400 tracking-widest">Registrados</div>
+              <div className="text-3xl font-bold text-[#415364]">{metricas.funnel.intentosContacto}</div>
+              <div className="text-[10px] font-bold uppercase text-[#415364]/70 tracking-widest mt-1">Intento Contacto</div>
+              <div className="text-[8px] text-[#415364]/40 mt-1 font-medium">(WhatsApp o Accesos)</div>
+            </div>
+            <div className="hidden md:block text-[#ea0029]/30">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+            </div>
+            <div className="flex-1 bg-[#ea0029]/5 p-3 rounded-xl border border-[#ea0029]/10">
+              <div className="text-3xl font-bold text-[#ea0029]">{metricas.funnel.registros}</div>
+              <div className="text-[10px] font-bold uppercase text-[#ea0029]/70 tracking-widest mt-1">Conversiones</div>
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
+          <div className="bg-white rounded-2xl border border-neutral-200/60 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-left">
-                <thead className="bg-neutral-50 border-b border-neutral-200">
+                <thead className="bg-[#21242E] border-b border-neutral-200">
                   <tr>
-                    <th className="p-4 text-[10px] uppercase font-bold text-neutral-500 tracking-widest">Identidad / Estado</th>
-                    <th className="p-4 text-[10px] uppercase font-bold text-neutral-500 tracking-widest">Comportamiento</th>
-                    <th className="p-4 text-[10px] uppercase font-bold text-neutral-500 tracking-widest">Fuente</th>
-                    <th className="p-4 text-[10px] uppercase font-bold text-neutral-500 tracking-widest">Nivel de Intención</th>
-                    <th className="p-4 text-center text-[10px] uppercase font-bold text-neutral-500 tracking-widest">Acción</th>
+                    <th className="p-5 text-[9px] uppercase font-bold text-white tracking-widest">Identidad de Sesión</th>
+                    <th className="p-5 text-[9px] uppercase font-bold text-white tracking-widest">Comportamiento</th>
+                    <th className="p-5 text-[9px] uppercase font-bold text-white tracking-widest">Fuente</th>
+                    <th className="p-5 text-[9px] uppercase font-bold text-white tracking-widest">Score / Intención</th>
+                    <th className="p-5 text-center text-[9px] uppercase font-bold text-white tracking-widest">Análisis</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
                   {cargandoWeb ? (
-                    <tr><td colSpan={5} className="p-10 text-center text-neutral-400">Analizando huellas digitales...</td></tr>
+                    <tr><td colSpan={5} className="p-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">Analizando huellas digitales...</td></tr>
                   ) : visitantesAgrupados.map((v) => (
                     <React.Fragment key={v.visitor_id}>
-                      <tr className="hover:bg-neutral-50 transition-colors">
-                        <td className="p-4">
-                          <div className="font-bold text-sm text-neutral-900">
+                      <tr className="hover:bg-[#dce3eb]/30 transition-colors">
+                        <td className="p-5">
+                          <div className="font-bold text-sm text-[#415364]">
                             {v.email ? (
-                              <span className="text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200">✓ {v.email}</span>
+                              <span className="text-green-700 bg-green-50 px-2.5 py-1 rounded-md border border-green-200 text-xs">✓ {v.email}</span>
                             ) : (
                               `Anónimo #${v.visitor_id.substring(0,6)}`
                             )}
                           </div>
-                          <div className="text-[10px] text-neutral-400 mt-2">Última act: {v.ultimaActividad.toLocaleString('es-EC')}</div>
+                          <div className="text-[10px] text-[#415364]/50 mt-2 font-medium">Últ. Act: {v.ultimaActividad.toLocaleString('es-EC')}</div>
                         </td>
-                        <td className="p-4">
-                          <div className="text-xs font-medium text-neutral-700">{v.sesiones.size} Sesiones · {v.tiempoAcumuladoMin} min</div>
-                          <div className="text-[10px] text-neutral-400 mt-1">{v.eventos.length} Interacciones registradas</div>
+                        <td className="p-5">
+                          <div className="text-xs font-bold text-[#415364]">{v.sesiones.size} Sesiones · {v.tiempoAcumuladoMin} min</div>
+                          <div className="text-[10px] text-[#415364]/50 mt-1.5 font-medium">{v.eventos.length} interacciones</div>
                         </td>
-                        <td className="p-4">
-                          <span className="text-xs bg-neutral-100 px-2 py-1 rounded text-neutral-600 font-mono">{v.fuentePrincipal}</span>
+                        <td className="p-5">
+                          <span className="text-[10px] bg-[#dce3eb]/50 border border-[#415364]/10 px-2.5 py-1.5 rounded-md text-[#415364] font-mono font-bold">{v.fuentePrincipal}</span>
                         </td>
-                        <td className="p-4">
-                          <span className={`text-xs font-bold px-2 py-1 rounded ${v.nivelInteraccion === '🔥 ALTO' ? 'bg-red-50 text-red-600' : v.nivelInteraccion === '⚡ MEDIO' ? 'bg-yellow-50 text-yellow-600' : 'bg-blue-50 text-blue-600'}`}>
+                        <td className="p-5">
+                          <span className={`text-[10px] font-bold px-2.5 py-1.5 rounded-md tracking-wider flex w-fit items-center gap-1.5 ${
+                            v.nivelInteraccion === 'ALTO' ? 'bg-[#ea0029]/10 text-[#ea0029] border border-[#ea0029]/20' : 
+                            v.nivelInteraccion === 'MEDIO' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 
+                            'bg-[#415364]/5 text-[#415364]/60 border border-[#415364]/10'
+                          }`}>
+                            {v.nivelInteraccion === 'ALTO' && <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>}
                             {v.nivelInteraccion} ({v.score} pts)
                           </span>
                         </td>
-                        <td className="p-4 text-center">
+                        <td className="p-5 text-center">
                           <button 
                             onClick={() => setVisitanteExpandido(visitanteExpandido === v.visitor_id ? null : v.visitor_id)}
-                            className="text-[10px] font-bold text-[#964B36] hover:underline uppercase tracking-widest bg-[#964B36]/10 px-3 py-1.5 rounded"
+                            className="text-[10px] font-bold text-[#415364] hover:text-white bg-[#415364]/10 hover:bg-[#415364] px-4 py-2 rounded-lg uppercase tracking-widest transition-colors"
                           >
-                            {visitanteExpandido === v.visitor_id ? 'Ocultar' : 'Ver Detalle'}
+                            {visitanteExpandido === v.visitor_id ? 'Ocultar' : 'Revisar'}
                           </button>
                         </td>
                       </tr>
 
                       {visitanteExpandido === v.visitor_id && (
-                        <tr className="bg-neutral-50 shadow-inner">
-                          <td colSpan={5} className="p-6">
-                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-4 pl-1">Historial del Visitante</h4>
-                            <div className="space-y-3 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-neutral-200">
+                        <tr className="bg-[#F9F7F5] shadow-inner">
+                          <td colSpan={5} className="p-6 md:p-8">
+                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#415364]/40 mb-5 pl-2">Huella de Eventos</h4>
+                            <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-[#415364]/10">
                               {v.eventos.map((evento) => (
                                 <div key={evento.id} className="relative flex items-center group">
-                                  <div className="flex items-center justify-center w-2 h-2 rounded-full border border-white bg-[#D1C292] z-10 ml-4 mr-4"></div>
-                                  <div className="bg-white p-3 rounded-lg border border-neutral-200 shadow-sm w-full md:w-1/2 flex justify-between items-center">
+                                  <div className="flex items-center justify-center w-2.5 h-2.5 rounded-full border-[2px] border-[#F9F7F5] bg-[#415364]/30 z-10 ml-4 mr-5"></div>
+                                  <div className="bg-white p-4 rounded-xl border border-[#415364]/10 shadow-sm w-full md:w-1/2 flex justify-between items-center hover:border-[#415364]/30 transition-colors">
                                     <div>
-                                      <span className="text-sm font-bold text-neutral-800">{evento.accion.replace(/_/g, ' ')}</span>
-                                      <span className="text-xs text-neutral-500 block">{evento.detalle}</span>
+                                      <span className="text-xs font-bold text-[#415364]">{evento.accion.replace(/_/g, ' ')}</span>
+                                      <span className="text-[10px] text-[#415364]/60 block mt-1 font-medium">{evento.detalle}</span>
                                     </div>
-                                    <span className="text-[10px] font-bold text-neutral-400 whitespace-nowrap">
-                                      {new Date(evento.created_at).toLocaleTimeString('es-EC')}
+                                    <span className="text-[10px] font-bold text-[#415364]/40 whitespace-nowrap bg-[#dce3eb]/30 px-2 py-1 rounded-md">
+                                      {new Date(evento.created_at).toLocaleTimeString('es-EC', {hour: '2-digit', minute:'2-digit'})}
                                     </span>
                                   </div>
                                 </div>
