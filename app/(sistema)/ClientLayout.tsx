@@ -7,11 +7,11 @@ import React from 'react';
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  // Lista de menús basada en tu estructura, ahora con SVGs premium en lugar de emojis
+  // Lista de menús con la ruta correcta para el Dashboard ( / )
   const menuItems = [
     { 
       name: 'Centro de Operaciones', 
-      path: '/inicio', 
+      path: '/', 
       icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
     },
     { 
@@ -71,7 +71,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         {/* NAVEGACIÓN */}
         <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto custom-scrollbar">
           {menuItems.map((item) => {
-            const isActive = pathname === item.path || (pathname === '/' && item.path === '/inicio');
+            // Lógica corregida para detectar la pestaña activa
+            const isActive = pathname === item.path;
             
             return (
               <Link 
@@ -83,7 +84,6 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
                     : 'text-neutral-400 hover:bg-white/5 hover:text-white'
                 }`}
               >
-                {/* Indicador de activo a la izquierda (la barrita roja) */}
                 {isActive && (
                   <div className="absolute left-4 w-1 h-5 bg-[#ea0029] rounded-r-full shadow-[0_0_8px_rgba(234,0,41,0.6)]"></div>
                 )}
@@ -116,17 +116,17 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
             </div>
           </div>
           
-          <button className="w-full flex items-center gap-3 px-4 py-2.5 text-neutral-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors text-[11px] font-bold uppercase tracking-wider">
+          <Link href="/inicio" className="w-full flex items-center gap-3 px-4 py-2.5 text-neutral-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors text-[11px] font-bold uppercase tracking-wider">
             <div className="w-2 h-2 bg-[#ea0029] rounded-sm"></div>
-            Salir del Sistema
-          </button>
+            Ver Landing Page
+          </Link>
         </div>
 
       </aside>
 
       {/* ÁREA DE CONTENIDO PRINCIPAL */}
       <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        {/* Header Móvil (Solo visible en pantallas pequeñas) */}
+        {/* Header Móvil */}
         <header className="md:hidden bg-[#1a1c23] text-white p-4 flex justify-between items-center shadow-md sticky top-0 z-30">
           <div className="flex flex-col">
             <span className="text-lg font-bold tracking-widest leading-none">KONKERI</span>
@@ -137,7 +137,6 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           </button>
         </header>
         
-        {/* Aquí se inyectan tus páginas (Dashboard, Clientes, etc.) */}
         <div className="flex-1 relative z-10">
           {children}
         </div>
