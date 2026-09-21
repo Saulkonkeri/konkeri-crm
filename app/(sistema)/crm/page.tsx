@@ -1,4 +1,3 @@
-// Actualizacion forzada para Vercel - CRM Premium Konkeri con Módulo de Email y Campañas Corregido
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -101,7 +100,6 @@ export default function CRMPage() {
   const [busquedaLlamada, setBusquedaLlamada] = useState('');
   const [mostrarOpcionesLlamada, setMostrarOpcionesLlamada] = useState(false);
 
-  // PLANTILLAS WHATSAPP
   const [plantillaMensaje, setPlantillaMensaje] = useState(
     "Hola {nombre}, le saluda Saúl Intriago de Arienzo Boutique Living. Recibí su solicitud de información y le comparto el brochure del proyecto. ¿A qué hora le viene bien que conversemos unos minutos?"
   );
@@ -109,13 +107,11 @@ export default function CRMPage() {
     "Hola {nombre}, le escribo de Arienzo Boutique Living. Hoy lanzamos un beneficio especial para elegir las mejores unidades. ¿Le gustaría que le envíe el inventario actualizado?"
   );
 
-  // PLANTILLAS CORREO (NUEVO)
   const [plantillaCorreoAsunto, setPlantillaCorreoAsunto] = useState("Información Exclusiva - Arienzo Boutique Living");
   const [plantillaCorreoCuerpo, setPlantillaCorreoCuerpo] = useState(
     "Hola {nombre},\n\nGracias por su interés en Arienzo Boutique Living. Adjunto la información detallada del proyecto para que pueda revisarla con calma.\n\nQuedo a su entera disposición para agendar una breve llamada y resolver cualquier inquietud.\n\nSaludos cordiales,\nSaúl Intriago\nKonkeri Real Estate"
   );
 
-  // ESTADOS VIP
   const [activandoVIP, setActivandoVIP] = useState(false);
   const [tiempoVIP, setTiempoVIP] = useState<number>(24);
 
@@ -350,7 +346,6 @@ export default function CRMPage() {
     return Array.from(setCiudades).sort();
   }, [clientes]);
 
-  // RESTAURACIÓN DE LA VARIABLE DE CAMPAÑAS
   const campanasDisponibles = useMemo(() => {
     const setCampanas = new Set<string>();
     clientes.forEach(c => { if (c.campana) setCampanas.add(c.campana.trim()); });
@@ -481,7 +476,6 @@ export default function CRMPage() {
     window.open(`https://wa.me/${num}${txt}`, '_blank');
   };
 
-  // FUNCIÓN PARA ENVIAR CORREO (NUEVA)
   const abrirCorreo = (cliente: Cliente) => {
     if (!cliente.email) { alert("Este cliente no tiene correo electrónico registrado."); return; }
     const asunto = encodeURIComponent(plantillaCorreoAsunto.replace('{nombre}', cliente.nombres));
@@ -506,7 +500,7 @@ export default function CRMPage() {
     mes: 'Últimos 30 Días'
   };
 
-  if (cargando) return <div className="flex min-h-screen items-center justify-center bg-[#dce3eb]"><p className="text-sm font-bold tracking-widest text-[#ea0029] uppercase animate-pulse">Sincronizando Radar...</p></div>;
+  if (cargando) return <div className="flex min-h-screen items-center justify-center bg-[#dce3eb]"><p className="text-sm font-bold tracking-widest text-[#ea0029] uppercase animate-pulse">Sincronizando CRM...</p></div>;
 
   return (
     <div className="min-h-screen bg-[#dce3eb] p-4 md:p-6 font-sans text-[#415364] flex flex-col h-screen overflow-hidden">
@@ -516,7 +510,7 @@ export default function CRMPage() {
         <div className="bg-white rounded-2xl border border-neutral-200/60 p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <span className="text-[10px] font-bold tracking-widest text-[#ea0029] uppercase">Gestión Comercial Arienzo</span>
-            <h1 className="text-2xl font-bold tracking-tight text-[#415364] mt-1">Radar de Leads</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[#415364] mt-1">CRM / Pipeline</h1>
           </div>
           
           <div className="flex bg-[#dce3eb]/50 p-1.5 rounded-xl border border-[#415364]/10">
@@ -920,8 +914,8 @@ export default function CRMPage() {
           <>
             <div className="p-6 bg-[#21242E] relative flex-shrink-0 shadow-md">
               <button onClick={() => setClienteSeleccionado(null)} className="absolute top-4 right-4 text-white/50 hover:text-white bg-white/10 rounded-full w-8 h-8 flex items-center justify-center transition-colors">✕</button>
-              <h2 className="text-xl font-bold text-white pr-8 leading-tight">
-                {clienteSeleccionado.tipo === 'cliente' && <span className="text-[#D1C292] mr-1" title="Inversionista KYC">👑</span>}
+              <h2 className="text-xl font-bold text-white pr-8 leading-tight flex items-center gap-2">
+                {clienteSeleccionado.tipo === 'cliente' && <svg className="w-5 h-5 text-[#D1C292]" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>}
                 {clienteSeleccionado.nombres} {clienteSeleccionado.apellidos}
               </h2>
               <div className="flex flex-wrap items-center gap-2 mt-3">
@@ -934,21 +928,25 @@ export default function CRMPage() {
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
               
-              {/* BOTONES DE CONTACTO DIRECTO (AHORA CON EMAIL) */}
+              {/* BOTONES DE CONTACTO DIRECTO */}
               <div className="bg-white p-4 rounded-xl border border-neutral-200/60 shadow-sm space-y-3">
                 <p className="text-[10px] font-bold text-[#415364]/60 uppercase tracking-widest border-b border-neutral-100 pb-2">Acciones de Contacto</p>
                 <div className="grid grid-cols-2 gap-2">
                   <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'bienvenida')} className="flex flex-col items-center justify-center gap-1 bg-[#25D366] hover:bg-[#1DA851] text-white py-2.5 rounded-xl transition shadow-sm border border-transparent">
-                    <span className="text-[11px] font-bold uppercase tracking-wider mt-1">👋 Welcome</span>
+                    <svg className="w-4 h-4 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span className="text-[11px] font-bold uppercase tracking-wider mt-0.5">Welcome</span>
                   </button>
                   <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'campana')} className="flex flex-col items-center justify-center gap-1 bg-[#128C7E] hover:bg-[#075E54] text-white py-2.5 rounded-xl transition shadow-sm border border-transparent">
-                    <span className="text-[11px] font-bold uppercase tracking-wider mt-1">📢 Campaña</span>
+                    <svg className="w-4 h-4 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path></svg>
+                    <span className="text-[11px] font-bold uppercase tracking-wider mt-0.5">Campaña</span>
                   </button>
                   <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'libre')} className="flex flex-col items-center justify-center gap-1 bg-white hover:bg-neutral-50 text-[#415364] py-2.5 rounded-xl transition shadow-sm border border-[#415364]/20">
-                    <span className="text-[11px] font-bold uppercase tracking-wider mt-1">💬 Chat Libre</span>
+                    <svg className="w-4 h-4 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                    <span className="text-[11px] font-bold uppercase tracking-wider mt-0.5">Chat Libre</span>
                   </button>
                   <button onClick={() => abrirCorreo(clienteSeleccionado)} className="flex flex-col items-center justify-center gap-1 bg-[#415364] hover:bg-[#21242E] text-white py-2.5 rounded-xl transition shadow-sm border border-transparent">
-                    <span className="text-[11px] font-bold uppercase tracking-wider mt-1">✉️ Enviar Correo</span>
+                    <svg className="w-4 h-4 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                    <span className="text-[11px] font-bold uppercase tracking-wider mt-0.5">Enviar Correo</span>
                   </button>
                 </div>
               </div>
@@ -970,14 +968,14 @@ export default function CRMPage() {
                 </div>
               </div>
 
-              {/* === PASE VIP CON OPCIÓN DE 2 HORAS === */}
+              {/* === PASE VIP === */}
               <div className="bg-white border border-[#D1C292] p-5 rounded-2xl shadow-sm relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-1.5 h-full bg-[#D1C292]"></div>
                 <h3 className="text-[11px] font-bold text-[#21242E] flex items-center gap-2 uppercase tracking-widest mb-1">
                   <svg className="w-4 h-4 text-[#D1C292]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
                   Pase VIP: Inventario
                 </h3>
-                <p className="text-[10px] text-[#415364]/70 leading-relaxed mb-3">Autoriza el email del prospecto para ver precios y planos arquitectónicos en la web.</p>
+                <p className="text-[10px] text-[#415364]/70 leading-relaxed mb-3">Autoriza el email del prospecto para ver precios y planos en la web.</p>
                 <div className="flex gap-2">
                   <select
                     value={tiempoVIP}
