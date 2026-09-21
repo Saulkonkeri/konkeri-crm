@@ -1,4 +1,4 @@
-// Actualizacion forzada para Vercel - CRM Premium Konkeri con Módulo de Email
+// Actualizacion forzada para Vercel - CRM Premium Konkeri con Módulo de Email y Campañas Corregido
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -117,7 +117,7 @@ export default function CRMPage() {
 
   // ESTADOS VIP
   const [activandoVIP, setActivandoVIP] = useState(false);
-  const [tiempoVIP, setTiempoVIP] = useState<number>(24); // Valor por defecto 24 horas
+  const [tiempoVIP, setTiempoVIP] = useState<number>(24);
 
   const estados = ['Interesado', 'Contactado', 'Cotizado', 'En Negociación', 'Reserva', 'Cierre (Ganado)', 'Descartado'];
   const origenes = ['Página Web / Landing Page', 'Referido / Directo', 'Llamada Telefónica', 'WhatsApp Orgánico', 'Instagram / Facebook', 'Meta Ads', 'Feria / Evento', 'Otro'];
@@ -151,7 +151,6 @@ export default function CRMPage() {
     }
   }, [clienteSeleccionado]);
 
-  // OTORGAR ACCESO VIP DINÁMICO
   const otorgarAccesoVIP = async (emailCliente?: string) => {
     if (!emailCliente) {
       alert("El prospecto no tiene un correo electrónico registrado. Actualiza sus datos primero.");
@@ -349,6 +348,13 @@ export default function CRMPage() {
     const setCiudades = new Set<string>();
     clientes.forEach(c => { if (c.ciudad_residencia) setCiudades.add(c.ciudad_residencia.trim()); });
     return Array.from(setCiudades).sort();
+  }, [clientes]);
+
+  // RESTAURACIÓN DE LA VARIABLE DE CAMPAÑAS
+  const campanasDisponibles = useMemo(() => {
+    const setCampanas = new Set<string>();
+    clientes.forEach(c => { if (c.campana) setCampanas.add(c.campana.trim()); });
+    return Array.from(setCampanas).sort();
   }, [clientes]);
 
   const handleDragStart = (e: React.DragEvent, clienteId: string) => { e.dataTransfer.setData('clienteId', clienteId); };
@@ -941,7 +947,6 @@ export default function CRMPage() {
                   <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'libre')} className="flex flex-col items-center justify-center gap-1 bg-white hover:bg-neutral-50 text-[#415364] py-2.5 rounded-xl transition shadow-sm border border-[#415364]/20">
                     <span className="text-[11px] font-bold uppercase tracking-wider mt-1">💬 Chat Libre</span>
                   </button>
-                  {/* NUEVO BOTON EMAIL */}
                   <button onClick={() => abrirCorreo(clienteSeleccionado)} className="flex flex-col items-center justify-center gap-1 bg-[#415364] hover:bg-[#21242E] text-white py-2.5 rounded-xl transition shadow-sm border border-transparent">
                     <span className="text-[11px] font-bold uppercase tracking-wider mt-1">✉️ Enviar Correo</span>
                   </button>
