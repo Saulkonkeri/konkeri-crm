@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import React from 'react';
+import React, { useState } from 'react';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const [menuAbierto, setMenuAbierto] = useState(false);
 
   const menuItems = [
     { 
@@ -40,7 +41,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     },
     { 
       name: 'Registrar Operación', 
-      path: '/ventas', // <-- ¡AQUÍ ESTÁ LA CORRECCIÓN!
+      path: '/ventas', 
       icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
     },
     { 
@@ -56,10 +57,18 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   ];
 
   return (
-    <div className="flex h-screen bg-[#dce3eb] overflow-hidden font-sans">
+    <div className="flex h-screen bg-[#dce3eb] overflow-hidden font-sans relative">
       
+      {/* OVERLAY PARA CERRAR EL MENÚ MÓVIL AL TOCAR AFUERA */}
+      {menuAbierto && (
+        <div 
+          className="fixed inset-0 bg-[#21242E]/80 backdrop-blur-sm z-30 md:hidden transition-opacity"
+          onClick={() => setMenuAbierto(false)}
+        />
+      )}
+
       {/* SIDEBAR CORPORATIVO KONKERI */}
-      <aside className="w-[260px] bg-[#1a1c23] text-white flex-shrink-0 hidden md:flex flex-col border-r border-[#415364]/20 shadow-2xl relative z-20">
+      <aside className={`w-[260px] bg-[#1a1c23] text-white flex-shrink-0 flex flex-col border-r border-[#415364]/20 shadow-2xl fixed md:relative z-40 h-full transition-transform duration-300 ease-in-out ${menuAbierto ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         
         {/* LOGO AREA */}
         <div className="p-8 pb-4 flex flex-col">
@@ -76,6 +85,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
               <Link 
                 key={item.path} 
                 href={item.path}
+                onClick={() => setMenuAbierto(false)} 
                 className={`flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-200 group ${
                   isActive 
                     ? 'bg-transparent border border-[#ea0029] text-white' 
@@ -130,7 +140,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
             <span className="text-lg font-bold tracking-widest leading-none">KONKERI</span>
             <span className="text-[8px] tracking-[0.2em] text-[#ea0029]">CRM MOBILE</span>
           </div>
-          <button className="text-white p-2">
+          <button onClick={() => setMenuAbierto(true)} className="text-white p-2">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
           </button>
         </header>

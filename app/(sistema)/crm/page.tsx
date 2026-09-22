@@ -1,3 +1,4 @@
+// Actualizacion forzada para Vercel - CRM Mobile Horizontal
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -513,16 +514,16 @@ export default function CRMPage() {
             <h1 className="text-2xl font-bold tracking-tight text-[#415364] mt-1">CRM / Pipeline</h1>
           </div>
           
-          <div className="flex bg-[#dce3eb]/50 p-1.5 rounded-xl border border-[#415364]/10">
-            <button onClick={() => setVista('kanban')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-2 ${vista === 'kanban' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
+          <div className="flex bg-[#dce3eb]/50 p-1.5 rounded-xl border border-[#415364]/10 overflow-x-auto custom-scrollbar w-full md:w-auto">
+            <button onClick={() => setVista('kanban')} className={`flex-1 md:flex-auto px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 whitespace-nowrap ${vista === 'kanban' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path></svg>
               Tablero
             </button>
-            <button onClick={() => setVista('lista')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-2 ${vista === 'lista' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
+            <button onClick={() => setVista('lista')} className={`flex-1 md:flex-auto px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 whitespace-nowrap ${vista === 'lista' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
               Lista
             </button>
-            <button onClick={() => setVista('actividad')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-2 ${vista === 'actividad' ? 'bg-[#ea0029] text-white shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
+            <button onClick={() => setVista('actividad')} className={`flex-1 md:flex-auto px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 whitespace-nowrap ${vista === 'actividad' ? 'bg-[#ea0029] text-white shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
               Actividad
             </button>
@@ -579,11 +580,14 @@ export default function CRMPage() {
       <div className="w-full flex-1 min-h-0 overflow-hidden relative">
         
         {vista === 'kanban' && (
-          <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-7 gap-3 h-full overflow-y-auto pb-4 custom-scrollbar pr-1">
+          // =========================================================================
+          // FIX MOBILE: SE AGREGA flex, overflow-x-auto, snap-x PARA SCROLL HORIZONTAL
+          // =========================================================================
+          <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 h-full pb-4 custom-scrollbar px-1 items-start">
             {estados.map(estado => {
               const leads = clientesFiltrados.filter(c => c.estado === estado);
               return (
-                <div key={estado} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, estado)} className="bg-white/50 backdrop-blur-sm rounded-2xl p-2.5 flex flex-col h-full overflow-hidden border border-[#415364]/10 shadow-sm">
+                <div key={estado} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, estado)} className="w-[85vw] sm:w-[320px] md:w-[280px] lg:w-[22vw] xl:w-[280px] flex-shrink-0 snap-center bg-white/50 backdrop-blur-sm rounded-2xl p-2.5 flex flex-col h-full max-h-full overflow-hidden border border-[#415364]/10 shadow-sm transition-all">
                   <div className="flex justify-between items-center mb-3 px-1.5 flex-shrink-0">
                     <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#415364] truncate pr-2">{estado}</h3>
                     <span className="bg-[#415364] text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">{leads.length}</span>
@@ -671,7 +675,7 @@ export default function CRMPage() {
 
         {/* === VISTA 3: BITÁCORA MULTICANAL CON AGENDAMIENTO === */}
         {vista === 'actividad' && (
-          <div className="flex flex-col h-full gap-5">
+          <div className="flex flex-col h-full gap-5 overflow-y-auto">
             
             <div className="bg-white p-5 rounded-2xl border border-neutral-200/60 shadow-sm flex flex-col md:flex-row items-center justify-between flex-shrink-0 gap-4">
                <div>
@@ -1058,6 +1062,7 @@ export default function CRMPage() {
         )}
       </div>
 
+      {/* MODALES EXTRAS (NUEVO CLIENTE / PLANTILLAS / HISTORIAL) */}
       {mostrarModalNuevo && (
         <div className="fixed inset-0 bg-[#21242E]/80 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8">
@@ -1123,7 +1128,6 @@ export default function CRMPage() {
         </div>
       )}
 
-      {/* === NUEVO MODAL DE PLANTILLAS (INCLUYE EMAILS) === */}
       {mostrarModalPlantilla && (
         <div className="fixed inset-0 bg-[#21242E]/80 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
@@ -1131,7 +1135,6 @@ export default function CRMPage() {
             <p className="text-[11px] text-[#415364]/60 font-medium mb-6 pb-4 border-b border-[#415364]/10">Usa el código <strong className="text-[#ea0029] bg-[#ea0029]/10 px-1 py-0.5 rounded">{`{nombre}`}</strong> donde deba insertarse el nombre del cliente automáticamente.</p>
             
             <div className="space-y-6">
-              {/* Sección WhatsApp */}
               <div className="space-y-4">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-[#25D366] flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
@@ -1147,7 +1150,6 @@ export default function CRMPage() {
                 </div>
               </div>
 
-              {/* Sección Correo Electrónico */}
               <div className="space-y-4 pt-4 border-t border-[#415364]/10">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-[#415364] flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
