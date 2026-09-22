@@ -1,4 +1,3 @@
-// Actualizacion forzada para Vercel - CRM Mobile Horizontal
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -56,6 +55,24 @@ export default function CRMPage() {
   const [filtroPendientes, setFiltroPendientes] = useState(false);
 
   const [vista, setVista] = useState<'lista' | 'kanban' | 'actividad'>('kanban');
+
+  // === NUEVO ESTADO: ACORDEÓN PARA COLUMNAS MÓVIL ===
+  const [columnasExpandidas, setColumnasExpandidas] = useState<Record<string, boolean>>({
+    'Interesado': true,
+    'Contactado': true,
+    'Cotizado': false,
+    'En Negociación': false,
+    'Reserva': false,
+    'Cierre (Ganado)': false,
+    'Descartado': false
+  });
+
+  const toggleColumna = (estado: string) => {
+    setColumnasExpandidas(prev => ({
+      ...prev,
+      [estado]: !prev[estado]
+    }));
+  };
 
   const [mostrarModalNuevo, setMostrarModalNuevo] = useState(false);
   const [mostrarModalPlantilla, setMostrarModalPlantilla] = useState(false);
@@ -581,18 +598,34 @@ export default function CRMPage() {
         
         {vista === 'kanban' && (
           // =========================================================================
-          // FIX MOBILE: SE AGREGA flex, overflow-x-auto, snap-x PARA SCROLL HORIZONTAL
+          // NUEVO DISEÑO ACORDEÓN PARA MÓVIL Y SCROLL HORIZONTAL PARA ESCRITORIO
           // =========================================================================
-          <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 h-full pb-4 custom-scrollbar px-1 items-start">
+          <div className="flex flex-col md:flex-row md:overflow-x-auto md:snap-x gap-3 md:gap-4 h-full pb-4 custom-scrollbar px-1 items-start overflow-y-auto md:overflow-y-hidden">
             {estados.map(estado => {
               const leads = clientesFiltrados.filter(c => c.estado === estado);
+              const estaExpandida = columnasExpandidas[estado];
+
               return (
-                <div key={estado} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, estado)} className="w-[85vw] sm:w-[320px] md:w-[280px] lg:w-[22vw] xl:w-[280px] flex-shrink-0 snap-center bg-white/50 backdrop-blur-sm rounded-2xl p-2.5 flex flex-col h-full max-h-full overflow-hidden border border-[#415364]/10 shadow-sm transition-all">
-                  <div className="flex justify-between items-center mb-3 px-1.5 flex-shrink-0">
-                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#415364] truncate pr-2">{estado}</h3>
-                    <span className="bg-[#415364] text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">{leads.length}</span>
+                <div key={estado} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, estado)} 
+                     className={`w-full md:w-[280px] lg:w-[22vw] xl:w-[280px] flex-shrink-0 md:snap-center bg-white/50 backdrop-blur-sm rounded-2xl p-3 flex flex-col overflow-hidden border border-[#415364]/10 shadow-sm transition-all duration-300 ${estaExpandida ? 'max-h-[60vh] md:max-h-full md:h-full' : 'h-auto md:h-full'}`}>
+                  
+                  {/* HEADER ACORDEÓN */}
+                  <div 
+                    onClick={() => toggleColumna(estado)}
+                    className="flex justify-between items-center px-1.5 flex-shrink-0 cursor-pointer select-none"
+                  >
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#415364] truncate pr-2">{estado}</h3>
+                      <span className="bg-[#415364] text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">{leads.length}</span>
+                    </div>
+                    {/* Flecha solo visible en móvil para indicar que se puede colapsar */}
+                    <div className="md:hidden text-[#415364]/50 bg-white p-1 rounded-md shadow-sm border border-[#415364]/10">
+                      <svg className={`w-4 h-4 transition-transform duration-300 ${estaExpandida ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
                   </div>
-                  <div className="space-y-3 overflow-y-auto flex-1 pr-1 custom-scrollbar">
+                  
+                  {/* BODY (Oculto en móvil si no está expandido) */}
+                  <div className={`space-y-3 overflow-y-auto flex-1 pr-1 custom-scrollbar transition-all duration-300 ${estaExpandida ? 'mt-3 opacity-100 block' : 'hidden opacity-0 md:block md:mt-3 md:opacity-100'}`}>
                     {leads.map(cliente => {
                       const diasInactivos = obtenerDiasInactivos(cliente.notas);
                       const abandonado = diasInactivos > 4 && cliente.estado !== 'Descartado' && cliente.estado !== 'Cierre (Ganado)';
@@ -1062,7 +1095,6 @@ export default function CRMPage() {
         )}
       </div>
 
-      {/* MODALES EXTRAS (NUEVO CLIENTE / PLANTILLAS / HISTORIAL) */}
       {mostrarModalNuevo && (
         <div className="fixed inset-0 bg-[#21242E]/80 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8">
