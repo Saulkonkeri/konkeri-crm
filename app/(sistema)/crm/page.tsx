@@ -56,7 +56,6 @@ export default function CRMPage() {
 
   const [vista, setVista] = useState<'lista' | 'kanban' | 'actividad'>('kanban');
 
-  // === NUEVO ESTADO: ACORDEÓN PARA COLUMNAS MÓVIL ===
   const [columnasExpandidas, setColumnasExpandidas] = useState<Record<string, boolean>>({
     'Interesado': true,
     'Contactado': true,
@@ -597,9 +596,6 @@ export default function CRMPage() {
       <div className="w-full flex-1 min-h-0 overflow-hidden relative">
         
         {vista === 'kanban' && (
-          // =========================================================================
-          // NUEVO DISEÑO ACORDEÓN PARA MÓVIL Y SCROLL HORIZONTAL PARA ESCRITORIO
-          // =========================================================================
           <div className="flex flex-col md:flex-row md:overflow-x-auto md:snap-x gap-3 md:gap-4 h-full pb-4 custom-scrollbar px-1 items-start overflow-y-auto md:overflow-y-hidden">
             {estados.map(estado => {
               const leads = clientesFiltrados.filter(c => c.estado === estado);
@@ -896,7 +892,7 @@ export default function CRMPage() {
               <div className="bg-white rounded-2xl border border-neutral-200/60 shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
                 <div className="p-5 border-b border-neutral-100 flex items-center justify-between">
                   <h3 className="text-sm font-bold text-[#415364] uppercase tracking-wide flex items-center gap-2">
-                    <svg className="w-5 h-5 text-[#ea0029]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                    <svg className="w-5 h-5 text-[#ea0029]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
                     {tituloActividad[filtroTiempo]}
                   </h3>
                 </div>
@@ -1095,65 +1091,71 @@ export default function CRMPage() {
         )}
       </div>
 
+      {/* MODAL NUEVO PROSPECTO (ADAPTADO PARA MÓVIL Y ESCRITORIO) */}
       {mostrarModalNuevo && (
-        <div className="fixed inset-0 bg-[#21242E]/80 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8">
-            <div className="flex justify-between items-center mb-6 border-b border-neutral-100 pb-4">
+        <div className="fixed inset-0 bg-[#21242E]/80 z-[80] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-t-3xl md:rounded-2xl shadow-2xl w-full max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto custom-scrollbar animate-in slide-in-from-bottom-4 md:slide-in-from-bottom-0 md:zoom-in-95 duration-200">
+            
+            {/* Cabecera Fija (Sticky) para que no se pierda al hacer scroll */}
+            <div className="flex justify-between items-center mb-6 border-b border-neutral-100 pb-4 sticky top-0 bg-white z-10 pt-2 -mt-2">
               <h2 className="text-xl font-bold text-[#415364]">Registro de Prospecto</h2>
-              <button onClick={() => setMostrarModalNuevo(false)} className="text-[#415364]/40 hover:text-[#ea0029] text-2xl font-bold transition-colors">&times;</button>
+              <button onClick={() => setMostrarModalNuevo(false)} className="text-[#415364]/40 hover:text-[#ea0029] text-4xl font-light transition-colors leading-none">&times;</button>
             </div>
+            
             <form onSubmit={guardarNuevoCliente} className="space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Nombres <span className="text-[#ea0029]">*</span></label>
-                  <input required type="text" value={nuevoNombre} onChange={e => setNuevoNombre(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-2.5 text-xs text-[#415364] font-medium focus:outline-none focus:border-[#ea0029]" />
+                  <input required type="text" value={nuevoNombre} onChange={e => setNuevoNombre(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium focus:outline-none focus:border-[#ea0029]" />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Apellidos</label>
-                  <input type="text" value={nuevoApellido} onChange={e => setNuevoApellido(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-2.5 text-xs text-[#415364] font-medium focus:outline-none focus:border-[#ea0029]" />
+                  <input type="text" value={nuevoApellido} onChange={e => setNuevoApellido(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium focus:outline-none focus:border-[#ea0029]" />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Teléfono <span className="text-[#ea0029]">*</span></label>
-                  <input required type="tel" value={nuevoTelefono} onChange={e => setNuevoTelefono(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-2.5 text-xs text-[#415364] font-medium focus:outline-none focus:border-[#ea0029]" />
+                  <input required type="tel" value={nuevoTelefono} onChange={e => setNuevoTelefono(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium focus:outline-none focus:border-[#ea0029]" />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Email</label>
-                  <input type="email" value={nuevoEmail} onChange={e => setNuevoEmail(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-2.5 text-xs text-[#415364] font-medium focus:outline-none focus:border-[#ea0029]" />
+                  <input type="email" value={nuevoEmail} onChange={e => setNuevoEmail(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium focus:outline-none focus:border-[#ea0029]" />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Ciudad Residencia</label>
-                  <input type="text" value={nuevaCiudad} onChange={e => setNuevaCiudad(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-2.5 text-xs text-[#415364] font-medium focus:outline-none focus:border-[#ea0029]" />
+                  <input type="text" value={nuevaCiudad} onChange={e => setNuevaCiudad(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium focus:outline-none focus:border-[#ea0029]" />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Ingresado Por (Asesor)</label>
-                  <input type="text" value={nuevoIngresadoPor} onChange={e => setNuevoIngresadoPor(e.target.value)} className="w-full bg-[#415364]/5 border border-[#415364]/20 rounded-xl p-2.5 text-xs text-[#415364] font-bold focus:outline-none focus:border-[#ea0029]" />
+                  <input type="text" value={nuevoIngresadoPor} onChange={e => setNuevoIngresadoPor(e.target.value)} className="w-full bg-[#415364]/5 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-bold focus:outline-none focus:border-[#ea0029]" />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Origen</label>
-                  <select value={nuevoOrigen} onChange={e => setNuevoOrigen(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-xl p-2.5 text-xs text-[#415364] font-bold focus:outline-none focus:border-[#ea0029]">
+                  <select value={nuevoOrigen} onChange={e => setNuevoOrigen(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-bold focus:outline-none focus:border-[#ea0029]">
                     {origenes.map(o => <option key={o} value={o}>{o}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Campaña (Opcional)</label>
-                  <input type="text" list="lista-campanas" value={nuevoCampana} onChange={e => setNuevoCampana(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-xl p-2.5 text-xs text-[#415364] font-bold focus:outline-none focus:border-[#ea0029]" />
+                  <input type="text" list="lista-campanas" value={nuevoCampana} onChange={e => setNuevoCampana(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-bold focus:outline-none focus:border-[#ea0029]" />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Motivo Compra</label>
-                  <select value={nuevoMotivo} onChange={e => setNuevoMotivo(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-xl p-2.5 text-xs text-[#415364] font-bold focus:outline-none focus:border-[#ea0029]">
+                  <select value={nuevoMotivo} onChange={e => setNuevoMotivo(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-bold focus:outline-none focus:border-[#ea0029]">
                     {motivos.map(m => <option key={m} value={m}>{m}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Interés</label>
-                  <select value={nuevoInteres} onChange={e => setNuevoInteres(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-xl p-2.5 text-xs text-[#415364] font-bold focus:outline-none focus:border-[#ea0029]">
+                  <select value={nuevoInteres} onChange={e => setNuevoInteres(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-bold focus:outline-none focus:border-[#ea0029]">
                     {intereses.map(i => <option key={i} value={i}>{i}</option>)}
                   </select>
                 </div>
               </div>
-              <div className="pt-6 flex justify-end gap-4 border-t border-neutral-100">
-                <button type="button" onClick={() => setMostrarModalNuevo(false)} className="px-6 py-2.5 text-xs font-bold text-[#415364] border border-[#415364]/20 rounded-xl hover:bg-[#415364]/5 transition-colors">Cancelar</button>
-                <button type="submit" disabled={guardandoCliente} className="px-8 py-2.5 bg-[#ea0029] text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-[#c90022] transition-colors shadow-md disabled:opacity-50">Guardar Prospecto</button>
+              <div className="pt-6 pb-2 flex justify-end gap-4 border-t border-neutral-100">
+                <button type="button" onClick={() => setMostrarModalNuevo(false)} className="px-6 py-3 text-xs font-bold text-[#415364] border border-[#415364]/20 rounded-xl hover:bg-[#415364]/5 transition-colors">Cancelar</button>
+                <button type="submit" disabled={guardandoCliente} className="px-8 py-3 bg-[#ea0029] text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-[#c90022] transition-colors shadow-md disabled:opacity-50">
+                  {guardandoCliente ? 'Guardando...' : 'Guardar Prospecto'}
+                </button>
               </div>
             </form>
           </div>
