@@ -455,10 +455,10 @@ export default function RadarCentral() {
       </div>
 
       {/* PESTAÑAS (TABS) */}
-      <div className="flex overflow-x-auto bg-[#dce3eb]/50 p-1.5 rounded-xl shadow-inner border border-[#415364]/10 mb-8 w-fit custom-scrollbar">
+      <div className="flex overflow-x-auto bg-[#dce3eb]/50 p-1.5 rounded-xl shadow-inner border border-[#415364]/10 mb-8 w-full md:w-fit custom-scrollbar">
         <button 
           onClick={() => setPestañaActiva('solicitudes')}
-          className={`whitespace-nowrap px-6 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+          className={`flex-1 md:flex-auto whitespace-nowrap px-6 py-2.5 rounded-lg text-xs font-bold transition-all flex justify-center items-center gap-2 ${
             pestañaActiva === 'solicitudes' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'
           }`}
         >
@@ -472,16 +472,16 @@ export default function RadarCentral() {
         </button>
         <button 
           onClick={() => setPestañaActiva('inventario')}
-          className={`whitespace-nowrap px-6 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+          className={`flex-1 md:flex-auto whitespace-nowrap px-6 py-2.5 rounded-lg text-xs font-bold transition-all flex justify-center items-center gap-2 ${
             pestañaActiva === 'inventario' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'
           }`}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-          Radar de Unidades
+          Radar Unidades
         </button>
         <button 
           onClick={() => setPestañaActiva('web')}
-          className={`whitespace-nowrap px-6 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+          className={`flex-1 md:flex-auto whitespace-nowrap px-6 py-2.5 rounded-lg text-xs font-bold transition-all flex justify-center items-center gap-2 ${
             pestañaActiva === 'web' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'
           }`}
         >
@@ -494,14 +494,16 @@ export default function RadarCentral() {
       {/* PESTAÑA 1: SOLICITUDES VIP */}
       {/* ========================================================= */}
       {pestañaActiva === 'solicitudes' && (
-        <div className="bg-white rounded-2xl shadow-sm border border-neutral-200/60 overflow-hidden animate-in fade-in slide-in-from-bottom-2">
+        <div className="bg-white rounded-2xl shadow-sm border border-neutral-200/60 overflow-hidden animate-in fade-in slide-in-from-bottom-2 w-full">
           <div className="px-6 py-5 border-b border-neutral-100 flex justify-between items-center bg-[#21242E]">
             <h3 className="text-sm font-bold text-white tracking-widest uppercase flex items-center gap-2">
               Gestión de Accesos al Inventario
             </h3>
           </div>
-          <div className="overflow-x-auto custom-scrollbar">
-            <table className="w-full text-left text-sm text-[#415364]">
+          
+          {/* FIX MOBILE: Aplicando min-w-[900px] para forzar el scroll horizontal */}
+          <div className="overflow-x-auto custom-scrollbar w-full">
+            <table className="w-full min-w-[900px] text-left text-sm text-[#415364]">
               <thead className="bg-neutral-50/50 text-[#415364]/60 text-[10px] uppercase tracking-widest border-b border-neutral-100">
                 <tr>
                   <th className="px-6 py-4 font-bold">Inversionista</th>
@@ -524,11 +526,11 @@ export default function RadarCentral() {
                     return (
                       <tr key={cliente.id} className={`transition-colors ${activo ? 'bg-green-50/10' : caducado ? 'bg-[#ea0029]/5' : 'hover:bg-[#dce3eb]/30'}`}>
                         <td className="px-6 py-4">
-                          <div className="font-bold text-[#415364]">{cliente.nombres}</div>
+                          <div className="font-bold text-[#415364] whitespace-nowrap">{cliente.nombres}</div>
                           <div className="text-[10px] text-[#415364]/50 mt-0.5">Ingresó: {new Date(cliente.created_at).toLocaleDateString('es-EC')}</div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className={`inline-flex items-center text-[9px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider border ${
+                          <div className={`inline-flex items-center text-[9px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider border whitespace-nowrap ${
                             activo ? 'bg-green-50 text-green-700 border-green-200' : 
                             caducado ? 'bg-[#ea0029]/10 text-[#ea0029] border-[#ea0029]/20' : 
                             'bg-[#dce3eb]/50 text-[#415364]/60 border-[#415364]/10'
@@ -543,7 +545,7 @@ export default function RadarCentral() {
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <select 
-                              className="bg-white border border-[#415364]/20 text-[#415364] rounded-lg text-[10px] p-2 focus:outline-none focus:border-[#ea0029] font-bold outline-none"
+                              className="bg-white border border-[#415364]/20 text-[#415364] rounded-lg text-[10px] p-2 focus:outline-none focus:border-[#ea0029] font-bold outline-none cursor-pointer"
                               value={tiemposSeleccionados[cliente.id] || '24'}
                               onChange={(e) => handleTiempoChange(cliente.id, e.target.value)}
                             >
@@ -556,7 +558,7 @@ export default function RadarCentral() {
                             
                             <button 
                               onClick={() => aprobarAcceso(cliente)} 
-                              className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm text-white ${
+                              className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm text-white whitespace-nowrap ${
                                 activo ? 'bg-[#415364] hover:bg-[#21242E]' : 'bg-[#ea0029] hover:bg-[#c90022]'
                               }`}
                             >
@@ -585,12 +587,14 @@ export default function RadarCentral() {
       {/* PESTAÑA 2: RADAR INVENTARIO */}
       {/* ========================================================= */}
       {pestañaActiva === 'inventario' && (
-        <div className="bg-white border border-neutral-200/60 rounded-2xl shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2">
+        <div className="bg-white border border-neutral-200/60 rounded-2xl shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2 w-full">
           {cargandoRadar && sesiones.length === 0 ? (
             <div className="p-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">Cargando lecturas del radar...</div>
           ) : (
-            <div className="overflow-x-auto custom-scrollbar">
-              <table className="w-full text-left border-collapse">
+            
+            /* FIX MOBILE: min-w-[1000px] para forzar scroll horizontal en radar */
+            <div className="overflow-x-auto custom-scrollbar w-full">
+              <table className="w-full min-w-[1000px] text-left border-collapse">
                 <thead>
                   <tr className="bg-[#21242E] text-white">
                     <th className="p-5 text-[10px] uppercase tracking-widest font-bold">Prospecto Monitorizado</th>
@@ -605,7 +609,7 @@ export default function RadarCentral() {
                     <React.Fragment key={sesion.idSesion}>
                       <tr className="hover:bg-[#dce3eb]/30 transition-colors">
                         <td className="p-5">
-                          <span className="font-bold text-[#415364] flex items-center gap-1.5 text-sm">
+                          <span className="font-bold text-[#415364] flex items-center gap-1.5 text-sm whitespace-nowrap">
                             {sesion.nombre ? (
                               <>{sesion.nombre} <svg className="w-3.5 h-3.5 text-[#1DA851]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg></>
                             ) : ( 'Visitante Anónimo' )}
@@ -618,12 +622,12 @@ export default function RadarCentral() {
                           </span>
                         </td>
                         <td className="p-5">
-                          <span className="bg-[#dce3eb]/50 text-[#415364] border border-[#415364]/10 px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider">
+                          <span className="bg-[#dce3eb]/50 text-[#415364] border border-[#415364]/10 px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider whitespace-nowrap">
                             {sesion.minutos === 0 ? '< 1 min' : `${sesion.minutos} min`}
                           </span>
                         </td>
                         <td className="p-5">
-                          <div className="flex gap-1.5 flex-wrap">
+                          <div className="flex gap-1.5 flex-wrap min-w-[150px]">
                             {sesion.unidadesVistas.length > 0 ? (
                               sesion.unidadesVistas.map(u => (
                                 <span key={u} className="bg-white border border-[#415364]/20 text-[#415364] text-[9px] font-bold px-2 py-1 rounded-md shadow-sm">U-{u}</span>
@@ -632,10 +636,10 @@ export default function RadarCentral() {
                           </div>
                         </td>
                         <td className="p-5">
-                          <span className="text-xs font-medium text-[#415364]/80">{sesion.ultimaAccion}</span>
+                          <span className="text-xs font-medium text-[#415364]/80 whitespace-nowrap">{sesion.ultimaAccion}</span>
                         </td>
                         <td className="p-5 text-center">
-                          <button onClick={() => setSesionExpandida(sesionExpandida === sesion.idSesion ? null : sesion.idSesion)} className="text-[10px] font-bold text-[#ea0029] hover:text-[#c90022] bg-[#ea0029]/10 px-3 py-1.5 rounded-lg uppercase tracking-widest transition-colors">
+                          <button onClick={() => setSesionExpandida(sesionExpandida === sesion.idSesion ? null : sesion.idSesion)} className="text-[10px] font-bold text-[#ea0029] hover:text-[#c90022] bg-[#ea0029]/10 px-3 py-1.5 rounded-lg uppercase tracking-widest transition-colors whitespace-nowrap">
                             {sesionExpandida === sesion.idSesion ? 'Ocultar' : 'Detalles'}
                           </button>
                         </td>
@@ -688,7 +692,7 @@ export default function RadarCentral() {
       {/* PESTAÑA 3: ACTIVIDAD WEB (LANDING) */}
       {/* ========================================================= */}
       {pestañaActiva === 'web' && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 w-full">
           
           <div className="flex justify-end gap-2 bg-white w-fit ml-auto p-1.5 rounded-xl shadow-sm border border-neutral-200/60">
             {['hoy', '7d', '30d'].map(f => (
@@ -757,9 +761,11 @@ export default function RadarCentral() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-neutral-200/60 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto custom-scrollbar">
-              <table className="w-full text-left">
+          <div className="bg-white rounded-2xl border border-neutral-200/60 shadow-sm overflow-hidden w-full">
+            
+            {/* FIX MOBILE: min-w-[1000px] para el tracking de visitantes */}
+            <div className="overflow-x-auto custom-scrollbar w-full">
+              <table className="w-full min-w-[1000px] text-left">
                 <thead className="bg-[#21242E] border-b border-neutral-200">
                   <tr>
                     <th className="p-5 text-[9px] uppercase font-bold text-white tracking-widest">Identidad de Sesión</th>
@@ -776,7 +782,7 @@ export default function RadarCentral() {
                     <React.Fragment key={v.visitor_id}>
                       <tr className="hover:bg-[#dce3eb]/30 transition-colors">
                         <td className="p-5">
-                          <div className="font-bold text-sm text-[#415364]">
+                          <div className="font-bold text-sm text-[#415364] whitespace-nowrap">
                             {v.email ? (
                               <span className="text-green-700 bg-green-50 px-2.5 py-1 rounded-md border border-green-200 text-xs">✓ {v.email}</span>
                             ) : (
@@ -786,14 +792,14 @@ export default function RadarCentral() {
                           <div className="text-[10px] text-[#415364]/50 mt-2 font-medium">Últ. Act: {v.ultimaActividad.toLocaleString('es-EC')}</div>
                         </td>
                         <td className="p-5">
-                          <div className="text-xs font-bold text-[#415364]">{v.sesiones.size} Sesiones · {v.tiempoAcumuladoMin} min</div>
+                          <div className="text-xs font-bold text-[#415364] whitespace-nowrap">{v.sesiones.size} Sesiones · {v.tiempoAcumuladoMin} min</div>
                           <div className="text-[10px] text-[#415364]/50 mt-1.5 font-medium">{v.eventos.length} interacciones</div>
                         </td>
                         <td className="p-5">
-                          <span className="text-[10px] bg-[#dce3eb]/50 border border-[#415364]/10 px-2.5 py-1.5 rounded-md text-[#415364] font-mono font-bold">{v.fuentePrincipal}</span>
+                          <span className="text-[10px] bg-[#dce3eb]/50 border border-[#415364]/10 px-2.5 py-1.5 rounded-md text-[#415364] font-mono font-bold whitespace-nowrap">{v.fuentePrincipal}</span>
                         </td>
                         <td className="p-5">
-                          <span className={`text-[10px] font-bold px-2.5 py-1.5 rounded-md tracking-wider flex w-fit items-center gap-1.5 ${
+                          <span className={`text-[10px] font-bold px-2.5 py-1.5 rounded-md tracking-wider flex w-fit items-center gap-1.5 whitespace-nowrap ${
                             v.nivelInteraccion === 'ALTO' ? 'bg-[#ea0029]/10 text-[#ea0029] border border-[#ea0029]/20' : 
                             v.nivelInteraccion === 'MEDIO' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 
                             'bg-[#415364]/5 text-[#415364]/60 border border-[#415364]/10'
@@ -805,7 +811,7 @@ export default function RadarCentral() {
                         <td className="p-5 text-center">
                           <button 
                             onClick={() => setVisitanteExpandido(visitanteExpandido === v.visitor_id ? null : v.visitor_id)}
-                            className="text-[10px] font-bold text-[#415364] hover:text-white bg-[#415364]/10 hover:bg-[#415364] px-4 py-2 rounded-lg uppercase tracking-widest transition-colors"
+                            className="text-[10px] font-bold text-[#415364] hover:text-white bg-[#415364]/10 hover:bg-[#415364] px-4 py-2 rounded-lg uppercase tracking-widest transition-colors whitespace-nowrap"
                           >
                             {visitanteExpandido === v.visitor_id ? 'Ocultar' : 'Revisar'}
                           </button>
@@ -819,13 +825,13 @@ export default function RadarCentral() {
                             <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-[#415364]/10">
                               {v.eventos.map((evento) => (
                                 <div key={evento.id} className="relative flex items-center group">
-                                  <div className="flex items-center justify-center w-2.5 h-2.5 rounded-full border-[2px] border-[#F9F7F5] bg-[#415364]/30 z-10 ml-4 mr-5"></div>
+                                  <div className="flex items-center justify-center w-2.5 h-2.5 rounded-full border-[2px] border-[#F9F7F5] bg-[#415364]/30 z-10 ml-4 mr-5 shrink-0"></div>
                                   <div className="bg-white p-4 rounded-xl border border-[#415364]/10 shadow-sm w-full md:w-1/2 flex justify-between items-center hover:border-[#415364]/30 transition-colors">
                                     <div>
                                       <span className="text-xs font-bold text-[#415364]">{evento.accion.replace(/_/g, ' ')}</span>
                                       <span className="text-[10px] text-[#415364]/60 block mt-1 font-medium">{evento.detalle}</span>
                                     </div>
-                                    <span className="text-[10px] font-bold text-[#415364]/40 whitespace-nowrap bg-[#dce3eb]/30 px-2 py-1 rounded-md">
+                                    <span className="text-[10px] font-bold text-[#415364]/40 whitespace-nowrap bg-[#dce3eb]/30 px-2 py-1 rounded-md shrink-0">
                                       {new Date(evento.created_at).toLocaleTimeString('es-EC', {hour: '2-digit', minute:'2-digit'})}
                                     </span>
                                   </div>
