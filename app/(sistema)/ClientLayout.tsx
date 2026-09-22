@@ -59,16 +59,16 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   return (
     <div className="flex h-screen bg-[#dce3eb] overflow-hidden font-sans relative">
       
-      {/* OVERLAY PARA CERRAR EL MENÚ MÓVIL AL TOCAR AFUERA */}
+      {/* OVERLAY PARA CERRAR EL MENÚ MÓVIL AL TOCAR AFUERA (Z-INDEX SUPERIOR) */}
       {menuAbierto && (
         <div 
-          className="fixed inset-0 bg-[#21242E]/80 backdrop-blur-sm z-30 md:hidden transition-opacity"
+          className="fixed inset-0 bg-[#21242E]/80 backdrop-blur-sm z-[60] md:hidden transition-opacity"
           onClick={() => setMenuAbierto(false)}
         />
       )}
 
-      {/* SIDEBAR CORPORATIVO KONKERI */}
-      <aside className={`w-[260px] bg-[#1a1c23] text-white flex-shrink-0 flex flex-col border-r border-[#415364]/20 shadow-2xl fixed md:relative z-40 h-full transition-transform duration-300 ease-in-out ${menuAbierto ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+      {/* SIDEBAR CORPORATIVO KONKERI (Z-INDEX 70 PARA ESTAR SOBRE TODO) */}
+      <aside className={`w-[260px] bg-[#1a1c23] text-white flex-shrink-0 flex flex-col border-r border-[#415364]/20 shadow-2xl fixed md:relative z-[70] h-full transition-transform duration-300 ease-in-out ${menuAbierto ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         
         {/* LOGO AREA */}
         <div className="p-8 pb-4 flex flex-col">
@@ -133,9 +133,9 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       </aside>
 
       {/* ÁREA DE CONTENIDO PRINCIPAL */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        {/* Header Móvil */}
-        <header className="md:hidden bg-[#1a1c23] text-white p-4 flex justify-between items-center shadow-md sticky top-0 z-30">
+      <main className="flex-1 flex flex-col min-w-0 h-screen">
+        {/* Header Móvil (Z-30 para no interferir con modales) */}
+        <header className="md:hidden bg-[#1a1c23] text-white p-4 flex justify-between items-center shadow-md relative z-30">
           <div className="flex flex-col">
             <span className="text-lg font-bold tracking-widest leading-none">KONKERI</span>
             <span className="text-[8px] tracking-[0.2em] text-[#ea0029]">CRM MOBILE</span>
@@ -145,7 +145,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           </button>
         </header>
         
-        <div className="flex-1 relative z-10">
+        {/* ELIMINAMOS RELATIVE Z-10 DE AQUÍ PARA SOLTAR LOS PANELES */}
+        <div className="flex-1 overflow-y-auto w-full">
           {children}
         </div>
       </main>
