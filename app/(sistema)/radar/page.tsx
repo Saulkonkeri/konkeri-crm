@@ -228,7 +228,6 @@ export default function RadarCentral() {
   const abrirWhatsApp = (telefono: string, nombres: string) => {
     if (!telefono) { alert("Este cliente no tiene un teléfono registrado."); return; }
     
-    // FILTRADO SEGURO SIN EXPRESIONES REGULARES PARA EVITAR BUGS DE TURBOPACK
     let numLimpio = telefono.split('').filter(char => char >= '0' && char <= '9').join('');
     
     if (numLimpio.startsWith('0') && numLimpio.length === 10) {
