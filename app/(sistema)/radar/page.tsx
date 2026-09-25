@@ -3,9 +3,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 
-// ==========================================
-// 1. DEFINICIÓN DE TIPOS
-// ==========================================
 type SesionCliente = {
   idSesion: string;
   email: string;
@@ -42,9 +39,6 @@ type VisitanteAgrupado = {
   nivelInteraccion: 'ALTO' | 'MEDIO' | 'BAJO';
 };
 
-// ==========================================
-// 2. FUNCIONES AUXILIARES PURAS (ANTI-BUGS VERCEL)
-// ==========================================
 const formatTiempoAtras = (fecha: Date) => {
   const ahora = new Date().getTime();
   const diffMs = ahora - fecha.getTime();
@@ -68,18 +62,15 @@ const formatAccionTexto = (str: string) => {
 export default function RadarCentral() {
   const [pestañaActiva, setPestañaActiva] = useState('solicitudes'); 
   
-  // ESTADOS PESTAÑA 1
   const [solicitudes, setSolicitudes] = useState<any[]>([]);
   const [cargandoSolicitudes, setCargandoSolicitudes] = useState(true);
   const [tiemposSeleccionados, setTiemposSeleccionados] = useState<Record<string, string>>({});
   const [ticker, setTicker] = useState(0); 
 
-  // ESTADOS PESTAÑA 2
   const [sesiones, setSesiones] = useState<SesionCliente[]>([]);
   const [cargandoRadar, setCargandoRadar] = useState(true);
   const [sesionExpandida, setSesionExpandida] = useState<string | null>(null);
 
-  // ESTADOS PESTAÑA 3
   const [eventosWeb, setEventosWeb] = useState<EventoWeb[]>([]);
   const [visitantesAgrupados, setVisitantesAgrupados] = useState<VisitanteAgrupado[]>([]);
   const [cargandoWeb, setCargandoWeb] = useState(true);
@@ -98,9 +89,6 @@ export default function RadarCentral() {
     cargarActividadWeb();
   };
 
-  // ==========================================
-  // LÓGICA PESTAÑA 1: SOLICITUDES VIP
-  // ==========================================
   const cargarSolicitudes = async () => {
     setCargandoSolicitudes(true);
     try {
@@ -241,7 +229,6 @@ export default function RadarCentral() {
     const asunto = encodeURIComponent("Arienzo Boutique Living - Actualización de Contacto");
     const cuerpo = encodeURIComponent(`Hola ${cliente.nombres},\n\nGracias por su interés en Arienzo Boutique Living.\n\nHemos intentado comunicarnos al número de teléfono registrado (${cliente.telefono || 'sin número'}), pero parece no estar disponible o es incorrecto.\n\nPara poder otorgarle su Pase VIP y enviarle la lista de precios e inventario, por favor indíquenos su número de WhatsApp actual respondiendo a este correo.\n\nQuedamos a la espera de su respuesta.\n\nSaludos cordiales,\nEquipo Comercial Arienzo\nKonkeri Real Estate`);
     
-    // Enlace virtual para forzar apertura en móviles
     const link = document.createElement('a');
     link.href = `mailto:${cliente.email}?subject=${asunto}&body=${cuerpo}`;
     link.target = '_top'; 
@@ -259,9 +246,6 @@ export default function RadarCentral() {
     window.open(`https://wa.me/${numLimpio}?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
 
-  // ==========================================
-  // LÓGICA PESTAÑA 2: RADAR INVENTARIO
-  // ==========================================
   const generarAnalisisComercial = (sesion: SesionCliente) => {
     if (sesion.eventos.length === 0) return "Sin datos suficientes para analizar.";
     let analisis = "";
@@ -352,9 +336,6 @@ export default function RadarCentral() {
     }
   };
 
-  // ==========================================
-  // LÓGICA PESTAÑA 3: ACTIVIDAD WEB
-  // ==========================================
   const PESOS_EVENTOS: Record<string, number> = {
     'VISITA_LANDING': 1, 'SCROLL_50': 2, 'SCROLL_90': 3, 'VIO_ARQUITECTURA': 2,
     'ABRIO_FORMULARIO': 6, 'ABRIO_CALENDLY': 8, 'CLIC_WHATSAPP': 10, 'DESCARGA_BROCHURE': 12, 'REGISTRO_COMPLETADO': 15,
@@ -459,11 +440,11 @@ export default function RadarCentral() {
     return { unicos, totalSesiones, recurrentes, altoInteres, conversiones, funnel };
   }, [visitantesAgrupados, eventosWeb]);
 
+  const solicitudesPendientesCount = solicitudes.filter(s => calcularTiempoRestante(s.expira_en).estado !== 'activo').length;
 
   return (
     <div className="p-4 md:p-8 w-full max-w-7xl mx-auto bg-[#dce3eb] min-h-screen font-sans text-[#415364]">
       
-      {/* ENCABEZADO */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4 border-b border-[#415364]/10 pb-6">
         <div>
           <span className="text-[10px] font-bold tracking-widest text-[#ea0029] uppercase">Analítica y Accesos</span>
@@ -471,30 +452,31 @@ export default function RadarCentral() {
           <p className="text-sm text-[#415364]/70 mt-1">Monitoreo de actividad web y gestión de accesos exclusivos al inventario.</p>
         </div>
         <button onClick={cargarDatos} className="bg-white border border-[#415364]/20 text-[#415364] px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-[#415364]/5 transition-colors shadow-sm flex items-center gap-2">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
           Refrescar Datos
         </button>
       </div>
 
-      {/* PESTAÑAS (TABS) */}
       <div className="flex overflow-x-auto bg-[#dce3eb]/50 p-1.5 rounded-xl shadow-inner border border-[#415364]/10 mb-8 w-full md:w-fit custom-scrollbar">
         <button onClick={() => setPestañaActiva('solicitudes')} className={`flex-1 md:flex-auto whitespace-nowrap px-6 py-2.5 rounded-lg text-xs font-bold transition-all flex justify-center items-center gap-2 ${pestañaActiva === 'solicitudes' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
           Pases VIP
+          {solicitudesPendientesCount > 0 && (
+            <span className="bg-[#ea0029] text-white text-[9px] px-2 py-0.5 rounded-md ml-1">
+              {solicitudesPendientesCount}
+            </span>
+          )}
         </button>
         <button onClick={() => setPestañaActiva('inventario')} className={`flex-1 md:flex-auto whitespace-nowrap px-6 py-2.5 rounded-lg text-xs font-bold transition-all flex justify-center items-center gap-2 ${pestañaActiva === 'inventario' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           Radar Unidades
         </button>
         <button onClick={() => setPestañaActiva('web')} className={`flex-1 md:flex-auto whitespace-nowrap px-6 py-2.5 rounded-lg text-xs font-bold transition-all flex justify-center items-center gap-2 ${pestañaActiva === 'web' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
           Trazabilidad Web
         </button>
       </div>
 
-      {/* ========================================================= */}
-      {/* PESTAÑA 1: SOLICITUDES VIP */}
-      {/* ========================================================= */}
       {pestañaActiva === 'solicitudes' && (
         <div className="bg-white rounded-2xl shadow-sm border border-neutral-200/60 overflow-hidden animate-in fade-in slide-in-from-bottom-2 w-full">
           <div className="px-6 py-5 border-b border-neutral-100 flex justify-between items-center bg-[#21242E]">
@@ -514,91 +496,70 @@ export default function RadarCentral() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
-                {cargandoSolicitudes ? (
+                {cargandoSolicitudes && (
                   <tr><td colSpan={4} className="px-6 py-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">Cargando datos en vivo...</td></tr>
-                ) : solicitudes.length === 0 ? (
-                  <tr><td colSpan={4} className="px-6 py-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">No hay solicitudes pendientes.</td></tr>
-                ) : (
-                  solicitudes.map((cliente) => {
-                    const statusTiempo = calcularTiempoRestante(cliente.expira_en);
-                    const activo = statusTiempo.estado === 'activo';
-                    const caducado = statusTiempo.estado === 'caducado';
-
-                    return (
-                      <tr key={cliente.id} className={`transition-colors ${activo ? 'bg-green-50/10' : caducado ? 'bg-[#ea0029]/5' : 'hover:bg-[#dce3eb]/30'}`}>
-                        <td className="px-6 py-4">
-                          <div className="font-bold text-[#415364] whitespace-nowrap">{cliente.nombres}</div>
-                          <div className="text-[10px] text-[#415364]/50 mt-0.5">Ingresó: {new Date(cliente.created_at).toLocaleDateString('es-EC')}</div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className={`inline-flex items-center text-[9px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider border whitespace-nowrap ${
-                            activo ? 'bg-green-50 text-green-700 border-green-200' : 
-                            caducado ? 'bg-[#ea0029]/10 text-[#ea0029] border-[#ea0029]/20' : 
-                            'bg-[#dce3eb]/50 text-[#415364]/60 border-[#415364]/10'
-                          }`}>
-                            {statusTiempo.texto}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-[#415364] font-mono text-[11px] font-medium">{cliente.email}</div>
-                          <div className="text-[#415364]/60 font-mono text-[10px]">{cliente.telefono}</div>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <select 
-                              className="bg-white border border-[#415364]/20 text-[#415364] rounded-lg text-[10px] p-2 focus:outline-none focus:border-[#ea0029] font-bold outline-none cursor-pointer"
-                              value={tiemposSeleccionados[cliente.id] || '24'}
-                              onChange={(e) => handleTiempoChange(cliente.id, e.target.value)}
-                            >
-                              <option value="2">2 hrs</option>
-                              <option value="12">12 hrs</option>
-                              <option value="24">24 hrs</option>
-                              <option value="48">48 hrs</option>
-                              <option value="999">Ilimitado</option>
-                            </select>
-                            
-                            <button 
-                              onClick={() => aprobarAcceso(cliente)} 
-                              className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm text-white whitespace-nowrap ${
-                                activo ? 'bg-[#415364] hover:bg-[#21242E]' : 'bg-[#ea0029] hover:bg-[#c90022]'
-                              }`}
-                            >
-                              {activo ? 'Renovar' : 'Aprobar'}
-                            </button>
-
-                            <button onClick={() => enviarCorreo(cliente)} className="bg-[#dce3eb]/50 text-[#415364] hover:bg-[#415364]/10 border border-[#415364]/10 px-3 py-2 rounded-lg transition-colors shadow-sm flex items-center justify-center" title="Enviar Email Pase">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                            </button>
-                            
-                            {/* BOTON: SOLICITAR TELEFONO (ALERTA) */}
-                            <button onClick={() => solicitarTelefonoCorrecto(cliente)} className="bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 px-3 py-2 rounded-lg transition-colors shadow-sm flex items-center justify-center" title="Solicitar Teléfono Correcto (Email)">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                            </button>
-                            
-                            <button onClick={() => abrirWhatsApp(cliente.telefono, cliente.nombres)} className="bg-[#25D366]/10 border border-[#25D366]/30 text-[#1DA851] hover:bg-[#25D366]/20 px-3 py-2 rounded-lg transition-colors flex items-center justify-center" title="Escribir por WhatsApp">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
                 )}
+                {!cargandoSolicitudes && solicitudes.length === 0 && (
+                  <tr><td colSpan={4} className="px-6 py-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">No hay solicitudes pendientes.</td></tr>
+                )}
+                {!cargandoSolicitudes && solicitudes.length > 0 && solicitudes.map((cliente) => {
+                  const statusTiempo = calcularTiempoRestante(cliente.expira_en);
+                  const activo = statusTiempo.estado === 'activo';
+                  const caducado = statusTiempo.estado === 'caducado';
+
+                  return (
+                    <tr key={cliente.id} className={`transition-colors ${activo ? 'bg-green-50/10' : caducado ? 'bg-[#ea0029]/5' : 'hover:bg-[#dce3eb]/30'}`}>
+                      <td className="px-6 py-4">
+                        <div className="font-bold text-[#415364] whitespace-nowrap">{cliente.nombres}</div>
+                        <div className="text-[10px] text-[#415364]/50 mt-0.5">Ingresó: {new Date(cliente.created_at).toLocaleDateString('es-EC')}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className={`inline-flex items-center text-[9px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider border whitespace-nowrap ${activo ? 'bg-green-50 text-green-700 border-green-200' : caducado ? 'bg-[#ea0029]/10 text-[#ea0029] border-[#ea0029]/20' : 'bg-[#dce3eb]/50 text-[#415364]/60 border-[#415364]/10'}`}>
+                          {statusTiempo.texto}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-[#415364] font-mono text-[11px] font-medium">{cliente.email}</div>
+                        <div className="text-[#415364]/60 font-mono text-[10px]">{cliente.telefono}</div>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <select className="bg-white border border-[#415364]/20 text-[#415364] rounded-lg text-[10px] p-2 focus:outline-none focus:border-[#ea0029] font-bold outline-none cursor-pointer" value={tiemposSeleccionados[cliente.id] || '24'} onChange={(e) => handleTiempoChange(cliente.id, e.target.value)}>
+                            <option value="2">2 hrs</option>
+                            <option value="12">12 hrs</option>
+                            <option value="24">24 hrs</option>
+                            <option value="48">48 hrs</option>
+                            <option value="999">Ilimitado</option>
+                          </select>
+                          <button onClick={() => aprobarAcceso(cliente)} className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm text-white whitespace-nowrap ${activo ? 'bg-[#415364] hover:bg-[#21242E]' : 'bg-[#ea0029] hover:bg-[#c90022]'}`}>
+                            {activo ? 'Renovar' : 'Aprobar'}
+                          </button>
+                          <button onClick={() => enviarCorreo(cliente)} className="bg-[#dce3eb]/50 text-[#415364] hover:bg-[#415364]/10 border border-[#415364]/10 px-3 py-2 rounded-lg transition-colors shadow-sm flex items-center justify-center" title="Enviar Email Pase">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                          </button>
+                          <button onClick={() => solicitarTelefonoCorrecto(cliente)} className="bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 px-3 py-2 rounded-lg transition-colors shadow-sm flex items-center justify-center" title="Solicitar Teléfono Correcto">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                          </button>
+                          <button onClick={() => abrirWhatsApp(cliente.telefono, cliente.nombres)} className="bg-[#25D366]/10 border border-[#25D366]/30 text-[#1DA851] hover:bg-[#25D366]/20 px-3 py-2 rounded-lg transition-colors flex items-center justify-center" title="Escribir por WhatsApp">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </div>
       )}
 
-      {/* ========================================================= */}
-      {/* PESTAÑA 2: RADAR INVENTARIO */}
-      {/* ========================================================= */}
       {pestañaActiva === 'inventario' && (
         <div className="bg-white border border-neutral-200/60 rounded-2xl shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2 w-full">
-          {cargandoRadar && sesiones.length === 0 ? (
+          {cargandoRadar && sesiones.length === 0 && (
             <div className="p-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">Cargando lecturas del radar...</div>
-          ) : (
-            
+          )}
+          {!(cargandoRadar && sesiones.length === 0) && (
             <div className="overflow-x-auto custom-scrollbar w-full">
               <table className="w-full min-w-[1000px] text-left border-collapse">
                 <thead>
@@ -615,11 +576,16 @@ export default function RadarCentral() {
                     <React.Fragment key={sesion.idSesion}>
                       <tr className="hover:bg-[#dce3eb]/30 transition-colors">
                         <td className="p-5">
-                          <span className="font-bold text-[#415364] flex items-center gap-1.5 text-sm whitespace-nowrap">
-                            <React.Fragment>
-                              {sesion.nombre ? sesion.nombre : 'Visitante Anónimo'}
-                            </React.Fragment>
-                          </span>
+                          {sesion.nombre && (
+                            <span className="font-bold text-[#415364] flex items-center gap-1.5 text-sm whitespace-nowrap">
+                              {sesion.nombre} <svg className="w-3.5 h-3.5 text-[#1DA851]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                            </span>
+                          )}
+                          {!sesion.nombre && (
+                            <span className="font-bold text-[#415364] flex items-center gap-1.5 text-sm whitespace-nowrap">
+                              Visitante Anónimo
+                            </span>
+                          )}
                           <span className="text-[10px] text-[#415364]/60 font-mono block mt-1">{sesion.email}</span>
                           <span className="text-[9px] text-[#415364]/40 mt-1.5 block font-bold uppercase tracking-wider">
                             {formatTiempoAtras(sesion.fin)}
@@ -632,11 +598,12 @@ export default function RadarCentral() {
                         </td>
                         <td className="p-5">
                           <div className="flex gap-1.5 flex-wrap min-w-[150px]">
-                            {sesion.unidadesVistas.length > 0 ? (
-                              sesion.unidadesVistas.map(u => (
-                                <span key={u} className="bg-white border border-[#415364]/20 text-[#415364] text-[9px] font-bold px-2 py-1 rounded-md shadow-sm">U-{u}</span>
-                              ))
-                            ) : ( <span className="text-xs text-[#415364]/30">-</span> )}
+                            {sesion.unidadesVistas.length > 0 && sesion.unidadesVistas.map(u => (
+                              <span key={u} className="bg-white border border-[#415364]/20 text-[#415364] text-[9px] font-bold px-2 py-1 rounded-md shadow-sm">U-{u}</span>
+                            ))}
+                            {sesion.unidadesVistas.length === 0 && (
+                              <span className="text-xs text-[#415364]/30">-</span>
+                            )}
                           </div>
                         </td>
                         <td className="p-5">
@@ -654,7 +621,7 @@ export default function RadarCentral() {
                           <td colSpan={5} className="p-6 md:p-8">
                             <div className="mb-8 bg-white border border-[#ea0029]/20 rounded-2xl p-5 shadow-sm flex items-start gap-4">
                               <div className="bg-[#ea0029]/10 text-[#ea0029] w-12 h-12 rounded-full flex items-center justify-center shrink-0">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                               </div>
                               <div>
                                 <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#ea0029] mb-1.5">Inteligencia Comercial</h4>
@@ -669,9 +636,9 @@ export default function RadarCentral() {
                                   <div className="w-full md:w-1/2 bg-white p-4 rounded-xl border border-[#415364]/10 shadow-sm flex flex-col hover:border-[#ea0029]/40 hover:shadow-md transition-all">
                                     <div className="flex items-center justify-between mb-2">
                                       <span className="text-[10px] font-bold text-[#415364]/50">{new Date(evento.created_at).toLocaleTimeString('es-EC')}</span>
-                                      {evento.unidad_id ? (
+                                      {evento.unidad_id && (
                                         <span className="text-[9px] bg-[#dce3eb]/50 text-[#415364] border border-[#415364]/10 font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">Unidad {evento.unidad_id}</span>
-                                      ) : null}
+                                      )}
                                     </div>
                                     <span className="text-xs font-bold text-[#415364]">{formatAccionTexto(evento.accion)}</span>
                                     <span className="text-[11px] text-[#415364]/70 mt-1 font-medium">{evento.detalle}</span>
@@ -690,23 +657,15 @@ export default function RadarCentral() {
                 </tbody>
               </table>
             </div>
-          </div>
-
+          )}
         </div>
       )}
 
-      {/* ========================================================= */}
-      {/* PESTAÑA 3: ACTIVIDAD WEB (LANDING) */}
-      {/* ========================================================= */}
       {pestañaActiva === 'web' && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 w-full">
           <div className="flex justify-end gap-2 bg-white w-fit ml-auto p-1.5 rounded-xl shadow-sm border border-neutral-200/60">
             {['hoy', '7d', '30d'].map(f => (
-              <button 
-                key={f} 
-                onClick={() => setFiltroTiempo(f)}
-                className={`px-4 py-2 text-[10px] font-bold rounded-lg uppercase tracking-wider transition-colors ${filtroTiempo === f ? 'bg-[#415364] text-white shadow-sm' : 'bg-transparent text-[#415364]/60 hover:text-[#415364]'}`}
-              >
+              <button key={f} onClick={() => setFiltroTiempo(f)} className={`px-4 py-2 text-[10px] font-bold rounded-lg uppercase tracking-wider transition-colors ${filtroTiempo === f ? 'bg-[#415364] text-white shadow-sm' : 'bg-transparent text-[#415364]/60 hover:text-[#415364]'}`}>
                 {f === 'hoy' ? 'Hoy' : f === '7d' ? '7 Días' : '30 Días'}
               </button>
             ))}
@@ -727,7 +686,7 @@ export default function RadarCentral() {
             </div>
             <div className="bg-[#21242E] text-white p-5 rounded-2xl shadow-md transition-transform hover:-translate-y-1">
               <span className="text-[9px] uppercase font-bold text-white/50 tracking-widest flex items-center gap-1.5">
-                <svg className="w-3 h-3 text-[#ea0029]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                <svg className="w-3 h-3 text-[#ea0029]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                 Alta Intención
               </span>
               <div className="text-3xl font-light mt-1">{metricas.altoInteres}</div>
@@ -744,14 +703,14 @@ export default function RadarCentral() {
               <div className="text-[10px] font-bold uppercase text-[#415364]/50 tracking-widest mt-1">Visitas Web</div>
             </div>
             <div className="hidden md:block text-[#415364]/20">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
             </div>
             <div className="flex-1">
               <div className="text-3xl font-light text-[#415364]">{metricas.funnel.scroll50}</div>
               <div className="text-[10px] font-bold uppercase text-[#415364]/50 tracking-widest mt-1">Navegación +50%</div>
             </div>
             <div className="hidden md:block text-[#415364]/20">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
             </div>
             <div className="flex-1">
               <div className="text-3xl font-bold text-[#415364]">{metricas.funnel.intentosContacto}</div>
@@ -759,7 +718,7 @@ export default function RadarCentral() {
               <div className="text-[8px] text-[#415364]/40 mt-1 font-medium">(WhatsApp o Accesos)</div>
             </div>
             <div className="hidden md:block text-[#ea0029]/30">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
             </div>
             <div className="flex-1 bg-[#ea0029]/5 p-3 rounded-xl border border-[#ea0029]/10">
               <div className="text-3xl font-bold text-[#ea0029]">{metricas.funnel.registros}</div>
@@ -780,16 +739,18 @@ export default function RadarCentral() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
-                  {cargandoWeb ? (
+                  {cargandoWeb && (
                     <tr><td colSpan={5} className="p-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">Analizando huellas digitales...</td></tr>
-                  ) : visitantesAgrupados.map((v) => (
+                  )}
+                  {!cargandoWeb && visitantesAgrupados.map((v) => (
                     <React.Fragment key={v.visitor_id}>
                       <tr className="hover:bg-[#dce3eb]/30 transition-colors">
                         <td className="p-5">
                           <div className="font-bold text-sm text-[#415364] whitespace-nowrap">
-                            {v.email ? (
+                            {v.email && (
                               <span className="text-green-700 bg-green-50 px-2.5 py-1 rounded-md border border-green-200 text-xs">✓ {v.email}</span>
-                            ) : (
+                            )}
+                            {!v.email && (
                               <span className="text-neutral-500">Anónimo #{v.visitor_id.substring(0,6)}</span>
                             )}
                           </div>
@@ -803,20 +764,13 @@ export default function RadarCentral() {
                           <span className="text-[10px] bg-[#dce3eb]/50 border border-[#415364]/10 px-2.5 py-1.5 rounded-md text-[#415364] font-mono font-bold whitespace-nowrap">{v.fuentePrincipal}</span>
                         </td>
                         <td className="p-5">
-                          <span className={`text-[10px] font-bold px-2.5 py-1.5 rounded-md tracking-wider flex w-fit items-center gap-1.5 whitespace-nowrap ${
-                            v.nivelInteraccion === 'ALTO' ? 'bg-[#ea0029]/10 text-[#ea0029] border border-[#ea0029]/20' : 
-                            v.nivelInteraccion === 'MEDIO' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 
-                            'bg-[#415364]/5 text-[#415364]/60 border border-[#415364]/10'
-                          }`}>
-                            {v.nivelInteraccion === 'ALTO' && <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>}
+                          <span className={`text-[10px] font-bold px-2.5 py-1.5 rounded-md tracking-wider flex w-fit items-center gap-1.5 whitespace-nowrap ${v.nivelInteraccion === 'ALTO' ? 'bg-[#ea0029]/10 text-[#ea0029] border border-[#ea0029]/20' : v.nivelInteraccion === 'MEDIO' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-[#415364]/5 text-[#415364]/60 border border-[#415364]/10'}`}>
+                            {v.nivelInteraccion === 'ALTO' && <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>}
                             {v.nivelInteraccion} ({v.score} pts)
                           </span>
                         </td>
                         <td className="p-5 text-center">
-                          <button 
-                            onClick={() => setVisitanteExpandido(visitanteExpandido === v.visitor_id ? null : v.visitor_id)}
-                            className="text-[10px] font-bold text-[#415364] hover:text-white bg-[#415364]/10 hover:bg-[#415364] px-4 py-2 rounded-lg uppercase tracking-widest transition-colors whitespace-nowrap"
-                          >
+                          <button onClick={() => setVisitanteExpandido(visitanteExpandido === v.visitor_id ? null : v.visitor_id)} className="text-[10px] font-bold text-[#415364] hover:text-white bg-[#415364]/10 hover:bg-[#415364] px-4 py-2 rounded-lg uppercase tracking-widest transition-colors whitespace-nowrap">
                             {visitanteExpandido === v.visitor_id ? 'Ocultar' : 'Revisar'}
                           </button>
                         </td>
