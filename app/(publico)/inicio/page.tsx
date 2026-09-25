@@ -560,10 +560,9 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* 5. GALERÍA DEL PROYECTO (FONDO COLOR SÓLIDO, SIN MARCA DE AGUA) */}
+      {/* 5. GALERÍA DEL PROYECTO */}
       <section className="py-12 md:py-16 bg-[#21242E] relative text-center">
         
-        {/* Título y Subtítulo Original (Perfectamente Centrados) */}
         <div className="max-w-6xl mx-auto relative z-10 px-6 mb-6">
           <span className="text-[11px] font-bold tracking-[0.25em] text-[#D1C292] uppercase mb-3 block">Galería del Proyecto</span>
           <h3 className="text-2xl md:text-3xl font-medium text-white tracking-tight">Imágenes que hablan por sí solas.</h3>
@@ -590,7 +589,6 @@ export default function ArienzoLandingPremium() {
                 />
                 <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-300"></div>
                 
-                {/* Lupa de ampliación */}
                 <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-md rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
                 </div>
@@ -598,7 +596,6 @@ export default function ArienzoLandingPremium() {
             ))}
           </div>
           
-          {/* Instrucción visual */}
           <div className="max-w-6xl mx-auto px-6 mt-4 relative z-10 flex justify-center">
             <span className="flex items-center justify-center gap-2 text-[9px] font-bold tracking-[0.2em] text-white/40 uppercase">
               <svg className="w-4 h-4 animate-pulse hidden md:block" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
@@ -790,7 +787,7 @@ export default function ArienzoLandingPremium() {
                       placeholder="WhatsApp (Solo números)" 
                       autoComplete="tel"
                       value={formData.telefono} 
-                      onChange={e => setFormData({...formData, telefono: e.target.value.replace(/\D/g, '').slice(0, 10)})} 
+                      onChange={e => setFormData({...formData, telefono: e.target.value.replace(/\D/g, '').slice(0, 15)})} 
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#964B36] transition-colors" 
                     />
                   </div>
@@ -874,7 +871,7 @@ export default function ArienzoLandingPremium() {
                       placeholder="WhatsApp (Solo números)" 
                       autoComplete="tel"
                       value={formBrochure.telefono} 
-                      onChange={e => setFormBrochure({...formBrochure, telefono: e.target.value.replace(/\D/g, '').slice(0, 10)})} 
+                      onChange={e => setFormBrochure({...formBrochure, telefono: e.target.value.replace(/\D/g, '').slice(0, 15)})} 
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#D1C292] transition-colors" 
                     />
                   </div>
