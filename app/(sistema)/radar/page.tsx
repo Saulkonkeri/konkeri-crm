@@ -240,7 +240,14 @@ export default function RadarCentral() {
     }
     const asunto = encodeURIComponent("Arienzo Boutique Living - Actualización de Contacto");
     const cuerpo = encodeURIComponent(`Hola ${cliente.nombres},\n\nGracias por su interés en Arienzo Boutique Living.\n\nHemos intentado comunicarnos al número de teléfono registrado (${cliente.telefono || 'sin número'}), pero parece no estar disponible o es incorrecto.\n\nPara poder otorgarle su Pase VIP y enviarle la lista de precios e inventario, por favor indíquenos su número de WhatsApp actual respondiendo a este correo.\n\nQuedamos a la espera de su respuesta.\n\nSaludos cordiales,\nEquipo Comercial Arienzo\nKonkeri Real Estate`);
-    window.location.href = `mailto:${cliente.email}?subject=${asunto}&body=${cuerpo}`;
+    
+    // Enlace virtual para forzar apertura en móviles
+    const link = document.createElement('a');
+    link.href = `mailto:${cliente.email}?subject=${asunto}&body=${cuerpo}`;
+    link.target = '_top'; 
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const abrirWhatsApp = (telefono: string, nombres: string) => {
@@ -269,7 +276,11 @@ export default function RadarCentral() {
     }
 
     if (sesion.unidadesVistas.length === 1) analisis += `Se enfocó exclusivamente en la unidad ${sesion.unidadesVistas[0]}. `;
-    else if (sesion.unidadesVistas.length > 1) analisis += `Comparó ${sesion.unidadesVistas.length} unidades (${sesion.unidadesVistas.join(', ')}). `;
+    else if (sesion.unidadesVistas.length > 1) analisis += `Comparó ${sesion.unidadesVistas.length} units (${sesion.unidadesVistas.join(', ')}). `;
+
+    const reserva = sesion.eventos.some(e => e.accion === 'RESERVA_COMPLETADA');
+    if (reserva) analisis += "Alerta de Cierre: Completó un bloqueo web de forma autónoma. ";
+
     return analisis;
   };
 
@@ -559,11 +570,12 @@ export default function RadarCentral() {
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                             </button>
                             
-                            <button onClick={() => solicitarTelefonoCorrecto(cliente)} className="bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 px-3 py-2 rounded-lg transition-colors shadow-sm flex items-center justify-center" title="Solicitar Teléfono Correcto">
+                            {/* BOTON: SOLICITAR TELEFONO (ALERTA) */}
+                            <button onClick={() => solicitarTelefonoCorrecto(cliente)} className="bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 px-3 py-2 rounded-lg transition-colors shadow-sm flex items-center justify-center" title="Solicitar Teléfono Correcto (Email)">
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                             </button>
                             
-                            <button onClick={() => abrirWhatsApp(cliente.telefono, cliente.nombres)} className="bg-[#25D366]/10 border border-[#25D366]/30 text-[#1DA851] hover:bg-[#25D366]/20 px-3 py-2 rounded-lg transition-colors flex items-center justify-center" title="WhatsApp">
+                            <button onClick={() => abrirWhatsApp(cliente.telefono, cliente.nombres)} className="bg-[#25D366]/10 border border-[#25D366]/30 text-[#1DA851] hover:bg-[#25D366]/20 px-3 py-2 rounded-lg transition-colors flex items-center justify-center" title="Escribir por WhatsApp">
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
                             </button>
                           </div>
@@ -586,6 +598,7 @@ export default function RadarCentral() {
           {cargandoRadar && sesiones.length === 0 ? (
             <div className="p-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">Cargando lecturas del radar...</div>
           ) : (
+            
             <div className="overflow-x-auto custom-scrollbar w-full">
               <table className="w-full min-w-[1000px] text-left border-collapse">
                 <thead>
@@ -603,9 +616,9 @@ export default function RadarCentral() {
                       <tr className="hover:bg-[#dce3eb]/30 transition-colors">
                         <td className="p-5">
                           <span className="font-bold text-[#415364] flex items-center gap-1.5 text-sm whitespace-nowrap">
-                            {sesion.nombre ? (
-                              <>{sesion.nombre} <svg className="w-3.5 h-3.5 text-[#1DA851]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg></>
-                            ) : ( 'Visitante Anónimo' )}
+                            <React.Fragment>
+                              {sesion.nombre ? sesion.nombre : 'Visitante Anónimo'}
+                            </React.Fragment>
                           </span>
                           <span className="text-[10px] text-[#415364]/60 font-mono block mt-1">{sesion.email}</span>
                           <span className="text-[9px] text-[#415364]/40 mt-1.5 block font-bold uppercase tracking-wider">
@@ -653,10 +666,12 @@ export default function RadarCentral() {
                               {sesion.eventos.map((evento, i) => (
                                 <div key={i} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
                                   <div className="flex items-center justify-center w-2.5 h-2.5 rounded-full border-[2px] border-white bg-[#ea0029] shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm sm:mx-0 mx-4 z-10"></div>
-                                  <div className="w-[calc(100%-4rem)] md:w-[calc(50%-3rem)] bg-white p-4 rounded-xl border border-[#415364]/10 shadow-sm flex flex-col hover:border-[#ea0029]/40 hover:shadow-md transition-all">
+                                  <div className="w-full md:w-1/2 bg-white p-4 rounded-xl border border-[#415364]/10 shadow-sm flex flex-col hover:border-[#ea0029]/40 hover:shadow-md transition-all">
                                     <div className="flex items-center justify-between mb-2">
                                       <span className="text-[10px] font-bold text-[#415364]/50">{new Date(evento.created_at).toLocaleTimeString('es-EC')}</span>
-                                      {evento.unidad_id && <span className="text-[9px] bg-[#dce3eb]/50 text-[#415364] border border-[#415364]/10 font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">Unidad {evento.unidad_id}</span>}
+                                      {evento.unidad_id ? (
+                                        <span className="text-[9px] bg-[#dce3eb]/50 text-[#415364] border border-[#415364]/10 font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">Unidad {evento.unidad_id}</span>
+                                      ) : null}
                                     </div>
                                     <span className="text-xs font-bold text-[#415364]">{formatAccionTexto(evento.accion)}</span>
                                     <span className="text-[11px] text-[#415364]/70 mt-1 font-medium">{evento.detalle}</span>
@@ -675,7 +690,8 @@ export default function RadarCentral() {
                 </tbody>
               </table>
             </div>
-          )}
+          </div>
+
         </div>
       )}
 
@@ -722,6 +738,35 @@ export default function RadarCentral() {
             </div>
           </div>
 
+          <div className="bg-white p-6 md:p-8 rounded-2xl border border-neutral-200/60 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 text-center">
+            <div className="flex-1">
+              <div className="text-3xl font-light text-[#415364]">{metricas.funnel.visitas}</div>
+              <div className="text-[10px] font-bold uppercase text-[#415364]/50 tracking-widest mt-1">Visitas Web</div>
+            </div>
+            <div className="hidden md:block text-[#415364]/20">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
+            </div>
+            <div className="flex-1">
+              <div className="text-3xl font-light text-[#415364]">{metricas.funnel.scroll50}</div>
+              <div className="text-[10px] font-bold uppercase text-[#415364]/50 tracking-widest mt-1">Navegación +50%</div>
+            </div>
+            <div className="hidden md:block text-[#415364]/20">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
+            </div>
+            <div className="flex-1">
+              <div className="text-3xl font-bold text-[#415364]">{metricas.funnel.intentosContacto}</div>
+              <div className="text-[10px] font-bold uppercase text-[#415364]/70 tracking-widest mt-1">Intento Contacto</div>
+              <div className="text-[8px] text-[#415364]/40 mt-1 font-medium">(WhatsApp o Accesos)</div>
+            </div>
+            <div className="hidden md:block text-[#ea0029]/30">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+            </div>
+            <div className="flex-1 bg-[#ea0029]/5 p-3 rounded-xl border border-[#ea0029]/10">
+              <div className="text-3xl font-bold text-[#ea0029]">{metricas.funnel.registros}</div>
+              <div className="text-[10px] font-bold uppercase text-[#ea0029]/70 tracking-widest mt-1">Conversiones</div>
+            </div>
+          </div>
+
           <div className="bg-white rounded-2xl border border-neutral-200/60 shadow-sm overflow-hidden w-full">
             <div className="overflow-x-auto custom-scrollbar w-full">
               <table className="w-full min-w-[1000px] text-left">
@@ -745,7 +790,7 @@ export default function RadarCentral() {
                             {v.email ? (
                               <span className="text-green-700 bg-green-50 px-2.5 py-1 rounded-md border border-green-200 text-xs">✓ {v.email}</span>
                             ) : (
-                              `Anónimo #${v.visitor_id.substring(0,6)}`
+                              <span className="text-neutral-500">Anónimo #{v.visitor_id.substring(0,6)}</span>
                             )}
                           </div>
                           <div className="text-[10px] text-[#415364]/50 mt-2 font-medium">Últ. Act: {v.ultimaActividad.toLocaleString('es-EC')}</div>
