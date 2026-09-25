@@ -42,21 +42,44 @@ type VisitanteAgrupado = {
   nivelInteraccion: 'ALTO' | 'MEDIO' | 'BAJO';
 };
 
+// ==========================================
+// 2. FUNCIONES AUXILIARES PURAS (ANTI-BUGS VERCEL)
+// ==========================================
+const formatTiempoAtras = (fecha: Date) => {
+  const ahora = new Date().getTime();
+  const diffMs = ahora - fecha.getTime();
+  if (diffMs > 86400000) {
+    return new Date(fecha).toLocaleDateString('es-EC', { day: '2-digit', month: 'short' });
+  }
+  const minutos = Math.round(diffMs / 60000);
+  return `Hace ${minutos} min`;
+};
+
+const formatMinutos = (mins: number) => {
+  if (mins === 0) return 'Menos de 1 min';
+  return `${mins} min`;
+};
+
+const formatAccionTexto = (str: string) => {
+  if (!str) return '';
+  return str.split('_').join(' ');
+};
+
 export default function RadarCentral() {
   const [pestañaActiva, setPestañaActiva] = useState('solicitudes'); 
   
-  // ESTADOS PESTAÑA 1: SOLICITUDES VIP
+  // ESTADOS PESTAÑA 1
   const [solicitudes, setSolicitudes] = useState<any[]>([]);
   const [cargandoSolicitudes, setCargandoSolicitudes] = useState(true);
   const [tiemposSeleccionados, setTiemposSeleccionados] = useState<Record<string, string>>({});
   const [ticker, setTicker] = useState(0); 
 
-  // ESTADOS PESTAÑA 2: RADAR INVENTARIO
+  // ESTADOS PESTAÑA 2
   const [sesiones, setSesiones] = useState<SesionCliente[]>([]);
   const [cargandoRadar, setCargandoRadar] = useState(true);
   const [sesionExpandida, setSesionExpandida] = useState<string | null>(null);
 
-  // ESTADOS PESTAÑA 3: ACTIVIDAD WEB
+  // ESTADOS PESTAÑA 3
   const [eventosWeb, setEventosWeb] = useState<EventoWeb[]>([]);
   const [visitantesAgrupados, setVisitantesAgrupados] = useState<VisitanteAgrupado[]>([]);
   const [cargandoWeb, setCargandoWeb] = useState(true);
@@ -170,12 +193,8 @@ export default function RadarCentral() {
         .select();
 
       if (errorPase) throw errorPase;
-      if (!dataPase || dataPase.length === 0) {
-        alert("⚠️ ATENCIÓN: Supabase bloqueó la creación del Pase VIP por seguridad. Revisa los permisos.");
-        return;
-      }
 
-      const { data: dataCliente, error: errorCliente } = await supabase
+      const { error: errorCliente } = await supabase
         .from('clientes')
         .update({ estado_acceso: 'aprobado' }) 
         .eq('id', cliente.id)
@@ -190,7 +209,7 @@ export default function RadarCentral() {
       alert(`Acceso activado correctamente para ${cliente.nombres}.`);
       
     } catch (error) {
-      console.error("Error detallado al generar pase VIP:", error);
+      console.error("Error al generar pase:", error);
       alert("Hubo un error de conexión con la base de datos.");
     }
   };
@@ -207,7 +226,7 @@ export default function RadarCentral() {
       if (response.ok) {
         alert("Correo corporativo enviado con éxito.");
       } else {
-        alert("Hubo un problema de conexión con el servidor de correos de Hostinger.");
+        alert("Hubo un problema de conexión con el servidor de correos.");
       }
     } catch (error) {
       alert("Error en el sistema al intentar enviar el correo.");
@@ -216,26 +235,19 @@ export default function RadarCentral() {
 
   const solicitarTelefonoCorrecto = (cliente: any) => {
     if (!cliente.email) {
-      alert("No hay un correo registrado para este cliente.");
+      alert("Este cliente no tiene correo electrónico registrado.");
       return;
     }
     const asunto = encodeURIComponent("Arienzo Boutique Living - Actualización de Contacto");
-    const cuerpo = encodeURIComponent(`Hola ${cliente.nombres},\n\nGracias por su interés en Arienzo Boutique Living.\n\nHemos intentado comunicarnos al número de teléfono registrado (${cliente.telefono || 'sin número'}), pero parece no estar disponible o ser incorrecto.\n\nPara poder otorgarle su Pase VIP y enviarle la lista de precios e inventario, por favor indíquenos su número de WhatsApp actual respondiendo a este correo.\n\nQuedamos a la espera de su respuesta.\n\nSaludos cordiales,\nEquipo Comercial Arienzo\nKonkeri Real Estate`);
-    
+    const cuerpo = encodeURIComponent(`Hola ${cliente.nombres},\n\nGracias por su interés en Arienzo Boutique Living.\n\nHemos intentado comunicarnos al número de teléfono registrado (${cliente.telefono || 'sin número'}), pero parece no estar disponible o es incorrecto.\n\nPara poder otorgarle su Pase VIP y enviarle la lista de precios e inventario, por favor indíquenos su número de WhatsApp actual respondiendo a este correo.\n\nQuedamos a la espera de su respuesta.\n\nSaludos cordiales,\nEquipo Comercial Arienzo\nKonkeri Real Estate`);
     window.location.href = `mailto:${cliente.email}?subject=${asunto}&body=${cuerpo}`;
   };
 
   const abrirWhatsApp = (telefono: string, nombres: string) => {
     if (!telefono) { alert("Este cliente no tiene un teléfono registrado."); return; }
-    
     let numLimpio = telefono.split('').filter(char => char >= '0' && char <= '9').join('');
-    
-    if (numLimpio.startsWith('0') && numLimpio.length === 10) {
-      numLimpio = '593' + numLimpio.substring(1);
-    } else if (numLimpio.length === 9) {
-      numLimpio = '593' + numLimpio;
-    }
-
+    if (numLimpio.startsWith('0') && numLimpio.length === 10) numLimpio = '593' + numLimpio.substring(1);
+    else if (numLimpio.length === 9) numLimpio = '593' + numLimpio;
     const mensaje = `Hola ${nombres}, soy Saúl de Konkeri. Hemos validado tu perfil y tu acceso exclusivo al inventario de Arienzo Boutique Living está listo. Puedes ingresar aquí: https://reserva.arienzoliving.com con tu correo.`;
     window.open(`https://wa.me/${numLimpio}?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
@@ -258,10 +270,6 @@ export default function RadarCentral() {
 
     if (sesion.unidadesVistas.length === 1) analisis += `Se enfocó exclusivamente en la unidad ${sesion.unidadesVistas[0]}. `;
     else if (sesion.unidadesVistas.length > 1) analisis += `Comparó ${sesion.unidadesVistas.length} unidades (${sesion.unidadesVistas.join(', ')}). `;
-
-    const reserva = sesion.eventos.some(e => e.accion === 'RESERVA_COMPLETADA');
-    if (reserva) analisis += "Alerta de Cierre: Completó un bloqueo web de forma autónoma. ";
-
     return analisis;
   };
 
@@ -271,15 +279,20 @@ export default function RadarCentral() {
       const { data } = await supabase
         .from('tracking_inventario')
         .select('*')
-        .not('accion', 'in', '("SOLICITUD_ACCESO_VIP","ABRIO_CALENDLY","VISITA_LANDING","ABRIO_FORMULARIO","CLIC_WHATSAPP","REGISTRO_COMPLETADO","CLIC_DISPONIBILIDAD","DESCARGA_BROCHURE")')
-        .not('accion', 'like', 'SCROLL_%')
-        .not('accion', 'like', 'VIO_%')
-        .not('detalle', 'ilike', '%LANDING%') 
         .order('created_at', { ascending: false })
-        .limit(500);
+        .limit(800);
 
       if (data) {
-        const datosCronologicos = [...data].reverse();
+        const accionesIgnoradas = ['SOLICITUD_ACCESO_VIP','ABRIO_CALENDLY','VISITA_LANDING','ABRIO_FORMULARIO','CLIC_WHATSAPP','REGISTRO_COMPLETADO','CLIC_DISPONIBILIDAD','DESCARGA_BROCHURE'];
+        const dataFiltrada = data.filter(row => {
+          const esAccionValida = !accionesIgnoradas.includes(row.accion);
+          const noEsScroll = !row.accion.startsWith('SCROLL_');
+          const noEsVista = !row.accion.startsWith('VIO_');
+          const noEsLanding = !(row.detalle || '').toUpperCase().includes('LANDING');
+          return esAccionValida && noEsScroll && noEsVista && noEsLanding;
+        });
+
+        const datosCronologicos = [...dataFiltrada].reverse();
         const sesionesList: SesionCliente[] = [];
         const sesionesActivas: Record<string, SesionCliente> = {};
 
@@ -297,14 +310,8 @@ export default function RadarCentral() {
             }
           } else {
             const nuevaSesion: SesionCliente = {
-              idSesion: `${email}-${tiempoActual}`,
-              email: email,
-              inicio: fechaRow,
-              fin: fechaRow,
-              minutos: 0,
-              eventos: [row],
-              ultimaAccion: '',
-              unidadesVistas: row.unidad_id ? [row.unidad_id] : []
+              idSesion: `${email}-${tiempoActual}`, email: email, inicio: fechaRow, fin: fechaRow, minutos: 0,
+              eventos: [row], ultimaAccion: '', unidadesVistas: row.unidad_id ? [row.unidad_id] : []
             };
             sesionesList.push(nuevaSesion);
             sesionesActivas[email] = nuevaSesion;
@@ -338,15 +345,8 @@ export default function RadarCentral() {
   // LÓGICA PESTAÑA 3: ACTIVIDAD WEB
   // ==========================================
   const PESOS_EVENTOS: Record<string, number> = {
-    'VISITA_LANDING': 1,
-    'SCROLL_50': 2,
-    'SCROLL_90': 3,
-    'VIO_ARQUITECTURA': 2,
-    'ABRIO_FORMULARIO': 6,
-    'ABRIO_CALENDLY': 8,
-    'CLIC_WHATSAPP': 10,
-    'DESCARGA_BROCHURE': 12,
-    'REGISTRO_COMPLETADO': 15,
+    'VISITA_LANDING': 1, 'SCROLL_50': 2, 'SCROLL_90': 3, 'VIO_ARQUITECTURA': 2,
+    'ABRIO_FORMULARIO': 6, 'ABRIO_CALENDLY': 8, 'CLIC_WHATSAPP': 10, 'DESCARGA_BROCHURE': 12, 'REGISTRO_COMPLETADO': 15,
   };
 
   const cargarActividadWeb = async () => {
@@ -357,13 +357,11 @@ export default function RadarCentral() {
       if (filtroTiempo === '30d') fechaLimite.setDate(fechaLimite.getDate() - 30);
       if (filtroTiempo === 'hoy') fechaLimite.setHours(0,0,0,0);
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('tracking_inventario')
         .select('*')
         .gte('created_at', fechaLimite.toISOString())
         .order('created_at', { ascending: true });
-
-      if (error) console.error("Error al cargar actividad:", error);
 
       if (data) {
         setEventosWeb(data);
@@ -383,10 +381,10 @@ export default function RadarCentral() {
       if (!mapa.has(safeVisitorId)) {
         mapa.set(safeVisitorId, {
           visitor_id: safeVisitorId,
-          email: ev.email_cliente && ev.email_cliente.includes('@') ? ev.email_cliente : null,
+          email: ev.email_cliente?.includes('@') ? ev.email_cliente : null,
           primeraVisita: new Date(ev.created_at),
           ultimaActividad: new Date(ev.created_at),
-          sesiones: new Set([ev.session_id || 'sesion-unica']),
+          sesiones: new Set([ev.session_id || 'unica']),
           eventos: [],
           tiempoAcumuladoMin: 0,
           score: 0,
@@ -400,14 +398,8 @@ export default function RadarCentral() {
       if (ev.session_id) visitante.sesiones.add(ev.session_id);
       
       const fechaEvento = new Date(ev.created_at);
-      if (fechaEvento > visitante.ultimaActividad) {
-          visitante.ultimaActividad = fechaEvento;
-      }
-      
-      if (ev.email_cliente && ev.email_cliente.includes('@')) {
-          visitante.email = ev.email_cliente;
-      }
-      
+      if (fechaEvento > visitante.ultimaActividad) visitante.ultimaActividad = fechaEvento;
+      if (ev.email_cliente && ev.email_cliente.includes('@')) visitante.email = ev.email_cliente;
       visitante.score += PESOS_EVENTOS[ev.accion] || 1;
     });
 
@@ -467,10 +459,7 @@ export default function RadarCentral() {
           <h1 className="text-3xl md:text-4xl font-bold text-[#415364] tracking-tight mt-1">Radar Digital</h1>
           <p className="text-sm text-[#415364]/70 mt-1">Monitoreo de actividad web y gestión de accesos exclusivos al inventario.</p>
         </div>
-        <button 
-          onClick={cargarDatos}
-          className="bg-white border border-[#415364]/20 text-[#415364] px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-[#415364]/5 transition-colors shadow-sm flex items-center gap-2"
-        >
+        <button onClick={cargarDatos} className="bg-white border border-[#415364]/20 text-[#415364] px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-[#415364]/5 transition-colors shadow-sm flex items-center gap-2">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
           Refrescar Datos
         </button>
@@ -478,35 +467,15 @@ export default function RadarCentral() {
 
       {/* PESTAÑAS (TABS) */}
       <div className="flex overflow-x-auto bg-[#dce3eb]/50 p-1.5 rounded-xl shadow-inner border border-[#415364]/10 mb-8 w-full md:w-fit custom-scrollbar">
-        <button 
-          onClick={() => setPestañaActiva('solicitudes')}
-          className={`flex-1 md:flex-auto whitespace-nowrap px-6 py-2.5 rounded-lg text-xs font-bold transition-all flex justify-center items-center gap-2 ${
-            pestañaActiva === 'solicitudes' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'
-          }`}
-        >
+        <button onClick={() => setPestañaActiva('solicitudes')} className={`flex-1 md:flex-auto whitespace-nowrap px-6 py-2.5 rounded-lg text-xs font-bold transition-all flex justify-center items-center gap-2 ${pestañaActiva === 'solicitudes' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
           Pases VIP
-          {solicitudes.filter(s => calcularTiempoRestante(s.expira_en).estado !== 'activo').length > 0 && (
-            <span className="bg-[#ea0029] text-white text-[9px] px-2 py-0.5 rounded-md ml-1">
-              {solicitudes.filter(s => calcularTiempoRestante(s.expira_en).estado !== 'activo').length}
-            </span>
-          )}
         </button>
-        <button 
-          onClick={() => setPestañaActiva('inventario')}
-          className={`flex-1 md:flex-auto whitespace-nowrap px-6 py-2.5 rounded-lg text-xs font-bold transition-all flex justify-center items-center gap-2 ${
-            pestañaActiva === 'inventario' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'
-          }`}
-        >
+        <button onClick={() => setPestañaActiva('inventario')} className={`flex-1 md:flex-auto whitespace-nowrap px-6 py-2.5 rounded-lg text-xs font-bold transition-all flex justify-center items-center gap-2 ${pestañaActiva === 'inventario' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
           Radar Unidades
         </button>
-        <button 
-          onClick={() => setPestañaActiva('web')}
-          className={`flex-1 md:flex-auto whitespace-nowrap px-6 py-2.5 rounded-lg text-xs font-bold transition-all flex justify-center items-center gap-2 ${
-            pestañaActiva === 'web' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'
-          }`}
-        >
+        <button onClick={() => setPestañaActiva('web')} className={`flex-1 md:flex-auto whitespace-nowrap px-6 py-2.5 rounded-lg text-xs font-bold transition-all flex justify-center items-center gap-2 ${pestañaActiva === 'web' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
           Trazabilidad Web
         </button>
@@ -590,11 +559,11 @@ export default function RadarCentral() {
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                             </button>
                             
-                            <button onClick={() => solicitarTelefonoCorrecto(cliente)} className="bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 px-3 py-2 rounded-lg transition-colors shadow-sm flex items-center justify-center" title="Solicitar Teléfono Correcto (Email)">
+                            <button onClick={() => solicitarTelefonoCorrecto(cliente)} className="bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 px-3 py-2 rounded-lg transition-colors shadow-sm flex items-center justify-center" title="Solicitar Teléfono Correcto">
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                             </button>
                             
-                            <button onClick={() => abrirWhatsApp(cliente.telefono, cliente.nombres)} className="bg-[#25D366]/10 border border-[#25D366]/30 text-[#1DA851] hover:bg-[#25D366]/20 px-3 py-2 rounded-lg transition-colors flex items-center justify-center" title="Escribir por WhatsApp">
+                            <button onClick={() => abrirWhatsApp(cliente.telefono, cliente.nombres)} className="bg-[#25D366]/10 border border-[#25D366]/30 text-[#1DA851] hover:bg-[#25D366]/20 px-3 py-2 rounded-lg transition-colors flex items-center justify-center" title="WhatsApp">
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
                             </button>
                           </div>
@@ -617,7 +586,6 @@ export default function RadarCentral() {
           {cargandoRadar && sesiones.length === 0 ? (
             <div className="p-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">Cargando lecturas del radar...</div>
           ) : (
-            
             <div className="overflow-x-auto custom-scrollbar w-full">
               <table className="w-full min-w-[1000px] text-left border-collapse">
                 <thead>
@@ -641,14 +609,12 @@ export default function RadarCentral() {
                           </span>
                           <span className="text-[10px] text-[#415364]/60 font-mono block mt-1">{sesion.email}</span>
                           <span className="text-[9px] text-[#415364]/40 mt-1.5 block font-bold uppercase tracking-wider">
-                            {new Date().getTime() - sesion.fin.getTime() > 86400000 
-                              ? new Date(sesion.fin).toLocaleDateString('es-EC', {day: '2-digit', month:'short'}) 
-                              : `Hace ${Math.round((new Date().getTime() - sesion.fin.getTime()) / 60000)} min`}
+                            {formatTiempoAtras(sesion.fin)}
                           </span>
                         </td>
                         <td className="p-5">
                           <span className="bg-[#dce3eb]/50 text-[#415364] border border-[#415364]/10 px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider whitespace-nowrap">
-                            {sesion.minutos === 0 ? '< 1 min' : `${sesion.minutos} min`}
+                            {formatMinutos(sesion.minutos)}
                           </span>
                         </td>
                         <td className="p-5">
@@ -692,7 +658,7 @@ export default function RadarCentral() {
                                       <span className="text-[10px] font-bold text-[#415364]/50">{new Date(evento.created_at).toLocaleTimeString('es-EC')}</span>
                                       {evento.unidad_id && <span className="text-[9px] bg-[#dce3eb]/50 text-[#415364] border border-[#415364]/10 font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">Unidad {evento.unidad_id}</span>}
                                     </div>
-                                    <span className="text-xs font-bold text-[#415364]">{evento.accion.split('_').join(' ')}</span>
+                                    <span className="text-xs font-bold text-[#415364]">{formatAccionTexto(evento.accion)}</span>
                                     <span className="text-[11px] text-[#415364]/70 mt-1 font-medium">{evento.detalle}</span>
                                   </div>
                                 </div>
@@ -709,8 +675,7 @@ export default function RadarCentral() {
                 </tbody>
               </table>
             </div>
-          </div>
-
+          )}
         </div>
       )}
 
@@ -719,7 +684,6 @@ export default function RadarCentral() {
       {/* ========================================================= */}
       {pestañaActiva === 'web' && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 w-full">
-          
           <div className="flex justify-end gap-2 bg-white w-fit ml-auto p-1.5 rounded-xl shadow-sm border border-neutral-200/60">
             {['hoy', '7d', '30d'].map(f => (
               <button 
@@ -758,37 +722,7 @@ export default function RadarCentral() {
             </div>
           </div>
 
-          <div className="bg-white p-6 md:p-8 rounded-2xl border border-neutral-200/60 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 text-center">
-            <div className="flex-1">
-              <div className="text-3xl font-light text-[#415364]">{metricas.funnel.visitas}</div>
-              <div className="text-[10px] font-bold uppercase text-[#415364]/50 tracking-widest mt-1">Visitas Web</div>
-            </div>
-            <div className="hidden md:block text-[#415364]/20">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
-            </div>
-            <div className="flex-1">
-              <div className="text-3xl font-light text-[#415364]">{metricas.funnel.scroll50}</div>
-              <div className="text-[10px] font-bold uppercase text-[#415364]/50 tracking-widest mt-1">Navegación +50%</div>
-            </div>
-            <div className="hidden md:block text-[#415364]/20">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
-            </div>
-            <div className="flex-1">
-              <div className="text-3xl font-bold text-[#415364]">{metricas.funnel.intentosContacto}</div>
-              <div className="text-[10px] font-bold uppercase text-[#415364]/70 tracking-widest mt-1">Intento Contacto</div>
-              <div className="text-[8px] text-[#415364]/40 mt-1 font-medium">(WhatsApp o Accesos)</div>
-            </div>
-            <div className="hidden md:block text-[#ea0029]/30">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
-            </div>
-            <div className="flex-1 bg-[#ea0029]/5 p-3 rounded-xl border border-[#ea0029]/10">
-              <div className="text-3xl font-bold text-[#ea0029]">{metricas.funnel.registros}</div>
-              <div className="text-[10px] font-bold uppercase text-[#ea0029]/70 tracking-widest mt-1">Conversiones</div>
-            </div>
-          </div>
-
           <div className="bg-white rounded-2xl border border-neutral-200/60 shadow-sm overflow-hidden w-full">
-            
             <div className="overflow-x-auto custom-scrollbar w-full">
               <table className="w-full min-w-[1000px] text-left">
                 <thead className="bg-[#21242E] border-b border-neutral-200">
@@ -853,7 +787,7 @@ export default function RadarCentral() {
                                   <div className="flex items-center justify-center w-2.5 h-2.5 rounded-full border-[2px] border-[#F9F7F5] bg-[#415364]/30 z-10 ml-4 mr-5 shrink-0"></div>
                                   <div className="bg-white p-4 rounded-xl border border-[#415364]/10 shadow-sm w-full md:w-1/2 flex justify-between items-center hover:border-[#415364]/30 transition-colors">
                                     <div>
-                                      <span className="text-xs font-bold text-[#415364]">{evento.accion.split('_').join(' ')}</span>
+                                      <span className="text-xs font-bold text-[#415364]">{formatAccionTexto(evento.accion)}</span>
                                       <span className="text-[10px] text-[#415364]/60 block mt-1 font-medium">{evento.detalle}</span>
                                     </div>
                                     <span className="text-[10px] font-bold text-[#415364]/40 whitespace-nowrap bg-[#dce3eb]/30 px-2 py-1 rounded-md shrink-0">
