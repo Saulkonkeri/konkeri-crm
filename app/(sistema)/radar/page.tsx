@@ -214,6 +214,18 @@ export default function RadarCentral() {
     }
   };
 
+  // NUEVA FUNCIÓN: Solicitar Teléfono Correcto
+  const solicitarTelefonoCorrecto = (cliente: any) => {
+    if (!cliente.email) {
+      alert("No hay un correo registrado para este cliente.");
+      return;
+    }
+    const asunto = encodeURIComponent("Arienzo Boutique Living - Actualización de Contacto");
+    const cuerpo = encodeURIComponent(`Hola ${cliente.nombres},\n\nGracias por su interés en Arienzo Boutique Living.\n\nHemos intentado comunicarnos al número de teléfono registrado (${cliente.telefono || 'sin número'}), pero parece no estar disponible o ser incorrecto.\n\nPara poder otorgarle su Pase VIP y enviarle la lista de precios e inventario, por favor indíquenos su número de WhatsApp actual respondiendo a este correo.\n\nQuedamos a la espera de su respuesta.\n\nSaludos cordiales,\nEquipo Comercial Arienzo\nKonkeri Real Estate`);
+    
+    window.location.href = `mailto:${cliente.email}?subject=${asunto}&body=${cuerpo}`;
+  };
+
   const abrirWhatsApp = (telefono: string, nombres: string) => {
     if (!telefono) { alert("Este cliente no tiene un teléfono registrado."); return; }
     
@@ -345,12 +357,15 @@ export default function RadarCentral() {
       if (filtroTiempo === '30d') fechaLimite.setDate(fechaLimite.getDate() - 30);
       if (filtroTiempo === 'hoy') fechaLimite.setHours(0,0,0,0);
 
-      const { data } = await supabase
+      // FIX: Quitamos la restricción de que el visitor_id deba existir sí o sí
+      // Así capturamos a los leads de pautas que bloquean cookies.
+      const { data, error } = await supabase
         .from('tracking_inventario')
         .select('*')
-        .not('visitor_id', 'is', null) 
         .gte('created_at', fechaLimite.toISOString())
         .order('created_at', { ascending: true });
+
+      if (error) console.error("Error al cargar actividad:", error);
 
       if (data) {
         setEventosWeb(data);
@@ -365,13 +380,16 @@ export default function RadarCentral() {
     const mapa = new Map<string, VisitanteAgrupado>();
 
     eventos.forEach(ev => {
-      if (!mapa.has(ev.visitor_id)) {
-        mapa.set(ev.visitor_id, {
-          visitor_id: ev.visitor_id,
+      // FIX: Si no hay visitor_id (por bloqueo de cookies), usamos email o sesión como ID único para no perder el dato
+      const safeVisitorId = ev.visitor_id || ev.email_cliente || ev.session_id || `anon-${ev.id}`;
+
+      if (!mapa.has(safeVisitorId)) {
+        mapa.set(safeVisitorId, {
+          visitor_id: safeVisitorId,
           email: ev.email_cliente?.includes('@') ? ev.email_cliente : null,
           primeraVisita: new Date(ev.created_at),
           ultimaActividad: new Date(ev.created_at),
-          sesiones: new Set([ev.session_id]),
+          sesiones: new Set([ev.session_id || 'sesion-unica']),
           eventos: [],
           tiempoAcumuladoMin: 0,
           score: 0,
@@ -380,12 +398,19 @@ export default function RadarCentral() {
         });
       }
 
-      const visitante = mapa.get(ev.visitor_id)!;
+      const visitante = mapa.get(safeVisitorId)!;
       visitante.eventos.push(ev);
-      visitante.sesiones.add(ev.session_id);
-      visitante.ultimaActividad = new Date(Math.max(visitante.ultimaActividad.getTime(), new Date(ev.created_at).getTime()));
+      if (ev.session_id) visitante.sesiones.add(ev.session_id);
       
-      if (ev.email_cliente?.includes('@')) visitante.email = ev.email_cliente;
+      const fechaEvento = new Date(ev.created_at);
+      if (fechaEvento > visitante.ultimaActividad) {
+          visitante.ultimaActividad = fechaEvento;
+      }
+      
+      if (ev.email_cliente && ev.email_cliente.includes('@')) {
+          visitante.email = ev.email_cliente;
+      }
+      
       visitante.score += PESOS_EVENTOS[ev.accion] || 1;
     });
 
@@ -501,9 +526,8 @@ export default function RadarCentral() {
             </h3>
           </div>
           
-          {/* FIX MOBILE: Aplicando min-w-[900px] para forzar el scroll horizontal */}
           <div className="overflow-x-auto custom-scrollbar w-full">
-            <table className="w-full min-w-[900px] text-left text-sm text-[#415364]">
+            <table className="w-full min-w-[950px] text-left text-sm text-[#415364]">
               <thead className="bg-neutral-50/50 text-[#415364]/60 text-[10px] uppercase tracking-widest border-b border-neutral-100">
                 <tr>
                   <th className="px-6 py-4 font-bold">Inversionista</th>
@@ -565,9 +589,15 @@ export default function RadarCentral() {
                               {activo ? 'Renovar' : 'Aprobar'}
                             </button>
 
-                            <button onClick={() => enviarCorreo(cliente)} className="bg-[#dce3eb]/50 text-[#415364] hover:bg-[#415364]/10 border border-[#415364]/10 px-3 py-2 rounded-lg transition-colors shadow-sm flex items-center justify-center" title="Enviar Email">
+                            <button onClick={() => enviarCorreo(cliente)} className="bg-[#dce3eb]/50 text-[#415364] hover:bg-[#415364]/10 border border-[#415364]/10 px-3 py-2 rounded-lg transition-colors shadow-sm flex items-center justify-center" title="Enviar Email Pase">
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                             </button>
+                            
+                            {/* NUEVO BOTON: SOLICITAR TELEFONO (ALERTA) */}
+                            <button onClick={() => solicitarTelefonoCorrecto(cliente)} className="bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 px-3 py-2 rounded-lg transition-colors shadow-sm flex items-center justify-center" title="Solicitar Teléfono Correcto (Email)">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            </button>
+                            
                             <button onClick={() => abrirWhatsApp(cliente.telefono, cliente.nombres)} className="bg-[#25D366]/10 border border-[#25D366]/30 text-[#1DA851] hover:bg-[#25D366]/20 px-3 py-2 rounded-lg transition-colors flex items-center justify-center" title="Escribir por WhatsApp">
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
                             </button>
@@ -592,7 +622,6 @@ export default function RadarCentral() {
             <div className="p-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">Cargando lecturas del radar...</div>
           ) : (
             
-            /* FIX MOBILE: min-w-[1000px] para forzar scroll horizontal en radar */
             <div className="overflow-x-auto custom-scrollbar w-full">
               <table className="w-full min-w-[1000px] text-left border-collapse">
                 <thead>
@@ -684,7 +713,8 @@ export default function RadarCentral() {
                 </tbody>
               </table>
             </div>
-          )}
+          </div>
+
         </div>
       )}
 
@@ -763,7 +793,6 @@ export default function RadarCentral() {
 
           <div className="bg-white rounded-2xl border border-neutral-200/60 shadow-sm overflow-hidden w-full">
             
-            {/* FIX MOBILE: min-w-[1000px] para el tracking de visitantes */}
             <div className="overflow-x-auto custom-scrollbar w-full">
               <table className="w-full min-w-[1000px] text-left">
                 <thead className="bg-[#21242E] border-b border-neutral-200">
