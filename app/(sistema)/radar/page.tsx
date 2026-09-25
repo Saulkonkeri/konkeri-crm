@@ -3,6 +3,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 
+// ==========================================
+// 1. DEFINICIÓN DE TIPOS
+// ==========================================
 type SesionCliente = {
   idSesion: string;
   email: string;
@@ -39,6 +42,9 @@ type VisitanteAgrupado = {
   nivelInteraccion: 'ALTO' | 'MEDIO' | 'BAJO';
 };
 
+// ==========================================
+// 2. FUNCIONES AUXILIARES PURAS (ANTI-BUGS VERCEL)
+// ==========================================
 const formatTiempoAtras = (fecha: Date) => {
   const ahora = new Date().getTime();
   const diffMs = ahora - fecha.getTime();
@@ -62,15 +68,18 @@ const formatAccionTexto = (str: string) => {
 export default function RadarCentral() {
   const [pestañaActiva, setPestañaActiva] = useState('solicitudes'); 
   
+  // ESTADOS PESTAÑA 1
   const [solicitudes, setSolicitudes] = useState<any[]>([]);
   const [cargandoSolicitudes, setCargandoSolicitudes] = useState(true);
   const [tiemposSeleccionados, setTiemposSeleccionados] = useState<Record<string, string>>({});
   const [ticker, setTicker] = useState(0); 
 
+  // ESTADOS PESTAÑA 2
   const [sesiones, setSesiones] = useState<SesionCliente[]>([]);
   const [cargandoRadar, setCargandoRadar] = useState(true);
   const [sesionExpandida, setSesionExpandida] = useState<string | null>(null);
 
+  // ESTADOS PESTAÑA 3
   const [eventosWeb, setEventosWeb] = useState<EventoWeb[]>([]);
   const [visitantesAgrupados, setVisitantesAgrupados] = useState<VisitanteAgrupado[]>([]);
   const [cargandoWeb, setCargandoWeb] = useState(true);
@@ -89,6 +98,9 @@ export default function RadarCentral() {
     cargarActividadWeb();
   };
 
+  // ==========================================
+  // LÓGICA PESTAÑA 1: SOLICITUDES VIP
+  // ==========================================
   const cargarSolicitudes = async () => {
     setCargandoSolicitudes(true);
     try {
@@ -221,20 +233,29 @@ export default function RadarCentral() {
     }
   };
 
-  const solicitarTelefonoCorrecto = (cliente: any) => {
+  const solicitarTelefonoCorrecto = async (cliente: any) => {
     if (!cliente.email) {
       alert("Este cliente no tiene correo electrónico registrado.");
       return;
     }
-    const asunto = encodeURIComponent("Arienzo Boutique Living - Actualización de Contacto");
-    const cuerpo = encodeURIComponent(`Hola ${cliente.nombres},\n\nGracias por su interés en Arienzo Boutique Living.\n\nHemos intentado comunicarnos al número de teléfono registrado (${cliente.telefono || 'sin número'}), pero parece no estar disponible o es incorrecto.\n\nPara poder otorgarle su Pase VIP y enviarle la lista de precios e inventario, por favor indíquenos su número de WhatsApp actual respondiendo a este correo.\n\nQuedamos a la espera de su respuesta.\n\nSaludos cordiales,\nEquipo Comercial Arienzo\nKonkeri Real Estate`);
     
-    const link = document.createElement('a');
-    link.href = `mailto:${cliente.email}?subject=${asunto}&body=${cuerpo}`;
-    link.target = '_top'; 
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    alert(`Enviando solicitud de actualización a ${cliente.email}...`);
+    
+    try {
+      const response = await fetch('/api/solicitar-telefono', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cliente.email, nombres: cliente.nombres }),
+      });
+      
+      if (response.ok) {
+        alert("Correo de actualización enviado con éxito al prospecto.");
+      } else {
+        alert("Hubo un problema de conexión con el servidor de correos de Hostinger.");
+      }
+    } catch (error) {
+      alert("Error en el sistema al intentar enviar el correo.");
+    }
   };
 
   const abrirWhatsApp = (telefono: string, nombres: string) => {
@@ -246,6 +267,9 @@ export default function RadarCentral() {
     window.open(`https://wa.me/${numLimpio}?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
 
+  // ==========================================
+  // LÓGICA PESTAÑA 2: RADAR INVENTARIO
+  // ==========================================
   const generarAnalisisComercial = (sesion: SesionCliente) => {
     if (sesion.eventos.length === 0) return "Sin datos suficientes para analizar.";
     let analisis = "";
@@ -336,6 +360,9 @@ export default function RadarCentral() {
     }
   };
 
+  // ==========================================
+  // LÓGICA PESTAÑA 3: ACTIVIDAD WEB
+  // ==========================================
   const PESOS_EVENTOS: Record<string, number> = {
     'VISITA_LANDING': 1, 'SCROLL_50': 2, 'SCROLL_90': 3, 'VIO_ARQUITECTURA': 2,
     'ABRIO_FORMULARIO': 6, 'ABRIO_CALENDLY': 8, 'CLIC_WHATSAPP': 10, 'DESCARGA_BROCHURE': 12, 'REGISTRO_COMPLETADO': 15,
