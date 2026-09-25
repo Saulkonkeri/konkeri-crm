@@ -214,7 +214,6 @@ export default function RadarCentral() {
     }
   };
 
-  // NUEVA FUNCIÓN: Solicitar Teléfono Correcto
   const solicitarTelefonoCorrecto = (cliente: any) => {
     if (!cliente.email) {
       alert("No hay un correo registrado para este cliente.");
@@ -357,8 +356,6 @@ export default function RadarCentral() {
       if (filtroTiempo === '30d') fechaLimite.setDate(fechaLimite.getDate() - 30);
       if (filtroTiempo === 'hoy') fechaLimite.setHours(0,0,0,0);
 
-      // FIX: Quitamos la restricción de que el visitor_id deba existir sí o sí
-      // Así capturamos a los leads de pautas que bloquean cookies.
       const { data, error } = await supabase
         .from('tracking_inventario')
         .select('*')
@@ -380,7 +377,6 @@ export default function RadarCentral() {
     const mapa = new Map<string, VisitanteAgrupado>();
 
     eventos.forEach(ev => {
-      // FIX: Si no hay visitor_id (por bloqueo de cookies), usamos email o sesión como ID único para no perder el dato
       const safeVisitorId = ev.visitor_id || ev.email_cliente || ev.session_id || `anon-${ev.id}`;
 
       if (!mapa.has(safeVisitorId)) {
@@ -593,7 +589,6 @@ export default function RadarCentral() {
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                             </button>
                             
-                            {/* NUEVO BOTON: SOLICITAR TELEFONO (ALERTA) */}
                             <button onClick={() => solicitarTelefonoCorrecto(cliente)} className="bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 px-3 py-2 rounded-lg transition-colors shadow-sm flex items-center justify-center" title="Solicitar Teléfono Correcto (Email)">
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                             </button>
@@ -696,7 +691,7 @@ export default function RadarCentral() {
                                       <span className="text-[10px] font-bold text-[#415364]/50">{new Date(evento.created_at).toLocaleTimeString('es-EC')}</span>
                                       {evento.unidad_id && <span className="text-[9px] bg-[#dce3eb]/50 text-[#415364] border border-[#415364]/10 font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">Unidad {evento.unidad_id}</span>}
                                     </div>
-                                    <span className="text-xs font-bold text-[#415364]">{evento.accion.replace(/_/g, ' ')}</span>
+                                    <span className="text-xs font-bold text-[#415364]">{evento.accion.split('_').join(' ')}</span>
                                     <span className="text-[11px] text-[#415364]/70 mt-1 font-medium">{evento.detalle}</span>
                                   </div>
                                 </div>
@@ -857,7 +852,7 @@ export default function RadarCentral() {
                                   <div className="flex items-center justify-center w-2.5 h-2.5 rounded-full border-[2px] border-[#F9F7F5] bg-[#415364]/30 z-10 ml-4 mr-5 shrink-0"></div>
                                   <div className="bg-white p-4 rounded-xl border border-[#415364]/10 shadow-sm w-full md:w-1/2 flex justify-between items-center hover:border-[#415364]/30 transition-colors">
                                     <div>
-                                      <span className="text-xs font-bold text-[#415364]">{evento.accion.replace(/_/g, ' ')}</span>
+                                      <span className="text-xs font-bold text-[#415364]">{evento.accion.split('_').join(' ')}</span>
                                       <span className="text-[10px] text-[#415364]/60 block mt-1 font-medium">{evento.detalle}</span>
                                     </div>
                                     <span className="text-[10px] font-bold text-[#415364]/40 whitespace-nowrap bg-[#dce3eb]/30 px-2 py-1 rounded-md shrink-0">
