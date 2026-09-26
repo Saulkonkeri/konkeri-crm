@@ -379,6 +379,16 @@ export default function CRMPage() {
     setMostrarModalPreviewCorreo(true);
   };
 
+  const verHistorialCotizaciones = async (cliente: Cliente) => {
+    setMostrarModalHistorial(true);
+    setCargandoHistorial(true);
+    try {
+      const { data, error } = await supabase.from('cotizaciones').select('*').eq('cliente_id', cliente.id).order('created_at', { ascending: false });
+      if (error) throw error;
+      setCotizacionesCliente(data || []);
+    } catch (e) { console.error(e); } finally { setCargandoHistorial(false); }
+  };
+
   // ==========================================
   // GENERADOR HTML COMPLETO Y SEGURO (CON CONFIRMACIÓN DE ENVÍO)
   // ==========================================
@@ -465,7 +475,6 @@ export default function CRMPage() {
   const enviarCorreoFinal = async () => {
     if (!clienteSeleccionado) return;
     
-    // CAJITA DE CONFIRMACIÓN ANTES DE ENVIAR
     const confirmarEnvio = window.confirm(`¿Estás seguro de que deseas enviar este correo a ${clienteSeleccionado.email}?`);
     if (!confirmarEnvio) return;
 
@@ -832,7 +841,67 @@ export default function CRMPage() {
         )}
       </div>
 
-      {/* === ESTUDIO DE DISEÑO PROFESIONAL CON FIRMA MANUAL === */}
+      {/* MODAL NUEVO PROSPECTO */}
+      {mostrarModalNuevo && (
+        <div className="fixed inset-0 bg-[#21242E]/80 z-[80] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-t-3xl md:rounded-2xl shadow-2xl w-full max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div className="flex justify-between items-center mb-6 border-b border-neutral-100 pb-4 sticky top-0 bg-white z-10 pt-2 -mt-2">
+              <h2 className="text-xl font-bold text-[#415364]">Registro de Prospecto</h2>
+              <button onClick={() => setMostrarModalNuevo(false)} className="text-[#415364]/40 hover:text-[#ea0029] text-4xl font-light">&times;</button>
+            </div>
+            <form onSubmit={guardarNuevoCliente} className="space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Nombres <span className="text-[#ea0029]">*</span></label>
+                  <input required type="text" value={nuevoNombre} onChange={e => setNuevoNombre(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium outline-none focus:border-[#ea0029]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Apellidos</label>
+                  <input type="text" value={nuevoApellido} onChange={e => setNuevoApellido(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium outline-none focus:border-[#ea0029]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Teléfono <span className="text-[#ea0029]">*</span></label>
+                  <input required type="tel" value={nuevoTelefono} onChange={e => setNuevoTelefono(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium outline-none focus:border-[#ea0029]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Email</label>
+                  <input type="email" value={nuevoEmail} onChange={e => setNuevoEmail(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium outline-none focus:border-[#ea0029]" />
+                </div>
+              </div>
+              <div className="pt-6 pb-2 flex justify-end gap-4 border-t border-neutral-100">
+                <button type="button" onClick={() => setMostrarModalNuevo(false)} className="px-6 py-3 text-xs font-bold text-[#415364] border border-[#415364]/20 rounded-xl">Cancelar</button>
+                <button type="submit" disabled={guardandoCliente} className="px-8 py-3 bg-[#ea0029] text-white rounded-xl text-xs font-bold uppercase tracking-widest">{guardandoCliente ? 'Guardando...' : 'Guardar Prospecto'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL MENSAJES RÁPIDOS */}
+      {mostrarModalPlantilla && (
+        <div className="fixed inset-0 bg-[#21242E]/80 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold text-[#415364] mb-1">Configuración de Mensajes WhatsApp</h2>
+            <p className="text-[11px] text-[#415364]/60 mb-6 pb-4 border-b border-neutral-100">Usa el código <strong className="text-[#ea0029]">{`{nombre}`}</strong> para insertar el nombre del cliente automáticamente.</p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold text-[#415364]/60 mb-1.5 uppercase">Mensaje Inicial / Bienvenida</label>
+                <textarea rows={3} value={plantillaMensaje} onChange={e => setPlantillaMensaje(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-neutral-200 rounded-xl p-3 text-xs text-[#415364]" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-[#415364]/60 mb-1.5 uppercase">Mensaje de Campaña</label>
+                <textarea rows={3} value={plantillaCampana} onChange={e => setPlantillaCampana(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-neutral-200 rounded-xl p-3 text-xs text-[#415364]" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-4 mt-8">
+              <button onClick={() => setMostrarModalPlantilla(false)} className="px-6 py-2.5 text-xs font-bold text-[#415364] border border-neutral-200 rounded-xl">Cancelar</button>
+              <button onClick={guardarPlantilla} className="px-8 py-2.5 bg-[#415364] text-white text-xs font-bold uppercase rounded-xl">Guardar Textos</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* === ESTUDIO DE DISEÑO PROFESIONAL CON CONFIRMACIÓN === */}
       {mostrarModalPreviewCorreo && clienteSeleccionado && (() => {
         const htmlAEnviar = generarCodigoHTMLCorreo();
 
@@ -850,10 +919,8 @@ export default function CRMPage() {
 
               <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
                 
-                {/* PANEL IZQUIERDO: CONTROLES Y TEXTOS EDITABLES */}
+                {/* PANEL IZQUIERDO */}
                 <div className="w-full md:w-[380px] bg-white border-r border-neutral-200 p-5 flex flex-col gap-5 overflow-y-auto custom-scrollbar flex-shrink-0">
-                  
-                  {/* 1. Estrategia */}
                   <div className="space-y-2">
                     <label className="block text-[10px] font-bold text-[#415364] uppercase tracking-widest">1. Seleccionar Estrategia</label>
                     <select value={plantillaActivaId} onChange={(e) => setPlantillaActivaId(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-2.5 text-xs font-bold text-[#ea0029] outline-none">
@@ -861,7 +928,6 @@ export default function CRMPage() {
                     </select>
                   </div>
 
-                  {/* 2. Tema de Color */}
                   <div className="space-y-2">
                     <label className="block text-[10px] font-bold text-[#415364] uppercase tracking-widest">2. Tema de Color (Branding)</label>
                     <div className="grid grid-cols-3 gap-2">
@@ -871,7 +937,6 @@ export default function CRMPage() {
                     </div>
                   </div>
 
-                  {/* 3. Firma Personalizada o Masivo */}
                   <div className="space-y-3 p-3 bg-neutral-50 rounded-xl border border-neutral-200">
                     <label className="block text-[10px] font-bold text-[#415364] uppercase tracking-widest">3. Configuración de Firma</label>
                     <div className="grid grid-cols-2 gap-2">
@@ -893,7 +958,6 @@ export default function CRMPage() {
                     )}
                   </div>
 
-                  {/* 4. Portada */}
                   <div className="space-y-2">
                     <label className="block text-[10px] font-bold text-[#415364] uppercase tracking-widest">4. Foto de Portada</label>
                     <div className="grid grid-cols-2 gap-2">
@@ -911,7 +975,6 @@ export default function CRMPage() {
                     </div>
                   </div>
 
-                  {/* 5. Edición de Textos */}
                   <div className="space-y-3 pt-2 border-t border-neutral-100">
                     <label className="block text-[10px] font-bold text-[#ea0029] uppercase tracking-widest">5. Edición de Textos</label>
                     <div>
@@ -945,11 +1008,11 @@ export default function CRMPage() {
                 </div>
               </div>
 
-              {/* Footer de Acciones del Modal */}
+              {/* Footer con Confirmación */}
               <div className="bg-white p-5 border-t border-neutral-200 flex justify-end gap-4 flex-shrink-0">
-                <button onClick={() => setMostrarModalPreviewCorreo(false)} className="px-6 py-2.5 text-xs font-bold text-[#415364] border border-[#415364]/20 rounded-xl hover:bg-[#415364]/5 transition-colors">Cancelar</button>
-                <button onClick={enviarCorreoFinal} disabled={enviandoCorreoCRM} className="px-8 py-3 bg-[#ea0029] text-white text-xs font-bold uppercase tracking-widest rounded-xl shadow-md hover:bg-[#c90022] transition-colors disabled:opacity-50">
-                  {enviandoCorreoCRM ? 'Enviando Correo...' : 'Aprobar y Enviar Correo'}
+                <button onClick={() => setMostrarModalPreviewCorreo(false)} className="px-6 py-2.5 text-xs font-bold text-[#415364] border border-[#415364]/20 rounded-xl hover:bg-[#415364]/5">Cancelar</button>
+                <button onClick={enviarCorreoFinal} disabled={enviandoCorreoCRM} className="px-8 py-3 bg-[#ea0029] text-white text-xs font-bold uppercase tracking-widest rounded-xl shadow-md hover:bg-[#c90022] disabled:opacity-50">
+                  {enviandoCorreoCRM ? 'Enviando...' : 'Aprobar y Enviar Correo'}
                 </button>
               </div>
             </div>
