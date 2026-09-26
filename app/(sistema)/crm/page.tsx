@@ -1,1253 +1,846 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 
-interface Cliente {
+// ==========================================
+// 1. DEFINICIÓN DE TIPOS
+// ==========================================
+type SesionCliente = {
+  idSesion: string;
+  email: string;
+  nombre?: string;
+  inicio: Date;
+  fin: Date;
+  minutos: number;
+  eventos: any[];
+  ultimaAccion: string;
+  unidadesVistas: string[];
+};
+
+type EventoWeb = {
   id: string;
-  nombres: string;
-  apellidos: string;
-  telefono: string;
-  email?: string;
-  ciudad_residencia?: string;
-  motivo_compra?: string;
-  tipologia_interes?: string;
-  estado: string;
-  origen_captacion?: string;
-  campana?: string;
-  ingresado_por?: string;
-  notas: string;
-  temperatura?: string; 
-  proximo_contacto?: string | null; 
-  tipo_accion?: string;
-  detalle_accion?: string | null;
-  tipo?: string; 
-}
-
-interface Cotizacion {
-  id: string;
-  unidad_numero: string;
-  precio_total: number;
-  estado: string;
   created_at: string;
-  motivo_descuento: string;
-}
+  visitor_id: string;
+  session_id: string;
+  email_cliente: string;
+  accion: string;
+  detalle: string;
+  metadata: any;
+};
 
-interface Actividad {
-  id?: string;
-  cliente_id: string;
-  agente: string;
-  tipo_contacto: string; 
-  resultado: string;
-  notas: string;
-  created_at: string;
-  clientes?: { nombres: string; apellidos: string };
-}
+type VisitanteAgrupado = {
+  visitor_id: string;
+  email: string | null;
+  primeraVisita: Date;
+  ultimaActividad: Date;
+  sesiones: Set<string>;
+  eventos: EventoWeb[];
+  tiempoAcumuladoMin: number;
+  score: number;
+  fuentePrincipal: string;
+  nivelInteraccion: 'ALTO' | 'MEDIO' | 'BAJO';
+};
 
-export default function CRMPage() {
-  const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [cargando, setCargando] = useState(true);
-  const [busqueda, setBusqueda] = useState('');
+// ==========================================
+// 2. FUNCIONES AUXILIARES PURAS
+// ==========================================
+const formatTiempoAtras = (fecha: Date) => {
+  const ahora = new Date().getTime();
+  const diffMs = ahora - fecha.getTime();
+  if (diffMs > 86400000) {
+    return new Date(fecha).toLocaleDateString('es-EC', { day: '2-digit', month: 'short' });
+  }
+  const minutos = Math.round(diffMs / 60000);
+  return `Hace ${minutos} min`;
+};
+
+const formatMinutos = (mins: number) => {
+  if (mins === 0) return 'Menos de 1 min';
+  return `${mins} min`;
+};
+
+const formatAccionTexto = (str: string) => {
+  if (!str) return '';
+  return str.split('_').join(' ');
+};
+
+export default function RadarCentral() {
+  const [pestañaActiva, setPestañaActiva] = useState('solicitudes'); 
   
-  const [filtroCiudad, setFiltroCiudad] = useState('Todas');
-  const [filtroTipologia, setFiltroTipologia] = useState('Todas');
-  const [filtroOrigen, setFiltroOrigen] = useState('Todos');
-  const [filtroPendientes, setFiltroPendientes] = useState(false);
+  // ESTADOS PESTAÑA 1
+  const [solicitudes, setSolicitudes] = useState<any[]>([]);
+  const [cargandoSolicitudes, setCargandoSolicitudes] = useState(true);
+  const [tiemposSeleccionados, setTiemposSeleccionados] = useState<Record<string, string>>({});
+  const [ticker, setTicker] = useState(0); 
 
-  const [vista, setVista] = useState<'lista' | 'kanban' | 'actividad'>('kanban');
+  // ESTADOS PESTAÑA 2
+  const [sesiones, setSesiones] = useState<SesionCliente[]>([]);
+  const [cargandoRadar, setCargandoRadar] = useState(true);
+  const [sesionExpandida, setSesionExpandida] = useState<string | null>(null);
 
-  const [columnasExpandidas, setColumnasExpandidas] = useState<Record<string, boolean>>({
-    'Interesado': true,
-    'Contactado': true,
-    'Cotizado': false,
-    'En Negociación': false,
-    'Reserva': false,
-    'Cierre (Ganado)': false,
-    'Descartado': false
-  });
-
-  const toggleColumna = (estado: string) => {
-    setColumnasExpandidas(prev => ({
-      ...prev,
-      [estado]: !prev[estado]
-    }));
-  };
-
-  const [mostrarModalNuevo, setMostrarModalNuevo] = useState(false);
-  const [mostrarModalPlantilla, setMostrarModalPlantilla] = useState(false);
-  const [mostrarModalHistorial, setMostrarModalHistorial] = useState(false);
-  const [clienteSeleccionado, setClienteSeleccionado] = useState<Cliente | null>(null);
-
-  const [nuevoNombre, setNuevoNombre] = useState('');
-  const [nuevoApellido, setNuevoApellido] = useState('');
-  const [nuevoTelefono, setNuevoTelefono] = useState('');
-  const [nuevoEmail, setNuevoEmail] = useState('');
-  const [nuevaCiudad, setNuevaCiudad] = useState('');
-  const [nuevoOrigen, setNuevoOrigen] = useState('Meta Ads');
-  const [nuevoCampana, setNuevoCampana] = useState(''); 
-  const [nuevoMotivo, setNuevoMotivo] = useState('Para Invertir');
-  const [nuevoInteres, setNuevoInteres] = useState('Suite');
-  const [nuevoIngresadoPor, setNuevoIngresadoPor] = useState('Saúl Intriago / Debbi Mera'); 
-  const [guardandoCliente, setGuardandoCliente] = useState(false);
-
-  const [nuevaNotaTexto, setNuevaNotaTexto] = useState('');
-  const [guardandoNota, setGuardandoNota] = useState(false);
-  
-  const [fechaAccion, setFechaAccion] = useState('');
-  const [tipoAccion, setTipoAccion] = useState('Llamada Telefónica');
-  const [detalleAccion, setDetalleAccion] = useState('');
-  const [guardandoTarea, setGuardandoTarea] = useState(false);
-
-  const [cotizacionesCliente, setCotizacionesCliente] = useState<Cotizacion[]>([]);
-  const [cargandoHistorial, setCargandoHistorial] = useState(false);
-
-  const [filtroTiempo, setFiltroTiempo] = useState<'hoy' | 'ayer' | 'semana' | 'mes'>('hoy');
-  const [actividadesDia, setActividadesDia] = useState<Actividad[]>([]);
-  
-  const [llamadaClienteId, setLlamadaClienteId] = useState('');
-  const [llamadaAgente, setLlamadaAgente] = useState('Saúl Intriago');
-  const [tipoContacto, setTipoContacto] = useState('Llamada');
-  const [llamadaResultado, setLlamadaResultado] = useState('Contestó');
-  const [llamadaNota, setLlamadaNota] = useState('');
-  const [guardandoActividadRapida, setGuardandoActividadRapida] = useState(false);
-
-  const [proximaFechaRapida, setProximaFechaRapida] = useState('');
-  const [proximaAccionRapida, setProximaAccionRapida] = useState('');
-
-  const [busquedaLlamada, setBusquedaLlamada] = useState('');
-  const [mostrarOpcionesLlamada, setMostrarOpcionesLlamada] = useState(false);
-
-  const [plantillaMensaje, setPlantillaMensaje] = useState(
-    "Hola {nombre}, le saluda Saúl Intriago de Arienzo Boutique Living. Recibí su solicitud de información y le comparto el brochure del proyecto. ¿A qué hora le viene bien que conversemos unos minutos?"
-  );
-  const [plantillaCampana, setPlantillaCampana] = useState(
-    "Hola {nombre}, le escribo de Arienzo Boutique Living. Hoy lanzamos un beneficio especial para elegir las mejores unidades. ¿Le gustaría que le envíe el inventario actualizado?"
-  );
-
-  const [plantillaCorreoAsunto, setPlantillaCorreoAsunto] = useState("Información Exclusiva - Arienzo Boutique Living");
-  const [plantillaCorreoCuerpo, setPlantillaCorreoCuerpo] = useState(
-    "Hola {nombre},\n\nGracias por su interés en Arienzo Boutique Living. Adjunto la información detallada del proyecto para que pueda revisarla con calma.\n\nQuedo a su entera disposición para agendar una breve llamada y resolver cualquier inquietud.\n\nSaludos cordiales,\nSaúl Intriago\nKonkeri Real Estate"
-  );
-
-  const [activandoVIP, setActivandoVIP] = useState(false);
-  const [tiempoVIP, setTiempoVIP] = useState<number>(24);
-
-  const estados = ['Interesado', 'Contactado', 'Cotizado', 'En Negociación', 'Reserva', 'Cierre (Ganado)', 'Descartado'];
-  const origenes = ['Página Web / Landing Page', 'Referido / Directo', 'Llamada Telefónica', 'WhatsApp Orgánico', 'Instagram / Facebook', 'Meta Ads', 'Feria / Evento', 'Otro'];
-  const motivos = ['Por definir', 'Para Vivir', 'Para Invertir', 'Segunda Residencia'];
-  const intereses = ['Por definir', 'Suite', '2 Dormitorios', '3 Dormitorios', 'Local Comercial', 'Penthouse'];
-  const tiposAccion = ['Llamada Telefónica', 'Reunión Presencial', 'Mensaje WhatsApp', 'Enviar Cotización', 'Enviar Correo'];
+  // ESTADOS PESTAÑA 3
+  const [eventosWeb, setEventosWeb] = useState<EventoWeb[]>([]);
+  const [visitantesAgrupados, setVisitantesAgrupados] = useState<VisitanteAgrupado[]>([]);
+  const [cargandoWeb, setCargandoWeb] = useState(true);
+  const [filtroTiempo, setFiltroTiempo] = useState('30d');
+  const [visitanteExpandido, setVisitanteExpandido] = useState<string | null>(null);
 
   useEffect(() => {
-    cargarClientes();
-    const plantillaGuardada = localStorage.getItem('plantilla_bienvenida_arienzo');
-    const campanaGuardada = localStorage.getItem('plantilla_campana_arienzo');
-    const correoAsuntoGuardado = localStorage.getItem('plantilla_correo_asunto');
-    const correoCuerpoGuardado = localStorage.getItem('plantilla_correo_cuerpo');
-    
-    if (plantillaGuardada) setPlantillaMensaje(plantillaGuardada);
-    if (campanaGuardada) setPlantillaCampana(campanaGuardada);
-    if (correoAsuntoGuardado) setPlantillaCorreoAsunto(correoAsuntoGuardado);
-    if (correoCuerpoGuardado) setPlantillaCorreoCuerpo(correoCuerpoGuardado);
-  }, []);
-
-  useEffect(() => {
-    cargarBitacoraRango();
+    cargarDatos();
+    const intervalo = setInterval(() => setTicker(t => t + 1), 60000);
+    return () => clearInterval(intervalo);
   }, [filtroTiempo]);
 
-  useEffect(() => {
-    if (clienteSeleccionado) {
-      setFechaAccion(clienteSeleccionado.proximo_contacto || '');
-      setTipoAccion(clienteSeleccionado.tipo_accion || 'Llamada Telefónica');
-      setDetalleAccion(clienteSeleccionado.detalle_accion || '');
-      setNuevaNotaTexto('');
-    }
-  }, [clienteSeleccionado]);
+  const cargarDatos = () => {
+    cargarSolicitudes();
+    cargarRadar();
+    cargarActividadWeb();
+  };
 
-  const otorgarAccesoVIP = async (emailCliente?: string) => {
-    if (!emailCliente) {
-      alert("El prospecto no tiene un correo electrónico registrado. Actualiza sus datos primero.");
-      return;
+  // ==========================================
+  // LÓGICA PESTAÑA 1: SOLICITUDES VIP
+  // ==========================================
+  const cargarSolicitudes = async () => {
+    setCargandoSolicitudes(true);
+    try {
+      const { data: clientesData, error: errClientes } = await supabase
+        .from('clientes')
+        .select('*')
+        .eq('origen', 'Web Pública - Solicitud Acceso Exclusivo')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (errClientes) throw errClientes;
+
+      if (clientesData && clientesData.length > 0) {
+        const emails = clientesData.map(c => c.email?.toLowerCase().trim()).filter(Boolean);
+        let mapaAccesos: Record<string, string> = {};
+
+        if (emails.length > 0) {
+          const { data: accesosData } = await supabase
+            .from('accesos_inventario')
+            .select('email, expira_en')
+            .in('email', emails);
+
+          if (accesosData) {
+            accesosData.forEach(acc => {
+              mapaAccesos[acc.email] = acc.expira_en;
+            });
+          }
+        }
+
+        const solicitudesCompletas = clientesData.map(c => ({
+          ...c,
+          expira_en: c.email ? mapaAccesos[c.email.toLowerCase().trim()] : null
+        }));
+
+        setSolicitudes(solicitudesCompletas);
+        const tiemposInit: Record<string, string> = {};
+        solicitudesCompletas.forEach(c => { tiemposInit[c.id] = '24'; });
+        setTiemposSeleccionados(tiemposInit);
+      } else {
+        setSolicitudes([]);
+      }
+    } catch (error) {
+      console.error("Error al cargar solicitudes:", error);
+    } finally {
+      setCargandoSolicitudes(false);
     }
-    setActivandoVIP(true);
+  };
+
+  const calcularTiempoRestante = (expiraEn?: string | null) => {
+    if (!expiraEn) return { estado: 'sin_pase', texto: 'Sin pase generado' };
+    const diff = new Date(expiraEn).getTime() - new Date().getTime();
+    if (diff <= 0) return { estado: 'caducado', texto: 'Caducado' };
+    
+    const horas = Math.floor(diff / 3600000);
+    const min = Math.floor((diff % 3600000) / 60000);
+    
+    if (horas > 800) return { estado: 'activo', texto: 'Acceso Ilimitado' };
+    return { estado: 'activo', texto: `Vence en ${horas}h ${min}m` };
+  };
+
+  const handleTiempoChange = (id: string, valor: string) => {
+    setTiemposSeleccionados(prev => ({ ...prev, [id]: valor }));
+  };
+
+  const aprobarAcceso = async (cliente: any) => {
+    const horasStr = tiemposSeleccionados[cliente.id] || '24';
+    const horasNum = parseInt(horasStr, 10);
+    const statusTiempo = calcularTiempoRestante(cliente.expira_en);
+    const esRenovacion = statusTiempo.estado === 'caducado' || statusTiempo.estado === 'activo';
+    
+    const mensaje = horasStr === '999' 
+      ? `¿Estás seguro de darle acceso ILIMITADO a ${cliente.nombres}?`
+      : esRenovacion 
+        ? `¿Renovar el acceso de ${cliente.nombres} por ${horasStr} horas?`
+        : `¿Estás seguro de aprobar el acceso a ${cliente.nombres} por ${horasStr} horas?`;
+
+    const confirmar = window.confirm(mensaje);
+    if (!confirmar) return; 
+
     try {
       const fechaExpiracion = new Date();
-      fechaExpiracion.setHours(fechaExpiracion.getHours() + tiempoVIP); 
+      fechaExpiracion.setHours(fechaExpiracion.getHours() + horasNum);
 
-      const { error } = await supabase
+      const { data: dataPase, error: errorPase } = await supabase
         .from('accesos_inventario')
         .upsert({ 
-          email: emailCliente.toLowerCase().trim(), 
+          email: cliente.email.toLowerCase().trim(), 
           expira_en: fechaExpiracion.toISOString() 
+        })
+        .select();
+
+      if (errorPase) throw errorPase;
+
+      const { error: errorCliente } = await supabase
+        .from('clientes')
+        .update({ estado_acceso: 'aprobado' }) 
+        .eq('id', cliente.id)
+        .select();
+
+      if (errorCliente) throw errorCliente;
+
+      setSolicitudes((prev) => 
+        prev.map((c) => c.id === cliente.id ? { ...c, estado_acceso: 'aprobado', expira_en: fechaExpiracion.toISOString() } : c)
+      );
+      
+      alert(`Acceso activado correctamente para ${cliente.nombres}.`);
+      
+    } catch (error) {
+      console.error("Error al generar pase:", error);
+      alert("Hubo un error de conexión con la base de datos.");
+    }
+  };
+
+  const enviarCorreo = async (cliente: any) => {
+    const horas = tiemposSeleccionados[cliente.id] || '24';
+    alert(`Iniciando envío a ${cliente.email}... Por favor espera un momento.`);
+    try {
+      const response = await fetch('/api/enviar-acceso', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cliente.email, nombres: cliente.nombres, horas: horas }),
+      });
+      if (response.ok) {
+        alert("Correo corporativo enviado con éxito.");
+      } else {
+        alert("Hubo un problema de conexión con el servidor de correos.");
+      }
+    } catch (error) {
+      alert("Error en el sistema al intentar enviar el correo.");
+    }
+  };
+
+  const solicitarTelefonoCorrecto = async (cliente: any) => {
+    if (!cliente.email) {
+      alert("Este cliente no tiene correo electrónico registrado.");
+      return;
+    }
+    
+    alert(`Enviando solicitud de actualización a ${cliente.email}...`);
+    
+    try {
+      const response = await fetch('/api/solicitar-telefono', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cliente.email, nombres: cliente.nombres }),
+      });
+      
+      if (response.ok) {
+        alert("Correo de actualización enviado con éxito al prospecto.");
+      } else {
+        alert("Hubo un problema de conexión con el servidor de correos de Hostinger.");
+      }
+    } catch (error) {
+      alert("Error en el sistema al intentar enviar el correo.");
+    }
+  };
+
+  const abrirWhatsApp = (telefono: string, nombres: string) => {
+    if (!telefono) { alert("Este cliente no tiene un teléfono registrado."); return; }
+    let numLimpio = telefono.split('').filter(char => char >= '0' && char <= '9').join('');
+    if (numLimpio.startsWith('0') && numLimpio.length === 10) numLimpio = '593' + numLimpio.substring(1);
+    else if (numLimpio.length === 9) numLimpio = '593' + numLimpio;
+    const mensaje = `Hola ${nombres}, soy Saúl de Konkeri. Hemos validado tu perfil y tu acceso exclusivo al inventario de Arienzo Boutique Living está listo. Puedes ingresar aquí: https://reserva.arienzoliving.com con tu correo.`;
+    window.open(`https://wa.me/${numLimpio}?text=${encodeURIComponent(mensaje)}`, '_blank');
+  };
+
+  // ==========================================
+  // LÓGICA PESTAÑA 2: RADAR INVENTARIO
+  // ==========================================
+  const generarAnalisisComercial = (sesion: SesionCliente) => {
+    if (sesion.eventos.length === 0) return "Sin datos suficientes para analizar.";
+    let analisis = "";
+    if (sesion.minutos < 2) analisis += "Vistazo rápido. Exploró superficialmente. ";
+    else if (sesion.minutos < 10) analisis += "Exploración moderada. Navegó por el inventario de manera fluida. ";
+    else analisis += "Alto nivel de interés. Analizó el proyecto detalladamente y revisó varias opciones. ";
+
+    const filtros = sesion.eventos.filter(e => e.accion === 'USO_FILTRO');
+    if (filtros.length > 0) {
+      const ultFiltro = filtros[0].detalle ? filtros[0].detalle.split('Buscó: ').join('') : '';
+      analisis += `Mostró inclinación por la tipología de ${ultFiltro}. `;
+    }
+
+    if (sesion.unidadesVistas.length === 1) analisis += `Se enfocó exclusivamente en la unidad ${sesion.unidadesVistas[0]}. `;
+    else if (sesion.unidadesVistas.length > 1) analisis += `Comparó ${sesion.unidadesVistas.length} units (${sesion.unidadesVistas.join(', ')}). `;
+
+    const reserva = sesion.eventos.some(e => e.accion === 'RESERVA_COMPLETADA');
+    if (reserva) analisis += "Alerta de Cierre: Completó un bloqueo web de forma autónoma. ";
+
+    return analisis;
+  };
+
+  const cargarRadar = async () => {
+    setCargandoRadar(true);
+    try {
+      const { data } = await supabase
+        .from('tracking_inventario')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(2000); // AUMENTADO PARA PREVENIR CORTES
+
+      if (data) {
+        const accionesIgnoradas = ['SOLICITUD_ACCESO_VIP','ABRIO_CALENDLY','VISITA_LANDING','ABRIO_FORMULARIO','CLIC_WHATSAPP','REGISTRO_COMPLETADO','CLIC_DISPONIBILIDAD','DESCARGA_BROCHURE'];
+        const dataFiltrada = data.filter(row => {
+          const esAccionValida = !accionesIgnoradas.includes(row.accion);
+          const noEsScroll = !row.accion.startsWith('SCROLL_');
+          const noEsVista = !row.accion.startsWith('VIO_');
+          const noEsLanding = !(row.detalle || '').toUpperCase().includes('LANDING');
+          return esAccionValida && noEsScroll && noEsVista && noEsLanding;
         });
 
-      if (error) throw error;
-      
-      alert(`¡Acceso VIP otorgado por ${tiempoVIP} horas!\n\nEl correo autorizado es: ${emailCliente}`);
-      
-    } catch (error: any) {
-      alert(`Error al generar el pase: ${error.message}`);
-    } finally {
-      setActivandoVIP(false);
-    }
-  };
+        const datosCronologicos = [...dataFiltrada].reverse();
+        const sesionesList: SesionCliente[] = [];
+        const sesionesActivas: Record<string, SesionCliente> = {};
 
-  const cargarClientes = async () => {
-    try {
-      const { data, error } = await supabase.from('clientes').select('*').order('created_at', { ascending: false });
-      if (error) throw error;
-      if (data) setClientes(data);
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setCargando(false);
-    }
-  };
+        datosCronologicos.forEach(row => {
+          const email = row.email_cliente;
+          const fechaRow = new Date(row.created_at);
+          const tiempoActual = fechaRow.getTime();
 
-  const cargarBitacoraRango = async () => {
-    try {
-      const start = new Date();
-      const end = new Date();
+          if (sesionesActivas[email] && (tiempoActual - sesionesActivas[email].fin.getTime()) < 45 * 60000) {
+            const sesion = sesionesActivas[email];
+            sesion.fin = fechaRow;
+            sesion.eventos.unshift(row); 
+            if (row.unidad_id && !sesion.unidadesVistas.includes(row.unidad_id)) {
+              sesion.unidadesVistas.push(row.unidad_id);
+            }
+          } else {
+            const nuevaSesion: SesionCliente = {
+              idSesion: `${email}-${tiempoActual}`, email: email, inicio: fechaRow, fin: fechaRow, minutos: 0,
+              eventos: [row], ultimaAccion: '', unidadesVistas: row.unidad_id ? [row.unidad_id] : []
+            };
+            sesionesList.push(nuevaSesion);
+            sesionesActivas[email] = nuevaSesion;
+          }
+        });
 
-      if (filtroTiempo === 'hoy') {
-        start.setHours(0,0,0,0);
-        end.setHours(23,59,59,999);
-      } else if (filtroTiempo === 'ayer') {
-        start.setDate(start.getDate() - 1);
-        start.setHours(0,0,0,0);
-        end.setDate(end.getDate() - 1);
-        end.setHours(23,59,59,999);
-      } else if (filtroTiempo === 'semana') {
-        start.setDate(start.getDate() - 7);
-        start.setHours(0,0,0,0);
-        end.setHours(23,59,59,999);
-      } else if (filtroTiempo === 'mes') {
-        start.setDate(start.getDate() - 30);
-        start.setHours(0,0,0,0);
-        end.setHours(23,59,59,999);
-      }
-      
-      const { data, error } = await supabase
-        .from('registro_llamadas')
-        .select('*, clientes(nombres, apellidos)')
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString())
-        .order('created_at', { ascending: false });
-        
-      if (!error && data) setActividadesDia(data);
-    } catch (error) {
-      console.error('Error cargando bitácora:', error);
-    }
-  };
+        sesionesList.forEach(s => {
+          const diffMs = s.fin.getTime() - s.inicio.getTime();
+          s.minutos = Math.round(diffMs / 60000);
+          s.ultimaAccion = s.eventos[0]?.detalle || s.eventos[0]?.accion || 'Desconocido';
+        });
 
-  const registrarActividadRapida = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!llamadaClienteId) { alert("Selecciona un prospecto de la lista usando el buscador."); return; }
-    
-    setGuardandoActividadRapida(true);
-    try {
-      const payload = {
-        cliente_id: llamadaClienteId,
-        agente: llamadaAgente,
-        tipo_contacto: tipoContacto,
-        resultado: llamadaResultado,
-        notas: llamadaNota
-      };
-
-      const { data, error } = await supabase.from('registro_llamadas').insert([payload]).select('*, clientes(nombres, apellidos)');
-      if (error) throw error;
-
-      if (filtroTiempo === 'hoy' && data) {
-        setActividadesDia([data[0], ...actividadesDia]);
-      }
-
-      const clienteActual = clientes.find(c => c.id === llamadaClienteId);
-      if (clienteActual) {
-        const fechaStr = new Date().toLocaleString('es-EC', { dateStyle: 'short', timeStyle: 'short' });
-        const icono = tipoContacto === 'WhatsApp' ? '💬' : tipoContacto === 'Email' ? '📧' : tipoContacto === 'Zoom' ? '📹' : tipoContacto === 'Reunión' ? '🤝' : '📞';
-        const prefijo = `[${fechaStr}] ${icono} ${tipoContacto} (${llamadaResultado}) por ${llamadaAgente}`;
-        const textoNota = llamadaNota ? `: ${llamadaNota}` : '';
-        const notaSincronizada = `${prefijo}${textoNota}\n\n${clienteActual.notas || ''}`;
-
-        const updates: any = { notas: notaSincronizada };
-
-        if (proximaFechaRapida) {
-          updates.proximo_contacto = proximaFechaRapida;
-          updates.tipo_accion = proximaAccionRapida || 'Seguimiento';
+        const correosUnicos = Array.from(new Set(sesionesList.map(s => s.email)));
+        if (correosUnicos.length > 0) {
+          const { data: clientesData } = await supabase.from('clientes').select('email, nombres, apellidos').in('email', correosUnicos);
+          if (clientesData) {
+            const mapaNombres: Record<string, string> = {};
+            clientesData.forEach(c => { if (c.email) mapaNombres[c.email.toLowerCase()] = `${c.nombres || ''} ${c.apellidos || ''}`.trim(); });
+            sesionesList.forEach(s => { s.nombre = mapaNombres[s.email.toLowerCase()]; });
+          }
         }
-
-        await supabase.from('clientes').update(updates).eq('id', llamadaClienteId);
-        
-        setClientes(prev => prev.map(c => c.id === llamadaClienteId ? { ...c, ...updates } : c));
-        if (clienteSeleccionado?.id === llamadaClienteId) {
-          setClienteSeleccionado(prev => prev ? { ...prev, ...updates } : prev);
-        }
+        sesionesList.sort((a, b) => b.fin.getTime() - a.fin.getTime());
+        setSesiones(sesionesList);
       }
-      
-      setLlamadaClienteId('');
-      setBusquedaLlamada('');
-      setLlamadaNota('');
-      setProximaFechaRapida('');
-      setProximaAccionRapida('');
-      
-    } catch (error: any) {
-      alert(`Error al registrar actividad: ${error.message}`);
     } finally {
-      setGuardandoActividadRapida(false);
+      setCargandoRadar(false);
     }
   };
 
-  const extraerFechaUltimaNota = (notas: string | null) => {
-    if (!notas) return null;
-    const match = notas.match(/\[(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-    if (match) {
-      const day = parseInt(match[1], 10);
-      const month = parseInt(match[2], 10) - 1;
-      const year = parseInt(match[3], 10);
-      return new Date(year, month, day);
+  // ==========================================
+  // LÓGICA PESTAÑA 3: ACTIVIDAD WEB
+  // ==========================================
+  const PESOS_EVENTOS: Record<string, number> = {
+    'VISITA_LANDING': 1, 'SCROLL_50': 2, 'SCROLL_90': 3, 'VIO_ARQUITECTURA': 2,
+    'ABRIO_FORMULARIO': 6, 'ABRIO_CALENDLY': 8, 'CLIC_WHATSAPP': 10, 'DESCARGA_BROCHURE': 12, 'REGISTRO_COMPLETADO': 15,
+  };
+
+  const cargarActividadWeb = async () => {
+    setCargandoWeb(true);
+    try {
+      const fechaLimite = new Date();
+      if (filtroTiempo === '7d') fechaLimite.setDate(fechaLimite.getDate() - 7);
+      if (filtroTiempo === '30d') fechaLimite.setDate(fechaLimite.getDate() - 30);
+      if (filtroTiempo === 'hoy') fechaLimite.setHours(0,0,0,0);
+
+      // FIX SUPABASE: Buscar DESCENDENTE y con limite alto para asegurar que no se corten los datos de hoy
+      const { data } = await supabase
+        .from('tracking_inventario')
+        .select('*')
+        .gte('created_at', fechaLimite.toISOString())
+        .order('created_at', { ascending: false }) 
+        .limit(3000); 
+
+      if (data) {
+        // Invertir el orden para que la lógica interna procese de viejo a nuevo cronológicamente
+        const datosCronologicos = [...data].reverse();
+        setEventosWeb(datosCronologicos);
+        procesarVisitantes(datosCronologicos);
+      }
+    } finally {
+      setCargandoWeb(false);
     }
-    return null;
   };
 
-  const obtenerDiasInactivos = (notas: string | null) => {
-    const ultimaFecha = extraerFechaUltimaNota(notas);
-    if (!ultimaFecha) return 999;
-    const hoy = new Date();
-    hoy.setHours(0,0,0,0);
-    ultimaFecha.setHours(0,0,0,0);
-    const diffTime = hoy.getTime() - ultimaFecha.getTime();
-    return Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
-  };
+  const procesarVisitantes = (eventos: EventoWeb[]) => {
+    const mapa = new Map<string, VisitanteAgrupado>();
 
-  const esFechaVencida = (fecha?: string | null) => {
-    if (!fecha) return false;
-    const hoy = new Date(); hoy.setHours(0,0,0,0);
-    return new Date(fecha + 'T00:00:00') <= hoy;
-  };
+    eventos.forEach(ev => {
+      const safeVisitorId = ev.visitor_id || ev.email_cliente || ev.session_id || `anon-${ev.id}`;
 
-  const clientesFiltrados = useMemo(() => {
-    return clientes.filter(c => {
-      const b = busqueda.toLowerCase();
-      const coincideBusqueda = !b || `${c.nombres || ''} ${c.apellidos || ''}`.toLowerCase().includes(b) || (c.telefono && c.telefono.includes(b));
-      const coincideCiudad = filtroCiudad === 'Todas' || (c.ciudad_residencia && c.ciudad_residencia.toLowerCase().trim() === filtroCiudad.toLowerCase().trim());
-      const coincideTipologia = filtroTipologia === 'Todas' || (c.tipologia_interes && c.tipologia_interes.toLowerCase().trim() === filtroTipologia.toLowerCase().trim());
-      const coincideOrigen = filtroOrigen === 'Todos' || (c.origen_captacion && c.origen_captacion.toLowerCase().trim() === filtroOrigen.toLowerCase().trim());
-      
-      let coincidePendiente = true;
-      if (filtroPendientes) {
-        if (!c.proximo_contacto) {
-          coincidePendiente = false;
-        } else {
-          const hoy = new Date();
-          hoy.setHours(23, 59, 59, 999);
-          const fechaContacto = new Date(c.proximo_contacto + 'T00:00:00');
-          coincidePendiente = fechaContacto <= hoy;
-        }
+      if (!mapa.has(safeVisitorId)) {
+        mapa.set(safeVisitorId, {
+          visitor_id: safeVisitorId,
+          email: ev.email_cliente?.includes('@') ? ev.email_cliente : null,
+          primeraVisita: new Date(ev.created_at),
+          ultimaActividad: new Date(ev.created_at),
+          sesiones: new Set([ev.session_id || 'unica']),
+          eventos: [],
+          tiempoAcumuladoMin: 0,
+          score: 0,
+          fuentePrincipal: ev.metadata?.utm_source || ev.metadata?.referrer || 'Directo',
+          nivelInteraccion: 'BAJO'
+        });
       }
 
-      return coincideBusqueda && coincideCiudad && coincideTipologia && coincideOrigen && coincidePendiente;
+      const visitante = mapa.get(safeVisitorId)!;
+      visitante.eventos.push(ev);
+      if (ev.session_id) visitante.sesiones.add(ev.session_id);
+      
+      const fechaEvento = new Date(ev.created_at);
+      if (fechaEvento > visitante.ultimaActividad) visitante.ultimaActividad = fechaEvento;
+      if (ev.email_cliente && ev.email_cliente.includes('@')) visitante.email = ev.email_cliente;
+      visitante.score += PESOS_EVENTOS[ev.accion] || 1;
     });
-  }, [clientes, busqueda, filtroCiudad, filtroTipologia, filtroOrigen, filtroPendientes]);
 
-  const prospectosFiltradosParaLlamada = useMemo(() => {
-    if (!busquedaLlamada) return clientes.slice(0, 50);
-    const b = busquedaLlamada.toLowerCase();
-    return clientes.filter(c => 
-      `${c.nombres} ${c.apellidos}`.toLowerCase().includes(b) || (c.telefono && c.telefono.includes(b))
-    ).slice(0, 50);
-  }, [clientes, busquedaLlamada]);
+    const resultado = Array.from(mapa.values()).map(v => {
+      const sesionesAgrupadas = v.eventos.reduce((acc, curr) => {
+        if (!acc[curr.session_id]) acc[curr.session_id] = [];
+        acc[curr.session_id].push(new Date(curr.created_at).getTime());
+        return acc;
+      }, {} as Record<string, number[]>);
 
-  const ciudadesDisponibles = useMemo(() => {
-    const setCiudades = new Set<string>();
-    clientes.forEach(c => { if (c.ciudad_residencia) setCiudades.add(c.ciudad_residencia.trim()); });
-    return Array.from(setCiudades).sort();
-  }, [clientes]);
+      let minAcumulados = 0;
+      Object.values(sesionesAgrupadas).forEach(tiempos => {
+        if (tiempos.length > 1) minAcumulados += (Math.max(...tiempos) - Math.min(...tiempos)) / 60000;
+        else minAcumulados += 1; 
+      });
+      
+      v.tiempoAcumuladoMin = Math.round(minAcumulados);
+      if (v.sesiones.size > 1) v.score += 5; 
 
-  const campanasDisponibles = useMemo(() => {
-    const setCampanas = new Set<string>();
-    clientes.forEach(c => { if (c.campana) setCampanas.add(c.campana.trim()); });
-    return Array.from(setCampanas).sort();
-  }, [clientes]);
+      if (v.score >= 20) v.nivelInteraccion = 'ALTO';
+      else if (v.score >= 8) v.nivelInteraccion = 'MEDIO';
+      else v.nivelInteraccion = 'BAJO';
 
-  const handleDragStart = (e: React.DragEvent, clienteId: string) => { e.dataTransfer.setData('clienteId', clienteId); };
-  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); };
+      // Ordenar eventos del más reciente al más antiguo para el visualizador
+      v.eventos.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      return v;
+    });
 
-  const handleDrop = async (e: React.DragEvent, nuevoEstado: string) => {
-    e.preventDefault();
-    const clienteId = e.dataTransfer.getData('clienteId');
-    if (!clienteId) return;
-
-    setClientes(prev => prev.map(c => c.id === clienteId ? { ...c, estado: nuevoEstado } : c));
-    if (clienteSeleccionado?.id === clienteId) {
-      setClienteSeleccionado(prev => prev ? { ...prev, estado: nuevoEstado } : prev);
-    }
-
-    try {
-      const { error } = await supabase.from('clientes').update({ estado: nuevoEstado }).eq('id', clienteId);
-      if (error) throw error;
-    } catch (error: any) {
-      console.error("Error moviendo lead:", error);
-      cargarClientes();
-    }
+    // Ordenar visitantes: el de la actividad más reciente primero
+    resultado.sort((a, b) => b.ultimaActividad.getTime() - a.ultimaActividad.getTime());
+    setVisitantesAgrupados(resultado);
   };
 
-  const guardarNuevoCliente = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const normalizarTelefono = (tel: string) => {
-      if (!tel) return '';
-      let num = tel.replace(/\D/g, '');
-      if (num.startsWith('593')) num = num.substring(3);
-      if (num.startsWith('0')) num = num.substring(1);
-      return num;
+  const metricas = useMemo(() => {
+    const unicos = visitantesAgrupados.length;
+    const totalSesiones = visitantesAgrupados.reduce((acc, v) => acc + v.sesiones.size, 0);
+    const recurrentes = visitantesAgrupados.filter(v => v.sesiones.size > 1).length;
+    const altoInteres = visitantesAgrupados.filter(v => v.nivelInteraccion === 'ALTO').length;
+    const conversiones = visitantesAgrupados.filter(v => v.email !== null).length;
+    
+    const funnel = {
+      visitas: eventosWeb.filter(e => e.accion === 'VISITA_LANDING').length,
+      scroll50: eventosWeb.filter(e => e.accion === 'SCROLL_50').length,
+      intentosContacto: eventosWeb.filter(e => ['ABRIO_FORMULARIO', 'ABRIO_CALENDLY', 'CLIC_WHATSAPP'].includes(e.accion)).length,
+      registros: conversiones
     };
 
-    const telefonoNormalizadoNuevo = normalizarTelefono(nuevoTelefono);
-    const clienteDuplicadoTelefono = clientes.find(c => c.telefono && normalizarTelefono(c.telefono) === telefonoNormalizadoNuevo);
+    return { unicos, totalSesiones, recurrentes, altoInteres, conversiones, funnel };
+  }, [visitantesAgrupados, eventosWeb]);
 
-    if (clienteDuplicadoTelefono) {
-      alert(`⚠️ ¡ATENCIÓN! Este número ya está registrado.\nPertenece a: ${clienteDuplicadoTelefono.nombres} ${clienteDuplicadoTelefono.apellidos}`);
-      return; 
-    }
-
-    setGuardandoCliente(true);
-    try {
-      const notaInicial = `[${new Date().toLocaleDateString('es-EC')}] Cliente ingresado por ${nuevoIngresadoPor || 'Sistema'}.`;
-      const payload: any = {
-        nombres: nuevoNombre.trim(), apellidos: nuevoApellido.trim(), telefono: nuevoTelefono.trim(),
-        email: nuevoEmail ? nuevoEmail.trim().toLowerCase() : null, ciudad_residencia: nuevaCiudad.trim() || null, 
-        motivo_compra: nuevoMotivo, tipologia_interes: nuevoInteres, origen_captacion: nuevoOrigen,
-        campana: nuevoCampana.trim() || null,
-        notas: notaInicial, estado: 'Interesado', tipo: 'prospecto', temperatura: '❄️ Frío'
-      };
-      if (nuevoIngresadoPor.trim()) payload.ingresado_por = nuevoIngresadoPor.trim();
-
-      const { data, error } = await supabase.from('clientes').insert([payload]).select();
-      if (error) throw error;
-      if (data && data.length > 0) {
-        setClientes([data[0], ...clientes]);
-        setMostrarModalNuevo(false);
-        setNuevoNombre(''); setNuevoApellido(''); setNuevoTelefono(''); setNuevoEmail(''); setNuevaCiudad(''); setNuevoCampana('');
-      }
-    } catch (error: any) { alert(`Error al guardar: ${error.message}`); } finally { setGuardandoCliente(false); }
-  };
-
-  const guardarPlantilla = () => {
-    localStorage.setItem('plantilla_bienvenida_arienzo', plantillaMensaje);
-    localStorage.setItem('plantilla_campana_arienzo', plantillaCampana);
-    localStorage.setItem('plantilla_correo_asunto', plantillaCorreoAsunto);
-    localStorage.setItem('plantilla_correo_cuerpo', plantillaCorreoCuerpo);
-    setMostrarModalPlantilla(false);
-    alert('Mensajes y plantillas actualizadas correctamente.');
-  };
-
-  const actualizarCampoRapido = async (id: string, campo: string, valor: string) => {
-    setClientes(prev => prev.map(c => c.id === id ? { ...c, [campo]: valor } : c));
-    if (clienteSeleccionado?.id === id) setClienteSeleccionado(prev => prev ? { ...prev, [campo]: valor } : prev);
-    await supabase.from('clientes').update({ [campo]: valor }).eq('id', id);
-  };
-
-  const guardarProximaTarea = async () => {
-    if (!clienteSeleccionado) return;
-    setGuardandoTarea(true);
-    try {
-      const updates = { proximo_contacto: fechaAccion || null, tipo_accion: tipoAccion, detalle_accion: detalleAccion || null };
-      const { error } = await supabase.from('clientes').update(updates).eq('id', clienteSeleccionado.id);
-      if (error) throw error;
-
-     setClientes(prev => prev.map(c => c.id === clienteSeleccionado.id ? { ...c, ...updates } as any : c));
-      setClienteSeleccionado(prev => prev ? { ...prev, ...updates } : prev);
-      
-      const btn = document.getElementById('btn-guardar-tarea');
-      if (btn) {
-        const originalText = btn.innerText; btn.innerText = '¡Guardado!'; btn.classList.add('bg-green-600');
-        setTimeout(() => { btn.innerText = originalText; btn.classList.remove('bg-green-600'); }, 2000);
-      }
-    } catch (error: any) { alert(`Error al guardar: ${error.message}`); } finally { setGuardandoTarea(false); }
-  };
-
-  const agregarNotaBitacora = async () => {
-    if (!clienteSeleccionado || !nuevaNotaTexto.trim()) return;
-    setGuardandoNota(true);
-    try {
-      const fecha = new Date().toLocaleString('es-EC', { dateStyle: 'short', timeStyle: 'short' });
-      const notaFinal = `[${fecha}] ${nuevaNotaTexto}\n\n${clienteSeleccionado.notas || ''}`;
-      
-      const { error } = await supabase.from('clientes').update({ notas: notaFinal }).eq('id', clienteSeleccionado.id);
-      if (error) throw error;
-
-      setClientes(prev => prev.map(c => c.id === clienteSeleccionado.id ? { ...c, notas: notaFinal } : c));
-      setClienteSeleccionado(prev => prev ? { ...prev, notas: notaFinal } : prev);
-      setNuevaNotaTexto('');
-    } catch (error: any) { alert(`Error: ${error.message}`); } finally { setGuardandoNota(false); }
-  };
-
-  const abrirWhatsApp = (cliente: Cliente, tipoMensaje: 'bienvenida' | 'campana' | 'libre') => {
-    if (!cliente.telefono) { alert("Sin número registrado."); return; }
-    let num = cliente.telefono.replace(/\D/g, '');
-    if (num.startsWith('09') && num.length === 10) num = '593' + num.substring(1);
-    
-    let txt = '';
-    if (tipoMensaje === 'bienvenida') txt = `?text=${encodeURIComponent(plantillaMensaje.replace('{nombre}', cliente.nombres))}`;
-    else if (tipoMensaje === 'campana') txt = `?text=${encodeURIComponent(plantillaCampana.replace('{nombre}', cliente.nombres))}`;
-    
-    window.open(`https://wa.me/${num}${txt}`, '_blank');
-  };
-
-  const abrirCorreo = (cliente: Cliente) => {
-    if (!cliente.email) { alert("Este cliente no tiene correo electrónico registrado."); return; }
-    const asunto = encodeURIComponent(plantillaCorreoAsunto.replace('{nombre}', cliente.nombres));
-    const cuerpo = encodeURIComponent(plantillaCorreoCuerpo.replace('{nombre}', cliente.nombres));
-    window.location.href = `mailto:${cliente.email}?subject=${asunto}&body=${cuerpo}`;
-  };
-
-  const verHistorialCotizaciones = async (cliente: Cliente) => {
-    setMostrarModalHistorial(true);
-    setCargandoHistorial(true);
-    try {
-      const { data, error } = await supabase.from('cotizaciones').select('*').eq('cliente_id', cliente.id).order('created_at', { ascending: false });
-      if (error) throw error;
-      setCotizacionesCliente(data || []);
-    } catch (error) { console.error(error); } finally { setCargandoHistorial(false); }
-  };
-
-  const tituloActividad = {
-    hoy: 'Actividad de Hoy',
-    ayer: 'Actividad de Ayer',
-    semana: 'Últimos 7 Días',
-    mes: 'Últimos 30 Días'
-  };
-
-  if (cargando) return <div className="flex min-h-screen items-center justify-center bg-[#dce3eb]"><p className="text-sm font-bold tracking-widest text-[#ea0029] uppercase animate-pulse">Sincronizando CRM...</p></div>;
+  const solicitudesPendientesCount = solicitudes.filter(s => calcularTiempoRestante(s.expira_en).estado !== 'activo').length;
 
   return (
-    <div className="min-h-screen bg-[#dce3eb] p-4 md:p-6 font-sans text-[#415364] flex flex-col h-screen overflow-hidden">
+    <div className="p-4 md:p-8 w-full max-w-7xl mx-auto bg-[#dce3eb] min-h-screen font-sans text-[#415364]">
       
-      {/* 1. HEADER PRINCIPAL Y VISTAS */}
-      <div className="w-full flex-shrink-0 mb-4 space-y-3">
-        <div className="bg-white rounded-2xl border border-neutral-200/60 p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <span className="text-[10px] font-bold tracking-widest text-[#ea0029] uppercase">Gestión Comercial Arienzo</span>
-            <h1 className="text-2xl font-bold tracking-tight text-[#415364] mt-1">CRM / Pipeline</h1>
-          </div>
-          
-          <div className="flex bg-[#dce3eb]/50 p-1.5 rounded-xl border border-[#415364]/10 overflow-x-auto custom-scrollbar w-full md:w-auto">
-            <button onClick={() => setVista('kanban')} className={`flex-1 md:flex-auto px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 whitespace-nowrap ${vista === 'kanban' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path></svg>
-              Tablero
-            </button>
-            <button onClick={() => setVista('lista')} className={`flex-1 md:flex-auto px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 whitespace-nowrap ${vista === 'lista' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
-              Lista
-            </button>
-            <button onClick={() => setVista('actividad')} className={`flex-1 md:flex-auto px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 whitespace-nowrap ${vista === 'actividad' ? 'bg-[#ea0029] text-white shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-              Actividad
-            </button>
-          </div>
-
-          <div className="flex gap-3">
-            <button onClick={() => setMostrarModalPlantilla(true)} className="px-4 py-2.5 bg-white border border-[#415364]/20 text-[#415364] text-xs font-bold rounded-xl hover:bg-[#415364]/5 transition-colors flex items-center gap-2 shadow-sm">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-              Mensajes
-            </button>
-            <button onClick={() => setMostrarModalNuevo(true)} className="px-5 py-2.5 bg-[#415364] text-white text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-[#21242E] transition-colors shadow-md flex items-center gap-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
-              Prospecto
-            </button>
-          </div>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4 border-b border-[#415364]/10 pb-6">
+        <div>
+          <span className="text-[10px] font-bold tracking-widest text-[#ea0029] uppercase">Analítica y Accesos</span>
+          <h1 className="text-3xl md:text-4xl font-bold text-[#415364] tracking-tight mt-1">Radar Digital</h1>
+          <p className="text-sm text-[#415364]/70 mt-1">Monitoreo de actividad web y gestión de accesos exclusivos al inventario.</p>
         </div>
-
-        {/* 2. BARRA DE FILTROS */}
-        <div className="bg-white p-4 rounded-2xl border border-neutral-200/60 shadow-sm flex flex-wrap items-center gap-4">
-          <div className="relative flex-1 min-w-[220px]">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-[#415364]/40">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-            </span>
-            <input 
-              type="text" 
-              placeholder="Buscar prospecto por nombre, ciudad o teléfono..." 
-              value={busqueda} 
-              onChange={(e) => setBusqueda(e.target.value)} 
-              className="w-full bg-[#dce3eb]/30 border border-[#415364]/10 rounded-xl py-2.5 pl-10 pr-4 text-xs font-medium focus:outline-none focus:border-[#ea0029] focus:ring-1 focus:ring-[#ea0029]/20 transition-all text-[#415364]" 
-            />
-          </div>
-
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-[#415364]/50 font-bold text-[10px] uppercase tracking-widest">Ciudad:</span>
-            <select value={filtroCiudad} onChange={(e) => setFiltroCiudad(e.target.value)} className="bg-white border border-[#415364]/20 rounded-lg py-2 px-3 text-xs font-bold text-[#415364] outline-none focus:border-[#ea0029] cursor-pointer">
-              <option value="Todas">Todas</option>
-              {ciudadesDisponibles.map(ciu => <option key={ciu} value={ciu}>{ciu}</option>)}
-            </select>
-          </div>
-
-          <div className="flex items-center border-l border-[#415364]/10 pl-4">
-            <button 
-              onClick={() => setFiltroPendientes(!filtroPendientes)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${filtroPendientes ? 'bg-[#ea0029]/10 text-[#ea0029] border-[#ea0029]/30 shadow-sm' : 'bg-white text-[#415364]/60 border-[#415364]/20 hover:bg-[#415364]/5'}`}
-            >
-              <svg className={`w-4 h-4 ${filtroPendientes ? 'animate-pulse' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-              {filtroPendientes ? 'Filtrando Tareas de Hoy' : 'Modo Cacería (Off)'}
-            </button>
-          </div>
-        </div>
+        <button onClick={cargarDatos} className="bg-white border border-[#415364]/20 text-[#415364] px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-[#415364]/5 transition-colors shadow-sm flex items-center gap-2">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+          Refrescar Datos
+        </button>
       </div>
 
-      {/* ÁREA DE TRABAJO DINÁMICA */}
-      <div className="w-full flex-1 min-h-0 overflow-hidden relative">
-        
-        {vista === 'kanban' && (
-          <div className="flex flex-col md:flex-row md:overflow-x-auto md:snap-x gap-3 md:gap-4 h-full pb-4 custom-scrollbar px-1 items-start overflow-y-auto md:overflow-y-hidden">
-            {estados.map(estado => {
-              const leads = clientesFiltrados.filter(c => c.estado === estado);
-              const estaExpandida = columnasExpandidas[estado];
+      <div className="flex overflow-x-auto bg-[#dce3eb]/50 p-1.5 rounded-xl shadow-inner border border-[#415364]/10 mb-8 w-full md:w-fit custom-scrollbar">
+        <button onClick={() => setPestañaActiva('solicitudes')} className={`flex-1 md:flex-auto whitespace-nowrap px-6 py-2.5 rounded-lg text-xs font-bold transition-all flex justify-center items-center gap-2 ${pestañaActiva === 'solicitudes' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
+          Pases VIP
+          {solicitudesPendientesCount > 0 && (
+            <span className="bg-[#ea0029] text-white text-[9px] px-2 py-0.5 rounded-md ml-1">
+              {solicitudesPendientesCount}
+            </span>
+          )}
+        </button>
+        <button onClick={() => setPestañaActiva('inventario')} className={`flex-1 md:flex-auto whitespace-nowrap px-6 py-2.5 rounded-lg text-xs font-bold transition-all flex justify-center items-center gap-2 ${pestañaActiva === 'inventario' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          Radar Unidades
+        </button>
+        <button onClick={() => setPestañaActiva('web')} className={`flex-1 md:flex-auto whitespace-nowrap px-6 py-2.5 rounded-lg text-xs font-bold transition-all flex justify-center items-center gap-2 ${pestañaActiva === 'web' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
+          Trazabilidad Web
+        </button>
+      </div>
 
-              return (
-                <div key={estado} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, estado)} 
-                     className={`w-full md:w-[280px] lg:w-[22vw] xl:w-[280px] flex-shrink-0 md:snap-center bg-white/50 backdrop-blur-sm rounded-2xl p-3 flex flex-col overflow-hidden border border-[#415364]/10 shadow-sm transition-all duration-300 ${estaExpandida ? 'max-h-[60vh] md:max-h-full md:h-full' : 'h-auto md:h-full'}`}>
-                  
-                  {/* HEADER ACORDEÓN */}
-                  <div 
-                    onClick={() => toggleColumna(estado)}
-                    className="flex justify-between items-center px-1.5 flex-shrink-0 cursor-pointer select-none"
-                  >
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#415364] truncate pr-2">{estado}</h3>
-                      <span className="bg-[#415364] text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">{leads.length}</span>
-                    </div>
-                    {/* Flecha solo visible en móvil para indicar que se puede colapsar */}
-                    <div className="md:hidden text-[#415364]/50 bg-white p-1 rounded-md shadow-sm border border-[#415364]/10">
-                      <svg className={`w-4 h-4 transition-transform duration-300 ${estaExpandida ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                    </div>
-                  </div>
-                  
-                  {/* BODY (Oculto en móvil si no está expandido) */}
-                  <div className={`space-y-3 overflow-y-auto flex-1 pr-1 custom-scrollbar transition-all duration-300 ${estaExpandida ? 'mt-3 opacity-100 block' : 'hidden opacity-0 md:block md:mt-3 md:opacity-100'}`}>
-                    {leads.map(cliente => {
-                      const diasInactivos = obtenerDiasInactivos(cliente.notas);
-                      const abandonado = diasInactivos > 4 && cliente.estado !== 'Descartado' && cliente.estado !== 'Cierre (Ganado)';
-                      const agendadoVencido = esFechaVencida(cliente.proximo_contacto);
-
-                      return (
-                        <div 
-                          key={cliente.id} 
-                          draggable 
-                          onDragStart={(e) => handleDragStart(e, cliente.id)} 
-                          onClick={() => setClienteSeleccionado(cliente)} 
-                          className={`bg-white p-3.5 rounded-xl shadow-sm cursor-pointer transition-all relative cursor-grab border-[1.5px] group hover:shadow-md ${agendadoVencido ? 'border-[#ea0029]/60' : abandonado ? 'border-amber-400' : 'border-transparent hover:border-[#ea0029]/30'}`}
-                        >
-                          {cliente.temperatura && <span className="absolute top-3 right-3 text-[10px] bg-[#dce3eb]/50 rounded-full px-1.5 py-0.5">{cliente.temperatura.split(' ')[0]}</span>}
-                          <h4 className="font-bold text-[#415364] text-[12px] pr-5 leading-tight group-hover:text-[#ea0029] transition-colors">{cliente.nombres} {cliente.apellidos}</h4>
-                          <p className="text-[9px] text-[#415364]/60 font-mono mt-1 mb-2 font-medium">{cliente.telefono || 'Sin celular'}</p>
-                          
-                          {cliente.tipologia_interes && cliente.tipologia_interes !== 'Por definir' && (
-                            <span className="inline-block bg-[#415364]/5 text-[#415364] border border-[#415364]/10 text-[9px] font-bold px-2 py-0.5 rounded-md mr-1 uppercase tracking-wider">
-                               {cliente.tipologia_interes}
-                            </span>
-                          )}
-
-                          {cliente.proximo_contacto && (
-                            <div className={`mt-2 text-[9px] font-bold px-2 py-1 flex items-center gap-1.5 rounded-md border ${agendadoVencido ? 'bg-[#ea0029]/10 text-[#ea0029] border-[#ea0029]/20' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                              {new Date(cliente.proximo_contacto).toLocaleDateString('es-EC', {day:'2-digit', month:'short'})}
-                            </div>
-                          )}
-
-                          <div className="mt-2.5 pt-2 border-t border-[#415364]/5 flex justify-between items-center">
-                            <span className={`text-[9px] font-bold tracking-wide ${abandonado ? 'text-amber-600' : 'text-[#415364]/40'}`}>
-                              {diasInactivos === 0 ? 'Actividad: Hoy' : diasInactivos === 1 ? 'Actividad: Ayer' : diasInactivos > 300 ? 'Sin registros' : `Inactivo: ${diasInactivos} días`}
-                            </span>
-                            {abandonado && <span className="text-[10px] animate-pulse" title="Lead enfriándose">⚠️</span>}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
+      {pestañaActiva === 'solicitudes' && (
+        <div className="bg-white rounded-2xl shadow-sm border border-neutral-200/60 overflow-hidden animate-in fade-in slide-in-from-bottom-2 w-full">
+          <div className="px-6 py-5 border-b border-neutral-100 flex justify-between items-center bg-[#21242E]">
+            <h3 className="text-sm font-bold text-white tracking-widest uppercase flex items-center gap-2">
+              Gestión de Accesos al Inventario
+            </h3>
           </div>
-        )}
-
-        {vista === 'lista' && (
-          <div className="bg-white rounded-2xl border border-neutral-200/60 shadow-sm h-full overflow-auto w-full">
-            <table className="w-full text-left text-sm border-collapse min-w-[800px]">
-              <thead className="sticky top-0 bg-[#21242E] z-10 shadow-sm">
-                <tr className="text-white text-[10px] uppercase tracking-widest">
-                  <th className="px-5 py-4 font-bold">Prospecto</th>
-                  <th className="px-5 py-4 font-bold">Interés</th>
-                  <th className="px-5 py-4 font-bold">Fase de Venta</th>
-                  <th className="px-5 py-4 font-bold">Tarea Pendiente</th>
+          
+          <div className="overflow-x-auto custom-scrollbar w-full">
+            <table className="w-full min-w-[950px] text-left text-sm text-[#415364]">
+              <thead className="bg-neutral-50/50 text-[#415364]/60 text-[10px] uppercase tracking-widest border-b border-neutral-100">
+                <tr>
+                  <th className="px-6 py-4 font-bold">Inversionista</th>
+                  <th className="px-6 py-4 font-bold">Estado del Pase</th>
+                  <th className="px-6 py-4 font-bold">Contacto</th>
+                  <th className="px-6 py-4 font-bold text-right">Gestión Rápida</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-100 text-[#415364]">
-                {clientesFiltrados.map((cliente) => (
-                  <tr key={cliente.id} onClick={() => setClienteSeleccionado(cliente)} className="hover:bg-[#dce3eb]/30 cursor-pointer transition-colors">
-                    <td className="px-5 py-4">
-                      <div className="font-bold text-[#415364] text-[13px]">{cliente.nombres} {cliente.apellidos}</div>
-                      <div className="text-[10px] text-[#415364]/60 font-mono mt-0.5 font-medium">{cliente.telefono}</div>
-                    </td>
-                    <td className="px-5 py-4 text-xs font-bold text-[#ea0029]">{cliente.tipologia_interes}</td>
-                    <td className="px-5 py-4"><div className="text-[10px] font-bold text-[#415364] bg-[#415364]/10 inline-block px-2.5 py-1 rounded-md uppercase tracking-wider">{cliente.estado}</div></td>
-                    <td className="px-5 py-4">
-                      {cliente.proximo_contacto ? (
-                         <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider ${esFechaVencida(cliente.proximo_contacto) ? 'bg-[#ea0029]/10 text-[#ea0029]' : 'bg-blue-50 text-blue-700'}`}>
-                           {new Date(cliente.proximo_contacto).toLocaleDateString('es-EC')}
-                         </span>
-                      ) : <span className="text-[10px] text-[#415364]/40 font-bold uppercase tracking-wider">Sin agendar</span>}
-                    </td>
-                  </tr>
-                ))}
+              <tbody className="divide-y divide-neutral-100">
+                {cargandoSolicitudes && (
+                  <tr><td colSpan={4} className="px-6 py-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">Cargando datos en vivo...</td></tr>
+                )}
+                {!cargandoSolicitudes && solicitudes.length === 0 && (
+                  <tr><td colSpan={4} className="px-6 py-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">No hay solicitudes pendientes.</td></tr>
+                )}
+                {!cargandoSolicitudes && solicitudes.length > 0 && solicitudes.map((cliente) => {
+                  const statusTiempo = calcularTiempoRestante(cliente.expira_en);
+                  const activo = statusTiempo.estado === 'activo';
+                  const caducado = statusTiempo.estado === 'caducado';
+
+                  return (
+                    <tr key={cliente.id} className={`transition-colors ${activo ? 'bg-green-50/10' : caducado ? 'bg-[#ea0029]/5' : 'hover:bg-[#dce3eb]/30'}`}>
+                      <td className="px-6 py-4">
+                        <div className="font-bold text-[#415364] whitespace-nowrap">{cliente.nombres}</div>
+                        <div className="text-[10px] text-[#415364]/50 mt-0.5">Ingresó: {new Date(cliente.created_at).toLocaleDateString('es-EC')}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className={`inline-flex items-center text-[9px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider border whitespace-nowrap ${activo ? 'bg-green-50 text-green-700 border-green-200' : caducado ? 'bg-[#ea0029]/10 text-[#ea0029] border-[#ea0029]/20' : 'bg-[#dce3eb]/50 text-[#415364]/60 border-[#415364]/10'}`}>
+                          {statusTiempo.texto}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-[#415364] font-mono text-[11px] font-medium">{cliente.email}</div>
+                        <div className="text-[#415364]/60 font-mono text-[10px]">{cliente.telefono}</div>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <select className="bg-white border border-[#415364]/20 text-[#415364] rounded-lg text-[10px] p-2 focus:outline-none focus:border-[#ea0029] font-bold outline-none cursor-pointer" value={tiemposSeleccionados[cliente.id] || '24'} onChange={(e) => handleTiempoChange(cliente.id, e.target.value)}>
+                            <option value="2">2 hrs</option>
+                            <option value="12">12 hrs</option>
+                            <option value="24">24 hrs</option>
+                            <option value="48">48 hrs</option>
+                            <option value="999">Ilimitado</option>
+                          </select>
+                          <button onClick={() => aprobarAcceso(cliente)} className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm text-white whitespace-nowrap ${activo ? 'bg-[#415364] hover:bg-[#21242E]' : 'bg-[#ea0029] hover:bg-[#c90022]'}`}>
+                            {activo ? 'Renovar' : 'Aprobar'}
+                          </button>
+                          <button onClick={() => enviarCorreo(cliente)} className="bg-[#dce3eb]/50 text-[#415364] hover:bg-[#415364]/10 border border-[#415364]/10 px-3 py-2 rounded-lg transition-colors shadow-sm flex items-center justify-center" title="Enviar Email Pase">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                          </button>
+                          <button onClick={() => solicitarTelefonoCorrecto(cliente)} className="bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 px-3 py-2 rounded-lg transition-colors shadow-sm flex items-center justify-center" title="Solicitar Teléfono Correcto">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                          </button>
+                          <button onClick={() => abrirWhatsApp(cliente.telefono, cliente.nombres)} className="bg-[#25D366]/10 border border-[#25D366]/30 text-[#1DA851] hover:bg-[#25D366]/20 px-3 py-2 rounded-lg transition-colors flex items-center justify-center" title="Escribir por WhatsApp">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* === VISTA 3: BITÁCORA MULTICANAL CON AGENDAMIENTO === */}
-        {vista === 'actividad' && (
-          <div className="flex flex-col h-full gap-5 overflow-y-auto">
-            
-            <div className="bg-white p-5 rounded-2xl border border-neutral-200/60 shadow-sm flex flex-col md:flex-row items-center justify-between flex-shrink-0 gap-4">
-               <div>
-                 <h2 className="text-lg font-bold text-[#415364] tracking-tight">Reporte de Productividad</h2>
-                 <p className="text-[11px] text-[#415364]/60 mt-0.5">Analiza el rendimiento del equipo de ventas.</p>
-               </div>
-               
-               <div className="flex bg-[#dce3eb]/50 p-1.5 rounded-xl border border-[#415364]/10">
-                 <button onClick={() => setFiltroTiempo('hoy')} className={`px-4 py-2 rounded-lg text-[11px] font-bold transition-all ${filtroTiempo === 'hoy' ? 'bg-white shadow-sm text-[#ea0029]' : 'text-[#415364]/70 hover:text-[#415364]'}`}>Hoy</button>
-                 <button onClick={() => setFiltroTiempo('ayer')} className={`px-4 py-2 rounded-lg text-[11px] font-bold transition-all ${filtroTiempo === 'ayer' ? 'bg-white shadow-sm text-[#ea0029]' : 'text-[#415364]/70 hover:text-[#415364]'}`}>Ayer</button>
-                 <button onClick={() => setFiltroTiempo('semana')} className={`px-4 py-2 rounded-lg text-[11px] font-bold transition-all ${filtroTiempo === 'semana' ? 'bg-white shadow-sm text-[#ea0029]' : 'text-[#415364]/70 hover:text-[#415364]'}`}>7 Días</button>
-                 <button onClick={() => setFiltroTiempo('mes')} className={`px-4 py-2 rounded-lg text-[11px] font-bold transition-all ${filtroTiempo === 'mes' ? 'bg-white shadow-sm text-[#ea0029]' : 'text-[#415364]/70 hover:text-[#415364]'}`}>30 Días</button>
-               </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-5 flex-shrink-0">
-              <div className="bg-white p-5 rounded-2xl border border-neutral-200/60 shadow-sm text-center transition-all hover:border-[#415364]/30 group">
-                <p className="text-[10px] font-bold text-[#415364]/50 uppercase tracking-widest">Total Acciones</p>
-                <p className="text-4xl font-light text-[#415364] mt-2 group-hover:scale-105 transition-transform">{actividadesDia.length}</p>
-              </div>
-              <div className="bg-white p-5 rounded-2xl border border-neutral-200/60 shadow-sm text-center transition-all hover:border-green-300 group">
-                <p className="text-[10px] font-bold text-green-600 uppercase tracking-widest">Éxito / Efectivas</p>
-                <p className="text-4xl font-light text-green-600 mt-2 group-hover:scale-105 transition-transform">
-                  {actividadesDia.filter(a => a.resultado === 'Contestó' || a.resultado === 'Respondio' || a.resultado === 'Efectivo').length}
-                </p>
-              </div>
-              <div className="bg-[#21242E] p-5 rounded-2xl border border-neutral-800 shadow-sm flex flex-col justify-center space-y-2 text-white">
-                <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest text-center border-b border-white/10 pb-1.5 mb-1.5">Impacto Por Canal</p>
-                <div className="flex justify-between items-center">
-                  <span className="text-[11px] font-bold text-white/80">Llamadas / Zoom</span>
-                  <span className="text-sm font-bold text-[#ea0029]">{actividadesDia.filter(a => a.tipo_contacto === 'Llamada' || a.tipo_contacto === 'Zoom').length}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[11px] font-bold text-white/80">WhatsApp / Email</span>
-                  <span className="text-sm font-bold text-[#ea0029]">{actividadesDia.filter(a => a.tipo_contacto === 'WhatsApp' || a.tipo_contacto === 'Email').length}</span>
-                </div>
-              </div>
-              <div className="bg-[#21242E] p-5 rounded-2xl border border-neutral-800 shadow-sm flex flex-col justify-center space-y-2 text-white">
-                <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest text-center border-b border-white/10 pb-1.5 mb-1.5">Rendimiento Agente</p>
-                <div className="flex justify-between items-center">
-                  <span className="text-[11px] font-bold text-white/80">Saúl Intriago</span>
-                  <span className="text-sm font-bold text-[#dce3eb]">{actividadesDia.filter(a => a.agente.includes('Saúl')).length}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[11px] font-bold text-white/80">Debbi Mera</span>
-                  <span className="text-sm font-bold text-[#dce3eb]">{actividadesDia.filter(a => a.agente.includes('Debbi') || a.agente.includes('Debbie') || a.agente.includes('Débora')).length}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col md:flex-row gap-5 flex-1 min-h-0">
-              
-              <div className="bg-white rounded-2xl border border-neutral-200/60 shadow-sm p-6 w-full md:w-[35%] flex flex-col flex-shrink-0 overflow-y-auto custom-scrollbar">
-                <h3 className="text-sm font-bold text-[#415364] uppercase tracking-wider border-b border-neutral-100 pb-3 mb-5 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-[#ea0029]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                  Registro Rápido
-                </h3>
-                <form onSubmit={registrarActividadRapida} className="flex-1 flex flex-col space-y-4">
-                  
-                  <div className="relative">
-                    <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Buscar Cliente</label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#415364]/40">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                      </span>
-                      <input 
-                        type="text" 
-                        placeholder="Escribe nombre o teléfono..."
-                        value={busquedaLlamada}
-                        onChange={(e) => {
-                          setBusquedaLlamada(e.target.value);
-                          setMostrarOpcionesLlamada(true);
-                          setLlamadaClienteId(''); 
-                        }}
-                        onFocus={() => setMostrarOpcionesLlamada(true)}
-                        className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl py-2.5 pl-9 pr-3 text-xs font-medium focus:outline-none focus:border-[#ea0029] text-[#415364]"
-                      />
-                    </div>
-                    {busquedaLlamada && !llamadaClienteId && <p className="text-[9px] text-[#ea0029] mt-1.5 font-bold">⚠️ Haz clic en un prospecto abajo</p>}
-                    {mostrarOpcionesLlamada && !llamadaClienteId && (
-                      <ul className="absolute z-10 w-full mt-1.5 bg-white border border-neutral-200/80 rounded-xl shadow-xl max-h-48 overflow-y-auto custom-scrollbar">
-                        {prospectosFiltradosParaLlamada.length > 0 ? (
-                          prospectosFiltradosParaLlamada.map(c => (
-                            <li 
-                              key={c.id} 
-                              className="p-3 text-xs hover:bg-[#dce3eb]/30 cursor-pointer border-b border-neutral-100 last:border-0 flex flex-col transition-colors"
-                              onClick={() => {
-                                setLlamadaClienteId(c.id);
-                                setBusquedaLlamada(`${c.nombres} ${c.apellidos}`);
-                                setMostrarOpcionesLlamada(false);
-                              }}
-                            >
-                              <span className="font-bold text-[#415364]">{c.nombres} {c.apellidos}</span>
-                              <span className="text-[10px] text-[#415364]/60 font-mono mt-0.5">{c.telefono}</span>
-                            </li>
-                          ))
-                        ) : (
-                          <li className="p-3 text-xs text-[#415364]/40 text-center font-medium">No encontrado</li>
-                        )}
-                      </ul>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Asesor</label>
-                      <select value={llamadaAgente} onChange={(e) => setLlamadaAgente(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-xl p-2.5 text-xs font-bold text-[#415364] focus:outline-none focus:border-[#ea0029]">
-                        <option value="Saúl Intriago">Saúl</option>
-                        <option value="Debbi Mera">Debbi</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Canal</label>
-                      <select value={tipoContacto} onChange={(e) => setTipoContacto(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-xl p-2.5 text-xs font-bold text-[#415364] focus:outline-none focus:border-[#ea0029]">
-                        <option value="Llamada">Llamada</option>
-                        <option value="WhatsApp">WhatsApp</option>
-                        <option value="Zoom">Zoom</option>
-                        <option value="Email">Email</option>
-                        <option value="Reunión">Presencial</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Resultado</label>
-                    <select value={llamadaResultado} onChange={(e) => setLlamadaResultado(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-2.5 text-xs font-bold text-[#415364] focus:outline-none focus:border-[#ea0029]">
-                      {tipoContacto === 'Llamada' || tipoContacto === 'Zoom' ? (
-                        <>
-                          <option value="Contestó">✅ Contestó / Asistió</option>
-                          <option value="No contestó">❌ No contestó / Faltó</option>
-                          <option value="Equivocado">🚫 Número Erróneo</option>
-                        </>
-                      ) : tipoContacto === 'WhatsApp' ? (
-                        <>
-                          <option value="Respondio">✅ Respondió el chat</option>
-                          <option value="Enviado">✔️ Enviado (Sin resp)</option>
-                          <option value="Leido">👀 Leído (Visto)</option>
-                        </>
-                      ) : (
-                        <>
-                          <option value="Efectivo">✅ Efectivo / Realizado</option>
-                          <option value="Fallido">❌ Cancelado</option>
-                        </>
-                      )}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Notas del Contacto</label>
-                    <textarea rows={2} value={llamadaNota} onChange={(e) => setLlamadaNota(e.target.value)} placeholder="Ej: Le gustó la suite, pide descuento..." className="w-full bg-white border border-[#415364]/20 rounded-xl p-3 text-xs font-medium text-[#415364] focus:outline-none focus:border-[#ea0029] resize-none transition-all"></textarea>
-                  </div>
-                  
-                  <div className="bg-[#415364]/5 border border-[#415364]/10 p-4 rounded-xl mt-2">
-                    <label className="block text-[10px] font-bold text-[#415364] uppercase mb-2.5 flex items-center gap-1.5">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                      Agendar Siguiente Paso
-                    </label>
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <input 
-                        type="date" 
-                        value={proximaFechaRapida} 
-                        onChange={(e) => setProximaFechaRapida(e.target.value)} 
-                        className="w-full bg-white border border-[#415364]/20 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]" 
-                      />
-                      <select 
-                        value={proximaAccionRapida} 
-                        onChange={(e) => setProximaAccionRapida(e.target.value)} 
-                        className="w-full bg-white border border-[#415364]/20 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]"
-                      >
-                        <option value="">-- Acción --</option>
-                        <option value="Llamar">Llamar</option>
-                        <option value="WhatsApp">WhatsApp</option>
-                        <option value="Reunión">Reunión / Zoom</option>
-                        <option value="Cotización">Cotización</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <button type="submit" disabled={guardandoActividadRapida || !llamadaClienteId} className={`w-full py-3.5 mt-auto text-white text-[11px] font-bold uppercase tracking-widest rounded-xl transition shadow-md ${!llamadaClienteId ? 'bg-[#415364]/30 cursor-not-allowed' : 'bg-[#ea0029] hover:bg-[#c90022]'}`}>
-                    {guardandoActividadRapida ? 'Procesando...' : 'Guardar y Actualizar'}
-                  </button>
-                </form>
-              </div>
-
-              <div className="bg-white rounded-2xl border border-neutral-200/60 shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
-                <div className="p-5 border-b border-neutral-100 flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-[#415364] uppercase tracking-wide flex items-center gap-2">
-                    <svg className="w-5 h-5 text-[#ea0029]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
-                    {tituloActividad[filtroTiempo]}
-                  </h3>
-                </div>
-                <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
-                  {actividadesDia.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-center p-6">
-                      <svg className="w-12 h-12 text-[#415364]/20 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                      <p className="text-[#415364]/50 text-xs font-bold uppercase tracking-wider">No hay flujo registrado<br/>para este periodo.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {actividadesDia.map((act) => (
-                        <div key={act.id} className="flex gap-4 p-4 bg-white border border-[#415364]/10 rounded-xl hover:shadow-md transition-shadow group">
-                          <div className="text-center pt-1 min-w-[55px]">
-                            {filtroTiempo !== 'hoy' && filtroTiempo !== 'ayer' ? (
-                              <>
-                                <span className="block text-[10px] font-bold text-[#415364]/60 mb-0.5">{new Date(act.created_at).toLocaleDateString('es-EC', {day:'2-digit', month:'short'})}</span>
-                                <span className="text-[10px] font-mono font-bold text-[#ea0029]">{new Date(act.created_at).toLocaleTimeString('es-EC', {hour: '2-digit', minute:'2-digit'})}</span>
-                              </>
-                            ) : (
-                              <span className="text-[11px] font-mono font-bold text-[#ea0029]">{new Date(act.created_at).toLocaleTimeString('es-EC', {hour: '2-digit', minute:'2-digit'})}</span>
+      {pestañaActiva === 'inventario' && (
+        <div className="bg-white border border-neutral-200/60 rounded-2xl shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2 w-full">
+          {cargandoRadar && sesiones.length === 0 && (
+            <div className="p-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">Cargando lecturas del radar...</div>
+          )}
+          {!(cargandoRadar && sesiones.length === 0) && (
+            <div className="overflow-x-auto custom-scrollbar w-full">
+              <table className="w-full min-w-[1000px] text-left border-collapse">
+                <thead>
+                  <tr className="bg-[#21242E] text-white">
+                    <th className="p-5 text-[10px] uppercase tracking-widest font-bold">Prospecto Monitorizado</th>
+                    <th className="p-5 text-[10px] uppercase tracking-widest font-bold">Estadía</th>
+                    <th className="p-5 text-[10px] uppercase tracking-widest font-bold">Inventario Visto</th>
+                    <th className="p-5 text-[10px] uppercase tracking-widest font-bold">Última Acción</th>
+                    <th className="p-5 text-[10px] uppercase tracking-widest font-bold text-center">Trazabilidad</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-100">
+                  {sesiones.map((sesion) => (
+                    <React.Fragment key={sesion.idSesion}>
+                      <tr className="hover:bg-[#dce3eb]/30 transition-colors">
+                        <td className="p-5">
+                          {sesion.nombre && (
+                            <span className="font-bold text-[#415364] flex items-center gap-1.5 text-sm whitespace-nowrap">
+                              {sesion.nombre} <svg className="w-3.5 h-3.5 text-[#1DA851]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                            </span>
+                          )}
+                          {!sesion.nombre && (
+                            <span className="font-bold text-[#415364] flex items-center gap-1.5 text-sm whitespace-nowrap">
+                              Visitante Anónimo
+                            </span>
+                          )}
+                          <span className="text-[10px] text-[#415364]/60 font-mono block mt-1">{sesion.email}</span>
+                          <span className="text-[9px] text-[#415364]/40 mt-1.5 block font-bold uppercase tracking-wider">
+                            {formatTiempoAtras(sesion.fin)}
+                          </span>
+                        </td>
+                        <td className="p-5">
+                          <span className="bg-[#dce3eb]/50 text-[#415364] border border-[#415364]/10 px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider whitespace-nowrap">
+                            {formatMinutos(sesion.minutos)}
+                          </span>
+                        </td>
+                        <td className="p-5">
+                          <div className="flex gap-1.5 flex-wrap min-w-[150px]">
+                            {sesion.unidadesVistas.length > 0 && sesion.unidadesVistas.map(u => (
+                              <span key={u} className="bg-white border border-[#415364]/20 text-[#415364] text-[9px] font-bold px-2 py-1 rounded-md shadow-sm">U-{u}</span>
+                            ))}
+                            {sesion.unidadesVistas.length === 0 && (
+                              <span className="text-xs text-[#415364]/30">-</span>
                             )}
                           </div>
-                          <div className="flex-1 border-l border-[#415364]/10 pl-4">
-                            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                              <span className="text-sm font-bold text-[#415364]">{act.clientes?.nombres} {act.clientes?.apellidos}</span>
-                              <span className="text-[12px] opacity-70 group-hover:opacity-100 transition-opacity">{act.tipo_contacto === 'WhatsApp' ? '💬' : act.tipo_contacto === 'Email' ? '📧' : act.tipo_contacto === 'Zoom' ? '📹' : act.tipo_contacto === 'Reunión' ? '🤝' : '📞'}</span>
-                              <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider border ${act.resultado.includes('Contestó') || act.resultado.includes('Respondio') || act.resultado.includes('Efectivo') ? 'bg-green-50 text-green-700 border-green-200' : 'bg-neutral-100 text-neutral-600 border-neutral-200'}`}>{act.resultado}</span>
+                        </td>
+                        <td className="p-5">
+                          <span className="text-xs font-medium text-[#415364]/80 whitespace-nowrap">{sesion.ultimaAccion}</span>
+                        </td>
+                        <td className="p-5 text-center">
+                          <button onClick={() => setSesionExpandida(sesionExpandida === sesion.idSesion ? null : sesion.idSesion)} className="text-[10px] font-bold text-[#ea0029] hover:text-[#c90022] bg-[#ea0029]/10 px-3 py-1.5 rounded-lg uppercase tracking-widest transition-colors whitespace-nowrap">
+                            {sesionExpandida === sesion.idSesion ? 'Ocultar' : 'Detalles'}
+                          </button>
+                        </td>
+                      </tr>
+                      
+                      {sesionExpandida === sesion.idSesion && (
+                        <tr className="bg-[#F9F7F5] shadow-inner">
+                          <td colSpan={5} className="p-6 md:p-8">
+                            <div className="mb-8 bg-white border border-[#ea0029]/20 rounded-2xl p-5 shadow-sm flex items-start gap-4">
+                              <div className="bg-[#ea0029]/10 text-[#ea0029] w-12 h-12 rounded-full flex items-center justify-center shrink-0">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                              </div>
+                              <div>
+                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#ea0029] mb-1.5">Inteligencia Comercial</h4>
+                                <p className="text-sm text-[#415364] leading-relaxed font-medium">{generarAnalisisComercial(sesion)}</p>
+                              </div>
                             </div>
-                            <p className="text-[12px] text-[#415364]/80 leading-relaxed font-medium">{act.notas || 'Sin notas adicionales'}</p>
-                            <p className="text-[9px] font-bold text-[#415364]/40 mt-2 uppercase tracking-widest">Agente: {act.agente}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* --- MODALES Y PANEL LATERAL (DRAWER PREMIUM) --- */}
-      {clienteSeleccionado && (
-        <div className="fixed inset-0 bg-[#21242E]/80 z-40 transition-opacity backdrop-blur-sm" onClick={() => setClienteSeleccionado(null)}></div>
-      )}
-
-      <div className={`fixed top-0 right-0 h-full w-full max-w-[400px] bg-[#F9F7F5] shadow-2xl border-l border-neutral-200 transform transition-transform duration-300 z-50 flex flex-col ${clienteSeleccionado ? 'translate-x-0' : 'translate-x-full'}`}>
-        {clienteSeleccionado && (
-          <>
-            <div className="p-6 bg-[#21242E] relative flex-shrink-0 shadow-md">
-              <button onClick={() => setClienteSeleccionado(null)} className="absolute top-4 right-4 text-white/50 hover:text-white bg-white/10 rounded-full w-8 h-8 flex items-center justify-center transition-colors">✕</button>
-              <h2 className="text-xl font-bold text-white pr-8 leading-tight flex items-center gap-2">
-                {clienteSeleccionado.tipo === 'cliente' && <svg className="w-5 h-5 text-[#D1C292]" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>}
-                {clienteSeleccionado.nombres} {clienteSeleccionado.apellidos}
-              </h2>
-              <div className="flex flex-wrap items-center gap-2 mt-3">
-                <span className="bg-white/10 text-white border border-white/20 text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">{clienteSeleccionado.origen_captacion || 'Sin origen'}</span>
-                {clienteSeleccionado.ciudad_residencia && (
-                  <span className="bg-[#ea0029]/20 text-[#ea0029] border border-[#ea0029]/30 text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">📍 {clienteSeleccionado.ciudad_residencia}</span>
-                )}
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
-              
-              {/* BOTONES DE CONTACTO DIRECTO */}
-              <div className="bg-white p-4 rounded-xl border border-neutral-200/60 shadow-sm space-y-3">
-                <p className="text-[10px] font-bold text-[#415364]/60 uppercase tracking-widest border-b border-neutral-100 pb-2">Acciones de Contacto</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'bienvenida')} className="flex flex-col items-center justify-center gap-1 bg-[#25D366] hover:bg-[#1DA851] text-white py-2.5 rounded-xl transition shadow-sm border border-transparent">
-                    <svg className="w-4 h-4 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    <span className="text-[11px] font-bold uppercase tracking-wider mt-0.5">Welcome</span>
-                  </button>
-                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'campana')} className="flex flex-col items-center justify-center gap-1 bg-[#128C7E] hover:bg-[#075E54] text-white py-2.5 rounded-xl transition shadow-sm border border-transparent">
-                    <svg className="w-4 h-4 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path></svg>
-                    <span className="text-[11px] font-bold uppercase tracking-wider mt-0.5">Campaña</span>
-                  </button>
-                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'libre')} className="flex flex-col items-center justify-center gap-1 bg-white hover:bg-neutral-50 text-[#415364] py-2.5 rounded-xl transition shadow-sm border border-[#415364]/20">
-                    <svg className="w-4 h-4 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-                    <span className="text-[11px] font-bold uppercase tracking-wider mt-0.5">Chat Libre</span>
-                  </button>
-                  <button onClick={() => abrirCorreo(clienteSeleccionado)} className="flex flex-col items-center justify-center gap-1 bg-[#415364] hover:bg-[#21242E] text-white py-2.5 rounded-xl transition shadow-sm border border-transparent">
-                    <svg className="w-4 h-4 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                    <span className="text-[11px] font-bold uppercase tracking-wider mt-0.5">Enviar Correo</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white p-4 rounded-xl border border-neutral-200/60 shadow-sm">
-                  <label className="block text-[9px] font-bold text-[#415364]/60 uppercase tracking-widest mb-1.5">Fase Embudo</label>
-                  <select value={clienteSeleccionado.estado} onChange={(e) => actualizarCampoRapido(clienteSeleccionado.id, 'estado', e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/10 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]">
-                    {estados.map(est => <option key={est} value={est}>{est}</option>)}
-                  </select>
-                </div>
-                <div className="bg-white p-4 rounded-xl border border-neutral-200/60 shadow-sm">
-                  <label className="block text-[9px] font-bold text-[#415364]/60 uppercase tracking-widest mb-1.5">Termómetro</label>
-                  <select value={clienteSeleccionado.temperatura || '❄️ Frío'} onChange={(e) => actualizarCampoRapido(clienteSeleccionado.id, 'temperatura', e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/10 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]">
-                    <option value="🔥 Caliente">🔥 Caliente</option>
-                    <option value="☀️ Tibio">☀️ Tibio</option>
-                    <option value="❄️ Frío">❄️ Frío</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* === PASE VIP === */}
-              <div className="bg-white border border-[#D1C292] p-5 rounded-2xl shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1.5 h-full bg-[#D1C292]"></div>
-                <h3 className="text-[11px] font-bold text-[#21242E] flex items-center gap-2 uppercase tracking-widest mb-1">
-                  <svg className="w-4 h-4 text-[#D1C292]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
-                  Pase VIP: Inventario
-                </h3>
-                <p className="text-[10px] text-[#415364]/70 leading-relaxed mb-3">Autoriza el email del prospecto para ver precios y planos en la web.</p>
-                <div className="flex gap-2">
-                  <select
-                    value={tiempoVIP}
-                    onChange={(e) => setTiempoVIP(Number(e.target.value))}
-                    className="w-[35%] bg-[#dce3eb]/30 border border-[#415364]/20 text-[#415364] rounded-xl p-2 text-[11px] font-bold outline-none focus:border-[#ea0029]"
-                  >
-                    <option value={1}>1 Hora</option>
-                    <option value={2}>2 Horas</option>
-                    <option value={12}>12 Horas</option>
-                    <option value={24}>24 Horas</option>
-                    <option value={48}>48 Horas</option>
-                  </select>
-                  <button 
-                    onClick={() => otorgarAccesoVIP(clienteSeleccionado.email)}
-                    disabled={activandoVIP || !clienteSeleccionado.email}
-                    className={`w-[65%] py-2.5 text-white rounded-xl text-[10px] font-bold transition-all shadow-md uppercase tracking-wider ${!clienteSeleccionado.email ? 'bg-[#415364]/30 cursor-not-allowed' : 'bg-[#21242E] hover:bg-black border border-[#D1C292]/30'}`}
-                  >
-                    {activandoVIP ? 'Generando...' : !clienteSeleccionado.email ? '❌ Sin Email' : 'Generar Pase'}
-                  </button>
-                </div>
-              </div>
-
-              <div className="bg-white border border-neutral-200/60 p-5 rounded-2xl shadow-sm space-y-3">
-                <h3 className="text-[11px] font-bold text-[#ea0029] flex items-center gap-1.5 uppercase tracking-widest border-b border-neutral-100 pb-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                  Agendar Siguiente Paso
-                </h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Fecha</label>
-                    <input type="date" value={fechaAccion} onChange={(e) => setFechaAccion(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]" />
-                  </div>
-                  <div>
-                    <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Tipo de Acción</label>
-                    <select value={tipoAccion} onChange={(e) => setTipoAccion(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]">
-                      {tiposAccion.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Objetivo / Detalles</label>
-                  <input type="text" value={detalleAccion} onChange={(e) => setDetalleAccion(e.target.value)} placeholder="Ej: Llamar para confirmar cita..." className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg p-2 text-[11px] font-medium text-[#415364] outline-none focus:border-[#ea0029]" />
-                </div>
-                <div className="flex justify-end pt-1">
-                  <button id="btn-guardar-tarea" onClick={guardarProximaTarea} disabled={guardandoTarea} className="px-4 py-2 bg-[#415364] text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-[#21242E] transition-colors shadow-sm">
-                    {guardandoTarea ? 'Guardando...' : 'Guardar Tarea'}
-                  </button>
-                </div>
-              </div>
-
-              <div className="bg-white border border-neutral-200/60 p-5 rounded-2xl shadow-sm">
-                <label className="block text-[11px] font-bold text-[#415364] tracking-widest mb-3 uppercase flex items-center gap-2 border-b border-neutral-100 pb-2">
-                  <svg className="w-4 h-4 text-[#ea0029]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                  Log de Seguimiento
-                </label>
-                <div className="flex flex-col gap-3 mb-4">
-                  <textarea rows={2} value={nuevaNotaTexto} onChange={(e) => setNuevaNotaTexto(e.target.value)} placeholder="Escribe aquí el resumen de tu conversación..." className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs font-medium text-[#415364] focus:outline-none focus:border-[#ea0029] resize-none transition-colors" />
-                  <button onClick={agregarNotaBitacora} disabled={!nuevaNotaTexto.trim() || guardandoNota} className="self-end px-4 py-2 bg-[#ea0029] text-white text-[10px] font-bold uppercase tracking-widest rounded-lg disabled:opacity-50 hover:bg-[#c90022] transition-colors shadow-sm">
-                    {guardandoNota ? 'Registrando...' : 'Agregar Registro'}
-                  </button>
-                </div>
-                <div className="bg-[#F9F7F5] p-4 rounded-xl border border-[#415364]/10 h-[180px] overflow-y-auto custom-scrollbar shadow-inner">
-                  {clienteSeleccionado.notas ? (
-                    <div className="text-[11px] text-[#415364] whitespace-pre-wrap leading-relaxed font-medium">{clienteSeleccionado.notas}</div>
-                  ) : (
-                    <p className="text-[11px] text-[#415364]/40 text-center italic mt-12 font-bold">Sin actividad registrada aún.</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="pb-6">
-                <button onClick={() => verHistorialCotizaciones(clienteSeleccionado)} className="w-full py-3.5 bg-white border border-[#415364]/20 text-[#415364] rounded-xl text-[11px] font-bold uppercase tracking-widest hover:border-[#ea0029] hover:text-[#ea0029] transition-colors shadow-sm flex items-center justify-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                  Ver Cotizaciones Generadas
-                </button>
-              </div>
-
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* MODAL NUEVO PROSPECTO (ADAPTADO PARA MÓVIL Y ESCRITORIO) */}
-      {mostrarModalNuevo && (
-        <div className="fixed inset-0 bg-[#21242E]/80 z-[80] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-t-3xl md:rounded-2xl shadow-2xl w-full max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto custom-scrollbar animate-in slide-in-from-bottom-4 md:slide-in-from-bottom-0 md:zoom-in-95 duration-200">
-            
-            {/* Cabecera Fija (Sticky) para que no se pierda al hacer scroll */}
-            <div className="flex justify-between items-center mb-6 border-b border-neutral-100 pb-4 sticky top-0 bg-white z-10 pt-2 -mt-2">
-              <h2 className="text-xl font-bold text-[#415364]">Registro de Prospecto</h2>
-              <button onClick={() => setMostrarModalNuevo(false)} className="text-[#415364]/40 hover:text-[#ea0029] text-4xl font-light transition-colors leading-none">&times;</button>
-            </div>
-            
-            <form onSubmit={guardarNuevoCliente} className="space-y-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Nombres <span className="text-[#ea0029]">*</span></label>
-                  <input required type="text" value={nuevoNombre} onChange={e => setNuevoNombre(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium focus:outline-none focus:border-[#ea0029]" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Apellidos</label>
-                  <input type="text" value={nuevoApellido} onChange={e => setNuevoApellido(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium focus:outline-none focus:border-[#ea0029]" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Teléfono <span className="text-[#ea0029]">*</span></label>
-                  <input required type="tel" value={nuevoTelefono} onChange={e => setNuevoTelefono(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium focus:outline-none focus:border-[#ea0029]" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Email</label>
-                  <input type="email" value={nuevoEmail} onChange={e => setNuevoEmail(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium focus:outline-none focus:border-[#ea0029]" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Ciudad Residencia</label>
-                  <input type="text" value={nuevaCiudad} onChange={e => setNuevaCiudad(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium focus:outline-none focus:border-[#ea0029]" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Ingresado Por (Asesor)</label>
-                  <input type="text" value={nuevoIngresadoPor} onChange={e => setNuevoIngresadoPor(e.target.value)} className="w-full bg-[#415364]/5 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-bold focus:outline-none focus:border-[#ea0029]" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Origen</label>
-                  <select value={nuevoOrigen} onChange={e => setNuevoOrigen(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-bold focus:outline-none focus:border-[#ea0029]">
-                    {origenes.map(o => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Campaña (Opcional)</label>
-                  <input type="text" list="lista-campanas" value={nuevoCampana} onChange={e => setNuevoCampana(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-bold focus:outline-none focus:border-[#ea0029]" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Motivo Compra</label>
-                  <select value={nuevoMotivo} onChange={e => setNuevoMotivo(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-bold focus:outline-none focus:border-[#ea0029]">
-                    {motivos.map(m => <option key={m} value={m}>{m}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Interés</label>
-                  <select value={nuevoInteres} onChange={e => setNuevoInteres(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-bold focus:outline-none focus:border-[#ea0029]">
-                    {intereses.map(i => <option key={i} value={i}>{i}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="pt-6 pb-2 flex justify-end gap-4 border-t border-neutral-100">
-                <button type="button" onClick={() => setMostrarModalNuevo(false)} className="px-6 py-3 text-xs font-bold text-[#415364] border border-[#415364]/20 rounded-xl hover:bg-[#415364]/5 transition-colors">Cancelar</button>
-                <button type="submit" disabled={guardandoCliente} className="px-8 py-3 bg-[#ea0029] text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-[#c90022] transition-colors shadow-md disabled:opacity-50">
-                  {guardandoCliente ? 'Guardando...' : 'Guardar Prospecto'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {mostrarModalPlantilla && (
-        <div className="fixed inset-0 bg-[#21242E]/80 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
-            <h2 className="text-xl font-bold text-[#415364] mb-1">Configuración de Plantillas y Automatización</h2>
-            <p className="text-[11px] text-[#415364]/60 font-medium mb-6 pb-4 border-b border-[#415364]/10">Usa el código <strong className="text-[#ea0029] bg-[#ea0029]/10 px-1 py-0.5 rounded">{`{nombre}`}</strong> donde deba insertarse el nombre del cliente automáticamente.</p>
-            
-            <div className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-[#25D366] flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-                  Plantillas de WhatsApp
-                </h3>
-                <div>
-                  <label className="block text-[10px] font-bold text-[#415364]/60 mb-1.5 uppercase">Mensaje Inicial / Bienvenida</label>
-                  <textarea rows={3} value={plantillaMensaje} onChange={e => setPlantillaMensaje(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs font-medium text-[#415364] focus:outline-none focus:border-[#25D366] resize-none" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-[#415364]/60 mb-1.5 uppercase">Mensaje de Campaña (Promociones)</label>
-                  <textarea rows={3} value={plantillaCampana} onChange={e => setPlantillaCampana(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs font-medium text-[#415364] focus:outline-none focus:border-[#25D366] resize-none" />
-                </div>
-              </div>
-
-              <div className="space-y-4 pt-4 border-t border-[#415364]/10">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-[#415364] flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                  Plantilla de Correo de Seguimiento
-                </h3>
-                <div>
-                  <label className="block text-[10px] font-bold text-[#415364]/60 mb-1.5 uppercase">Asunto del Correo</label>
-                  <input type="text" value={plantillaCorreoAsunto} onChange={e => setPlantillaCorreoAsunto(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs font-bold text-[#415364] focus:outline-none focus:border-[#415364]" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-[#415364]/60 mb-1.5 uppercase">Cuerpo del Correo</label>
-                  <textarea rows={6} value={plantillaCorreoCuerpo} onChange={e => setPlantillaCorreoCuerpo(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs font-medium text-[#415364] focus:outline-none focus:border-[#415364] resize-none" />
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex justify-end gap-4 mt-8">
-              <button onClick={() => setMostrarModalPlantilla(false)} className="px-6 py-2.5 text-xs font-bold text-[#415364] border border-[#415364]/20 rounded-xl hover:bg-[#415364]/5 transition-colors">Cancelar</button>
-              <button onClick={guardarPlantilla} className="px-8 py-2.5 bg-[#415364] text-white text-xs font-bold uppercase tracking-widest rounded-xl shadow-md hover:bg-[#21242E] transition-colors">Guardar Plantillas</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {mostrarModalHistorial && clienteSeleccionado && (
-        <div className="fixed inset-0 bg-[#21242E]/80 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8">
-            <div className="flex justify-between items-center mb-6 border-b border-neutral-100 pb-4">
-              <h2 className="text-xl font-bold text-[#415364] flex items-center gap-2">
-                <svg className="w-5 h-5 text-[#ea0029]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                Cotizaciones Emitidas
-              </h2>
-              <button onClick={() => setMostrarModalHistorial(false)} className="text-[#415364]/40 hover:text-[#ea0029] text-2xl font-bold transition-colors">&times;</button>
-            </div>
-            <div className="min-h-[150px] max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
-              {cargandoHistorial ? (
-                <p className="text-center text-xs font-bold tracking-widest uppercase text-[#415364]/40 mt-10">Buscando documentos...</p>
-              ) : cotizacionesCliente.length === 0 ? (
-                <p className="text-center text-xs font-bold tracking-widest uppercase text-[#415364]/40 mt-10">Sin cotizaciones generadas.</p>
-              ) : (
-                <div className="space-y-4">
-                  {cotizacionesCliente.map((cot, i) => (
-                    <div key={i} className="flex justify-between items-center bg-[#dce3eb]/30 p-4 rounded-xl border border-[#415364]/10 hover:shadow-md transition-shadow">
-                      <div>
-                        <p className="text-sm font-bold text-[#415364]">Unidad {cot.unidad_numero}</p>
-                        <p className="text-[10px] font-bold text-[#415364]/50 mt-1">{new Date(cot.created_at).toLocaleDateString('es-EC')}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[9px] font-bold text-[#415364]/40 uppercase tracking-wider mb-0.5">Precio de Cierre</p>
-                        <p className="text-base font-mono font-bold text-[#ea0029]">${cot.precio_total.toLocaleString('en-US')}</p>
-                      </div>
-                    </div>
+                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#415364]/40 mb-5 pl-2">Línea de tiempo de navegación</h4>
+                            <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-[#415364]/20 before:to-transparent">
+                              {sesion.eventos.map((evento, i) => (
+                                <div key={i} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                                  <div className="flex items-center justify-center w-2.5 h-2.5 rounded-full border-[2px] border-white bg-[#ea0029] shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm sm:mx-0 mx-4 z-10"></div>
+                                  <div className="w-full md:w-1/2 bg-white p-4 rounded-xl border border-[#415364]/10 shadow-sm flex flex-col hover:border-[#ea0029]/40 hover:shadow-md transition-all">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <span className="text-[10px] font-bold text-[#415364]/50">{new Date(evento.created_at).toLocaleTimeString('es-EC')}</span>
+                                      {evento.unidad_id && (
+                                        <span className="text-[9px] bg-[#dce3eb]/50 text-[#415364] border border-[#415364]/10 font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">Unidad {evento.unidad_id}</span>
+                                      )}
+                                    </div>
+                                    <span className="text-xs font-bold text-[#415364]">{formatAccionTexto(evento.accion)}</span>
+                                    <span className="text-[11px] text-[#415364]/70 mt-1 font-medium">{evento.detalle}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   ))}
-                </div>
-              )}
+                  {sesiones.length === 0 && !cargandoRadar && (
+                    <tr><td colSpan={5} className="p-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">Aún no hay actividad registrada en el inventario.</td></tr>
+                  )}
+                </tbody>
+              </table>
             </div>
-          </div>
+          )}
         </div>
       )}
 
-      <datalist id="lista-campanas">
-        {campanasDisponibles.map(c => <option key={c} value={c} />)}
-      </datalist>
+      {pestañaActiva === 'web' && (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 w-full">
+          <div className="flex justify-end gap-2 bg-white w-fit ml-auto p-1.5 rounded-xl shadow-sm border border-neutral-200/60">
+            {['hoy', '7d', '30d'].map(f => (
+              <button key={f} onClick={() => setFiltroTiempo(f)} className={`px-4 py-2 text-[10px] font-bold rounded-lg uppercase tracking-wider transition-colors ${filtroTiempo === f ? 'bg-[#415364] text-white shadow-sm' : 'bg-transparent text-[#415364]/60 hover:text-[#415364]'}`}>
+                {f === 'hoy' ? 'Hoy' : f === '7d' ? '7 Días' : '30 Días'}
+              </button>
+            ))}
+          </div>
 
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-5">
+            <div className="bg-white p-5 rounded-2xl border border-neutral-200/60 shadow-sm transition-transform hover:-translate-y-1">
+              <span className="text-[9px] uppercase font-bold text-[#415364]/50 tracking-widest">Visitantes Únicos</span>
+              <div className="text-3xl font-light text-[#415364] mt-1">{metricas.unicos}</div>
+            </div>
+            <div className="bg-white p-5 rounded-2xl border border-neutral-200/60 shadow-sm transition-transform hover:-translate-y-1">
+              <span className="text-[9px] uppercase font-bold text-[#415364]/50 tracking-widest">Sesiones</span>
+              <div className="text-3xl font-light text-[#415364] mt-1">{metricas.totalSesiones}</div>
+            </div>
+            <div className="bg-white p-5 rounded-2xl border border-neutral-200/60 shadow-sm transition-transform hover:-translate-y-1">
+              <span className="text-[9px] uppercase font-bold text-[#415364]/50 tracking-widest">Recurrentes</span>
+              <div className="text-3xl font-light text-[#415364] mt-1">{metricas.recurrentes}</div>
+            </div>
+            <div className="bg-[#21242E] text-white p-5 rounded-2xl shadow-md transition-transform hover:-translate-y-1">
+              <span className="text-[9px] uppercase font-bold text-white/50 tracking-widest flex items-center gap-1.5">
+                <svg className="w-3 h-3 text-[#ea0029]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                Alta Intención
+              </span>
+              <div className="text-3xl font-light mt-1">{metricas.altoInteres}</div>
+            </div>
+            <div className="bg-[#ea0029] text-white p-5 rounded-2xl shadow-md transition-transform hover:-translate-y-1">
+              <span className="text-[9px] uppercase font-bold text-white/70 tracking-widest">Leads (Registros)</span>
+              <div className="text-3xl font-light mt-1 font-bold">{metricas.conversiones}</div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 md:p-8 rounded-2xl border border-neutral-200/60 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 text-center">
+            <div className="flex-1">
+              <div className="text-3xl font-light text-[#415364]">{metricas.funnel.visitas}</div>
+              <div className="text-[10px] font-bold uppercase text-[#415364]/50 tracking-widest mt-1">Visitas Web</div>
+            </div>
+            <div className="hidden md:block text-[#415364]/20">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
+            </div>
+            <div className="flex-1">
+              <div className="text-3xl font-light text-[#415364]">{metricas.funnel.scroll50}</div>
+              <div className="text-[10px] font-bold uppercase text-[#415364]/50 tracking-widest mt-1">Navegación +50%</div>
+            </div>
+            <div className="hidden md:block text-[#415364]/20">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
+            </div>
+            <div className="flex-1">
+              <div className="text-3xl font-bold text-[#415364]">{metricas.funnel.intentosContacto}</div>
+              <div className="text-[10px] font-bold uppercase text-[#415364]/70 tracking-widest mt-1">Intento Contacto</div>
+              <div className="text-[8px] text-[#415364]/40 mt-1 font-medium">(WhatsApp o Accesos)</div>
+            </div>
+            <div className="hidden md:block text-[#ea0029]/30">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
+            </div>
+            <div className="flex-1 bg-[#ea0029]/5 p-3 rounded-xl border border-[#ea0029]/10">
+              <div className="text-3xl font-bold text-[#ea0029]">{metricas.funnel.registros}</div>
+              <div className="text-[10px] font-bold uppercase text-[#ea0029]/70 tracking-widest mt-1">Conversiones</div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-neutral-200/60 shadow-sm overflow-hidden w-full">
+            <div className="overflow-x-auto custom-scrollbar w-full">
+              <table className="w-full min-w-[1000px] text-left">
+                <thead className="bg-[#21242E] border-b border-neutral-200">
+                  <tr>
+                    <th className="p-5 text-[9px] uppercase font-bold text-white tracking-widest">Identidad de Sesión</th>
+                    <th className="p-5 text-[9px] uppercase font-bold text-white tracking-widest">Comportamiento</th>
+                    <th className="p-5 text-[9px] uppercase font-bold text-white tracking-widest">Fuente</th>
+                    <th className="p-5 text-[9px] uppercase font-bold text-white tracking-widest">Score / Intención</th>
+                    <th className="p-5 text-center text-[9px] uppercase font-bold text-white tracking-widest">Análisis</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-100">
+                  {cargandoWeb && (
+                    <tr><td colSpan={5} className="p-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">Analizando huellas digitales...</td></tr>
+                  )}
+                  {!cargandoWeb && visitantesAgrupados.map((v) => (
+                    <React.Fragment key={v.visitor_id}>
+                      <tr className="hover:bg-[#dce3eb]/30 transition-colors">
+                        <td className="p-5">
+                          <div className="font-bold text-sm text-[#415364] whitespace-nowrap">
+                            {v.email && (
+                              <span className="text-green-700 bg-green-50 px-2.5 py-1 rounded-md border border-green-200 text-xs">✓ {v.email}</span>
+                            )}
+                            {!v.email && (
+                              <span className="text-neutral-500">Anónimo #{v.visitor_id.substring(0,6)}</span>
+                            )}
+                          </div>
+                          <div className="text-[10px] text-[#415364]/50 mt-2 font-medium">Últ. Act: {v.ultimaActividad.toLocaleString('es-EC')}</div>
+                        </td>
+                        <td className="p-5">
+                          <div className="text-xs font-bold text-[#415364] whitespace-nowrap">{v.sesiones.size} Sesiones · {v.tiempoAcumuladoMin} min</div>
+                          <div className="text-[10px] text-[#415364]/50 mt-1.5 font-medium">{v.eventos.length} interacciones</div>
+                        </td>
+                        <td className="p-5">
+                          <span className="text-[10px] bg-[#dce3eb]/50 border border-[#415364]/10 px-2.5 py-1.5 rounded-md text-[#415364] font-mono font-bold whitespace-nowrap">{v.fuentePrincipal}</span>
+                        </td>
+                        <td className="p-5">
+                          <span className={`text-[10px] font-bold px-2.5 py-1.5 rounded-md tracking-wider flex w-fit items-center gap-1.5 whitespace-nowrap ${v.nivelInteraccion === 'ALTO' ? 'bg-[#ea0029]/10 text-[#ea0029] border border-[#ea0029]/20' : v.nivelInteraccion === 'MEDIO' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-[#415364]/5 text-[#415364]/60 border border-[#415364]/10'}`}>
+                            {v.nivelInteraccion === 'ALTO' && <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>}
+                            {v.nivelInteraccion} ({v.score} pts)
+                          </span>
+                        </td>
+                        <td className="p-5 text-center">
+                          <button onClick={() => setVisitanteExpandido(visitanteExpandido === v.visitor_id ? null : v.visitor_id)} className="text-[10px] font-bold text-[#415364] hover:text-white bg-[#415364]/10 hover:bg-[#415364] px-4 py-2 rounded-lg uppercase tracking-widest transition-colors whitespace-nowrap">
+                            {visitanteExpandido === v.visitor_id ? 'Ocultar' : 'Revisar'}
+                          </button>
+                        </td>
+                      </tr>
+
+                      {visitanteExpandido === v.visitor_id && (
+                        <tr className="bg-[#F9F7F5] shadow-inner">
+                          <td colSpan={5} className="p-6 md:p-8">
+                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#415364]/40 mb-5 pl-2">Huella de Eventos</h4>
+                            <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-[#415364]/10">
+                              {v.eventos.map((evento) => (
+                                <div key={evento.id} className="relative flex items-center group">
+                                  <div className="flex items-center justify-center w-2.5 h-2.5 rounded-full border-[2px] border-[#F9F7F5] bg-[#415364]/30 z-10 ml-4 mr-5 shrink-0"></div>
+                                  <div className="bg-white p-4 rounded-xl border border-[#415364]/10 shadow-sm w-full md:w-1/2 flex justify-between items-center hover:border-[#415364]/30 transition-colors">
+                                    <div>
+                                      <span className="text-xs font-bold text-[#415364]">{formatAccionTexto(evento.accion)}</span>
+                                      <span className="text-[10px] text-[#415364]/60 block mt-1 font-medium">{evento.detalle}</span>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-[#415364]/40 whitespace-nowrap bg-[#dce3eb]/30 px-2 py-1 rounded-md shrink-0">
+                                      {new Date(evento.created_at).toLocaleTimeString('es-EC', {hour: '2-digit', minute:'2-digit'})}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      )}
     </div>
   );
 }
