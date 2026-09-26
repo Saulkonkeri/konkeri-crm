@@ -712,11 +712,14 @@ export default function CRMPage() {
                             </div>
                           )}
 
-                          {/* ✉️ INSIGNIA SUAVE DE CORREO ENVIADO */}
+                          {/* ✉️ INSIGNIA DE CORREO (REALCE ELEGANTE) */}
                           {infoCorreo && (
-                            <div className="mt-2 text-[9px] font-bold px-2.5 py-1 flex items-center gap-1.5 rounded-md bg-[#F9F7F5] border border-neutral-200 text-[#415364]">
-                              <span className="text-[#ea0029] text-[10px]">✉️</span>
-                              <span>Correo: <strong className="uppercase">{infoCorreo}</strong></span>
+                            <div className="mt-2 text-[9px] font-bold px-2 py-1.5 flex items-center justify-between rounded-md bg-[#FFF5F2] border border-[#964B36]/40 shadow-sm">
+                              <div className="flex items-center gap-1 text-[#964B36]">
+                                <span className="text-[12px]">✉️</span>
+                                <span className="uppercase tracking-wider">Correo</span>
+                              </div>
+                              <span className="bg-[#964B36] text-white px-2 py-0.5 rounded-[4px] uppercase tracking-wider">{infoCorreo}</span>
                             </div>
                           )}
 
@@ -755,7 +758,7 @@ export default function CRMPage() {
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-[#415364] text-[13px]">{cliente.nombres} {cliente.apellidos}</span>
-                          {infoCorreo && <span className="text-[9px] font-bold bg-[#F9F7F5] border border-neutral-200 text-[#415364] px-2 py-0.5 rounded shadow-sm">✉️ {infoCorreo}</span>}
+                          {infoCorreo && <span className="text-[9px] font-bold bg-[#964B36] text-white px-2 py-0.5 rounded shadow-sm">✉️ {infoCorreo}</span>}
                         </div>
                         <div className="text-[10px] text-[#415364]/60 font-mono mt-0.5 font-medium">{cliente.telefono}</div>
                       </td>
