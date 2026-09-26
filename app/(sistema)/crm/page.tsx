@@ -236,7 +236,6 @@ export default function CRMPage() {
     } catch (e: any) { alert(`Error: ${e.message}`); } finally { setGuardandoActividadRapida(false); }
   };
 
-  // 🟢 PARSER ROBUSTO DE FECHA DE NOTAS (Reconoce años de 2 y 4 dígitos)
   const extraerFechaUltimaNota = (notas: string | null) => {
     if (!notas) return null;
     const match = notas.match(/\[(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
@@ -257,7 +256,6 @@ export default function CRMPage() {
     return Math.max(0, Math.floor((hoy.getTime() - ultima.getTime()) / (1000 * 60 * 60 * 24)));
   };
 
-  // 🟢 DETECTOR INTELIGENTE DE CORREO ENVIADO (Lectura directa e infalible)
   const obtenerInfoUltimoCorreo = (notas: string | null) => {
     if (!notas) return null;
     const lineas = notas.split('\n');
@@ -280,7 +278,7 @@ export default function CRMPage() {
           if (diffDays <= 0) return 'Hoy';
           if (diffDays === 1) return 'Ayer';
           if (diffDays > 1 && diffDays < 30) return `Hace ${diffDays} días`;
-          return `${day}/${month + 1}`;
+          return `${String(day).padStart(2,'0')}/${String(month + 1).padStart(2,'0')}`;
         }
         return 'Enviado';
       }
@@ -441,7 +439,7 @@ export default function CRMPage() {
   };
 
   // ==========================================
-  // GENERADOR HTML COMPLETO Y SEGURO (CON CONFIRMACIÓN DE ENVÍO)
+  // GENERADOR HTML COMPLETO Y SEGURO (CON CABECERA DORADA ARREGLADA)
   // ==========================================
   const generarCodigoHTMLCorreo = () => {
     const plantillaConfig = PLANTILLAS_CORREO.find(p => p.id === plantillaActivaId) || PLANTILLAS_CORREO[0];
@@ -456,10 +454,25 @@ export default function CRMPage() {
     let colorAcento = '#D1C292'; 
     let colorBoton = '#964B36'; 
     let colorTextoBoton = '#ffffff';
+    let logoCabecera = 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-blanco.svg';
 
-    if (temaColor === 'terracota') { colorFondoCabecera = '#964B36'; colorAcento = '#964B36'; colorBoton = '#21242E'; } 
-    else if (temaColor === 'dorado') { colorFondoCabecera = '#21242E'; colorAcento = '#D1C292'; colorBoton = '#D1C292'; colorTextoBoton = '#21242E'; } 
-    else if (temaColor === 'navy') { colorFondoCabecera = '#21242E'; colorAcento = '#21242E'; colorBoton = '#964B36'; }
+    if (temaColor === 'terracota') { 
+      colorFondoCabecera = '#964B36'; 
+      colorAcento = '#964B36'; 
+      colorBoton = '#21242E'; 
+    } 
+    else if (temaColor === 'dorado') { 
+      colorFondoCabecera = '#D1C292'; // CABECERA DORADA CORREGIDA
+      colorAcento = '#D1C292'; 
+      colorBoton = '#21242E'; 
+      colorTextoBoton = '#ffffff';
+      logoCabecera = 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg'; // LOGO OSCURO PARA CONTRASTE
+    } 
+    else if (temaColor === 'navy') { 
+      colorFondoCabecera = '#21242E'; 
+      colorAcento = '#21242E'; 
+      colorBoton = '#964B36'; 
+    }
 
     const htmlCabecera = `
       <!DOCTYPE html>
@@ -469,7 +482,7 @@ export default function CRMPage() {
           <tr>
             <td align="center">
               <table width="100%" max-width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 600px;">
-                <tr><td align="center" style="background-color: ${colorFondoCabecera}; padding: 35px 20px;"><img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-blanco.svg" alt="Arienzo" width="180" style="display: block; margin: 0 auto;"></td></tr>
+                <tr><td align="center" style="background-color: ${colorFondoCabecera}; padding: 35px 20px;"><img src="${logoCabecera}" alt="Arienzo" width="180" style="display: block; margin: 0 auto;"></td></tr>
                 <tr><td><img src="${urlPortada}" width="100%" style="display: block; width: 100%; max-height: 280px; object-fit: cover;"></td></tr>
                 <tr><td style="padding: 40px; color: #415364; font-size: 16px; line-height: 1.6;">${cuerpoFormateado}</td></tr>
     `;
@@ -488,7 +501,7 @@ export default function CRMPage() {
                 <tr>
                   <td style="padding: 40px;">
                     <p style="margin: 0; font-size: 15px; font-weight: bold; color: #21242E;">${nombreRemitente}</p>
-                    <p style="margin: 3px 0 0 0; font-size: 12px; color: ${colorAcento}; letter-spacing: 1px; text-transform: uppercase; font-weight: bold;">${cargoRemitente}</p>
+                    <p style="margin: 3px 0 0 0; font-size: 12px; color: ${temaColor === 'dorado' ? '#964B36' : colorAcento}; letter-spacing: 1px; text-transform: uppercase; font-weight: bold;">${cargoRemitente}</p>
                     <p style="margin: 3px 0 0 0; font-size: 12px; color: #415364;">arienzoliving.com | Konkeri Real Estate</p>
                   </td>
                 </tr>
@@ -496,7 +509,7 @@ export default function CRMPage() {
                 <tr>
                   <td style="padding: 30px 40px; text-align: center;">
                     <p style="margin: 0; font-size: 13px; font-weight: bold; color: #21242E; text-transform: uppercase; letter-spacing: 2px;">Arienzo Boutique Living</p>
-                    <p style="margin: 4px 0 0 0; font-size: 11px; color: ${colorAcento};">arienzoliving.com</p>
+                    <p style="margin: 4px 0 0 0; font-size: 11px; color: ${temaColor === 'dorado' ? '#964B36' : colorAcento};">arienzoliving.com</p>
                   </td>
                 </tr>
     `;
@@ -545,7 +558,6 @@ export default function CRMPage() {
         alert("¡Correo enviado con éxito!");
         setMostrarModalPreviewCorreo(false);
         
-        // Formato de fecha estricto DD/MM/YYYY HH:MM
         const ahora = new Date();
         const dia = String(ahora.getDate()).padStart(2, '0');
         const mes = String(ahora.getMonth() + 1).padStart(2, '0');
@@ -692,7 +704,7 @@ export default function CRMPage() {
                             <span className="inline-block bg-[#415364]/5 text-[#415364] border border-[#415364]/10 text-[9px] font-bold px-2 py-0.5 rounded-md mr-1 uppercase tracking-wider">{cliente.tipologia_interes}</span>
                           )}
 
-                          {/* 📅 TAREA AGENDADA (AZUL / ROJO) */}
+                          {/* 📅 TAREA AGENDADA */}
                           {cliente.proximo_contacto && (
                             <div className={`mt-2 text-[9px] font-bold px-2.5 py-1 flex items-center gap-1.5 rounded-md border ${agendadoVencido ? 'bg-[#ea0029]/10 text-[#ea0029] border-[#ea0029]/20' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
@@ -700,14 +712,11 @@ export default function CRMPage() {
                             </div>
                           )}
 
-                          {/* ✉️ INSIGNIA EXCLUSIVA DE CORREO ENVIADO (OSCURA Y DORADA) */}
+                          {/* ✉️ INSIGNIA SUAVE DE CORREO ENVIADO */}
                           {infoCorreo && (
-                            <div className="mt-2 text-[9px] font-bold px-2.5 py-1 flex items-center justify-between rounded-md bg-[#21242E] text-white shadow-sm border border-neutral-700">
-                              <span className="flex items-center gap-1 text-white/80">
-                                <span className="text-xs">✉️</span>
-                                <span>Correo:</span>
-                              </span>
-                              <span className="text-[#D1C292] font-black uppercase tracking-wider">{infoCorreo}</span>
+                            <div className="mt-2 text-[9px] font-bold px-2.5 py-1 flex items-center gap-1.5 rounded-md bg-[#F9F7F5] border border-neutral-200 text-[#415364]">
+                              <span className="text-[#ea0029] text-[10px]">✉️</span>
+                              <span>Correo: <strong className="uppercase">{infoCorreo}</strong></span>
                             </div>
                           )}
 
@@ -746,7 +755,7 @@ export default function CRMPage() {
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-[#415364] text-[13px]">{cliente.nombres} {cliente.apellidos}</span>
-                          {infoCorreo && <span className="text-[9px] font-bold bg-[#21242E] text-[#D1C292] px-2 py-0.5 rounded shadow-sm">✉️ {infoCorreo}</span>}
+                          {infoCorreo && <span className="text-[9px] font-bold bg-[#F9F7F5] border border-neutral-200 text-[#415364] px-2 py-0.5 rounded shadow-sm">✉️ {infoCorreo}</span>}
                         </div>
                         <div className="text-[10px] text-[#415364]/60 font-mono mt-0.5 font-medium">{cliente.telefono}</div>
                       </td>
