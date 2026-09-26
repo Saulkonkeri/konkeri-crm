@@ -49,28 +49,22 @@ interface Actividad {
 // ==========================================
 const PLANTILLAS_CORREO = [
   {
-    id: 'venta_planos',
-    nombre: '🌟 Presentación y Venta en Planos',
-    layout: 'full',
-    imagenDefecto: 'fachada',
+    id: 'seguimiento_premium',
+    nombre: '🌟 Presentación y Venta en Planos (Correo Largo)',
     asunto: 'Oportunidad de Inversión - Arienzo Boutique Living',
-    cuerpo: 'Estimado(a) {nombre},\n\nQuiero contarte acerca de Arienzo Boutique Living. Sé que estás buscando opciones de inversión sólidas y no queremos que te quedes fuera de este increíble proyecto con la mejor ubicación.\n\nA continuación, te detallo las razones por las que Arienzo es la mejor decisión inmobiliaria en la ciudad.'
+    cuerpo: 'Estimado(a) {nombre},\n\nQuiero contarte acerca de Arienzo Boutique Living. Sé que estás interesado en el proyecto y no queremos que te quedes fuera de este increíble desarrollo con la mejor ubicación.\n\nA continuación, te detallo las razones por las que Arienzo es la mejor decisión inmobiliaria de la ciudad.'
   },
   {
     id: 'invitacion_zoom',
-    nombre: '🤝 Invitación a Reunión por Zoom',
-    layout: 'simple',
-    imagenDefecto: 'living',
+    nombre: '🤝 Invitación a Reunión / Videollamada Zoom',
     asunto: 'Invitación Exclusiva: Conoce Arienzo Boutique Living',
-    cuerpo: 'Hola {nombre},\n\nMe encantaría presentarte en detalle el estilo de vida y las amenidades que ofrece Arienzo Boutique Living.\n\nContamos con un diseño enfocado en el confort, con un Social Living y Gym Panorámico espectaculares. Me gustaría agendar una breve videollamada por Zoom para mostrarte los planos y la disponibilidad.'
+    cuerpo: 'Hola {nombre},\n\nMe encantaría presentarte en detalle el estilo de vida y las amenidades que ofrece Arienzo Boutique Living.\n\nContamos con un diseño enfocado en el confort, con un Social Living y Gym Panorámico espectaculares. Me gustaría agendar una breve videollamada por Zoom para mostrarte los planos y la disponibilidad de unidades antes de que se agoten.'
   },
   {
-    id: 'brochure_info',
-    nombre: '📄 Envío de Información y Brochure',
-    layout: 'simple',
-    imagenDefecto: 'piscina',
-    asunto: 'Información Exclusiva - Arienzo Boutique Living',
-    cuerpo: 'Hola {nombre},\n\nGracias por tu interés en Arienzo Boutique Living. Es un gusto para nosotros compartir la visión de este proyecto.\n\nAdjunto a este correo encontrarás el brochure oficial con todos los detalles arquitectónicos, amenidades y acabados premium que ofrecerá Arienzo.\n\nQuedo a tu disposición para agendar una breve llamada y resolver cualquier inquietud.'
+    id: 'urgencia_reserva',
+    nombre: '⏰ Urgencia y Cierre (Últimas Unidades)',
+    asunto: 'Últimos días de precios de lanzamiento en Arienzo',
+    cuerpo: 'Hola {nombre},\n\nTe escribo para avisarte que estamos cerrando la etapa de precios de lanzamiento.\n\nEl proyecto ha tenido una excelente acogida y las unidades se están moviendo muy rápido. Si estás buscando asegurar tu inversión con la máxima rentabilidad y plusvalía, este es el momento exacto para bloquear tu unidad con solo $2,500 antes del incremento de precios.'
   }
 ];
 
@@ -108,10 +102,9 @@ export default function CRMPage() {
   const [mostrarModalHistorial, setMostrarModalHistorial] = useState(false);
   const [clienteSeleccionado, setClienteSeleccionado] = useState<Cliente | null>(null);
 
-  // === ESTADOS PARA EL NUEVO MODAL DE VISTA PREVIA DE CORREO ===
+  // ESTADOS DEL MODAL DE CORREOS
   const [mostrarModalPreviewCorreo, setMostrarModalPreviewCorreo] = useState(false);
-  const [plantillaActivaId, setPlantillaActivaId] = useState('venta_planos');
-  const [imagenPersonalizada, setImagenPersonalizada] = useState('');
+  const [plantillaActivaId, setPlantillaActivaId] = useState('seguimiento_premium');
   const [enviandoCorreoCRM, setEnviandoCorreoCRM] = useState(false);
 
   const [nuevoNombre, setNuevoNombre] = useState('');
@@ -517,15 +510,11 @@ export default function CRMPage() {
     window.open(`https://wa.me/${num}${txt}`, '_blank');
   };
 
-  // === LÓGICA DE CORREOS 100% AUTOMÁTICA ===
+  // === LÓGICA DE CORREOS AUTOMÁTICA (LAS 3 PLANTILLAS) ===
   const abrirCorreo = (cliente: Cliente) => {
     if (!cliente.email) { alert("Este cliente no tiene correo electrónico registrado."); return; }
     
-    // Por defecto cargamos la plantilla #1
-    const plantillaDefecto = PLANTILLAS_CORREO[0];
-    
-    setPlantillaActivaId(plantillaDefecto.id);
-    setImagenPersonalizada(''); // Vaciamos para que use la imagen de la plantilla
+    setPlantillaActivaId(PLANTILLAS_CORREO[0].id);
     setMostrarModalPreviewCorreo(true);
   };
 
@@ -534,10 +523,8 @@ export default function CRMPage() {
     
     const plantillaConfig = PLANTILLAS_CORREO.find(p => p.id === plantillaActivaId) || PLANTILLAS_CORREO[0];
     
-    // Reemplazamos {nombre} justo antes de enviar
-    const asuntoFinal = plantillaConfig.asunto.replace(/{nombre}/g, clienteSeleccionado.nombres);
+    const asuntoFinal = plantillaConfig.asunto;
     const cuerpoFinal = plantillaConfig.cuerpo.replace(/{nombre}/g, clienteSeleccionado.nombres);
-    const imagenFinal = imagenPersonalizada || plantillaConfig.imagenDefecto;
 
     setEnviandoCorreoCRM(true);
     try {
@@ -549,8 +536,7 @@ export default function CRMPage() {
           nombres: clienteSeleccionado.nombres,
           asunto: asuntoFinal,
           cuerpo: cuerpoFinal,
-          layout: plantillaConfig.layout,
-          tipoImagen: imagenFinal
+          tipoPlantilla: plantillaActivaId // Se envía la orden a la API
         })
       });
 
@@ -621,7 +607,7 @@ export default function CRMPage() {
           <div className="flex gap-3">
             <button onClick={() => setMostrarModalPlantilla(true)} className="px-4 py-2.5 bg-white border border-[#415364]/20 text-[#415364] text-xs font-bold rounded-xl hover:bg-[#415364]/5 transition-colors flex items-center gap-2 shadow-sm">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-              Mensajes
+              Mensajes Rápidos
             </button>
             <button onClick={() => setMostrarModalNuevo(true)} className="px-5 py-2.5 bg-[#415364] text-white text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-[#21242E] transition-colors shadow-md flex items-center gap-2">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
@@ -687,13 +673,12 @@ export default function CRMPage() {
                       <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#415364] truncate pr-2">{estado}</h3>
                       <span className="bg-[#415364] text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">{leads.length}</span>
                     </div>
-                    {/* Flecha solo visible en móvil para indicar que se puede colapsar */}
                     <div className="md:hidden text-[#415364]/50 bg-white p-1 rounded-md shadow-sm border border-[#415364]/10">
                       <svg className={`w-4 h-4 transition-transform duration-300 ${estaExpandida ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                     </div>
                   </div>
                   
-                  {/* BODY (Oculto en móvil si no está expandido) */}
+                  {/* BODY */}
                   <div className={`space-y-3 overflow-y-auto flex-1 pr-1 custom-scrollbar transition-all duration-300 ${estaExpandida ? 'mt-3 opacity-100 block' : 'hidden opacity-0 md:block md:mt-3 md:opacity-100'}`}>
                     {leads.map(cliente => {
                       const diasInactivos = obtenerDiasInactivos(cliente.notas);
@@ -775,16 +760,13 @@ export default function CRMPage() {
           </div>
         )}
 
-        {/* === VISTA 3: BITÁCORA MULTICANAL CON AGENDAMIENTO === */}
         {vista === 'actividad' && (
           <div className="flex flex-col h-full gap-5 overflow-y-auto">
-            
             <div className="bg-white p-5 rounded-2xl border border-neutral-200/60 shadow-sm flex flex-col md:flex-row items-center justify-between flex-shrink-0 gap-4">
                <div>
                  <h2 className="text-lg font-bold text-[#415364] tracking-tight">Reporte de Productividad</h2>
                  <p className="text-[11px] text-[#415364]/60 mt-0.5">Analiza el rendimiento del equipo de ventas.</p>
                </div>
-               
                <div className="flex bg-[#dce3eb]/50 p-1.5 rounded-xl border border-[#415364]/10">
                  <button onClick={() => setFiltroTiempo('hoy')} className={`px-4 py-2 rounded-lg text-[11px] font-bold transition-all ${filtroTiempo === 'hoy' ? 'bg-white shadow-sm text-[#ea0029]' : 'text-[#415364]/70 hover:text-[#415364]'}`}>Hoy</button>
                  <button onClick={() => setFiltroTiempo('ayer')} className={`px-4 py-2 rounded-lg text-[11px] font-bold transition-all ${filtroTiempo === 'ayer' ? 'bg-white shadow-sm text-[#ea0029]' : 'text-[#415364]/70 hover:text-[#415364]'}`}>Ayer</button>
@@ -836,7 +818,6 @@ export default function CRMPage() {
                   Registro Rápido
                 </h3>
                 <form onSubmit={registrarActividadRapida} className="flex-1 flex flex-col space-y-4">
-                  
                   <div className="relative">
                     <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Buscar Cliente</label>
                     <div className="relative">
@@ -1152,38 +1133,20 @@ export default function CRMPage() {
                 </div>
               </div>
 
-              <div className="pb-6">
-                <button onClick={() => verHistorialCotizaciones(clienteSeleccionado)} className="w-full py-3.5 bg-white border border-[#415364]/20 text-[#415364] rounded-xl text-[11px] font-bold uppercase tracking-widest hover:border-[#ea0029] hover:text-[#ea0029] transition-colors shadow-sm flex items-center justify-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                  Ver Cotizaciones Generadas
-                </button>
-              </div>
-
             </div>
           </>
         )}
       </div>
 
-      {/* === MODAL VISTA PREVIA DEL CORREO HTML (AUTOMÁTICO 100%) === */}
+      {/* === MODAL VISTA PREVIA DEL CORREO HTML === */}
       {mostrarModalPreviewCorreo && clienteSeleccionado && (() => {
-        // Encontrar la configuración de la plantilla actualmente seleccionada
         const plantillaConfig = PLANTILLAS_CORREO.find(p => p.id === plantillaActivaId) || PLANTILLAS_CORREO[0];
-        
-        // Reemplazar {nombre} para la vista previa
         const previewCuerpo = plantillaConfig.cuerpo.replace(/{nombre}/g, clienteSeleccionado.nombres);
-        const previewImagen = imagenPersonalizada || plantillaConfig.imagenDefecto;
-        
-        const imgSrc = 
-          previewImagen === 'ubicacion' ? "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/ubicacion%20arienzo3.jpg" :
-          previewImagen === 'living' ? "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-living-arienzo.jpg" :
-          previewImagen === 'piscina' ? "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Piscina-1.jpg" :
-          "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Fronta.jpg";
 
         return (
           <div className="fixed inset-0 bg-[#21242E]/90 z-[90] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
             <div className="bg-[#F9F7F5] rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col max-h-[90vh]">
               
-              {/* Cabecera del Modal */}
               <div className="bg-white p-5 border-b border-neutral-200 flex justify-between items-center z-10 flex-shrink-0">
                 <div>
                   <h2 className="text-sm font-bold text-[#415364] uppercase tracking-widest">Estudio de Diseño de Correo</h2>
@@ -1194,45 +1157,20 @@ export default function CRMPage() {
 
               <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
                 
-                {/* PANEL IZQUIERDO: SELECTORES (Ya no hay cajas de texto manuales) */}
+                {/* PANEL IZQUIERDO: SELECTOR SIMPLIFICADO */}
                 <div className="w-full md:w-[350px] bg-white border-r border-neutral-200 p-5 flex flex-col gap-6 overflow-y-auto custom-scrollbar flex-shrink-0">
                   
                   <div className="bg-[#ea0029]/5 border border-[#ea0029]/20 p-4 rounded-xl">
-                    <label className="block text-[10px] font-bold text-[#ea0029] uppercase tracking-widest mb-2">1. Selecciona la Estrategia</label>
+                    <label className="block text-[10px] font-bold text-[#ea0029] uppercase tracking-widest mb-2">Selecciona la Estrategia</label>
                     <select 
                       value={plantillaActivaId} 
-                      onChange={(e) => {
-                        setPlantillaActivaId(e.target.value);
-                        setImagenPersonalizada(''); // Resetear imagen para que cargue la default de la plantilla
-                      }}
+                      onChange={(e) => setPlantillaActivaId(e.target.value)}
                       className="w-full bg-white border border-[#415364]/20 rounded-xl p-3 text-xs font-bold text-[#415364] outline-none focus:border-[#ea0029] cursor-pointer shadow-sm"
                     >
                       {PLANTILLAS_CORREO.map(p => (
                         <option key={p.id} value={p.id}>{p.nombre}</option>
                       ))}
                     </select>
-                    <p className="text-[10px] text-[#415364]/60 mt-2 leading-relaxed">El texto, el asunto y la estructura cambiarán automáticamente según tu elección.</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold text-[#415364]/60 uppercase tracking-widest mb-3">2. Cambiar Foto de Portada (Opcional)</label>
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        { id: 'fachada', label: 'Fachada', img: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Fronta.jpg' },
-                        { id: 'ubicacion', label: 'Ubicación', img: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/ubicacion%20arienzo3.jpg' },
-                        { id: 'living', label: 'Living', img: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-living-arienzo.jpg' },
-                        { id: 'piscina', label: 'Piscina', img: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Piscina-1.jpg' }
-                      ].map(foto => (
-                        <div 
-                          key={foto.id}
-                          onClick={() => setImagenPersonalizada(foto.id)}
-                          className={`cursor-pointer rounded-lg overflow-hidden border-2 transition-all shadow-sm ${previewImagen === foto.id ? 'border-[#ea0029] scale-105' : 'border-transparent opacity-60 hover:opacity-100 hover:scale-100'}`}
-                        >
-                          <img src={foto.img} className="w-full h-[70px] object-cover" />
-                          <div className={`text-[9px] font-bold text-center py-1.5 uppercase ${previewImagen === foto.id ? 'bg-[#ea0029] text-white' : 'bg-[#21242E] text-white'}`}>{foto.label}</div>
-                        </div>
-                      ))}
-                    </div>
                   </div>
 
                   <div className="mt-auto bg-green-50 p-4 rounded-xl border border-green-200">
@@ -1244,66 +1182,69 @@ export default function CRMPage() {
                   </div>
                 </div>
 
-                {/* PANEL DERECHO: VISTA PREVIA EN VIVO */}
+                {/* PANEL DERECHO: VISTA PREVIA EN VIVO (ESPEJO DE LA API) */}
                 <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-[#dce3eb] flex justify-center custom-scrollbar">
                   
                   {/* Contenedor que simula un cliente de correo */}
                   <div className="w-full max-w-[600px] shadow-[0_10px_25px_rgba(0,0,0,0.1)] rounded-xl overflow-hidden bg-white" style={{fontFamily: "Helvetica Neue, Helvetica, Arial, sans-serif"}}>
                     
-                    {/* CABECERA */}
                     <div className="bg-[#21242E] py-8 text-center">
                       <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-blanco.svg" alt="Logo" className="w-[160px] mx-auto" />
                     </div>
                     
-                    {/* PORTADA */}
                     <div className="w-full h-[250px] bg-neutral-200">
-                      <img src={imgSrc} className="w-full h-full object-cover" alt="Portada" />
+                      <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Fronta.jpg" className="w-full h-full object-cover" alt="Portada" />
                     </div>
 
-                    {/* TEXTO */}
                     <div className="p-8 text-[#415364] text-[15px] leading-relaxed" dangerouslySetInnerHTML={{__html: previewCuerpo.replace(/\n/g, '<br/>')}}></div>
 
-                    {/* MÓDULOS DE LA PLANTILLA (Si es FULL) */}
-                    {plantillaConfig.layout === 'full' && (
+                    {/* MÓDULOS DE LA PLANTILLA PREMIUM (Se muestran siempre en la Plantilla 1) */}
+                    {plantillaActivaId === 'seguimiento_premium' && (
                       <div className="px-8 pb-8">
                         <div className="text-center mb-8">
                           <hr className="border-t border-[#D1C292] mb-5" />
-                          <h3 className="text-[#964B36] text-[13px] uppercase tracking-[2px] font-bold">Por qué invertir en Arienzo</h3>
+                          <h3 className="text-[#964B36] text-[13px] uppercase tracking-[2px] font-bold">El privilegio de vivir bien</h3>
                         </div>
                         
-                        <div className="flex gap-4 mb-6">
-                          <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/ubicacion%20arienzo3.jpg" className="w-[45%] rounded-lg object-cover" />
-                          <div className="flex-1 flex flex-col justify-center">
-                            <h4 className="text-[#21242E] text-[16px] font-bold mb-2">Ubicación Estratégica</h4>
-                            <p className="text-[#415364] text-[12px] leading-relaxed m-0">En el corazón de Barbasquillo, Manta. A pasos de La Quadra y Riocentro Plaza. La zona de mayor prestigio.</p>
-                          </div>
+                        <div className="mb-8">
+                          <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/ubicacion-arienzo-1.jpg" className="w-full rounded-lg object-cover mb-4" />
+                          <h4 className="text-[#21242E] text-[16px] font-bold mb-2">Ubicación Estratégica</h4>
+                          <p className="text-[#415364] text-[13px] leading-relaxed m-0">En el corazón de Barbasquillo, Manta. A pasos de La Quadra y Riocentro Plaza. La zona de mayor prestigio y conectividad de la ciudad.</p>
                         </div>
 
-                        <div className="flex gap-4 mb-6">
-                          <div className="flex-1 flex flex-col justify-center text-right">
-                            <h4 className="text-[#21242E] text-[16px] font-bold mb-2">Arquitectura de Autor</h4>
-                            <p className="text-[#415364] text-[12px] leading-relaxed m-0">Colección limitada de solo 22 departamentos con acabados premium y amenidades exclusivas en el Rooftop.</p>
-                          </div>
-                          <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-living-arienzo.jpg" className="w-[45%] rounded-lg object-cover" />
+                        <div className="mb-8">
+                          <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Derecho-A4.jpg" className="w-full rounded-lg object-cover mb-4" />
+                          <h4 className="text-[#21242E] text-[16px] font-bold mb-2">Arquitectura de Autor</h4>
+                          <p className="text-[#415364] text-[13px] leading-relaxed m-0">Desarrollado por el reconocido estudio Diez + Muller. Una colección limitada de solo 22 departamentos con ventanales de piso a techo y acabados premium.</p>
                         </div>
 
-                        <div className="text-center mb-8 px-4">
-                          <h4 className="text-[#21242E] text-[16px] font-bold mb-2">Alta Plusvalía</h4>
-                          <p className="text-[#415364] text-[12px] leading-relaxed m-0">Al ingresar en etapa temprana, aseguras el mejor precio por metro cuadrado antes del alza del mercado.</p>
+                        <div className="mb-8">
+                          <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Piscina-1.jpg" className="w-full rounded-lg object-cover mb-4" />
+                          <h4 className="text-[#21242E] text-[16px] font-bold mb-2">Rooftop y Amenidades Exclusivas</h4>
+                          <p className="text-[#415364] text-[13px] leading-relaxed m-0">Disfruta de un Social Living con Coworking, Gym Panorámico y una espectacular piscina concebida para elevar tu experiencia diaria.</p>
                         </div>
                       </div>
                     )}
 
-                    {/* Call to Action SIEMPRE visible */}
-                    <div className="bg-[#F9F7F5] p-8 text-center border-y border-[#EAE3DC]">
-                      <h2 className="text-[#964B36] text-[22px] font-bold m-0 mb-3">Asegure su unidad en Planos</h2>
-                      <p className="text-[#415364] text-[15px] font-bold m-0 mb-6">Reservas abiertas con solo $2,500 USD</p>
-                      <div className="inline-block bg-[#25D366] text-white px-6 py-3 rounded-full font-bold text-xs uppercase tracking-wider">
-                        Contactar por WhatsApp
+                    {/* Call to Action DINÁMICOS */}
+                    {plantillaActivaId === 'invitacion_zoom' ? (
+                      <div className="bg-[#F9F7F5] p-8 text-center border-y border-[#EAE3DC]">
+                        <h2 className="text-[#21242E] text-[22px] font-bold m-0 mb-3">Conoce los planos y disponibilidad</h2>
+                        <p className="text-[#415364] text-[15px] m-0 mb-6">Selecciona la fecha y hora que mejor se adapte a tu agenda.</p>
+                        <div className="inline-block bg-[#ea0029] text-white px-6 py-3 rounded-md font-bold text-xs uppercase tracking-wider">
+                          🗓️ Agendar Videollamada
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="bg-[#F9F7F5] p-8 text-center border-y border-[#EAE3DC]">
+                        <h2 className="text-[#964B36] text-[22px] font-bold m-0 mb-3">Asegura tu unidad en Planos</h2>
+                        <p className="text-[#415364] text-[15px] font-bold m-0 mb-6">Reservas abiertas con solo $2,500 USD</p>
+                        <div className="inline-block bg-[#25D366] text-white px-6 py-3 rounded-full font-bold text-xs uppercase tracking-wider">
+                          Hablemos por WhatsApp
+                        </div>
+                      </div>
+                    )}
 
-                    {/* FIRMA COMPARTIDA */}
                     <div className="px-8 pb-8 pt-6">
                       <div className="flex items-center gap-4">
                         <div className="bg-[#964B36] p-1.5 rounded-md flex-shrink-0">
@@ -1316,16 +1257,13 @@ export default function CRMPage() {
                         </div>
                       </div>
                     </div>
-
                     <div className="bg-[#21242E] p-4 text-center">
                       <p className="text-[9px] text-white/50 uppercase tracking-widest m-0">© {new Date().getFullYear()} Arienzo Boutique Living. Manta, Ecuador.</p>
                     </div>
                   </div>
-
                 </div>
               </div>
 
-              {/* Footer de Acciones del Modal */}
               <div className="bg-white p-5 border-t border-neutral-200 flex justify-end gap-4 flex-shrink-0">
                 <button onClick={() => setMostrarModalPreviewCorreo(false)} className="px-6 py-2.5 text-xs font-bold text-[#415364] border border-[#415364]/20 rounded-xl hover:bg-[#415364]/5 transition-colors">Cerrar</button>
                 <button 
@@ -1334,155 +1272,13 @@ export default function CRMPage() {
                   className="px-8 py-3 bg-[#ea0029] text-white text-xs font-bold uppercase tracking-widest rounded-xl shadow-md hover:bg-[#c90022] transition-colors disabled:opacity-50 flex items-center gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
-                  {enviandoCorreoCRM ? 'Enviando HTML...' : 'Aprobar y Enviar Correo'}
+                  {enviandoCorreoCRM ? 'Enviando Diseño HTML...' : 'Aprobar y Enviar Correo'}
                 </button>
               </div>
             </div>
           </div>
         );
       })()}
-
-      {/* MODAL NUEVO PROSPECTO */}
-      {mostrarModalNuevo && (
-        <div className="fixed inset-0 bg-[#21242E]/80 z-[80] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-t-3xl md:rounded-2xl shadow-2xl w-full max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto custom-scrollbar animate-in slide-in-from-bottom-4 md:slide-in-from-bottom-0 md:zoom-in-95 duration-200">
-            <div className="flex justify-between items-center mb-6 border-b border-neutral-100 pb-4 sticky top-0 bg-white z-10 pt-2 -mt-2">
-              <h2 className="text-xl font-bold text-[#415364]">Registro de Prospecto</h2>
-              <button onClick={() => setMostrarModalNuevo(false)} className="text-[#415364]/40 hover:text-[#ea0029] text-4xl font-light transition-colors leading-none">&times;</button>
-            </div>
-            
-            <form onSubmit={guardarNuevoCliente} className="space-y-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Nombres <span className="text-[#ea0029]">*</span></label>
-                  <input required type="text" value={nuevoNombre} onChange={e => setNuevoNombre(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium focus:outline-none focus:border-[#ea0029]" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Apellidos</label>
-                  <input type="text" value={nuevoApellido} onChange={e => setNuevoApellido(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium focus:outline-none focus:border-[#ea0029]" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Teléfono <span className="text-[#ea0029]">*</span></label>
-                  <input required type="tel" value={nuevoTelefono} onChange={e => setNuevoTelefono(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium focus:outline-none focus:border-[#ea0029]" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Email</label>
-                  <input type="email" value={nuevoEmail} onChange={e => setNuevoEmail(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium focus:outline-none focus:border-[#ea0029]" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Ciudad Residencia</label>
-                  <input type="text" value={nuevaCiudad} onChange={e => setNuevaCiudad(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium focus:outline-none focus:border-[#ea0029]" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Ingresado Por (Asesor)</label>
-                  <input type="text" value={nuevoIngresadoPor} onChange={e => setNuevoIngresadoPor(e.target.value)} className="w-full bg-[#415364]/5 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-bold focus:outline-none focus:border-[#ea0029]" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Origen</label>
-                  <select value={nuevoOrigen} onChange={e => setNuevoOrigen(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-bold focus:outline-none focus:border-[#ea0029]">
-                    {origenes.map(o => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Campaña (Opcional)</label>
-                  <input type="text" list="lista-campanas" value={nuevoCampana} onChange={e => setNuevoCampana(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-bold focus:outline-none focus:border-[#ea0029]" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Motivo Compra</label>
-                  <select value={nuevoMotivo} onChange={e => setNuevoMotivo(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-bold focus:outline-none focus:border-[#ea0029]">
-                    {motivos.map(m => <option key={m} value={m}>{m}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Interés</label>
-                  <select value={nuevoInteres} onChange={e => setNuevoInteres(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-bold focus:outline-none focus:border-[#ea0029]">
-                    {intereses.map(i => <option key={i} value={i}>{i}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="pt-6 pb-2 flex justify-end gap-4 border-t border-neutral-100">
-                <button type="button" onClick={() => setMostrarModalNuevo(false)} className="px-6 py-3 text-xs font-bold text-[#415364] border border-[#415364]/20 rounded-xl hover:bg-[#415364]/5 transition-colors">Cancelar</button>
-                <button type="submit" disabled={guardandoCliente} className="px-8 py-3 bg-[#ea0029] text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-[#c90022] transition-colors shadow-md disabled:opacity-50">
-                  {guardandoCliente ? 'Guardando...' : 'Guardar Prospecto'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL PLANTILLAS WHATSAPP */}
-      {mostrarModalPlantilla && (
-        <div className="fixed inset-0 bg-[#21242E]/80 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
-            <h2 className="text-xl font-bold text-[#415364] mb-1">Configuración de Mensajes WhatsApp</h2>
-            <p className="text-[11px] text-[#415364]/60 font-medium mb-6 pb-4 border-b border-[#415364]/10">Usa el código <strong className="text-[#ea0029] bg-[#ea0029]/10 px-1 py-0.5 rounded">{`{nombre}`}</strong> donde deba insertarse el nombre del cliente automáticamente.</p>
-            
-            <div className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-[#25D366] flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-                  Plantillas Rápidas
-                </h3>
-                <div>
-                  <label className="block text-[10px] font-bold text-[#415364]/60 mb-1.5 uppercase">Mensaje Inicial / Bienvenida</label>
-                  <textarea rows={3} value={plantillaMensaje} onChange={e => setPlantillaMensaje(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs font-medium text-[#415364] focus:outline-none focus:border-[#25D366] resize-none" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-[#415364]/60 mb-1.5 uppercase">Mensaje de Campaña (Promociones)</label>
-                  <textarea rows={3} value={plantillaCampana} onChange={e => setPlantillaCampana(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs font-medium text-[#415364] focus:outline-none focus:border-[#25D366] resize-none" />
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex justify-end gap-4 mt-8">
-              <button onClick={() => setMostrarModalPlantilla(false)} className="px-6 py-2.5 text-xs font-bold text-[#415364] border border-[#415364]/20 rounded-xl hover:bg-[#415364]/5 transition-colors">Cancelar</button>
-              <button onClick={guardarPlantilla} className="px-8 py-2.5 bg-[#415364] text-white text-xs font-bold uppercase tracking-widest rounded-xl shadow-md hover:bg-[#21242E] transition-colors">Guardar Textos</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL HISTORIAL COTIZACIONES */}
-      {mostrarModalHistorial && clienteSeleccionado && (
-        <div className="fixed inset-0 bg-[#21242E]/80 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8">
-            <div className="flex justify-between items-center mb-6 border-b border-neutral-100 pb-4">
-              <h2 className="text-xl font-bold text-[#415364] flex items-center gap-2">
-                <svg className="w-5 h-5 text-[#ea0029]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                Cotizaciones Emitidas
-              </h2>
-              <button onClick={() => setMostrarModalHistorial(false)} className="text-[#415364]/40 hover:text-[#ea0029] text-2xl font-bold transition-colors">&times;</button>
-            </div>
-            <div className="min-h-[150px] max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
-              {cargandoHistorial ? (
-                <p className="text-center text-xs font-bold tracking-widest uppercase text-[#415364]/40 mt-10">Buscando documentos...</p>
-              ) : cotizacionesCliente.length === 0 ? (
-                <p className="text-center text-xs font-bold tracking-widest uppercase text-[#415364]/40 mt-10">Sin cotizaciones generadas.</p>
-              ) : (
-                <div className="space-y-4">
-                  {cotizacionesCliente.map((cot, i) => (
-                    <div key={i} className="flex justify-between items-center bg-[#dce3eb]/30 p-4 rounded-xl border border-[#415364]/10 hover:shadow-md transition-shadow">
-                      <div>
-                        <p className="text-sm font-bold text-[#415364]">Unidad {cot.unidad_numero}</p>
-                        <p className="text-[10px] font-bold text-[#415364]/50 mt-1">{new Date(cot.created_at).toLocaleDateString('es-EC')}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[9px] font-bold text-[#415364]/40 uppercase tracking-wider mb-0.5">Precio de Cierre</p>
-                        <p className="text-base font-mono font-bold text-[#ea0029]">${cot.precio_total.toLocaleString('en-US')}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      <datalist id="lista-campanas">
-        {campanasDisponibles.map(c => <option key={c} value={c} />)}
-      </datalist>
 
     </div>
   );

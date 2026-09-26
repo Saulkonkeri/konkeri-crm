@@ -3,7 +3,7 @@ import nodemailer from 'nodemailer';
 
 export async function POST(request: Request) {
   try {
-    const { email, nombres, asunto, cuerpo, tipoPlantilla, tipoImagen } = await request.json();
+    const { email, nombres, asunto, cuerpo, tipoPlantilla } = await request.json();
 
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.hostinger.com',
@@ -16,17 +16,14 @@ export async function POST(request: Request) {
     });
 
     const imagenes = {
-      fachada: "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Fronta.jpg",
+      portada: "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Fronta.jpg",
       ubicacion: "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/ubicacion-arienzo-1.jpg",
-      living: "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-living-arienzo.jpg",
-      piscina: "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Piscina-1.jpg"
+      arquitectura: "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Derecho-A4.jpg",
+      amenidades: "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Piscina-1.jpg",
+      living: "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-living-arienzo.jpg"
     };
     
-    // @ts-ignore
-    const urlImagenSeleccionada = imagenes[tipoImagen] || imagenes.fachada;
     const cuerpoHtmlFormateado = cuerpo.replace(/\n/g, '<br/>');
-    
-    // Enlaces dinámicos
     const enlaceWhatsApp = `https://wa.me/593979469472?text=${encodeURIComponent(`Hola Saúl, recibí tu correo sobre Arienzo y me gustaría más información.`)}`;
     const enlaceCalendly = `https://calendly.com/saul-intriago/asesoria-inmobiliaria`;
 
@@ -47,13 +44,13 @@ export async function POST(request: Request) {
                     <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-blanco.svg" alt="Arienzo Boutique Living" width="180" style="display: block; margin: 0 auto;">
                   </td>
                 </tr>
-                <!-- FOTO PORTADA -->
+                <!-- FOTO PORTADA (SIEMPRE LA FACHADA FRONTAL) -->
                 <tr>
                   <td>
-                    <img src="${urlImagenSeleccionada}" alt="Arienzo Vista" width="600" style="display: block; width: 100%; max-height: 280px; object-fit: cover;">
+                    <img src="${imagenes.portada}" alt="Arienzo Vista" width="600" style="display: block; width: 100%; max-height: 300px; object-fit: cover;">
                   </td>
                 </tr>
-                <!-- PÁRRAFO INTRODUCTORIO (Viene del CRM) -->
+                <!-- PÁRRAFO INTRODUCTORIO -->
                 <tr>
                   <td style="padding: 40px; color: #415364; font-size: 16px; line-height: 1.6;">
                     ${cuerpoHtmlFormateado}
@@ -61,50 +58,37 @@ export async function POST(request: Request) {
                 </tr>
     `;
 
-    // Pilares para la Plantilla Premium
+    // El Correo "Largo" como de Revista
     const pilaresVentaHTML = `
                 <!-- SEPARADOR -->
                 <tr>
                   <td align="center" style="padding: 0 40px;">
                     <hr style="border: none; border-top: 1px solid #D1C292; margin: 0;">
-                    <h3 style="color: #964B36; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; margin-top: 25px;">Por qué invertir en Arienzo</h3>
+                    <h3 style="color: #964B36; font-size: 15px; text-transform: uppercase; letter-spacing: 2px; margin-top: 25px;">El privilegio de vivir bien</h3>
                   </td>
                 </tr>
                 <!-- PILAR 1: UBICACIÓN -->
                 <tr>
                   <td style="padding: 20px 40px;">
-                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                      <tr>
-                        <td width="45%" valign="top"><img src="${imagenes.ubicacion}" width="100%" style="border-radius: 8px; display: block;"></td>
-                        <td width="5%" valign="top"></td>
-                        <td width="50%" valign="middle">
-                          <h4 style="margin: 0 0 10px 0; color: #21242E; font-size: 18px;">Ubicación Estratégica</h4>
-                          <p style="margin: 0; color: #415364; font-size: 14px; line-height: 1.5;">En el corazón de Barbasquillo, Manta. A pasos de La Quadra y Riocentro Plaza. La zona de mayor prestigio.</p>
-                        </td>
-                      </tr>
-                    </table>
+                    <img src="${imagenes.ubicacion}" width="100%" style="border-radius: 8px; display: block; margin-bottom: 15px;">
+                    <h4 style="margin: 0 0 10px 0; color: #21242E; font-size: 18px;">Ubicación Estratégica</h4>
+                    <p style="margin: 0; color: #415364; font-size: 15px; line-height: 1.5;">En el corazón de Barbasquillo, Manta. A pasos de La Quadra y Riocentro Plaza. La zona de mayor prestigio, conectividad y plusvalía de la ciudad.</p>
                   </td>
                 </tr>
                 <!-- PILAR 2: ARQUITECTURA -->
                 <tr>
                   <td style="padding: 20px 40px;">
-                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                      <tr>
-                        <td width="50%" valign="middle">
-                          <h4 style="margin: 0 0 10px 0; color: #21242E; font-size: 18px;">Arquitectura de Autor</h4>
-                          <p style="margin: 0; color: #415364; font-size: 14px; line-height: 1.5;">Colección limitada de departamentos con acabados premium y amenidades exclusivas en el Rooftop.</p>
-                        </td>
-                        <td width="5%" valign="top"></td>
-                        <td width="45%" valign="top"><img src="${imagenes.living}" width="100%" style="border-radius: 8px; display: block;"></td>
-                      </tr>
-                    </table>
+                    <img src="${imagenes.arquitectura}" width="100%" style="border-radius: 8px; display: block; margin-bottom: 15px;">
+                    <h4 style="margin: 0 0 10px 0; color: #21242E; font-size: 18px;">Arquitectura de Autor</h4>
+                    <p style="margin: 0; color: #415364; font-size: 15px; line-height: 1.5;">Desarrollado por el reconocido estudio <strong>Diez + Muller</strong>. Una colección limitada de solo 22 departamentos con ventanales de piso a techo y acabados premium.</p>
                   </td>
                 </tr>
-                <!-- PILAR 3: PLUSVALÍA -->
+                <!-- PILAR 3: AMENIDADES -->
                 <tr>
-                  <td align="center" style="padding: 20px 40px 40px 40px;">
-                    <h4 style="margin: 0 0 10px 0; color: #21242E; font-size: 18px;">Alta Plusvalía</h4>
-                    <p style="margin: 0; color: #415364; font-size: 14px; line-height: 1.5;">Al ingresar en etapa temprana, aseguras el mejor precio por m² antes del alza estructural del mercado.</p>
+                  <td style="padding: 20px 40px 40px 40px;">
+                    <img src="${imagenes.amenidades}" width="100%" style="border-radius: 8px; display: block; margin-bottom: 15px;">
+                    <h4 style="margin: 0 0 10px 0; color: #21242E; font-size: 18px;">Rooftop y Amenidades Exclusivas</h4>
+                    <p style="margin: 0; color: #415364; font-size: 15px; line-height: 1.5;">Disfruta de un Social Living con Coworking, Gym Panorámico y una espectacular piscina concebida para elevar tu experiencia diaria.</p>
                   </td>
                 </tr>
     `;
@@ -113,9 +97,9 @@ export async function POST(request: Request) {
     const botonWhatsAppHTML = `
                 <tr>
                   <td align="center" style="background-color: #F9F7F5; padding: 40px 20px; border-top: 1px solid #EAE3DC; border-bottom: 1px solid #EAE3DC;">
-                    <h2 style="margin: 0 0 15px 0; color: #964B36; font-size: 24px;">Asegure su unidad en Planos</h2>
+                    <h2 style="margin: 0 0 15px 0; color: #964B36; font-size: 24px;">Asegura tu unidad en Planos</h2>
                     <p style="margin: 0 0 25px 0; color: #415364; font-size: 16px; font-weight: bold;">Reservas abiertas con solo $2,500 USD</p>
-                    <a href="${enlaceWhatsApp}" style="background-color: #25D366; color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 30px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: inline-block;">Contactar por WhatsApp</a>
+                    <a href="${enlaceWhatsApp}" style="background-color: #25D366; color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 30px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: inline-block;">Hablemos por WhatsApp</a>
                   </td>
                 </tr>
     `;
@@ -163,7 +147,7 @@ export async function POST(request: Request) {
       </html>
     `;
 
-    // LÓGICA: Ensamblaje según la Plantilla Escogida en el CRM
+    // LÓGICA: Ensamblaje
     let htmlFinal = '';
 
     if (tipoPlantilla === 'seguimiento_premium') {
