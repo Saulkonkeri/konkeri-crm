@@ -70,7 +70,7 @@ const PLANTILLAS_CORREO = [
 
 const IMAGENES_GALERIA = {
   fachada: "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Fronta.jpg",
-  ubicacion: "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/ubicacion-arienzo-1.jpg",
+  ubicacion: "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/ubicacion%20arienzo3.jpg",
   living: "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-living-arienzo.jpg",
   piscina: "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Piscina-1.jpg"
 };
@@ -758,7 +758,7 @@ export default function CRMPage() {
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-[#415364] text-[13px]">{cliente.nombres} {cliente.apellidos}</span>
-                          {infoCorreo && <span className="text-[9px] font-bold bg-[#964B36] text-white px-2 py-0.5 rounded shadow-sm">✉️ {infoCorreo}</span>}
+                          {infoCorreo && <span className="text-[9px] font-bold bg-[#964B36]/10 border border-[#964B36]/20 text-[#964B36] px-2 py-0.5 rounded shadow-sm">✉️ {infoCorreo}</span>}
                         </div>
                         <div className="text-[10px] text-[#415364]/60 font-mono mt-0.5 font-medium">{cliente.telefono}</div>
                       </td>
