@@ -238,7 +238,7 @@ export default function CRMPage() {
 
   const extraerFechaUltimaNota = (notas: string | null) => {
     if (!notas) return null;
-    const match = notas.match(/\[(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    const match = notas.match(/\[(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
     if (match) return new Date(parseInt(match[3]), parseInt(match[2]) - 1, parseInt(match[1]));
     return null;
   };
@@ -250,16 +250,17 @@ export default function CRMPage() {
     return Math.max(0, Math.floor((hoy.getTime() - ultima.getTime()) / (1000 * 60 * 60 * 24)));
   };
 
-  // NUEVA FUNCIÓN: Lector inteligente de último correo enviado
+  // 🟢 LECTOR INTELIGENTE DE ÚLTIMO CORREO ENVIADO
   const obtenerInfoUltimoCorreo = (notas: string | null) => {
     if (!notas) return null;
-    // Busca en el log la marca exacta de correo enviado
-    const match = notas.match(/\[(\d{1,2})\/(\d{1,2})\/(\d{4}).*?\] 📧 Correo Enviado/);
+    // Busca específicamente el registro de "Correo Enviado" en el texto de las notas
+    const match = notas.match(/\[(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})[^\]]*\]\s*📧\s*Correo Enviado/i);
     if (match) {
       const day = parseInt(match[1], 10);
       const month = parseInt(match[2], 10) - 1;
       const year = parseInt(match[3], 10);
       const fechaCorreo = new Date(year, month, day);
+      
       const hoy = new Date();
       hoy.setHours(0,0,0,0);
       fechaCorreo.setHours(0,0,0,0);
@@ -520,7 +521,6 @@ export default function CRMPage() {
         setMostrarModalPreviewCorreo(false);
         const fecha = new Date().toLocaleString('es-EC', { dateStyle: 'short', timeStyle: 'short' });
         
-        // REGISTRO AUTOMÁTICO EN EL LOG DEL CLIENTE CON EL TEMA ESPECÍFICO ENVIADO
         const detalleTipo = incluirFirma ? `De: ${nombreRemitente} (${cargoRemitente})` : 'Envío Masivo';
         const notaFinal = `[${fecha}] 📧 Correo Enviado: "${plantillaConfig.nombre}" [${detalleTipo}]\n\n${clienteSeleccionado.notas || ''}`;
         
@@ -645,7 +645,7 @@ export default function CRMPage() {
                       const diasInactivos = obtenerDiasInactivos(cliente.notas);
                       const abandonado = diasInactivos > 4 && cliente.estado !== 'Descartado' && cliente.estado !== 'Cierre (Ganado)';
                       const agendadoVencido = esFechaVencida(cliente.proximo_contacto);
-                      const infoCorreo = obtenerInfoUltimoCorreo(cliente.notas); // 🟢 LECTURA DEL ÚLTIMO CORREO
+                      const infoCorreo = obtenerInfoUltimoCorreo(cliente.notas);
 
                       return (
                         <div 
@@ -659,27 +659,27 @@ export default function CRMPage() {
                           {cliente.tipologia_interes && cliente.tipologia_interes !== 'Por definir' && (
                             <span className="inline-block bg-[#415364]/5 text-[#415364] border border-[#415364]/10 text-[9px] font-bold px-2 py-0.5 rounded-md mr-1 uppercase tracking-wider">{cliente.tipologia_interes}</span>
                           )}
+
+                          {/* 📅 ETIQUETA DE AGENDAMIENTO */}
                           {cliente.proximo_contacto && (
                             <div className={`mt-2 text-[9px] font-bold px-2 py-1 flex items-center gap-1.5 rounded-md border ${agendadoVencido ? 'bg-[#ea0029]/10 text-[#ea0029] border-[#ea0029]/20' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                              {new Date(cliente.proximo_contacto).toLocaleDateString('es-EC', {day:'2-digit', month:'short'})}
+                              Agendado: {new Date(cliente.proximo_contacto).toLocaleDateString('es-EC', {day:'2-digit', month:'short'})}
                             </div>
                           )}
+
+                          {/* 📧 NUEVA ETIQUETA EXCLUSIVA DEL CORREO */}
+                          {infoCorreo && (
+                            <div className="mt-1.5 text-[9px] font-bold px-2 py-1 flex items-center gap-1.5 rounded-md border bg-indigo-50 text-indigo-700 border-indigo-200">
+                              <span>📧 Correo enviado: {infoCorreo}</span>
+                            </div>
+                          )}
+
                           <div className="mt-2.5 pt-2 border-t border-[#415364]/5 flex justify-between items-center">
                             <span className={`text-[9px] font-bold tracking-wide ${abandonado ? 'text-amber-600' : 'text-[#415364]/40'}`}>
                               {diasInactivos === 0 ? 'Actividad: Hoy' : diasInactivos === 1 ? 'Actividad: Ayer' : diasInactivos > 300 ? 'Sin registros' : `Inactivo: ${diasInactivos} días`}
                             </span>
-                            
-                            {/* 🟢 ETIQUETA VISUAL DEL ÚLTIMO CORREO */}
-                            <div className="flex items-center gap-1.5">
-                              {infoCorreo && (
-                                <span className="text-[8.5px] font-bold text-[#415364] bg-[#dce3eb]/50 px-1.5 py-0.5 rounded shadow-sm flex items-center gap-1" title="Último correo enviado">
-                                  📧 {infoCorreo}
-                                </span>
-                              )}
-                              {abandonado && <span className="text-[10px] animate-pulse" title="Lead enfriándose">⚠️</span>}
-                            </div>
-
+                            {abandonado && <span className="text-[10px] animate-pulse" title="Lead enfriándose">⚠️</span>}
                           </div>
                         </div>
                       );
@@ -947,7 +947,7 @@ export default function CRMPage() {
         )}
       </div>
 
-      {/* MODAL NUEVO PROSPECTO */}
+      {/* MODAL NUEVO PROSPECTO (COMPLETO) */}
       {mostrarModalNuevo && (
         <div className="fixed inset-0 bg-[#21242E]/80 z-[80] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm">
           <div className="bg-white rounded-t-3xl md:rounded-2xl shadow-2xl w-full max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
