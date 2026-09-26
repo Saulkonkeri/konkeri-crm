@@ -43,7 +43,7 @@ type VisitanteAgrupado = {
 };
 
 // ==========================================
-// 2. FUNCIONES AUXILIARES PURAS (ANTI-BUGS VERCEL)
+// 2. FUNCIONES AUXILIARES PURAS
 // ==========================================
 const formatTiempoAtras = (fecha: Date) => {
   const ahora = new Date().getTime();
@@ -299,7 +299,7 @@ export default function RadarCentral() {
         .from('tracking_inventario')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(800);
+        .limit(2000); // AUMENTADO PARA PREVENIR CORTES
 
       if (data) {
         const accionesIgnoradas = ['SOLICITUD_ACCESO_VIP','ABRIO_CALENDLY','VISITA_LANDING','ABRIO_FORMULARIO','CLIC_WHATSAPP','REGISTRO_COMPLETADO','CLIC_DISPONIBILIDAD','DESCARGA_BROCHURE'];
@@ -376,15 +376,19 @@ export default function RadarCentral() {
       if (filtroTiempo === '30d') fechaLimite.setDate(fechaLimite.getDate() - 30);
       if (filtroTiempo === 'hoy') fechaLimite.setHours(0,0,0,0);
 
+      // FIX SUPABASE: Buscar DESCENDENTE y con limite alto para asegurar que no se corten los datos de hoy
       const { data } = await supabase
         .from('tracking_inventario')
         .select('*')
         .gte('created_at', fechaLimite.toISOString())
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: false }) 
+        .limit(3000); 
 
       if (data) {
-        setEventosWeb(data);
-        procesarVisitantes(data);
+        // Invertir el orden para que la lógica interna procese de viejo a nuevo cronológicamente
+        const datosCronologicos = [...data].reverse();
+        setEventosWeb(datosCronologicos);
+        procesarVisitantes(datosCronologicos);
       }
     } finally {
       setCargandoWeb(false);
@@ -442,10 +446,12 @@ export default function RadarCentral() {
       else if (v.score >= 8) v.nivelInteraccion = 'MEDIO';
       else v.nivelInteraccion = 'BAJO';
 
+      // Ordenar eventos del más reciente al más antiguo para el visualizador
       v.eventos.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       return v;
     });
 
+    // Ordenar visitantes: el de la actividad más reciente primero
     resultado.sort((a, b) => b.ultimaActividad.getTime() - a.ultimaActividad.getTime());
     setVisitantesAgrupados(resultado);
   };
