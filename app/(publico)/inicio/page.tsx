@@ -1,33 +1,956 @@
-import { NextResponse } from 'next/server';
-import nodemailer from 'nodemailer';
+'use client';
 
-export async function POST(request: Request) {
-  try {
-    // La API ahora solo recibe el HTML final armado por el CRM
-    const { email, asunto, htmlCuerpo } = await request.json();
+import { useState, useEffect, useMemo } from 'react';
+import Image from 'next/image';
+import { supabase } from '@/lib/supabase';
 
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.hostinger.com',
-      port: 465,
-      secure: true,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
+export default function ArienzoLandingPremium() {
+  const [mostrarModalVip, setMostrarModalVip] = useState(false);
+  const [mostrarModalCalendly, setMostrarModalCalendly] = useState(false);
+  const [mostrarModalBrochure, setMostrarModalBrochure] = useState(false);
+  
+  const [imagenIndex, setImagenIndex] = useState<number | null>(null);
+  const [cargando, setCargando] = useState(false);
+  const [solicitudEnviada, setSolicitudEnviada] = useState(false);
+  const [brochureDescargado, setBrochureDescargado] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
-    const mailOptions = {
-      from: `"Arienzo Comercial" <${process.env.SMTP_USER}>`,
-      to: email,
-      subject: asunto,
-      html: htmlCuerpo,
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchEndX, setTouchEndX] = useState<number | null>(null);
+
+  const [formData, setFormData] = useState({ nombres: '', telefono: '', email: '' });
+  const [formBrochure, setFormBrochure] = useState({ nombres: '', telefono: '', email: '' });
+
+  const imagenesGaleria = useMemo(() => [
+    "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Fronta.jpg",
+    "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Interior-Departamento-1.jpg",
+    "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Piscina-1.jpg",
+    "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Derecho-A4.jpg",
+    "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-living-arienzo.jpg",
+    "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Plaza-Comercial-1-1.jpg"
+  ], []);
+
+  const imagenesInfinitas = useMemo(() => {
+    return Array(20).fill(imagenesGaleria).flat();
+  }, [imagenesGaleria]);
+
+  const trackEvent = async (accion: string, detalle: string, datosUsuario?: { email?: string, telefono?: string }) => {
+    try {
+      let visitorId = localStorage.getItem('arienzo_visitor_id');
+      if (!visitorId) {
+        visitorId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'id-' + Math.random().toString(36).substring(2, 10);
+        localStorage.setItem('arienzo_visitor_id', visitorId);
+      }
+
+      let sessionId = sessionStorage.getItem('arienzo_session_id');
+      if (!sessionId) {
+        sessionId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'sess-' + Math.random().toString(36).substring(2, 10);
+        sessionStorage.setItem('arienzo_session_id', sessionId);
+      }
+
+      const eventId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'evt-' + Date.now();
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const metadata = {
+        utm_source: urlParams.get('utm_source'),
+        utm_campaign: urlParams.get('utm_campaign'),
+        referrer: document.referrer || 'Directo',
+        dispositivo: /Mobile|Android|iP(hone|od|ad)/i.test(navigator.userAgent) ? 'Móvil' : 'Desktop',
+        meta_event_id: eventId
+      };
+
+      const emailConocido = localStorage.getItem('arienzo_lead_email') || formData.email || formBrochure.email;
+
+      await supabase.from('tracking_inventario').insert([{
+        visitor_id: visitorId,
+        session_id: sessionId,
+        email_cliente: emailConocido || 'Anónimo',
+        accion,
+        detalle,
+        metadata
+      }]);
+
+      if (typeof window !== 'undefined' && (window as any).fbq) {
+        const fbq = (window as any).fbq;
+        if (accion === 'REGISTRO_COMPLETADO' || accion === 'DESCARGA_BROCHURE') {
+          fbq('track', 'Lead', { 
+            content_name: accion === 'DESCARGA_BROCHURE' ? 'Descarga Brochure' : 'Registro VIP Landing',
+            em: datosUsuario?.email?.toLowerCase().trim() || '',
+            ph: datosUsuario?.telefono?.replace(/\D/g, '') || ''
+          }, { eventID: eventId });
+        } else if (accion === 'CLIC_WHATSAPP') {
+          fbq('track', 'Contact', { content_name: 'Clic Botón WhatsApp' }, { eventID: eventId });
+        } else if (accion === 'ABRIO_CALENDLY') {
+          fbq('track', 'Schedule', { content_name: 'Abrió Calendly' }, { eventID: eventId });
+        } else if (accion !== 'VISITA_LANDING') { 
+          fbq('trackCustom', accion, { detalle }, { eventID: eventId });
+        }
+      }
+
+      let metaEventName = accion;
+      if (accion === 'REGISTRO_COMPLETADO' || accion === 'DESCARGA_BROCHURE') metaEventName = 'Lead';
+      else if (accion === 'CLIC_WHATSAPP') metaEventName = 'Contact';
+      else if (accion === 'ABRIO_CALENDLY') metaEventName = 'Schedule';
+      else if (accion === 'VISITA_LANDING') metaEventName = 'PageView';
+
+      if (['Lead', 'Contact', 'Schedule', 'PageView'].includes(metaEventName)) {
+        fetch('/api/meta-capi', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            eventName: metaEventName,
+            eventId: eventId,
+            email: datosUsuario?.email || emailConocido || '',
+            telefono: datosUsuario?.telefono || '',
+            eventUrl: window.location.href,
+            userAgent: navigator.userAgent
+          })
+        }).catch(() => {});
+      }
+
+      if (typeof window !== 'undefined' && typeof (window as any).gtag !== 'undefined') {
+        const gtag = (window as any).gtag;
+        if (accion === 'REGISTRO_COMPLETADO' || accion === 'DESCARGA_BROCHURE') {
+          gtag('event', 'generate_lead', { event_category: 'engagement', event_label: accion });
+        } else if (accion === 'CLIC_WHATSAPP') {
+          gtag('event', 'click_whatsapp', { event_category: 'contact', event_label: 'Clic Botón WhatsApp' });
+        } else if (accion === 'ABRIO_CALENDLY') {
+          gtag('event', 'schedule_meeting', { event_category: 'engagement', event_label: 'Abrió Calendly' });
+        } else if (accion !== 'VISITA_LANDING') {
+          gtag('event', accion, { event_category: 'interaction', event_label: detalle });
+        }
+      }
+
+    } catch (error) {}
+  };
+
+  useEffect(() => {
+    if (!sessionStorage.getItem('visita_registrada_landing')) {
+      trackEvent('VISITA_LANDING', 'Ingresó a la página principal de Arienzo');
+      sessionStorage.setItem('visita_registrada_landing', 'true');
+    }
+
+    const handleScrollNav = () => setScrolled(window.scrollY > 50);
+    const trackedScrolls = new Set();
+    
+    const handleScrollTracking = () => {
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (docHeight <= 0) return;
+      const scrollPercent = Math.round((window.scrollY / docHeight) * 100);
+      
+      if (scrollPercent >= 50 && !trackedScrolls.has(50)) {
+        trackedScrolls.add(50);
+        trackEvent('SCROLL_50', 'Hizo scroll hasta la mitad de la página');
+      }
+      if (scrollPercent >= 90 && !trackedScrolls.has(90)) {
+        trackedScrolls.add(90);
+        trackEvent('SCROLL_90', 'Llegó al final de la página');
+      }
     };
 
-    await transporter.sendMail(mailOptions);
-    return NextResponse.json({ success: true, message: 'Correo HTML enviado' });
+    window.addEventListener('scroll', handleScrollNav);
+    window.addEventListener('scroll', handleScrollTracking);
+    return () => {
+      window.removeEventListener('scroll', handleScrollNav);
+      window.removeEventListener('scroll', handleScrollTracking);
+    };
+  }, []);
+
+  useEffect(() => {
+    const centrarCarruselRotativo = () => {
+      const carousel = document.getElementById('carrusel-arquitectura');
+      if (carousel && carousel.children.length > 60) {
+        const itemCentral = carousel.children[60] as HTMLElement;
+        if (itemCentral) {
+          const centroPosicion = itemCentral.offsetLeft - (carousel.clientWidth - itemCentral.offsetWidth) / 2;
+          carousel.scrollLeft = centroPosicion;
+        }
+      }
+    };
+
+    const timer = setTimeout(centrarCarruselRotativo, 100);
+    window.addEventListener('resize', centrarCarruselRotativo);
     
-  } catch (error) {
-    console.error('Error enviando correo CRM:', error);
-    return NextResponse.json({ error: 'Error al enviar el correo' }, { status: 500 });
-  }
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', centrarCarruselRotativo);
+    };
+  }, [imagenesInfinitas.length]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
+
+      if (imagenIndex !== null) {
+        if (e.key === 'ArrowRight') setImagenIndex((prev) => prev !== null ? (prev + 1) % imagenesGaleria.length : null);
+        else if (e.key === 'ArrowLeft') setImagenIndex((prev) => prev !== null ? (prev - 1 + imagenesGaleria.length) % imagenesGaleria.length : null);
+        else if (e.key === 'Escape') setImagenIndex(null);
+      } else {
+        const carousel = document.getElementById('carrusel-arquitectura');
+        if (carousel && carousel.firstElementChild) {
+          const gap = window.innerWidth < 768 ? 16 : 24; 
+          const scrollAmount = (carousel.firstElementChild as HTMLElement).offsetWidth + gap;
+          
+          if (e.key === 'ArrowRight') {
+            carousel.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+          } else if (e.key === 'ArrowLeft') {
+            carousel.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+          }
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [imagenIndex, imagenesGaleria.length]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEndX(null);
+    setTouchStartX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEndX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStartX || !touchEndX) return;
+    const distance = touchStartX - touchEndX;
+    if (distance > 50) nextImagen();
+    else if (distance < -50) prevImagen();
+  };
+
+  const abrirModalVIP = () => { trackEvent('ABRIO_FORMULARIO', 'Hizo clic en botón Acceso Exclusivo'); setMostrarModalVip(true); };
+  const abrirCalendly = () => { trackEvent('ABRIO_CALENDLY', 'Abrió modal de agendamiento'); setMostrarModalCalendly(true); };
+
+  const procesarSolicitudVIP = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCargando(true);
+    const correoLimpio = formData.email.trim().toLowerCase();
+
+    try {
+      const { error: errorCliente } = await supabase.from('clientes').upsert([{
+        nombres: formData.nombres,
+        telefono: formData.telefono,
+        email: correoLimpio,
+        tipo: 'prospecto',
+        origen: 'Web Pública - Solicitud Acceso Exclusivo',
+        origen_captacion: 'Página Web / Landing Page',
+        campana: 'Solicitud VIP Landing',
+        estado: 'Interesado',
+        temperatura: '☀️ Tibio',
+        estado_acceso: 'pendiente'
+      }], { onConflict: 'email' });
+
+      if (errorCliente) {
+        await supabase.from('clientes')
+          .update({ 
+            estado_acceso: 'pendiente', 
+            nombres: formData.nombres, 
+            telefono: formData.telefono,
+            estado: 'Interesado',
+            temperatura: '☀️ Tibio'
+          })
+          .eq('email', correoLimpio);
+      }
+
+      localStorage.setItem('arienzo_lead_email', correoLimpio);
+      
+      await trackEvent('REGISTRO_COMPLETADO', `Registró datos VIP. Correo: ${correoLimpio}`, { email: correoLimpio, telefono: formData.telefono });
+
+      const visitorId = localStorage.getItem('arienzo_visitor_id');
+      if (visitorId) {
+        await supabase.from('tracking_inventario').update({ email_cliente: correoLimpio }).eq('visitor_id', visitorId);
+      }
+
+      setSolicitudEnviada(true);
+    } catch (error) {
+      alert("Hubo un problema grave en la ejecución.");
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  const procesarDescargaBrochure = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCargando(true);
+    const correoLimpio = formBrochure.email.trim().toLowerCase();
+
+    try {
+      await supabase.from('clientes').upsert([{
+        nombres: formBrochure.nombres,
+        telefono: formBrochure.telefono,
+        email: correoLimpio,
+        tipo: 'prospecto',
+        origen: 'Web Pública - Descarga Brochure',
+        origen_captacion: 'Página Web / Landing Page',
+        campana: 'Descarga Brochure',
+        estado: 'Interesado',
+        temperatura: '☀️ Tibio'
+      }], { onConflict: 'email' });
+
+      localStorage.setItem('arienzo_lead_email', correoLimpio);
+      
+      await trackEvent('DESCARGA_BROCHURE', `Descargó el brochure. Correo: ${correoLimpio}`, { email: correoLimpio, telefono: formBrochure.telefono });
+
+      window.open('https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/documentos-publicos/Brochure_Arienzo%20.pdf', '_blank');
+      
+      setBrochureDescargado(true);
+      
+      setTimeout(() => {
+        setMostrarModalBrochure(false);
+        setBrochureDescargado(false);
+        setFormBrochure({ nombres: '', telefono: '', email: '' });
+      }, 4000);
+      
+    } catch (error) {
+      alert("Hubo un problema al procesar la descarga.");
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  const clickImagen = (index: number) => { 
+    const realIndex = index % imagenesGaleria.length;
+    trackEvent('VIO_ARQUITECTURA', `Abrió render ${realIndex + 1} de la galería`); 
+    setImagenIndex(realIndex); 
+  };
+  
+  const prevImagen = (e?: React.MouseEvent) => { if(e) e.stopPropagation(); setImagenIndex((prev) => prev !== null ? (prev - 1 + imagenesGaleria.length) % imagenesGaleria.length : null); };
+  const nextImagen = (e?: React.MouseEvent) => { if(e) e.stopPropagation(); setImagenIndex((prev) => prev !== null ? (prev + 1) % imagenesGaleria.length : null); };
+
+  return (
+    <div className="min-h-screen bg-[#F9F7F5] text-neutral-800 selection:bg-[#964B36] selection:text-white overflow-x-hidden" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+      
+      {/* NAVEGACIÓN */}
+      <header className={`fixed top-0 w-full z-40 transition-all duration-500 ${scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm py-5 md:py-6' : 'bg-transparent py-6 md:py-8'}`}>
+        <div className="max-w-7xl mx-auto px-5 md:px-12 flex justify-between items-center">
+          <Image 
+            src={scrolled ? "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" : "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-blanco.svg"} 
+            alt="Arienzo Logo"
+            width={160}
+            height={32}
+            className="w-[120px] md:w-[160px] h-auto transition-all duration-500"
+          />
+          <button 
+            onClick={abrirModalVIP}
+            className={`text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-3 md:px-6 md:py-3.5 rounded-full transition-all duration-300 ${scrolled ? 'bg-[#964B36] text-white hover:bg-[#7d3e2c] shadow-md' : 'bg-white/20 backdrop-blur-md text-white border border-white/40 hover:bg-white hover:text-[#964B36]'}`}
+          >
+            Acceso Exclusivo
+          </button>
+        </div>
+      </header>
+
+      {/* 1. HERO INMERSIVO */}
+      <section className="relative h-[100vh] min-h-[650px] flex flex-col items-center justify-center">
+        <Image 
+          src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Fronta.jpg" 
+          alt="Arienzo Fachada"
+          fill
+          priority
+          quality={80}
+          sizes="100vw"
+          className="absolute inset-0 object-cover z-0"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/10 to-black/60 z-0"></div>
+
+        <div className="relative z-10 text-center px-6 w-full max-w-4xl mx-auto pt-20">
+          <div className="inline-block px-5 py-2 border border-[#D1C292]/60 backdrop-blur-md rounded-full mb-6 md:mb-8 shadow-[0_0_15px_rgba(209,194,146,0.2)]">
+            <span className="text-[11px] md:text-[13px] font-bold tracking-[0.35em] text-[#D1C292] uppercase">
+              Próximamente en Manta
+            </span>
+          </div>
+          <h1 className="text-[2rem] leading-tight md:text-5xl lg:text-[4rem] font-medium text-white md:leading-tight mb-6 md:mb-8 tracking-tight drop-shadow-xl max-w-3xl mx-auto">
+            Todo empieza con <br />
+            <span className="font-light italic text-[#F9F7F5]">una buena ubicación.</span>
+          </h1>
+          <p className="text-sm md:text-xl text-neutral-100 font-medium max-w-2xl mx-auto mb-8 md:mb-10 leading-relaxed drop-shadow-md">
+            Colección exclusiva de solo 22 departamentos de 1, 2 y 3 dormitorios. Accede primero a la disponibilidad y precios de lanzamiento en planos.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4">
+            <button 
+              onClick={abrirCalendly}
+              className="group w-full sm:w-auto bg-[#964B36] text-white px-6 py-3.5 md:px-8 md:py-4 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] transition-all duration-300 shadow-[0_4px_20px_rgba(150,75,54,0.4)] hover:shadow-[0_8px_30px_rgba(150,75,54,0.6)] hover:-translate-y-1 flex items-center justify-center gap-2"
+            >
+              <svg className="w-3.5 h-3.5 opacity-90 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+              Agendar Presentación
+            </button>
+            <button 
+              onClick={abrirModalVIP}
+              className="w-full sm:w-auto bg-white/10 backdrop-blur-sm border border-white/40 text-white px-6 py-3.5 md:px-8 md:py-4 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-white hover:text-[#964B36] transition-all duration-300 hover:-translate-y-1"
+            >
+              Solicitar Acceso
+            </button>
+          </div>
+        </div>
+
+        <div className="absolute bottom-6 right-6 md:bottom-10 md:right-10 z-20 flex flex-col items-end opacity-90 hover:opacity-100 transition-opacity">
+          <span className="text-[6px] md:text-[8px] font-medium text-white/80 uppercase tracking-[0.3em] mb-1 drop-shadow-md">Diseño Arquitectónico</span>
+          <div className="flex items-center gap-2">
+            <div className="w-4 md:w-8 h-[1px] bg-[#D1C292] shadow-sm"></div>
+            <span className="text-[9px] md:text-[11px] font-bold tracking-[0.2em] text-[#D1C292] uppercase drop-shadow-md">Diez + Muller</span>
+          </div>
+        </div>
+      </section>
+
+      {/* 2. UBICACIÓN */}
+      <section className="py-20 md:py-32 px-6 bg-[#F9F7F5] relative overflow-hidden">
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:40px_40px]"></div>
+
+        <div className="max-w-6xl mx-auto relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-10 items-center">
+            <div className="md:col-span-5 md:pr-10 z-10 order-2 md:order-1">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="h-[2px] w-8 bg-[#964B36]"></div>
+                <span className="text-[13px] font-bold tracking-[0.25em] text-[#964B36] uppercase">Barbasquillo, Manta</span>
+              </div>
+              <h3 className="text-3xl md:text-4xl font-medium text-neutral-900 leading-tight mb-6 md:mb-8 tracking-tight">
+                La mejor zona <br className="hidden md:block"/> de la ciudad.
+              </h3>
+              <p className="text-sm md:text-base text-neutral-600 font-medium leading-relaxed mb-6">
+                Vivir en Arienzo es disfrutar de una ubicación estratégica. A pasos de La Quadra y del nuevo Riocentro Plaza Barbasquillo, con acceso inmediato a hoteles, restaurantes y las principales vías de conexión.
+              </p>
+              <p className="text-sm md:text-base text-neutral-600 font-medium leading-relaxed">
+                Diseñado para quienes valoran la conectividad y una vida caminable, donde todo está a tu alcance.
+              </p>
+            </div>
+
+            <div className="md:col-span-7 relative order-1 md:order-2">
+              <div className="absolute -inset-4 bg-[#D1C292]/20 rounded-2xl transform translate-x-4 translate-y-4 hidden md:block z-0"></div>
+              
+              <div className="relative aspect-[3/4] w-full rounded-xl overflow-hidden shadow-2xl group z-10">
+                <Image 
+                  src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/ubicacion%20arienzo3.jpg" 
+                  alt="Ubicación Manta" 
+                  fill
+                  quality={85}
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-cover"
+                />
+                
+                <div className="absolute top-[86%] left-[58%] z-30">
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex h-4 w-4 md:h-5 md:w-5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#25D366] opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-full w-full bg-[#25D366] border-[1.5px] border-white shadow-[0_0_10px_rgba(37,211,102,0.8)]"></span>
+                  </div>
+
+                  <div className="absolute top-1/2 right-2 md:right-[10px] transform -translate-y-1/2 flex items-center">
+                    <span className="bg-white/90 backdrop-blur-sm text-neutral-800 text-[8px] md:text-[10px] font-bold px-3 py-1.5 rounded shadow-sm uppercase tracking-widest whitespace-nowrap">
+                      Ubicación Arienzo
+                    </span>
+                    <div className="w-4 md:w-8 h-[1.5px] bg-white"></div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="absolute -top-6 -left-2 md:-top-6 md:-left-8 z-40 bg-white/95 backdrop-blur-xl px-4 py-3 md:px-5 md:py-3.5 rounded-xl shadow-2xl border border-neutral-100 flex items-center gap-3 hover:scale-105 transition-transform duration-300">
+                <div className="w-1.5 h-6 md:h-7 bg-[#964B36] rounded-full"></div>
+                <div>
+                  <span className="block text-[8px] md:text-[9px] text-neutral-500 font-bold uppercase tracking-widest mb-0.5">Ubicación Privilegiada</span>
+                  <span className="block text-xs md:text-sm font-bold text-neutral-900 uppercase tracking-wide">Alta Plusvalía</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* LA FRANJA TERRACOTA */}
+      <div className="relative h-[200px] md:h-[280px] flex justify-center items-center shadow-inner z-20 bg-[#964B36] overflow-hidden">
+        <Image 
+          src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/familia-en-sala-banco-imagenes-ia.jpg" 
+          alt="Familia en Arienzo" 
+          fill
+          sizes="100vw"
+          className="object-cover mix-blend-overlay opacity-30"
+        />
+        <div className="absolute inset-0 bg-[#964B36]/70"></div>
+        <div className="relative z-10 w-[200px] md:w-[300px] h-[60px] md:h-[90px] hover:scale-105 transition-transform duration-700">
+          <Image 
+            src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/logo-dorado-arienzo.svg" 
+            alt="Arienzo Boutique Living" 
+            fill
+            className="object-contain drop-shadow-2xl" 
+          />
+        </div>
+      </div>
+
+      {/* 3. AMENIDADES */}
+      <section className="py-24 md:py-32 px-6 bg-white border-y border-[#EAE3DC] relative overflow-hidden">
+        <div className="max-w-6xl mx-auto relative z-10">
+          <div className="text-center mb-16 md:mb-20">
+            <span className="text-[13px] font-bold tracking-[0.25em] text-[#964B36] uppercase mb-4 block">Amenidades Exclusivas</span>
+            <h3 className="text-3xl md:text-4xl font-medium text-neutral-900 tracking-tight mb-6">
+              Espacios pensados para vivir.
+            </h3>
+            <p className="max-w-2xl mx-auto text-sm md:text-base text-neutral-500 font-medium leading-relaxed">
+              El rooftop reúne las áreas comunes en un solo nivel, organizadas para una circulación fluida y funcionamiento eficiente, elevando tu experiencia diaria.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="group bg-white rounded-2xl overflow-hidden border border-[#EAE3DC] shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-2">
+              <div className="aspect-[4/3] overflow-hidden relative">
+                <Image src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Piscina-1.jpg" alt="Piscina" fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover transition-transform duration-700 group-hover:scale-105" />
+              </div>
+              <div className="p-8">
+                <div className="w-8 h-[2px] bg-[#D1C292] mb-4 transition-all duration-300 group-hover:w-16"></div>
+                <h4 className="text-xl font-medium text-neutral-900 mb-3">Piscina & Rooftop</h4>
+                <p className="text-sm text-neutral-600 font-medium leading-relaxed">
+                  Concebida desde la experiencia de uso. Un ambiente donde el bienestar, el diseño y la comodidad encuentran el equilibrio perfecto, incluyendo un área de BBQ.
+                </p>
+              </div>
+            </div>
+
+            <div className="group bg-white rounded-2xl overflow-hidden border border-[#EAE3DC] shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-2">
+              <div className="aspect-[4/3] overflow-hidden relative">
+                <Image src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-living-arienzo.jpg" alt="Living" fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover transition-transform duration-700 group-hover:scale-105" />
+              </div>
+              <div className="p-8">
+                <div className="w-8 h-[2px] bg-[#D1C292] mb-4 transition-all duration-300 group-hover:w-16"></div>
+                <h4 className="text-xl font-medium text-neutral-900 mb-3">Social Living & Gym Panorámico</h4>
+                <p className="text-sm text-neutral-600 font-medium leading-relaxed">
+                  Un ambiente flexible que integra áreas de descanso, coworking y un gimnasio panorámico. Pensado para entrenar, compartir o trabajar de forma remota.
+                </p>
+              </div>
+            </div>
+
+            <div className="group bg-white rounded-2xl overflow-hidden border border-[#EAE3DC] shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-2">
+              <div className="aspect-[4/3] overflow-hidden relative">
+                <Image src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Plaza-Comercial-1-1.jpg" alt="Comercial" fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover transition-transform duration-700 group-hover:scale-105" />
+              </div>
+              <div className="p-8">
+                <div className="w-8 h-[2px] bg-[#D1C292] mb-4 transition-all duration-300 group-hover:w-16"></div>
+                <h4 className="text-xl font-medium text-neutral-900 mb-3">Área Comercial</h4>
+                <p className="text-sm text-neutral-600 font-medium leading-relaxed">
+                  Un retail de planta baja curado para complementar tu experiencia. Marcas seleccionadas por su calidad, conveniencia y afinidad con el proyecto.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. TIPOLOGÍAS Y ACABADOS */}
+      <section className="py-16 md:py-24 px-6 bg-[#F9F7F5] border-b border-[#EAE3DC] text-center">
+        <div className="max-w-3xl mx-auto">
+          <span className="text-[11px] font-bold tracking-[0.25em] text-[#964B36] uppercase mb-4 block">Espacios de Autor</span>
+          <h3 className="text-3xl md:text-4xl font-medium text-neutral-900 tracking-tight mb-4">
+            Formatos exclusivos de 1, 2 y 3 dormitorios.
+          </h3>
+          <p className="text-sm md:text-base text-neutral-600 font-medium leading-relaxed mb-8">
+            Diseño optimizado con acabados de primera, ventanales de piso a techo y una distribución abierta donde la sala, el comedor y la terraza se integran de forma natural.
+          </p>
+          <button 
+            onClick={() => { trackEvent('CLIC_DISPONIBILIDAD', 'Clic en botón de ver disponibilidad'); abrirModalVIP(); }}
+            className="inline-flex items-center justify-center gap-3 text-xs font-bold tracking-[0.1em] bg-[#21242E] text-white px-8 py-4 rounded-full hover:bg-[#964B36] transition-colors duration-300 w-full sm:w-auto shadow-md"
+          >
+            VER DISPONIBILIDAD Y PRECIOS <span className="text-lg">→</span>
+          </button>
+        </div>
+      </section>
+
+      {/* 5. GALERÍA DEL PROYECTO */}
+      <section className="py-12 md:py-16 bg-[#21242E] relative text-center">
+        
+        <div className="max-w-6xl mx-auto relative z-10 px-6 mb-6">
+          <span className="text-[11px] font-bold tracking-[0.25em] text-[#D1C292] uppercase mb-3 block">Galería del Proyecto</span>
+          <h3 className="text-2xl md:text-3xl font-medium text-white tracking-tight">Imágenes que hablan por sí solas.</h3>
+        </div>
+
+        <div className="relative w-full z-20 mb-8">
+          <div 
+            id="carrusel-arquitectura"
+            className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-6 px-[15vw] md:px-[30vw] py-4 items-center scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+          >
+            {imagenesInfinitas.map((img, index) => (
+              <div 
+                key={index} 
+                onClick={() => clickImagen(index)} 
+                className="relative shrink-0 snap-center w-[70vw] md:w-[40vw] max-w-[650px] aspect-[4/3] md:aspect-[16/9] rounded-xl overflow-hidden cursor-pointer shadow-[0_15px_40px_rgba(0,0,0,0.4)] transition-all duration-500 hover:scale-[1.02] bg-[#1a1d24] group"
+              >
+                <Image 
+                  src={img} 
+                  alt={`Render ${(index % imagenesGaleria.length) + 1}`} 
+                  fill 
+                  sizes="(max-width: 768px) 70vw, 40vw" 
+                  className="object-cover opacity-85 group-hover:opacity-100 transition-opacity duration-500" 
+                />
+                <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-300"></div>
+                
+                <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-md rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          <div className="max-w-6xl mx-auto px-6 mt-4 relative z-10 flex justify-center">
+            <span className="flex items-center justify-center gap-2 text-[9px] font-bold tracking-[0.2em] text-white/40 uppercase">
+              <svg className="w-4 h-4 animate-pulse hidden md:block" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+              Usa las flechas para explorar
+              <svg className="w-4 h-4 animate-pulse hidden md:block" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </span>
+          </div>
+        </div>
+
+        <div className="pt-4 max-w-lg mx-auto flex flex-col items-center relative z-10 px-6">
+          <button 
+            onClick={() => setMostrarModalBrochure(true)}
+            className="bg-transparent border border-[#D1C292] text-[#D1C292] px-8 py-3 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-[#D1C292] hover:text-[#21242E] transition-all duration-300 w-full sm:w-auto"
+          >
+            Descargar Brochure Oficial
+          </button>
+        </div>
+      </section>
+
+      {/* LIGHTBOX MODAL */}
+      {imagenIndex !== null && (
+        <div 
+          className="fixed inset-0 bg-[#21242E]/98 z-[70] flex items-center justify-center p-4 md:p-8 backdrop-blur-md animate-in fade-in" 
+          onClick={() => setImagenIndex(null)}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          <button className="absolute top-6 right-6 text-white/50 hover:text-white text-4xl font-light transition-colors z-50">&times;</button>
+          <button onClick={prevImagen} className="absolute left-2 md:left-10 text-white/40 hover:text-white text-4xl md:text-7xl p-2 md:p-4 z-50 transition-all hover:scale-110 select-none">&#8249;</button>
+          <div className="relative w-full max-w-5xl h-[80vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            <Image 
+              src={imagenesGaleria[imagenIndex]} 
+              alt="Vista Ampliada" 
+              fill
+              className="object-contain rounded-md shadow-2xl animate-in zoom-in-95 pointer-events-none" 
+            />
+          </div>
+          <button onClick={nextImagen} className="absolute right-2 md:right-10 text-white/40 hover:text-white text-4xl md:text-7xl p-2 md:p-4 z-50 transition-all hover:scale-110 select-none">&#8250;</button>
+        </div>
+      )}
+
+      {/* 6. VISIÓN DE INVERSIÓN */}
+      <section className="py-16 md:py-24 px-6 bg-[#FDFCFB] relative border-t border-[#EAE3DC] overflow-hidden">
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:40px_40px]"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#D1C292]/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
+        
+        <div className="max-w-3xl mx-auto text-center relative z-10">
+          <div className="w-[1px] h-12 bg-gradient-to-b from-transparent to-[#964B36] mx-auto mb-6"></div>
+          
+          <span className="text-[11px] font-bold tracking-[0.25em] text-[#964B36] uppercase mb-4 block">Inversión Temprana</span>
+          <h3 className="text-3xl md:text-4xl font-medium text-neutral-900 mb-6 tracking-tight">Visión de Inversión</h3>
+          
+          <p className="text-sm md:text-base text-neutral-600 font-medium leading-relaxed mb-8">
+            Arienzo representa una entrada estratégica en un sector premium consolidado. Ingresar en la etapa de <strong className="font-semibold text-[#964B36]">lanzamiento en planos</strong> permite capturar la mayor plusvalía del proyecto. Un formato íntimo que ofrece exclusividad y flexibilidad, ideal tanto para residencia principal como para modelo de renta.
+          </p>
+
+          <button 
+            onClick={abrirModalVIP}
+            className="inline-flex items-center justify-center gap-3 text-[11px] font-bold tracking-[0.15em] bg-[#21242E] text-white px-8 py-3.5 rounded-full hover:bg-[#964B36] hover:-translate-y-1 transition-all duration-300 shadow-xl"
+          >
+            CONSULTAR PRECIOS EN PLANOS <span className="text-base">→</span>
+          </button>
+        </div>
+      </section>
+
+      {/* 7. RESPALDO INSTITUCIONAL */}
+      <section className="py-20 md:py-28 px-6 bg-[#21242E] text-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16 md:mb-20">
+            <span className="text-[13px] font-bold tracking-[0.3em] text-[#D1C292] uppercase mb-4 block">Trayectoria Sólida</span>
+            <h3 className="text-3xl md:text-4xl font-medium text-white tracking-tight">Respaldo Inmobiliario</h3>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8 md:divide-x divide-white/10">
+            
+            <div className="md:px-8 text-center group">
+              <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#D1C292] block mb-3">Arquitectura</span>
+              <h4 className="text-lg md:text-xl font-medium text-white mb-4">DIEZ + MULLER</h4>
+              <p className="text-sm text-neutral-400 font-medium leading-relaxed transition-colors group-hover:text-neutral-300">
+                Reconocido y premiado estudio quiteño. Autores de grandes proyectos en la capital y de su exclusivo proyecto en la costa, el edificio Serene en Manta, destacando por su visión contemporánea y rigor al detalle.
+              </p>
+            </div>
+
+            <div className="md:px-8 text-center group border-t border-white/10 md:border-t-0 pt-8 md:pt-0">
+              <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#D1C292] block mb-3">Construcción</span>
+              <h4 className="text-lg md:text-xl font-medium text-white mb-4">CARRASCO SUAREZ</h4>
+              <p className="text-sm text-neutral-400 font-medium leading-relaxed transition-colors group-hover:text-neutral-300">
+                Constructora con sólida trayectoria desde 1992. Amplia experiencia ejecutando obras residenciales premium en la costa ecuatoriana, incluyendo el Hotel Eolia y el moderno edificio Serene en Marina Blue.
+              </p>
+            </div>
+
+            <div className="md:px-8 text-center group border-t border-white/10 md:border-t-0 pt-8 md:pt-0">
+              <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#D1C292] block mb-3">Desarrollo y Ventas</span>
+              <h4 className="text-lg md:text-xl font-medium text-white mb-4">KONKERI</h4>
+              <p className="text-sm text-neutral-400 font-medium leading-relaxed transition-colors group-hover:text-neutral-300">
+                Promotora enfocada en el desarrollo integral de proyectos con visión a largo plazo. Fusionamos estrategia comercial, innovación arquitectónica y tecnología para estructurar desarrollos altamente rentables y alineados al mercado.
+              </p>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* 8. CERRADA FINAL */}
+      <section className="py-20 md:py-28 bg-[#F9F7F5] text-center px-6 relative border-b-[2px] border-[#D1C292] overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[14rem] md:text-[22rem] font-bold text-[#EAE3DC]/40 pointer-events-none select-none z-0 tracking-tighter leading-none">
+          22
+        </div>
+        
+        <div className="max-w-2xl mx-auto flex flex-col items-center relative z-10">
+          <h2 className="text-[11px] font-bold tracking-[0.3em] text-[#964B36] uppercase mb-4">Colección Limitada</h2>
+          <h3 className="text-3xl md:text-4xl font-medium tracking-tight text-neutral-900 mb-4">Sé uno de los 22 propietarios.</h3>
+          <p className="text-sm md:text-base text-neutral-600 font-medium mb-10 leading-relaxed">
+            El privilegeo de pertenecer está limitado. Solicita tu acceso para descubrir precios, tipologías y disponibilidad en tiempo real.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row justify-center gap-4 w-full sm:w-auto">
+            <button 
+              onClick={abrirCalendly}
+              className="group w-full sm:w-auto bg-[#964B36] text-white px-6 py-3.5 md:px-8 md:py-4 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] transition-all duration-300 shadow-[0_4px_20px_rgba(150,75,54,0.4)] hover:shadow-[0_8px_30px_rgba(150,75,54,0.6)] hover:-translate-y-1 flex items-center justify-center gap-2"
+            >
+              <svg className="w-3.5 h-3.5 opacity-90 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+              Agendar Presentación
+            </button>
+
+            <button 
+              onClick={abrirModalVIP}
+              className="w-full sm:w-auto bg-[#21242E] text-white px-6 py-3.5 md:px-8 md:py-4 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-black transition-all duration-300 hover:-translate-y-1 shadow-xl flex items-center justify-center"
+            >
+              Solicitar Acceso
+            </button>
+          </div>
+
+          <div className="mt-10 md:mt-12 flex justify-center">
+            <a 
+              href="https://wa.me/593979469472?text=Hola,%20me%20gustaría%20recibir%20más%20información%20sobre%20el%20proyecto%20Arienzo."
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackEvent('CLIC_WHATSAPP', 'Hizo clic en enlace de WhatsApp al final de la página')}
+              className="group inline-flex items-center gap-3 text-xs md:text-sm font-bold uppercase tracking-widest text-neutral-500 hover:text-[#25D366] transition-colors border-b-2 border-transparent hover:border-[#25D366] pb-1.5"
+            >
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#25D366] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-[#25D366]"></span>
+              </span>
+              <svg className="w-5 h-5 text-neutral-400 group-hover:text-[#25D366] transition-colors" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+              Hablar con un asesor
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* MODAL CERRADURA VIP */}
+      {mostrarModalVip && (
+        <div className="fixed inset-0 bg-[#21242E]/95 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white w-full max-w-md p-10 rounded-2xl relative shadow-2xl animate-in zoom-in-95">
+            <button 
+              onClick={() => { setMostrarModalVip(false); setSolicitudEnviada(false); }}
+              className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-900 font-bold w-8 h-8 flex items-center justify-center bg-neutral-100 rounded-full transition-colors"
+            >
+              &times;
+            </button>
+            
+            {!solicitudEnviada ? (
+              <>
+                <div className="text-center mb-8">
+                  <div className="w-12 h-1 bg-[#964B36] mx-auto mb-6 rounded-full"></div>
+                  <h3 className="text-2xl font-medium text-neutral-900 mb-2 tracking-tight">Acceso al Inventario</h3>
+                  <p className="text-xs text-neutral-500 font-medium">Validaremos tu perfil para habilitar el acceso seguro a los <strong>planos arquitectónicos, disponibilidad en tiempo real y precios de lanzamiento.</strong></p>
+                </div>
+
+                <form onSubmit={procesarSolicitudVIP} className="space-y-4">
+                  <div>
+                    <input 
+                      required 
+                      type="text" 
+                      placeholder="Nombres Completos" 
+                      autoComplete="name"
+                      value={formData.nombres} 
+                      onChange={e => setFormData({...formData, nombres: e.target.value.replace(/[0-9!@#$%^&*()_+=\[\]{};':"\\|,.<>/?]/g, '')})} 
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#964B36] transition-colors" 
+                    />
+                  </div>
+                  <div>
+                    <input 
+                      required 
+                      type="tel" 
+                      placeholder="WhatsApp (Solo números)" 
+                      autoComplete="tel"
+                      value={formData.telefono} 
+                      onChange={e => setFormData({...formData, telefono: e.target.value.replace(/\D/g, '').slice(0, 15)})} 
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#964B36] transition-colors" 
+                    />
+                  </div>
+                  <div>
+                    <input 
+                      required 
+                      type="email" 
+                      placeholder="Correo Electrónico" 
+                      autoComplete="email"
+                      pattern="^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"
+                      title="Debe incluir @ y un dominio válido (ej. correo@gmail.com)"
+                      value={formData.email} 
+                      onChange={e => setFormData({...formData, email: e.target.value})} 
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#964B36] transition-colors invalid:focus:border-red-400" 
+                    />
+                  </div>
+                  
+                  <button 
+                    type="submit" 
+                    disabled={cargando}
+                    className="w-full bg-[#964B36] text-white py-4 rounded-xl text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-[#7d3e2c] transition-all mt-4 shadow-lg disabled:opacity-70"
+                  >
+                    {cargando ? 'Procesando...' : 'Acceder al Inventario'}
+                  </button>
+                </form>
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl shadow-inner">✓</div>
+                <h3 className="text-2xl font-medium text-neutral-900 mb-3 tracking-tight">Solicitud Recibida</h3>
+                <p className="text-sm text-neutral-500 font-medium leading-relaxed mb-8">
+                  Nuestro equipo comercial validará tu información y te contactará brevemente para entregarte tu pase de acceso exclusivo.
+                </p>
+                <button 
+                  onClick={() => { setMostrarModalVip(false); setSolicitudEnviada(false); }}
+                  className="bg-neutral-900 text-white rounded-xl px-8 py-4 text-[11px] font-bold uppercase tracking-widest hover:bg-neutral-800 transition-colors w-full"
+                >
+                  Cerrar
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DESCARGA BROCHURE */}
+      {mostrarModalBrochure && (
+        <div className="fixed inset-0 bg-[#21242E]/95 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white w-full max-w-md p-10 rounded-2xl relative shadow-2xl animate-in zoom-in-95">
+            <button 
+              onClick={() => { setMostrarModalBrochure(false); setBrochureDescargado(false); }}
+              className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-900 font-bold w-8 h-8 flex items-center justify-center bg-neutral-100 rounded-full transition-colors"
+            >
+              &times;
+            </button>
+            
+            {!brochureDescargado ? (
+              <>
+                <div className="text-center mb-8">
+                  <div className="w-12 h-1 bg-[#D1C292] mx-auto mb-6 rounded-full"></div>
+                  <h3 className="text-2xl font-medium text-neutral-900 mb-2 tracking-tight">Descargar Brochure</h3>
+                  <p className="text-xs text-neutral-500 font-medium">Ingresa tus datos para habilitar la descarga inmediata del archivo PDF oficial del proyecto.</p>
+                </div>
+
+                <form onSubmit={procesarDescargaBrochure} className="space-y-4">
+                  <div>
+                    <input 
+                      required 
+                      type="text" 
+                      placeholder="Nombres Completos" 
+                      autoComplete="name"
+                      value={formBrochure.nombres} 
+                      onChange={e => setFormBrochure({...formBrochure, nombres: e.target.value.replace(/[0-9!@#$%^&*()_+=\[\]{};':"\\|,.<>/?]/g, '')})} 
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#D1C292] transition-colors" 
+                    />
+                  </div>
+                  <div>
+                    <input 
+                      required 
+                      type="tel" 
+                      placeholder="WhatsApp (Solo números)" 
+                      autoComplete="tel"
+                      value={formBrochure.telefono} 
+                      onChange={e => setFormBrochure({...formBrochure, telefono: e.target.value.replace(/\D/g, '').slice(0, 15)})} 
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#D1C292] transition-colors" 
+                    />
+                  </div>
+                  <div>
+                    <input 
+                      required 
+                      type="email" 
+                      placeholder="Correo Electrónico" 
+                      autoComplete="email"
+                      pattern="^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"
+                      title="Debe incluir @ y un dominio válido (ej. correo@gmail.com)"
+                      value={formBrochure.email} 
+                      onChange={e => setFormBrochure({...formBrochure, email: e.target.value})} 
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#D1C292] transition-colors invalid:focus:border-red-400" 
+                    />
+                  </div>
+                  
+                  <button 
+                    type="submit" 
+                    disabled={cargando}
+                    className="w-full bg-[#21242E] text-white py-4 rounded-xl text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-black transition-all mt-4 shadow-lg disabled:opacity-70"
+                  >
+                    {cargando ? 'Procesando...' : 'Descargar PDF'}
+                  </button>
+                </form>
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl shadow-inner">📥</div>
+                <h3 className="text-2xl font-medium text-neutral-900 mb-3 tracking-tight">¡Descarga en curso!</h3>
+                <p className="text-sm text-neutral-500 font-medium leading-relaxed mb-8">
+                  El brochure de Arienzo se está abriendo en una nueva pestaña.
+                </p>
+                <button 
+                  onClick={() => { setMostrarModalBrochure(false); setBrochureDescargado(false); }}
+                  className="bg-neutral-900 text-white rounded-xl px-8 py-4 text-[11px] font-bold uppercase tracking-widest hover:bg-neutral-800 transition-colors w-full"
+                >
+                  Cerrar
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL CALENDLY */}
+      {mostrarModalCalendly && (
+        <div className="fixed inset-0 bg-[#21242E]/95 z-[60] flex items-center justify-center p-2 md:p-6 backdrop-blur-md animate-in fade-in">
+          <div className="bg-white w-full max-w-4xl h-[85vh] rounded-2xl relative shadow-2xl flex flex-col animate-in zoom-in-95 overflow-hidden">
+            <div className="flex justify-between items-center p-4 border-b border-neutral-100 bg-white">
+              <h3 className="text-[11px] font-bold tracking-[0.2em] uppercase text-neutral-800">Agendar Asesoría Inmobiliaria</h3>
+              <button 
+                onClick={() => setMostrarModalCalendly(false)}
+                className="w-8 h-8 flex items-center justify-center bg-neutral-100 text-neutral-500 hover:bg-neutral-200 rounded-full font-bold transition-colors"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="flex-1 w-full bg-[#F9F7F5]">
+              <iframe 
+                src="https://calendly.com/saul-intriago/asesoria-inmobiliaria" 
+                className="w-full h-full border-none"
+                title="Agendar Presentación"
+              ></iframe>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FOOTER */}
+      <footer className="bg-[#21242E] text-neutral-400 py-8 border-t border-[#D1C292]/30">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+          <div className="text-xs font-medium tracking-wide text-center md:text-left order-1 md:order-1">
+            Un proyecto de <a href="https://konkeri.com" target="_blank" rel="noopener noreferrer" className="text-[#D1C292] hover:text-white transition-colors font-bold tracking-widest ml-1">KONKERI</a>
+          </div>
+          <div className="flex justify-center order-2 md:order-2">
+            <Image 
+              src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/logo-dorado-arienzo.svg" 
+              alt="Arienzo" 
+              width={180}
+              height={45}
+              className="w-[140px] md:w-[170px] h-auto opacity-90" 
+            />
+          </div>
+          <div className="text-[10px] md:text-[11px] font-medium opacity-60 text-center md:text-right order-3 md:order-3">
+            © {new Date().getFullYear()} Todos los derechos reservados.
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
 }
