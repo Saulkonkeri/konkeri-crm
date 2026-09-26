@@ -250,6 +250,30 @@ export default function CRMPage() {
     return Math.max(0, Math.floor((hoy.getTime() - ultima.getTime()) / (1000 * 60 * 60 * 24)));
   };
 
+  // NUEVA FUNCIÓN: Lector inteligente de último correo enviado
+  const obtenerInfoUltimoCorreo = (notas: string | null) => {
+    if (!notas) return null;
+    // Busca en el log la marca exacta de correo enviado
+    const match = notas.match(/\[(\d{1,2})\/(\d{1,2})\/(\d{4}).*?\] 📧 Correo Enviado/);
+    if (match) {
+      const day = parseInt(match[1], 10);
+      const month = parseInt(match[2], 10) - 1;
+      const year = parseInt(match[3], 10);
+      const fechaCorreo = new Date(year, month, day);
+      const hoy = new Date();
+      hoy.setHours(0,0,0,0);
+      fechaCorreo.setHours(0,0,0,0);
+      
+      const diffTime = hoy.getTime() - fechaCorreo.getTime();
+      const diff = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+      
+      if (diff === 0) return 'Hoy';
+      if (diff === 1) return 'Ayer';
+      return `Hace ${diff} días`;
+    }
+    return null;
+  };
+
   const esFechaVencida = (fecha?: string | null) => {
     if (!fecha) return false;
     const hoy = new Date(); hoy.setHours(0,0,0,0);
@@ -621,6 +645,7 @@ export default function CRMPage() {
                       const diasInactivos = obtenerDiasInactivos(cliente.notas);
                       const abandonado = diasInactivos > 4 && cliente.estado !== 'Descartado' && cliente.estado !== 'Cierre (Ganado)';
                       const agendadoVencido = esFechaVencida(cliente.proximo_contacto);
+                      const infoCorreo = obtenerInfoUltimoCorreo(cliente.notas); // 🟢 LECTURA DEL ÚLTIMO CORREO
 
                       return (
                         <div 
@@ -644,7 +669,17 @@ export default function CRMPage() {
                             <span className={`text-[9px] font-bold tracking-wide ${abandonado ? 'text-amber-600' : 'text-[#415364]/40'}`}>
                               {diasInactivos === 0 ? 'Actividad: Hoy' : diasInactivos === 1 ? 'Actividad: Ayer' : diasInactivos > 300 ? 'Sin registros' : `Inactivo: ${diasInactivos} días`}
                             </span>
-                            {abandonado && <span className="text-[10px] animate-pulse" title="Lead enfriándose">⚠️</span>}
+                            
+                            {/* 🟢 ETIQUETA VISUAL DEL ÚLTIMO CORREO */}
+                            <div className="flex items-center gap-1.5">
+                              {infoCorreo && (
+                                <span className="text-[8.5px] font-bold text-[#415364] bg-[#dce3eb]/50 px-1.5 py-0.5 rounded shadow-sm flex items-center gap-1" title="Último correo enviado">
+                                  📧 {infoCorreo}
+                                </span>
+                              )}
+                              {abandonado && <span className="text-[10px] animate-pulse" title="Lead enfriándose">⚠️</span>}
+                            </div>
+
                           </div>
                         </div>
                       );
@@ -912,7 +947,7 @@ export default function CRMPage() {
         )}
       </div>
 
-      {/* MODAL NUEVO PROSPECTO (COMPLETO) */}
+      {/* MODAL NUEVO PROSPECTO */}
       {mostrarModalNuevo && (
         <div className="fixed inset-0 bg-[#21242E]/80 z-[80] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm">
           <div className="bg-white rounded-t-3xl md:rounded-2xl shadow-2xl w-full max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
