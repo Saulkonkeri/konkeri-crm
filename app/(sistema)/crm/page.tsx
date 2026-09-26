@@ -110,8 +110,8 @@ export default function CRMPage() {
   const [cargoRemitente, setCargoRemitente] = useState('Director Comercial');
 
   const [textoIntroPersonalizado, setTextoIntroPersonalizado] = useState('');
-  const [textoUbicacion, setTextoUbicacion] = useState('En el corazón de Barbasquillo, Manta. A pasos de La Quadra y Riocentro Plaza. La zona de mayor prestigio y conectividad de la ciudad[cite: 1].');
-  const [textoArquitectura, setTextoArquitectura] = useState('Desarrollado por el reconocido estudio Diez + Muller[cite: 1]. Una colección limitada de solo 22 departamentos con ventanales de piso a techo y acabados premium.');
+  const [textoUbicacion, setTextoUbicacion] = useState('En el corazón de Barbasquillo, Manta. A pasos de La Quadra y Riocentro Plaza. La zona de mayor prestigio y conectividad de la ciudad.');
+  const [textoArquitectura, setTextoArquitectura] = useState('Desarrollado por el reconocido estudio Diez + Muller. Una colección limitada de solo 22 departamentos con ventanales de piso a techo y acabados premium.');
   const [textoAmenidades, setTextoAmenidades] = useState('Disfruta de un Social Living con Coworking, Gym Panorámico y una espectacular piscina concebida para elevar tu experiencia diaria.');
   
   const [enviandoCorreoCRM, setEnviandoCorreoCRM] = useState(false);
@@ -344,6 +344,7 @@ export default function CRMPage() {
       await supabase.from('clientes').update(updates).eq('id', clienteSeleccionado.id);
       setClientes(prev => prev.map(c => c.id === clienteSeleccionado.id ? { ...c, ...updates } as any : c));
       setClienteSeleccionado(prev => prev ? { ...prev, ...updates } : prev);
+      alert("¡Tarea y fecha agendadas correctamente!");
     } catch (e: any) { alert(`Error: ${e.message}`); } finally { setGuardandoTarea(false); }
   };
 
@@ -807,7 +808,7 @@ export default function CRMPage() {
         )}
       </div>
 
-      {/* --- MODALES Y PANEL LATERAL --- */}
+      {/* --- PANEL LATERAL DEL CLIENTE --- */}
       {clienteSeleccionado && <div className="fixed inset-0 bg-[#21242E]/80 z-40 transition-opacity backdrop-blur-sm" onClick={() => setClienteSeleccionado(null)}></div>}
       <div className={`fixed top-0 right-0 h-full w-full max-w-[400px] bg-[#F9F7F5] shadow-2xl border-l border-neutral-200 transform transition-transform duration-300 z-50 flex flex-col ${clienteSeleccionado ? 'translate-x-0' : 'translate-x-full'}`}>
         {clienteSeleccionado && (
@@ -815,7 +816,12 @@ export default function CRMPage() {
             <div className="p-6 bg-[#21242E] relative flex-shrink-0 shadow-md">
               <button onClick={() => setClienteSeleccionado(null)} className="absolute top-4 right-4 text-white/50 hover:text-white bg-white/10 rounded-full w-8 h-8 flex items-center justify-center transition-colors">✕</button>
               <h2 className="text-xl font-bold text-white pr-8 leading-tight flex items-center gap-2">{clienteSeleccionado.nombres} {clienteSeleccionado.apellidos}</h2>
+              <div className="flex flex-wrap items-center gap-2 mt-3">
+                <span className="bg-white/10 text-white border border-white/20 text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">{clienteSeleccionado.origen_captacion || 'Sin origen'}</span>
+                {clienteSeleccionado.ciudad_residencia && <span className="bg-[#ea0029]/20 text-[#ea0029] border border-[#ea0029]/30 text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">📍 {clienteSeleccionado.ciudad_residencia}</span>}
+              </div>
             </div>
+
             <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
               <div className="bg-white p-4 rounded-xl border border-neutral-200/60 shadow-sm space-y-3">
                 <p className="text-[10px] font-bold text-[#415364]/60 uppercase tracking-widest border-b border-neutral-100 pb-2">Acciones de Contacto</p>
@@ -826,6 +832,7 @@ export default function CRMPage() {
                   <button onClick={() => abrirCorreo(clienteSeleccionado)} className="flex flex-col items-center justify-center gap-1 bg-[#415364] text-white py-2.5 rounded-xl shadow-sm"><span className="text-[11px] font-bold uppercase tracking-wider">Diseñar Correo</span></button>
                 </div>
               </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white p-4 rounded-xl border border-neutral-200/60 shadow-sm">
                   <label className="block text-[9px] font-bold text-[#415364]/60 uppercase tracking-widest mb-1.5">Fase Embudo</label>
@@ -836,12 +843,70 @@ export default function CRMPage() {
                   <select value={clienteSeleccionado.temperatura || '❄️ Frío'} onChange={(e) => actualizarCampoRapido(clienteSeleccionado.id, 'temperatura', e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/10 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]"><option value="🔥 Caliente">🔥 Caliente</option><option value="☀️ Tibio">☀️ Tibio</option><option value="❄️ Frío">❄️ Frío</option></select>
                 </div>
               </div>
+
+              {/* PASE VIP */}
+              <div className="bg-white border border-[#D1C292] p-5 rounded-2xl shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1.5 h-full bg-[#D1C292]"></div>
+                <h3 className="text-[11px] font-bold text-[#21242E] flex items-center gap-2 uppercase tracking-widest mb-1">Pase VIP: Inventario</h3>
+                <p className="text-[10px] text-[#415364]/70 leading-relaxed mb-3">Autoriza el email del prospecto para ver precios y planos en la web.</p>
+                <div className="flex gap-2">
+                  <select value={tiempoVIP} onChange={(e) => setTiempoVIP(Number(e.target.value))} className="w-[35%] bg-[#dce3eb]/30 border border-[#415364]/20 text-[#415364] rounded-xl p-2 text-[11px] font-bold outline-none">
+                    <option value={1}>1 Hora</option><option value={2}>2 Horas</option><option value={12}>12 Horas</option><option value={24}>24 Horas</option><option value={48}>48 Horas</option>
+                  </select>
+                  <button onClick={() => otorgarAccesoVIP(clienteSeleccionado.email)} disabled={activandoVIP || !clienteSeleccionado.email} className="w-[65%] py-2.5 bg-[#21242E] text-white rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-black">
+                    {activandoVIP ? 'Generando...' : 'Generar Pase'}
+                  </button>
+                </div>
+              </div>
+
+              {/* AGENDAR SIGUIENTE PASO */}
+              <div className="bg-white border border-neutral-200/60 p-5 rounded-2xl shadow-sm space-y-3">
+                <h3 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest border-b border-neutral-100 pb-2">Agendar Siguiente Paso</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Fecha</label>
+                    <input type="date" value={fechaAccion} onChange={(e) => setFechaAccion(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg p-2 text-[11px] font-bold text-[#415364]" />
+                  </div>
+                  <div>
+                    <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Acción</label>
+                    <select value={tipoAccion} onChange={(e) => setTipoAccion(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg p-2 text-[11px] font-bold text-[#415364]">
+                      {tiposAccion.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Objetivo</label>
+                  <input type="text" value={detalleAccion} onChange={(e) => setDetalleAccion(e.target.value)} placeholder="Ej: Llamar para confirmar cita..." className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg p-2 text-[11px] text-[#415364]" />
+                </div>
+                <div className="flex justify-end pt-1">
+                  <button onClick={guardarProximaTarea} className="px-4 py-2 bg-[#415364] text-white text-[10px] font-bold uppercase tracking-widest rounded-lg">Guardar Tarea</button>
+                </div>
+              </div>
+
+              {/* LOG DE SEGUIMIENTO */}
+              <div className="bg-white border border-neutral-200/60 p-5 rounded-2xl shadow-sm">
+                <label className="block text-[11px] font-bold text-[#415364] tracking-widest mb-3 uppercase border-b border-neutral-100 pb-2">Log de Seguimiento</label>
+                <div className="flex flex-col gap-3 mb-4">
+                  <textarea rows={2} value={nuevaNotaTexto} onChange={(e) => setNuevaNotaTexto(e.target.value)} placeholder="Escribe el resumen..." className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] resize-none" />
+                  <button onClick={agregarNotaBitacora} disabled={!nuevaNotaTexto.trim() || guardandoNota} className="self-end px-4 py-2 bg-[#ea0029] text-white text-[10px] font-bold uppercase tracking-widest rounded-lg">Agregar</button>
+                </div>
+                <div className="bg-[#F9F7F5] p-4 rounded-xl border border-[#415364]/10 h-[150px] overflow-y-auto custom-scrollbar shadow-inner">
+                  {clienteSeleccionado.notas ? <div className="text-[11px] text-[#415364] whitespace-pre-wrap">{clienteSeleccionado.notas}</div> : <p className="text-[11px] text-[#415364]/40 text-center italic mt-10">Sin actividad aún.</p>}
+                </div>
+              </div>
+
+              <div className="pb-6">
+                <button onClick={() => verHistorialCotizaciones(clienteSeleccionado)} className="w-full py-3.5 bg-white border border-[#415364]/20 text-[#415364] rounded-xl text-[11px] font-bold uppercase tracking-widest hover:border-[#ea0029] hover:text-[#ea0029] transition-colors shadow-sm flex items-center justify-center gap-2">
+                  Ver Cotizaciones Generadas
+                </button>
+              </div>
+
             </div>
           </>
         )}
       </div>
 
-      {/* MODAL NUEVO PROSPECTO */}
+      {/* MODAL NUEVO PROSPECTO (COMPLETO) */}
       {mostrarModalNuevo && (
         <div className="fixed inset-0 bg-[#21242E]/80 z-[80] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm">
           <div className="bg-white rounded-t-3xl md:rounded-2xl shadow-2xl w-full max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
@@ -866,6 +931,36 @@ export default function CRMPage() {
                 <div>
                   <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Email</label>
                   <input type="email" value={nuevoEmail} onChange={e => setNuevoEmail(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium outline-none focus:border-[#ea0029]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Ciudad de Residencia</label>
+                  <input type="text" value={nuevaCiudad} onChange={e => setNuevaCiudad(e.target.value)} placeholder="Ej: Manta, Guayaquil..." className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium outline-none focus:border-[#ea0029]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Origen de Captación</label>
+                  <select value={nuevoOrigen} onChange={e => setNuevoOrigen(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium outline-none focus:border-[#ea0029]">
+                    {origenes.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Campaña / Anuncio (Opcional)</label>
+                  <input type="text" value={nuevoCampana} onChange={e => setNuevoCampana(e.target.value)} placeholder="Ej: Meta Ads - Suite" className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium outline-none focus:border-[#ea0029]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Motivo de Compra</label>
+                  <select value={nuevoMotivo} onChange={e => setNuevoMotivo(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium outline-none focus:border-[#ea0029]">
+                    {motivos.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Tipología de Interés</label>
+                  <select value={nuevoInteres} onChange={e => setNuevoInteres(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium outline-none focus:border-[#ea0029]">
+                    {intereses.map(i => <option key={i} value={i}>{i}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Ingresado Por</label>
+                  <input type="text" value={nuevoIngresadoPor} onChange={e => setNuevoIngresadoPor(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium outline-none focus:border-[#ea0029]" />
                 </div>
               </div>
               <div className="pt-6 pb-2 flex justify-end gap-4 border-t border-neutral-100">
@@ -901,7 +996,42 @@ export default function CRMPage() {
         </div>
       )}
 
-      {/* === ESTUDIO DE DISEÑO PROFESIONAL CON CONFIRMACIÓN === */}
+      {/* MODAL HISTORIAL COTIZACIONES */}
+      {mostrarModalHistorial && (
+        <div className="fixed inset-0 bg-[#21242E]/80 z-[80] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl p-8 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6 border-b border-neutral-100 pb-4">
+              <h2 className="text-xl font-bold text-[#415364]">Historial de Cotizaciones</h2>
+              <button onClick={() => setMostrarModalHistorial(false)} className="text-[#415364]/40 hover:text-[#ea0029] text-3xl font-light">&times;</button>
+            </div>
+            {cargandoHistorial ? (
+              <p className="text-center py-8 text-xs font-bold uppercase tracking-wider text-[#ea0029] animate-pulse">Cargando cotizaciones...</p>
+            ) : cotizacionesCliente.length === 0 ? (
+              <p className="text-center py-8 text-xs font-bold text-neutral-400 uppercase tracking-wider">No hay cotizaciones registradas para este cliente.</p>
+            ) : (
+              <div className="space-y-3">
+                {cotizacionesCliente.map(cot => (
+                  <div key={cot.id} className="p-4 bg-neutral-50 border border-neutral-200 rounded-xl flex justify-between items-center">
+                    <div>
+                      <p className="font-bold text-[#415364] text-sm">Unidad #{cot.unidad_numero}</p>
+                      <p className="text-[10px] text-neutral-500 font-medium mt-0.5">Fecha: {new Date(cot.created_at).toLocaleDateString('es-EC')}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-[#ea0029] text-sm">${Number(cot.precio_total).toLocaleString()}</p>
+                      <span className="inline-block px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-green-50 text-green-700 mt-1">{cot.estado}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex justify-end mt-6 pt-4 border-t border-neutral-100">
+              <button onClick={() => setMostrarModalHistorial(false)} className="px-6 py-2.5 bg-[#415364] text-white text-xs font-bold uppercase rounded-xl">Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* === ESTUDIO DE DISEÑO PROFESIONAL === */}
       {mostrarModalPreviewCorreo && clienteSeleccionado && (() => {
         const htmlAEnviar = generarCodigoHTMLCorreo();
 
@@ -1008,11 +1138,11 @@ export default function CRMPage() {
                 </div>
               </div>
 
-              {/* Footer con Confirmación */}
+              {/* Footer de Acciones del Modal */}
               <div className="bg-white p-5 border-t border-neutral-200 flex justify-end gap-4 flex-shrink-0">
                 <button onClick={() => setMostrarModalPreviewCorreo(false)} className="px-6 py-2.5 text-xs font-bold text-[#415364] border border-[#415364]/20 rounded-xl hover:bg-[#415364]/5">Cancelar</button>
                 <button onClick={enviarCorreoFinal} disabled={enviandoCorreoCRM} className="px-8 py-3 bg-[#ea0029] text-white text-xs font-bold uppercase tracking-widest rounded-xl shadow-md hover:bg-[#c90022] disabled:opacity-50">
-                  {enviandoCorreoCRM ? 'Enviando...' : 'Aprobar y Enviar Correo'}
+                  {enviandoCorreoCRM ? 'Enviando Correo...' : 'Aprobar y Enviar Correo'}
                 </button>
               </div>
             </div>
