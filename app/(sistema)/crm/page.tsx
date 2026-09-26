@@ -482,7 +482,8 @@ export default function CRMPage() {
     setEnviandoCorreoCRM(true);
     try {
       const htmlAEnviar = generarCodigoHTMLCorreo();
-      const asunto = PLANTILLAS_CORREO.find(p => p.id === plantillaActivaId)?.asunto || 'Arienzo Boutique Living';
+      const plantillaConfig = PLANTILLAS_CORREO.find(p => p.id === plantillaActivaId) || PLANTILLAS_CORREO[0];
+      const asunto = plantillaConfig.asunto;
       
       const response = await fetch('/api/enviar-correo-crm', {
         method: 'POST',
@@ -494,9 +495,14 @@ export default function CRMPage() {
         alert("¡Correo enviado con éxito!");
         setMostrarModalPreviewCorreo(false);
         const fecha = new Date().toLocaleString('es-EC', { dateStyle: 'short', timeStyle: 'short' });
-        const notaFinal = `[${fecha}] 📧 Correo Enviado Exitosamente (${incluirFirma ? `Firma: ${nombreRemitente}` : 'Masivo'})\n\n${clienteSeleccionado.notas || ''}`;
+        
+        // REGISTRO AUTOMÁTICO EN EL LOG DEL CLIENTE CON EL TEMA ESPECÍFICO ENVIADO
+        const detalleTipo = incluirFirma ? `De: ${nombreRemitente} (${cargoRemitente})` : 'Envío Masivo';
+        const notaFinal = `[${fecha}] 📧 Correo Enviado: "${plantillaConfig.nombre}" [${detalleTipo}]\n\n${clienteSeleccionado.notas || ''}`;
+        
         await supabase.from('clientes').update({ notas: notaFinal }).eq('id', clienteSeleccionado.id);
         setClientes(prev => prev.map(c => c.id === clienteSeleccionado.id ? { ...c, notas: notaFinal } : c));
+        setClienteSeleccionado(prev => prev ? { ...prev, notas: notaFinal } : prev);
       } else {
         alert("Error al enviar desde el servidor.");
       }
