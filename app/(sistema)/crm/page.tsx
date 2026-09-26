@@ -522,6 +522,15 @@ export default function CRMPage() {
     window.open(`https://wa.me/${num}${txt}`, '_blank');
   };
 
+  // === APERTURA DEL ESTUDIO DE DISEÑO ===
+  const abrirCorreo = (cliente: Cliente) => {
+    if (!cliente.email) { alert("Este cliente no tiene correo electrónico registrado."); return; }
+    setPlantillaActivaId(PLANTILLAS_CORREO[0].id);
+    setImagenPortada('fachada');
+    setTemaColor('terracota');
+    setMostrarModalPreviewCorreo(true);
+  };
+
   const verHistorialCotizaciones = async (cliente: Cliente) => {
     setMostrarModalHistorial(true);
     setCargandoHistorial(true);
@@ -530,17 +539,6 @@ export default function CRMPage() {
       if (error) throw error;
       setCotizacionesCliente(data || []);
     } catch (error) { console.error(error); } finally { setCargandoHistorial(false); }
-  };
-
-  // ==========================================
-  // APERTURA DEL ESTUDIO DE DISEÑO DE CORREO
-  // ==========================================
-  const abrirCorreo = (cliente: Cliente) => {
-    if (!cliente.email) { alert("Este cliente no tiene correo electrónico registrado."); return; }
-    setPlantillaActivaId(PLANTILLAS_CORREO[0].id);
-    setImagenPortada('fachada');
-    setTemaColor('terracota');
-    setMostrarModalPreviewCorreo(true);
   };
 
   const tituloActividad = {
@@ -969,7 +967,7 @@ export default function CRMPage() {
         )}
       </div>
 
-      {/* --- MODALES Y PANEL LATERAL --- */}
+      {/* --- MODALES Y PANEL LATERAL (DRAWER PREMIUM) --- */}
       {clienteSeleccionado && (
         <div className="fixed inset-0 bg-[#21242E]/80 z-40 transition-opacity backdrop-blur-sm" onClick={() => setClienteSeleccionado(null)}></div>
       )}
@@ -1111,6 +1109,13 @@ export default function CRMPage() {
                 </div>
               </div>
 
+              <div className="pb-6">
+                <button onClick={() => verHistorialCotizaciones(clienteSeleccionado)} className="w-full py-3.5 bg-white border border-[#415364]/20 text-[#415364] rounded-xl text-[11px] font-bold uppercase tracking-widest hover:border-[#ea0029] hover:text-[#ea0029] transition-colors shadow-sm flex items-center justify-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                  Ver Cotizaciones Generadas
+                </button>
+              </div>
+
             </div>
           </>
         )}
@@ -1119,7 +1124,6 @@ export default function CRMPage() {
       {/* === ESTUDIO DE DISEÑO DE CORREO (Z-INDEX 90) === */}
       {mostrarModalPreviewCorreo && clienteSeleccionado && (() => {
         
-        // 1. GENERADOR HTML EN VIVO DENTRO DEL CRM
         const generarCodigoHTMLCorreo = () => {
           const plantillaConfig = PLANTILLAS_CORREO.find(p => p.id === plantillaActivaId) || PLANTILLAS_CORREO[0];
           const nombreCliente = clienteSeleccionado?.nombres || 'Cliente';
@@ -1129,7 +1133,6 @@ export default function CRMPage() {
           const enlaceWhatsApp = `https://wa.me/593979469472?text=${encodeURIComponent(`Hola Saúl, recibí tu correo sobre Arienzo y me gustaría más información.`)}`;
           const enlaceCalendly = `https://calendly.com/saul-intriago/asesoria-inmobiliaria`;
 
-          // SISTEMA DE TEMAS DE COLOR OFICIALES DE ARIENZO
           let colorFondoCabecera = '#21242E';
           let colorAcento = '#D1C292'; 
           let colorBoton = '#964B36'; 
