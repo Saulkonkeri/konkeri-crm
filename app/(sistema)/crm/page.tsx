@@ -99,13 +99,12 @@ export default function CRMPage() {
   const [mostrarModalHistorial, setMostrarModalHistorial] = useState(false);
   const [clienteSeleccionado, setClienteSeleccionado] = useState<Cliente | null>(null);
 
-  // ESTADOS DEL ESTUDIO DE DISEÑO DE CORREO AVANZADO
+  // ESTADOS DEL ESTUDIO DE DISEÑO DE CORREO
   const [mostrarModalPreviewCorreo, setMostrarModalPreviewCorreo] = useState(false);
   const [plantillaActivaId, setPlantillaActivaId] = useState('seguimiento_premium');
   const [imagenPortada, setImagenPortada] = useState<'fachada'|'ubicacion'|'living'|'piscina'>('fachada');
   const [temaColor, setTemaColor] = useState<'terracota'|'dorado'|'navy'>('terracota');
   
-  // NUEVOS ESTADOS DE FIRMA Y TEXTOS MANUALES
   const [incluirFirma, setIncluirFirma] = useState(true);
   const [nombreRemitente, setNombreRemitente] = useState('Saúl Intriago');
   const [cargoRemitente, setCargoRemitente] = useState('Director Comercial');
@@ -381,7 +380,7 @@ export default function CRMPage() {
   };
 
   // ==========================================
-  // GENERADOR HTML COMPLETO Y SEGURO (CON FIRMA TEXTUAL MANUAL)
+  // GENERADOR HTML COMPLETO Y SEGURO (CON CONFIRMACIÓN DE ENVÍO)
   // ==========================================
   const generarCodigoHTMLCorreo = () => {
     const plantillaConfig = PLANTILLAS_CORREO.find(p => p.id === plantillaActivaId) || PLANTILLAS_CORREO[0];
@@ -424,7 +423,6 @@ export default function CRMPage() {
     const htmlBotonWhatsApp = `<tr><td align="center" style="background-color: #FDFCFB; padding: 40px 20px; border-top: 1px solid #EAE3DC; border-bottom: 1px solid #EAE3DC;"><h2 style="margin: 0 0 15px 0; color: ${colorAcento}; font-size: 24px;">Asegura tu unidad en Planos</h2><p style="margin: 0 0 25px 0; color: #415364; font-size: 16px; font-weight: bold;">Reservas abiertas con solo $2,500 USD</p><a href="${enlaceWhatsApp}" style="background-color: #25D366; color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 30px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: inline-block;">Hablar por WhatsApp</a></td></tr>`;
     const htmlBotonZoom = `<tr><td align="center" style="background-color: #FDFCFB; padding: 40px 20px; border-top: 1px solid #EAE3DC; border-bottom: 1px solid #EAE3DC;"><h2 style="margin: 0 0 15px 0; color: #21242E; font-size: 22px;">Conoce los planos y disponibilidad</h2><p style="margin: 0 0 25px 0; color: #415364; font-size: 15px;">Selecciona la fecha y hora que mejor se adapte a tu agenda.</p><a href="${enlaceCalendly}" style="background-color: ${colorBoton}; color: ${colorTextoBoton}; text-decoration: none; padding: 15px 30px; border-radius: 8px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: inline-block;">🗓️ Agendar Videollamada</a></td></tr>`;
     
-    // FIRMA LIMPIA TEXTUAL (SIN LOGOS AL LADO)
     const htmlFirma = incluirFirma ? `
                 <tr>
                   <td style="padding: 40px;">
@@ -466,6 +464,11 @@ export default function CRMPage() {
 
   const enviarCorreoFinal = async () => {
     if (!clienteSeleccionado) return;
+    
+    // CAJITA DE CONFIRMACIÓN ANTES DE ENVIAR
+    const confirmarEnvio = window.confirm(`¿Estás seguro de que deseas enviar este correo a ${clienteSeleccionado.email}?`);
+    if (!confirmarEnvio) return;
+
     setEnviandoCorreoCRM(true);
     try {
       const htmlAEnviar = generarCodigoHTMLCorreo();
@@ -829,7 +832,7 @@ export default function CRMPage() {
         )}
       </div>
 
-      {/* === ESTUDIO DE DISEÑO PROFESIONAL === */}
+      {/* === ESTUDIO DE DISEÑO PROFESIONAL CON FIRMA MANUAL === */}
       {mostrarModalPreviewCorreo && clienteSeleccionado && (() => {
         const htmlAEnviar = generarCodigoHTMLCorreo();
 
@@ -868,7 +871,7 @@ export default function CRMPage() {
                     </div>
                   </div>
 
-                  {/* 3. Formato de Envío & Datos de Firma Manual */}
+                  {/* 3. Firma Personalizada o Masivo */}
                   <div className="space-y-3 p-3 bg-neutral-50 rounded-xl border border-neutral-200">
                     <label className="block text-[10px] font-bold text-[#415364] uppercase tracking-widest">3. Configuración de Firma</label>
                     <div className="grid grid-cols-2 gap-2">
