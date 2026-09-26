@@ -236,10 +236,17 @@ export default function CRMPage() {
     } catch (e: any) { alert(`Error: ${e.message}`); } finally { setGuardandoActividadRapida(false); }
   };
 
+  // 🟢 PARSER ROBUSTO DE FECHA DE NOTAS (Reconoce años de 2 y 4 dígitos)
   const extraerFechaUltimaNota = (notas: string | null) => {
     if (!notas) return null;
-    const match = notas.match(/\[(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-    if (match) return new Date(parseInt(match[3]), parseInt(match[2]) - 1, parseInt(match[1]));
+    const match = notas.match(/\[(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+    if (match) {
+      const day = parseInt(match[1], 10);
+      const month = parseInt(match[2], 10) - 1;
+      let year = parseInt(match[3], 10);
+      if (year < 100) year += 2000;
+      return new Date(year, month, day);
+    }
     return null;
   };
 
@@ -250,27 +257,33 @@ export default function CRMPage() {
     return Math.max(0, Math.floor((hoy.getTime() - ultima.getTime()) / (1000 * 60 * 60 * 24)));
   };
 
-  // 🟢 LECTOR INTELIGENTE DE ÚLTIMO CORREO ENVIADO
+  // 🟢 DETECTOR INTELIGENTE DE CORREO ENVIADO (Lectura directa e infalible)
   const obtenerInfoUltimoCorreo = (notas: string | null) => {
     if (!notas) return null;
-    // Busca específicamente el registro de "Correo Enviado" en el texto de las notas
-    const match = notas.match(/\[(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})[^\]]*\]\s*📧\s*Correo Enviado/i);
-    if (match) {
-      const day = parseInt(match[1], 10);
-      const month = parseInt(match[2], 10) - 1;
-      const year = parseInt(match[3], 10);
-      const fechaCorreo = new Date(year, month, day);
-      
-      const hoy = new Date();
-      hoy.setHours(0,0,0,0);
-      fechaCorreo.setHours(0,0,0,0);
-      
-      const diffTime = hoy.getTime() - fechaCorreo.getTime();
-      const diff = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
-      
-      if (diff === 0) return 'Hoy';
-      if (diff === 1) return 'Ayer';
-      return `Hace ${diff} días`;
+    const lineas = notas.split('\n');
+    for (const linea of lineas) {
+      if (linea.includes('Correo Enviado') || linea.includes('📧 Correo')) {
+        const dateMatch = linea.match(/\[(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/);
+        if (dateMatch) {
+          const day = parseInt(dateMatch[1], 10);
+          const month = parseInt(dateMatch[2], 10) - 1;
+          let year = dateMatch[3] ? parseInt(dateMatch[3], 10) : new Date().getFullYear();
+          if (year < 100) year += 2000;
+          
+          const fechaCorreo = new Date(year, month, day);
+          const hoy = new Date();
+          hoy.setHours(0, 0, 0, 0);
+          fechaCorreo.setHours(0, 0, 0, 0);
+          
+          const diffDays = Math.floor((hoy.getTime() - fechaCorreo.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (diffDays <= 0) return 'Hoy';
+          if (diffDays === 1) return 'Ayer';
+          if (diffDays > 1 && diffDays < 30) return `Hace ${diffDays} días`;
+          return `${day}/${month + 1}`;
+        }
+        return 'Enviado';
+      }
     }
     return null;
   };
@@ -332,7 +345,13 @@ export default function CRMPage() {
     e.preventDefault();
     setGuardandoCliente(true);
     try {
-      const notaInicial = `[${new Date().toLocaleDateString('es-EC')}] Ingresado por ${nuevoIngresadoPor}.`;
+      const ahora = new Date();
+      const dia = String(ahora.getDate()).padStart(2, '0');
+      const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+      const anio = ahora.getFullYear();
+      const hora = ahora.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
+      const notaInicial = `[${dia}/${mes}/${anio} ${hora}] Ingresado por ${nuevoIngresadoPor}.`;
+      
       const payload: any = {
         nombres: nuevoNombre.trim(), apellidos: nuevoApellido.trim(), telefono: nuevoTelefono.trim(),
         email: nuevoEmail ? nuevoEmail.trim().toLowerCase() : null, ciudad_residencia: nuevaCiudad.trim() || null, 
@@ -377,8 +396,14 @@ export default function CRMPage() {
     if (!clienteSeleccionado || !nuevaNotaTexto.trim()) return;
     setGuardandoNota(true);
     try {
-      const fecha = new Date().toLocaleString('es-EC', { dateStyle: 'short', timeStyle: 'short' });
-      const notaFinal = `[${fecha}] ${nuevaNotaTexto}\n\n${clienteSeleccionado.notas || ''}`;
+      const ahora = new Date();
+      const dia = String(ahora.getDate()).padStart(2, '0');
+      const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+      const anio = ahora.getFullYear();
+      const hora = ahora.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
+      const fechaFormateada = `${dia}/${mes}/${anio} ${hora}`;
+      const notaFinal = `[${fechaFormateada}] ${nuevaNotaTexto}\n\n${clienteSeleccionado.notas || ''}`;
+      
       await supabase.from('clientes').update({ notas: notaFinal }).eq('id', clienteSeleccionado.id);
       setClientes(prev => prev.map(c => c.id === clienteSeleccionado.id ? { ...c, notas: notaFinal } : c));
       setClienteSeleccionado(prev => prev ? { ...prev, notas: notaFinal } : prev);
@@ -519,10 +544,17 @@ export default function CRMPage() {
       if (response.ok) {
         alert("¡Correo enviado con éxito!");
         setMostrarModalPreviewCorreo(false);
-        const fecha = new Date().toLocaleString('es-EC', { dateStyle: 'short', timeStyle: 'short' });
+        
+        // Formato de fecha estricto DD/MM/YYYY HH:MM
+        const ahora = new Date();
+        const dia = String(ahora.getDate()).padStart(2, '0');
+        const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+        const anio = ahora.getFullYear();
+        const hora = ahora.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
+        const fechaFormateada = `${dia}/${mes}/${anio} ${hora}`;
         
         const detalleTipo = incluirFirma ? `De: ${nombreRemitente} (${cargoRemitente})` : 'Envío Masivo';
-        const notaFinal = `[${fecha}] 📧 Correo Enviado: "${plantillaConfig.nombre}" [${detalleTipo}]\n\n${clienteSeleccionado.notas || ''}`;
+        const notaFinal = `[${fechaFormateada}] 📧 Correo Enviado: "${plantillaConfig.nombre}" [${detalleTipo}]\n\n${clienteSeleccionado.notas || ''}`;
         
         await supabase.from('clientes').update({ notas: notaFinal }).eq('id', clienteSeleccionado.id);
         setClientes(prev => prev.map(c => c.id === clienteSeleccionado.id ? { ...c, notas: notaFinal } : c));
@@ -660,18 +692,22 @@ export default function CRMPage() {
                             <span className="inline-block bg-[#415364]/5 text-[#415364] border border-[#415364]/10 text-[9px] font-bold px-2 py-0.5 rounded-md mr-1 uppercase tracking-wider">{cliente.tipologia_interes}</span>
                           )}
 
-                          {/* 📅 ETIQUETA DE AGENDAMIENTO */}
+                          {/* 📅 TAREA AGENDADA (AZUL / ROJO) */}
                           {cliente.proximo_contacto && (
-                            <div className={`mt-2 text-[9px] font-bold px-2 py-1 flex items-center gap-1.5 rounded-md border ${agendadoVencido ? 'bg-[#ea0029]/10 text-[#ea0029] border-[#ea0029]/20' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                              Agendado: {new Date(cliente.proximo_contacto).toLocaleDateString('es-EC', {day:'2-digit', month:'short'})}
+                            <div className={`mt-2 text-[9px] font-bold px-2.5 py-1 flex items-center gap-1.5 rounded-md border ${agendadoVencido ? 'bg-[#ea0029]/10 text-[#ea0029] border-[#ea0029]/20' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                              <span>Agendado: {new Date(cliente.proximo_contacto).toLocaleDateString('es-EC', {day:'2-digit', month:'short'})}</span>
                             </div>
                           )}
 
-                          {/* 📧 NUEVA ETIQUETA EXCLUSIVA DEL CORREO */}
+                          {/* ✉️ INSIGNIA EXCLUSIVA DE CORREO ENVIADO (OSCURA Y DORADA) */}
                           {infoCorreo && (
-                            <div className="mt-1.5 text-[9px] font-bold px-2 py-1 flex items-center gap-1.5 rounded-md border bg-indigo-50 text-indigo-700 border-indigo-200">
-                              <span>📧 Correo enviado: {infoCorreo}</span>
+                            <div className="mt-2 text-[9px] font-bold px-2.5 py-1 flex items-center justify-between rounded-md bg-[#21242E] text-white shadow-sm border border-neutral-700">
+                              <span className="flex items-center gap-1 text-white/80">
+                                <span className="text-xs">✉️</span>
+                                <span>Correo:</span>
+                              </span>
+                              <span className="text-[#D1C292] font-black uppercase tracking-wider">{infoCorreo}</span>
                             </div>
                           )}
 
@@ -703,23 +739,29 @@ export default function CRMPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 text-[#415364]">
-                {clientesFiltrados.map((cliente) => (
-                  <tr key={cliente.id} onClick={() => setClienteSeleccionado(cliente)} className="hover:bg-[#dce3eb]/30 cursor-pointer transition-colors">
-                    <td className="px-5 py-4">
-                      <div className="font-bold text-[#415364] text-[13px]">{cliente.nombres} {cliente.apellidos}</div>
-                      <div className="text-[10px] text-[#415364]/60 font-mono mt-0.5 font-medium">{cliente.telefono}</div>
-                    </td>
-                    <td className="px-5 py-4 text-xs font-bold text-[#ea0029]">{cliente.tipologia_interes}</td>
-                    <td className="px-5 py-4"><div className="text-[10px] font-bold text-[#415364] bg-[#415364]/10 inline-block px-2.5 py-1 rounded-md uppercase tracking-wider">{cliente.estado}</div></td>
-                    <td className="px-5 py-4">
-                      {cliente.proximo_contacto ? (
-                         <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider ${esFechaVencida(cliente.proximo_contacto) ? 'bg-[#ea0029]/10 text-[#ea0029]' : 'bg-blue-50 text-blue-700'}`}>
-                           {new Date(cliente.proximo_contacto).toLocaleDateString('es-EC')}
-                         </span>
-                      ) : <span className="text-[10px] text-[#415364]/40 font-bold uppercase tracking-wider">Sin agendar</span>}
-                    </td>
-                  </tr>
-                ))}
+                {clientesFiltrados.map((cliente) => {
+                  const infoCorreo = obtenerInfoUltimoCorreo(cliente.notas);
+                  return (
+                    <tr key={cliente.id} onClick={() => setClienteSeleccionado(cliente)} className="hover:bg-[#dce3eb]/30 cursor-pointer transition-colors">
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-[#415364] text-[13px]">{cliente.nombres} {cliente.apellidos}</span>
+                          {infoCorreo && <span className="text-[9px] font-bold bg-[#21242E] text-[#D1C292] px-2 py-0.5 rounded shadow-sm">✉️ {infoCorreo}</span>}
+                        </div>
+                        <div className="text-[10px] text-[#415364]/60 font-mono mt-0.5 font-medium">{cliente.telefono}</div>
+                      </td>
+                      <td className="px-5 py-4 text-xs font-bold text-[#ea0029]">{cliente.tipologia_interes}</td>
+                      <td className="px-5 py-4"><div className="text-[10px] font-bold text-[#415364] bg-[#415364]/10 inline-block px-2.5 py-1 rounded-md uppercase tracking-wider">{cliente.estado}</div></td>
+                      <td className="px-5 py-4">
+                        {cliente.proximo_contacto ? (
+                           <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider ${esFechaVencida(cliente.proximo_contacto) ? 'bg-[#ea0029]/10 text-[#ea0029]' : 'bg-blue-50 text-blue-700'}`}>
+                             {new Date(cliente.proximo_contacto).toLocaleDateString('es-EC')}
+                           </span>
+                        ) : <span className="text-[10px] text-[#415364]/40 font-bold uppercase tracking-wider">Sin agendar</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -947,7 +989,7 @@ export default function CRMPage() {
         )}
       </div>
 
-      {/* MODAL NUEVO PROSPECTO (COMPLETO) */}
+      {/* MODAL NUEVO PROSPECTO */}
       {mostrarModalNuevo && (
         <div className="fixed inset-0 bg-[#21242E]/80 z-[80] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm">
           <div className="bg-white rounded-t-3xl md:rounded-2xl shadow-2xl w-full max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
