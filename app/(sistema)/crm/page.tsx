@@ -45,28 +45,28 @@ interface Actividad {
 }
 
 // ==========================================
-// DICCIONARIO DE PLANTILLAS Y RECURSOS
+// DICCIONARIO DE PLANTILLAS MAESTRAS
 // ==========================================
 const PLANTILLAS_CORREO = [
   {
     id: 'seguimiento_premium',
-    nombre: '🌟 Presentación Completa en Planos',
+    nombre: '🌟 Presentación y Venta en Planos',
     asunto: 'Oportunidad de Inversión - Arienzo Boutique Living',
-    cuerpo: 'Estimado(a) {nombre},\n\nQuiero contarte acerca de Arienzo Boutique Living. Sé que estás interesado en el proyecto y no queremos que te quedes fuera de este increíble desarrollo.\n\nA continuación, te detallo las razones por las que Arienzo es la mejor decisión inmobiliaria de la ciudad.',
+    cuerpo: 'Estimado(a) {nombre},\n\nQuiero contarte acerca de Arienzo Boutique Living. Sé que estás interesado en el proyecto y no queremos que te quedes fuera de este increíble desarrollo con la mejor ubicación.\n\nA continuación, te detallo las razones por las que Arienzo es la mejor decisión inmobiliaria de la ciudad.',
     layout: 'full'
   },
   {
     id: 'invitacion_zoom',
-    nombre: '🤝 Invitación a Videollamada Zoom',
+    nombre: '🤝 Invitación a Reunión / Videollamada Zoom',
     asunto: 'Invitación Exclusiva: Conoce Arienzo Boutique Living',
-    cuerpo: 'Hola {nombre},\n\nMe encantaría presentarte en detalle el estilo de vida y las amenidades que ofrece Arienzo Boutique Living.\n\nContamos con un diseño enfocado en el confort, con un Social Living y Gym Panorámico espectaculares. Me gustaría agendar una breve videollamada por Zoom para mostrarte los planos y la disponibilidad.',
+    cuerpo: 'Hola {nombre},\n\nMe encantaría presentarte en detalle el estilo de vida y las amenidades que ofrece Arienzo Boutique Living.\n\nContamos con un diseño enfocado en el confort, con un Social Living y Gym Panorámico espectaculares. Me gustaría agendar una breve videollamada por Zoom para mostrarte los planos y la disponibilidad de unidades antes de que se agoten.',
     layout: 'simple'
   },
   {
     id: 'urgencia_reserva',
     nombre: '⏰ Urgencia y Cierre (Últimas Unidades)',
     asunto: 'Últimos días de precios de lanzamiento en Arienzo',
-    cuerpo: 'Hola {nombre},\n\nTe escribo para avisarte que estamos cerrando la etapa de precios de lanzamiento.\n\nEl proyecto ha tenido una excelente acogida y las unidades se están moviendo muy rápido. Si buscas asegurar tu inversión con la máxima rentabilidad, este es el momento exacto para bloquear tu unidad con $2,500 antes del alza de precios.',
+    cuerpo: 'Hola {nombre},\n\nTe escribo para avisarte que estamos cerrando la etapa de precios de lanzamiento.\n\nEl proyecto ha tenido una excelente acogida y las unidades se están moviendo muy rápido. Si estás buscando asegurar tu inversión con la máxima rentabilidad y plusvalía, este es el momento exacto para bloquear tu unidad con solo $2,500 antes del incremento de precios.',
     layout: 'simple'
   }
 ];
@@ -101,7 +101,10 @@ export default function CRMPage() {
   });
 
   const toggleColumna = (estado: string) => {
-    setColumnasExpandidas(prev => ({ ...prev, [estado]: !prev[estado] }));
+    setColumnasExpandidas(prev => ({
+      ...prev,
+      [estado]: !prev[estado]
+    }));
   };
 
   const [mostrarModalNuevo, setMostrarModalNuevo] = useState(false);
@@ -109,7 +112,7 @@ export default function CRMPage() {
   const [mostrarModalHistorial, setMostrarModalHistorial] = useState(false);
   const [clienteSeleccionado, setClienteSeleccionado] = useState<Cliente | null>(null);
 
-  // === ESTADOS PARA EL ESTUDIO DE DISEÑO DE CORREO ===
+  // ESTADOS DEL MODAL DE CORREOS AVANZADO
   const [mostrarModalPreviewCorreo, setMostrarModalPreviewCorreo] = useState(false);
   const [plantillaActivaId, setPlantillaActivaId] = useState('seguimiento_premium');
   const [imagenPortada, setImagenPortada] = useState<'fachada'|'ubicacion'|'living'|'piscina'>('fachada');
@@ -193,16 +196,31 @@ export default function CRMPage() {
   }, [clienteSeleccionado]);
 
   const otorgarAccesoVIP = async (emailCliente?: string) => {
-    if (!emailCliente) { alert("El prospecto no tiene un correo electrónico registrado."); return; }
+    if (!emailCliente) {
+      alert("El prospecto no tiene un correo electrónico registrado. Actualiza sus datos primero.");
+      return;
+    }
     setActivandoVIP(true);
     try {
       const fechaExpiracion = new Date();
       fechaExpiracion.setHours(fechaExpiracion.getHours() + tiempoVIP); 
-      const { error } = await supabase.from('accesos_inventario').upsert({ email: emailCliente.toLowerCase().trim(), expira_en: fechaExpiracion.toISOString() });
+
+      const { error } = await supabase
+        .from('accesos_inventario')
+        .upsert({ 
+          email: emailCliente.toLowerCase().trim(), 
+          expira_en: fechaExpiracion.toISOString() 
+        });
+
       if (error) throw error;
-      alert(`¡Acceso VIP otorgado por ${tiempoVIP} horas!`);
-    } catch (error: any) { alert(`Error al generar el pase: ${error.message}`);
-    } finally { setActivandoVIP(false); }
+      
+      alert(`¡Acceso VIP otorgado por ${tiempoVIP} horas!\n\nEl correo autorizado es: ${emailCliente}`);
+      
+    } catch (error: any) {
+      alert(`Error al generar el pase: ${error.message}`);
+    } finally {
+      setActivandoVIP(false);
+    }
   };
 
   const cargarClientes = async () => {
@@ -210,33 +228,69 @@ export default function CRMPage() {
       const { data, error } = await supabase.from('clientes').select('*').order('created_at', { ascending: false });
       if (error) throw error;
       if (data) setClientes(data);
-    } catch (error) { console.error('Error:', error); } finally { setCargando(false); }
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setCargando(false);
+    }
   };
 
   const cargarBitacoraRango = async () => {
     try {
-      const start = new Date(); const end = new Date();
-      if (filtroTiempo === 'hoy') { start.setHours(0,0,0,0); end.setHours(23,59,59,999); } 
-      else if (filtroTiempo === 'ayer') { start.setDate(start.getDate() - 1); start.setHours(0,0,0,0); end.setDate(end.getDate() - 1); end.setHours(23,59,59,999); } 
-      else if (filtroTiempo === 'semana') { start.setDate(start.getDate() - 7); start.setHours(0,0,0,0); end.setHours(23,59,59,999); } 
-      else if (filtroTiempo === 'mes') { start.setDate(start.getDate() - 30); start.setHours(0,0,0,0); end.setHours(23,59,59,999); }
+      const start = new Date();
+      const end = new Date();
+
+      if (filtroTiempo === 'hoy') {
+        start.setHours(0,0,0,0);
+        end.setHours(23,59,59,999);
+      } else if (filtroTiempo === 'ayer') {
+        start.setDate(start.getDate() - 1);
+        start.setHours(0,0,0,0);
+        end.setDate(end.getDate() - 1);
+        end.setHours(23,59,59,999);
+      } else if (filtroTiempo === 'semana') {
+        start.setDate(start.getDate() - 7);
+        start.setHours(0,0,0,0);
+        end.setHours(23,59,59,999);
+      } else if (filtroTiempo === 'mes') {
+        start.setDate(start.getDate() - 30);
+        start.setHours(0,0,0,0);
+        end.setHours(23,59,59,999);
+      }
       
-      const { data, error } = await supabase.from('registro_llamadas').select('*, clientes(nombres, apellidos)').gte('created_at', start.toISOString()).lte('created_at', end.toISOString()).order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('registro_llamadas')
+        .select('*, clientes(nombres, apellidos)')
+        .gte('created_at', start.toISOString())
+        .lte('created_at', end.toISOString())
+        .order('created_at', { ascending: false });
+        
       if (!error && data) setActividadesDia(data);
-    } catch (error) { console.error('Error cargando bitácora:', error); }
+    } catch (error) {
+      console.error('Error cargando bitácora:', error);
+    }
   };
 
   const registrarActividadRapida = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!llamadaClienteId) { alert("Selecciona un prospecto."); return; }
+    if (!llamadaClienteId) { alert("Selecciona un prospecto de la lista usando el buscador."); return; }
     
     setGuardandoActividadRapida(true);
     try {
-      const payload = { cliente_id: llamadaClienteId, agente: llamadaAgente, tipo_contacto: tipoContacto, resultado: llamadaResultado, notas: llamadaNota };
+      const payload = {
+        cliente_id: llamadaClienteId,
+        agente: llamadaAgente,
+        tipo_contacto: tipoContacto,
+        resultado: llamadaResultado,
+        notas: llamadaNota
+      };
+
       const { data, error } = await supabase.from('registro_llamadas').insert([payload]).select('*, clientes(nombres, apellidos)');
       if (error) throw error;
 
-      if (filtroTiempo === 'hoy' && data) setActividadesDia([data[0], ...actividadesDia]);
+      if (filtroTiempo === 'hoy' && data) {
+        setActividadesDia([data[0], ...actividadesDia]);
+      }
 
       const clienteActual = clientes.find(c => c.id === llamadaClienteId);
       if (clienteActual) {
@@ -245,23 +299,42 @@ export default function CRMPage() {
         const prefijo = `[${fechaStr}] ${icono} ${tipoContacto} (${llamadaResultado}) por ${llamadaAgente}`;
         const textoNota = llamadaNota ? `: ${llamadaNota}` : '';
         const notaSincronizada = `${prefijo}${textoNota}\n\n${clienteActual.notas || ''}`;
+
         const updates: any = { notas: notaSincronizada };
 
-        if (proximaFechaRapida) { updates.proximo_contacto = proximaFechaRapida; updates.tipo_accion = proximaAccionRapida || 'Seguimiento'; }
+        if (proximaFechaRapida) {
+          updates.proximo_contacto = proximaFechaRapida;
+          updates.tipo_accion = proximaAccionRapida || 'Seguimiento';
+        }
 
         await supabase.from('clientes').update(updates).eq('id', llamadaClienteId);
+        
         setClientes(prev => prev.map(c => c.id === llamadaClienteId ? { ...c, ...updates } : c));
-        if (clienteSeleccionado?.id === llamadaClienteId) setClienteSeleccionado(prev => prev ? { ...prev, ...updates } : prev);
+        if (clienteSeleccionado?.id === llamadaClienteId) {
+          setClienteSeleccionado(prev => prev ? { ...prev, ...updates } : prev);
+        }
       }
-      setLlamadaClienteId(''); setBusquedaLlamada(''); setLlamadaNota(''); setProximaFechaRapida(''); setProximaAccionRapida('');
-    } catch (error: any) { alert(`Error al registrar actividad: ${error.message}`); } finally { setGuardandoActividadRapida(false); }
+      
+      setLlamadaClienteId('');
+      setBusquedaLlamada('');
+      setLlamadaNota('');
+      setProximaFechaRapida('');
+      setProximaAccionRapida('');
+      
+    } catch (error: any) {
+      alert(`Error al registrar actividad: ${error.message}`);
+    } finally {
+      setGuardandoActividadRapida(false);
+    }
   };
 
   const extraerFechaUltimaNota = (notas: string | null) => {
     if (!notas) return null;
     const match = notas.match(/\[(\d{1,2})\/(\d{1,2})\/(\d{4})/);
     if (match) {
-      const day = parseInt(match[1], 10); const month = parseInt(match[2], 10) - 1; const year = parseInt(match[3], 10);
+      const day = parseInt(match[1], 10);
+      const month = parseInt(match[2], 10) - 1;
+      const year = parseInt(match[3], 10);
       return new Date(year, month, day);
     }
     return null;
@@ -270,7 +343,9 @@ export default function CRMPage() {
   const obtenerDiasInactivos = (notas: string | null) => {
     const ultimaFecha = extraerFechaUltimaNota(notas);
     if (!ultimaFecha) return 999;
-    const hoy = new Date(); hoy.setHours(0,0,0,0); ultimaFecha.setHours(0,0,0,0);
+    const hoy = new Date();
+    hoy.setHours(0,0,0,0);
+    ultimaFecha.setHours(0,0,0,0);
     const diffTime = hoy.getTime() - ultimaFecha.getTime();
     return Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
   };
@@ -291,13 +366,16 @@ export default function CRMPage() {
       
       let coincidePendiente = true;
       if (filtroPendientes) {
-        if (!c.proximo_contacto) coincidePendiente = false;
-        else {
-          const hoy = new Date(); hoy.setHours(23, 59, 59, 999);
+        if (!c.proximo_contacto) {
+          coincidePendiente = false;
+        } else {
+          const hoy = new Date();
+          hoy.setHours(23, 59, 59, 999);
           const fechaContacto = new Date(c.proximo_contacto + 'T00:00:00');
           coincidePendiente = fechaContacto <= hoy;
         }
       }
+
       return coincideBusqueda && coincideCiudad && coincideTipologia && coincideOrigen && coincidePendiente;
     });
   }, [clientes, busqueda, filtroCiudad, filtroTipologia, filtroOrigen, filtroPendientes]);
@@ -305,7 +383,9 @@ export default function CRMPage() {
   const prospectosFiltradosParaLlamada = useMemo(() => {
     if (!busquedaLlamada) return clientes.slice(0, 50);
     const b = busquedaLlamada.toLowerCase();
-    return clientes.filter(c => `${c.nombres} ${c.apellidos}`.toLowerCase().includes(b) || (c.telefono && c.telefono.includes(b))).slice(0, 50);
+    return clientes.filter(c => 
+      `${c.nombres} ${c.apellidos}`.toLowerCase().includes(b) || (c.telefono && c.telefono.includes(b))
+    ).slice(0, 50);
   }, [clientes, busquedaLlamada]);
 
   const ciudadesDisponibles = useMemo(() => {
@@ -329,25 +409,36 @@ export default function CRMPage() {
     if (!clienteId) return;
 
     setClientes(prev => prev.map(c => c.id === clienteId ? { ...c, estado: nuevoEstado } : c));
-    if (clienteSeleccionado?.id === clienteId) setClienteSeleccionado(prev => prev ? { ...prev, estado: nuevoEstado } : prev);
+    if (clienteSeleccionado?.id === clienteId) {
+      setClienteSeleccionado(prev => prev ? { ...prev, estado: nuevoEstado } : prev);
+    }
 
     try {
       const { error } = await supabase.from('clientes').update({ estado: nuevoEstado }).eq('id', clienteId);
       if (error) throw error;
-    } catch (error: any) { console.error("Error moviendo lead:", error); cargarClientes(); }
+    } catch (error: any) {
+      console.error("Error moviendo lead:", error);
+      cargarClientes();
+    }
   };
 
   const guardarNuevoCliente = async (e: React.FormEvent) => {
     e.preventDefault();
     const normalizarTelefono = (tel: string) => {
-      if (!tel) return ''; let num = tel.replace(/\D/g, '');
+      if (!tel) return '';
+      let num = tel.replace(/\D/g, '');
       if (num.startsWith('593')) num = num.substring(3);
       if (num.startsWith('0')) num = num.substring(1);
       return num;
     };
+
     const telefonoNormalizadoNuevo = normalizarTelefono(nuevoTelefono);
     const clienteDuplicadoTelefono = clientes.find(c => c.telefono && normalizarTelefono(c.telefono) === telefonoNormalizadoNuevo);
-    if (clienteDuplicadoTelefono) { alert(`⚠️ ¡ATENCIÓN! Este número ya está registrado.\nPertenece a: ${clienteDuplicadoTelefono.nombres} ${clienteDuplicadoTelefono.apellidos}`); return; }
+
+    if (clienteDuplicadoTelefono) {
+      alert(`⚠️ ¡ATENCIÓN! Este número ya está registrado.\nPertenece a: ${clienteDuplicadoTelefono.nombres} ${clienteDuplicadoTelefono.apellidos}`);
+      return; 
+    }
 
     setGuardandoCliente(true);
     try {
@@ -355,7 +446,8 @@ export default function CRMPage() {
       const payload: any = {
         nombres: nuevoNombre.trim(), apellidos: nuevoApellido.trim(), telefono: nuevoTelefono.trim(),
         email: nuevoEmail ? nuevoEmail.trim().toLowerCase() : null, ciudad_residencia: nuevaCiudad.trim() || null, 
-        motivo_compra: nuevoMotivo, tipologia_interes: nuevoInteres, origen_captacion: nuevoOrigen, campana: nuevoCampana.trim() || null,
+        motivo_compra: nuevoMotivo, tipologia_interes: nuevoInteres, origen_captacion: nuevoOrigen,
+        campana: nuevoCampana.trim() || null,
         notas: notaInicial, estado: 'Interesado', tipo: 'prospecto', temperatura: '❄️ Frío'
       };
       if (nuevoIngresadoPor.trim()) payload.ingresado_por = nuevoIngresadoPor.trim();
@@ -373,7 +465,8 @@ export default function CRMPage() {
   const guardarPlantilla = () => {
     localStorage.setItem('plantilla_bienvenida_arienzo', plantillaMensaje);
     localStorage.setItem('plantilla_campana_arienzo', plantillaCampana);
-    setMostrarModalPlantilla(false); alert('Mensajes de WhatsApp guardados correctamente.');
+    setMostrarModalPlantilla(false);
+    alert('Mensajes de WhatsApp guardados correctamente.');
   };
 
   const actualizarCampoRapido = async (id: string, campo: string, valor: string) => {
@@ -389,8 +482,10 @@ export default function CRMPage() {
       const updates = { proximo_contacto: fechaAccion || null, tipo_accion: tipoAccion, detalle_accion: detalleAccion || null };
       const { error } = await supabase.from('clientes').update(updates).eq('id', clienteSeleccionado.id);
       if (error) throw error;
-      setClientes(prev => prev.map(c => c.id === clienteSeleccionado.id ? { ...c, ...updates } as any : c));
+
+     setClientes(prev => prev.map(c => c.id === clienteSeleccionado.id ? { ...c, ...updates } as any : c));
       setClienteSeleccionado(prev => prev ? { ...prev, ...updates } : prev);
+      
       const btn = document.getElementById('btn-guardar-tarea');
       if (btn) {
         const originalText = btn.innerText; btn.innerText = '¡Guardado!'; btn.classList.add('bg-green-600');
@@ -405,8 +500,10 @@ export default function CRMPage() {
     try {
       const fecha = new Date().toLocaleString('es-EC', { dateStyle: 'short', timeStyle: 'short' });
       const notaFinal = `[${fecha}] ${nuevaNotaTexto}\n\n${clienteSeleccionado.notas || ''}`;
+      
       const { error } = await supabase.from('clientes').update({ notas: notaFinal }).eq('id', clienteSeleccionado.id);
       if (error) throw error;
+
       setClientes(prev => prev.map(c => c.id === clienteSeleccionado.id ? { ...c, notas: notaFinal } : c));
       setClienteSeleccionado(prev => prev ? { ...prev, notas: notaFinal } : prev);
       setNuevaNotaTexto('');
@@ -417,14 +514,17 @@ export default function CRMPage() {
     if (!cliente.telefono) { alert("Sin número registrado."); return; }
     let num = cliente.telefono.replace(/\D/g, '');
     if (num.startsWith('09') && num.length === 10) num = '593' + num.substring(1);
+    
     let txt = '';
     if (tipoMensaje === 'bienvenida') txt = `?text=${encodeURIComponent(plantillaMensaje.replace('{nombre}', cliente.nombres))}`;
     else if (tipoMensaje === 'campana') txt = `?text=${encodeURIComponent(plantillaCampana.replace('{nombre}', cliente.nombres))}`;
+    
     window.open(`https://wa.me/${num}${txt}`, '_blank');
   };
 
   const verHistorialCotizaciones = async (cliente: Cliente) => {
-    setMostrarModalHistorial(true); setCargandoHistorial(true);
+    setMostrarModalHistorial(true);
+    setCargandoHistorial(true);
     try {
       const { data, error } = await supabase.from('cotizaciones').select('*').eq('cliente_id', cliente.id).order('created_at', { ascending: false });
       if (error) throw error;
@@ -433,7 +533,7 @@ export default function CRMPage() {
   };
 
   // ==========================================
-  // GENERADOR HTML DINÁMICO (VISTA PREVIA Y ENVÍO)
+  // APERTURA DEL ESTUDIO DE DISEÑO DE CORREO
   // ==========================================
   const abrirCorreo = (cliente: Cliente) => {
     if (!cliente.email) { alert("Este cliente no tiene correo electrónico registrado."); return; }
@@ -443,188 +543,13 @@ export default function CRMPage() {
     setMostrarModalPreviewCorreo(true);
   };
 
-  const generarCodigoHTMLCorreo = () => {
-    const plantillaConfig = PLANTILLAS_CORREO.find(p => p.id === plantillaActivaId) || PLANTILLAS_CORREO[0];
-    const nombreCliente = clienteSeleccionado?.nombres || 'Cliente';
-    const cuerpoFormateado = plantillaConfig.cuerpo.replace(/{nombre}/g, nombreCliente).replace(/\n/g, '<br/>');
-    const urlPortada = IMAGENES_GALERIA[imagenPortada] || IMAGENES_GALERIA.fachada;
-    
-    const enlaceWhatsApp = `https://wa.me/593979469472?text=${encodeURIComponent(`Hola Saúl, recibí tu correo sobre Arienzo y me gustaría más información.`)}`;
-    const enlaceCalendly = `https://calendly.com/saul-intriago/asesoria-inmobiliaria`;
-
-    // SISTEMA DE TEMAS (Basado en Branding Arienzo)
-    let colorFondoCabecera = '#21242E';
-    let colorTextoCabecera = '#ffffff';
-    let colorAcento = '#D1C292'; // Líneas separadoras
-    let colorBoton = '#964B36'; // Botón principal (si no es WA)
-    let colorTextoBoton = '#ffffff';
-
-    if (temaColor === 'terracota') {
-      colorFondoCabecera = '#964B36';
-      colorAcento = '#964B36';
-      colorBoton = '#21242E'; // Botón negro para contrastar
-    } else if (temaColor === 'dorado') {
-      colorFondoCabecera = '#21242E';
-      colorAcento = '#D1C292';
-      colorBoton = '#D1C292';
-      colorTextoBoton = '#21242E';
-    } else if (temaColor === 'navy') {
-      colorFondoCabecera = '#21242E';
-      colorAcento = '#21242E';
-      colorBoton = '#964B36';
-    }
-
-    const htmlCabecera = `
-      <!DOCTYPE html>
-      <html>
-      <body style="margin: 0; padding: 0; background-color: #F9F7F5; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #F9F7F5; padding: 30px 10px;">
-          <tr>
-            <td align="center">
-              <table width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
-                <tr>
-                  <td align="center" style="background-color: ${colorFondoCabecera}; padding: 35px 20px;">
-                    <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-blanco.svg" alt="Arienzo Boutique Living" width="180" style="display: block; margin: 0 auto;">
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <img src="${urlPortada}" alt="Arienzo Vista" width="600" style="display: block; width: 100%; max-height: 280px; object-fit: cover;">
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 40px; color: #415364; font-size: 16px; line-height: 1.6;">
-                    ${cuerpoFormateado}
-                  </td>
-                </tr>
-    `;
-
-    const htmlPilares = `
-                <tr>
-                  <td align="center" style="padding: 0 40px;">
-                    <hr style="border: none; border-top: 1px solid ${colorAcento}; margin: 0;">
-                    <h3 style="color: ${colorAcento}; font-size: 15px; text-transform: uppercase; letter-spacing: 2px; margin-top: 25px;">El privilegio de vivir bien</h3>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 20px 40px;">
-                    <img src="${IMAGENES_GALERIA.ubicacion}" width="100%" style="border-radius: 8px; display: block; margin-bottom: 15px;">
-                    <h4 style="margin: 0 0 10px 0; color: #21242E; font-size: 18px;">Ubicación Estratégica</h4>
-                    <p style="margin: 0; color: #415364; font-size: 15px; line-height: 1.5;">En el corazón de Barbasquillo, Manta. A pasos de La Quadra y Riocentro Plaza. La zona de mayor prestigio y conectividad de la ciudad.</p>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 20px 40px;">
-                    <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Derecho-A4.jpg" width="100%" style="border-radius: 8px; display: block; margin-bottom: 15px;">
-                    <h4 style="margin: 0 0 10px 0; color: #21242E; font-size: 18px;">Arquitectura de Autor</h4>
-                    <p style="margin: 0; color: #415364; font-size: 15px; line-height: 1.5;">Desarrollado por el reconocido estudio <strong>Diez + Muller</strong>. Una colección limitada de solo 22 departamentos con ventanales de piso a techo y acabados premium.</p>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 20px 40px 40px 40px;">
-                    <img src="${IMAGENES_GALERIA.piscina}" width="100%" style="border-radius: 8px; display: block; margin-bottom: 15px;">
-                    <h4 style="margin: 0 0 10px 0; color: #21242E; font-size: 18px;">Rooftop y Amenidades Exclusivas</h4>
-                    <p style="margin: 0; color: #415364; font-size: 15px; line-height: 1.5;">Disfruta de un Social Living con Coworking, Gym Panorámico y una espectacular piscina concebida para elevar tu experiencia diaria.</p>
-                  </td>
-                </tr>
-    `;
-
-    const htmlBotonWhatsApp = `
-                <tr>
-                  <td align="center" style="background-color: #FDFCFB; padding: 40px 20px; border-top: 1px solid #EAE3DC; border-bottom: 1px solid #EAE3DC;">
-                    <h2 style="margin: 0 0 15px 0; color: #964B36; font-size: 24px;">Asegura tu unidad en Planos</h2>
-                    <p style="margin: 0 0 25px 0; color: #415364; font-size: 16px; font-weight: bold;">Reservas abiertas con solo $2,500 USD</p>
-                    <a href="${enlaceWhatsApp}" style="background-color: #25D366; color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 30px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: inline-block;">Hablar por WhatsApp</a>
-                  </td>
-                </tr>
-    `;
-
-    const htmlBotonZoom = `
-                <tr>
-                  <td align="center" style="background-color: #FDFCFB; padding: 40px 20px; border-top: 1px solid #EAE3DC; border-bottom: 1px solid #EAE3DC;">
-                    <h2 style="margin: 0 0 15px 0; color: #21242E; font-size: 22px;">Conoce los planos y disponibilidad</h2>
-                    <p style="margin: 0 0 25px 0; color: #415364; font-size: 15px;">Selecciona la fecha y hora que mejor se adapte a tu agenda.</p>
-                    <a href="${enlaceCalendly}" style="background-color: ${colorBoton}; color: ${colorTextoBoton}; text-decoration: none; padding: 15px 30px; border-radius: 8px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: inline-block;">🗓️ Agendar Videollamada</a>
-                  </td>
-                </tr>
-    `;
-
-    const htmlFooter = `
-                <tr>
-                  <td style="padding: 40px;">
-                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                      <tr>
-                        <td width="60" style="padding-right: 15px;">
-                          <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/logo-dorado-arienzo.svg" width="50" style="display: block; background-color: #964B36; padding: 5px; border-radius: 5px;">
-                        </td>
-                        <td>
-                          <p style="margin: 0; font-size: 14px; font-weight: bold; color: #21242E;">Saúl Intriago</p>
-                          <p style="margin: 2px 0 0 0; font-size: 12px; color: ${colorAcento}; letter-spacing: 1px; text-transform: uppercase;">Director Comercial</p>
-                          <p style="margin: 2px 0 0 0; font-size: 12px; color: #415364;">arienzoliving.com | Konkeri Real Estate</p>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-                <tr>
-                  <td align="center" style="background-color: #21242E; padding: 20px; text-align: center;">
-                    <p style="margin: 0; font-size: 10px; color: #ffffff; opacity: 0.5; text-transform: uppercase; letter-spacing: 1px;">© ${new Date().getFullYear()} Arienzo Boutique Living. Manta, Ecuador.</p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-        </table>
-      </body>
-      </html>
-    `;
-
-    let htmlCompleto = '';
-    if (plantillaConfig.layout === 'full') {
-      htmlCompleto = htmlCabecera + htmlPilares + htmlBotonWhatsApp + htmlFooter;
-    } else if (plantillaActivaId === 'invitacion_zoom') {
-      htmlCompleto = htmlCabecera + htmlBotonZoom + htmlFooter;
-    } else {
-      htmlCompleto = htmlCabecera + htmlBotonWhatsApp + htmlFooter;
-    }
-
-    return htmlCompleto;
+  const tituloActividad = {
+    hoy: 'Actividad de Hoy',
+    ayer: 'Actividad de Ayer',
+    semana: 'Últimos 7 Días',
+    mes: 'Últimos 30 Días'
   };
 
-  const procesarEnvioCorreoCRM = async () => {
-    if (!clienteSeleccionado) return;
-    setEnviandoCorreoCRM(true);
-    try {
-      const htmlFinal = generarCodigoHTMLCorreo();
-      const asunto = PLANTILLAS_CORREO.find(p => p.id === plantillaActivaId)?.asunto || 'Arienzo Boutique Living';
-
-      const response = await fetch('/api/enviar-correo-crm', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: clienteSeleccionado.email,
-          asunto: asunto,
-          htmlCuerpo: htmlFinal
-        })
-      });
-
-      if (response.ok) {
-        alert("¡Correo enviado con éxito!");
-        setMostrarModalPreviewCorreo(false);
-        const fecha = new Date().toLocaleString('es-EC', { dateStyle: 'short', timeStyle: 'short' });
-        const notaFinal = `[${fecha}] 📧 Correo Enviado Exitosamente\n\n${clienteSeleccionado.notas || ''}`;
-        await supabase.from('clientes').update({ notas: notaFinal }).eq('id', clienteSeleccionado.id);
-        setClientes(prev => prev.map(c => c.id === clienteSeleccionado.id ? { ...c, notas: notaFinal } : c));
-        setClienteSeleccionado(prev => prev ? { ...prev, notas: notaFinal } : prev);
-      } else {
-        alert("Error al conectar con Hostinger.");
-      }
-    } catch (error) {
-      console.error(error); alert("Error del sistema.");
-    } finally { setEnviandoCorreoCRM(false); }
-  };
-
-  const tituloActividad = { hoy: 'Actividad de Hoy', ayer: 'Actividad de Ayer', semana: 'Últimos 7 Días', mes: 'Últimos 30 Días' };
   if (cargando) return <div className="flex min-h-screen items-center justify-center bg-[#dce3eb]"><p className="text-sm font-bold tracking-widest text-[#ea0029] uppercase animate-pulse">Sincronizando CRM...</p></div>;
 
   return (
@@ -713,6 +638,7 @@ export default function CRMPage() {
                 <div key={estado} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, estado)} 
                      className={`w-full md:w-[280px] lg:w-[22vw] xl:w-[280px] flex-shrink-0 md:snap-center bg-white/50 backdrop-blur-sm rounded-2xl p-3 flex flex-col overflow-hidden border border-[#415364]/10 shadow-sm transition-all duration-300 ${estaExpandida ? 'max-h-[60vh] md:max-h-full md:h-full' : 'h-auto md:h-full'}`}>
                   
+                  {/* HEADER ACORDEÓN */}
                   <div 
                     onClick={() => toggleColumna(estado)}
                     className="flex justify-between items-center px-1.5 flex-shrink-0 cursor-pointer select-none"
@@ -726,6 +652,7 @@ export default function CRMPage() {
                     </div>
                   </div>
                   
+                  {/* BODY */}
                   <div className={`space-y-3 overflow-y-auto flex-1 pr-1 custom-scrollbar transition-all duration-300 ${estaExpandida ? 'mt-3 opacity-100 block' : 'hidden opacity-0 md:block md:mt-3 md:opacity-100'}`}>
                     {leads.map(cliente => {
                       const diasInactivos = obtenerDiasInactivos(cliente.notas);
@@ -734,7 +661,10 @@ export default function CRMPage() {
 
                       return (
                         <div 
-                          key={cliente.id} draggable onDragStart={(e) => handleDragStart(e, cliente.id)} onClick={() => setClienteSeleccionado(cliente)} 
+                          key={cliente.id} 
+                          draggable 
+                          onDragStart={(e) => handleDragStart(e, cliente.id)} 
+                          onClick={() => setClienteSeleccionado(cliente)} 
                           className={`bg-white p-3.5 rounded-xl shadow-sm cursor-pointer transition-all relative cursor-grab border-[1.5px] group hover:shadow-md ${agendadoVencido ? 'border-[#ea0029]/60' : abandonado ? 'border-amber-400' : 'border-transparent hover:border-[#ea0029]/30'}`}
                         >
                           {cliente.temperatura && <span className="absolute top-3 right-3 text-[10px] bg-[#dce3eb]/50 rounded-full px-1.5 py-0.5">{cliente.temperatura.split(' ')[0]}</span>}
@@ -742,14 +672,18 @@ export default function CRMPage() {
                           <p className="text-[9px] text-[#415364]/60 font-mono mt-1 mb-2 font-medium">{cliente.telefono || 'Sin celular'}</p>
                           
                           {cliente.tipologia_interes && cliente.tipologia_interes !== 'Por definir' && (
-                            <span className="inline-block bg-[#415364]/5 text-[#415364] border border-[#415364]/10 text-[9px] font-bold px-2 py-0.5 rounded-md mr-1 uppercase tracking-wider">{cliente.tipologia_interes}</span>
+                            <span className="inline-block bg-[#415364]/5 text-[#415364] border border-[#415364]/10 text-[9px] font-bold px-2 py-0.5 rounded-md mr-1 uppercase tracking-wider">
+                               {cliente.tipologia_interes}
+                            </span>
                           )}
+
                           {cliente.proximo_contacto && (
                             <div className={`mt-2 text-[9px] font-bold px-2 py-1 flex items-center gap-1.5 rounded-md border ${agendadoVencido ? 'bg-[#ea0029]/10 text-[#ea0029] border-[#ea0029]/20' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                               {new Date(cliente.proximo_contacto).toLocaleDateString('es-EC', {day:'2-digit', month:'short'})}
                             </div>
                           )}
+
                           <div className="mt-2.5 pt-2 border-t border-[#415364]/5 flex justify-between items-center">
                             <span className={`text-[9px] font-bold tracking-wide ${abandonado ? 'text-amber-600' : 'text-[#415364]/40'}`}>
                               {diasInactivos === 0 ? 'Actividad: Hoy' : diasInactivos === 1 ? 'Actividad: Ayer' : diasInactivos > 300 ? 'Sin registros' : `Inactivo: ${diasInactivos} días`}
@@ -800,13 +734,16 @@ export default function CRMPage() {
           </div>
         )}
 
+        {/* === VISTA 3: BITÁCORA MULTICANAL CON AGENDAMIENTO === */}
         {vista === 'actividad' && (
           <div className="flex flex-col h-full gap-5 overflow-y-auto">
+            
             <div className="bg-white p-5 rounded-2xl border border-neutral-200/60 shadow-sm flex flex-col md:flex-row items-center justify-between flex-shrink-0 gap-4">
                <div>
                  <h2 className="text-lg font-bold text-[#415364] tracking-tight">Reporte de Productividad</h2>
                  <p className="text-[11px] text-[#415364]/60 mt-0.5">Analiza el rendimiento del equipo de ventas.</p>
                </div>
+               
                <div className="flex bg-[#dce3eb]/50 p-1.5 rounded-xl border border-[#415364]/10">
                  <button onClick={() => setFiltroTiempo('hoy')} className={`px-4 py-2 rounded-lg text-[11px] font-bold transition-all ${filtroTiempo === 'hoy' ? 'bg-white shadow-sm text-[#ea0029]' : 'text-[#415364]/70 hover:text-[#415364]'}`}>Hoy</button>
                  <button onClick={() => setFiltroTiempo('ayer')} className={`px-4 py-2 rounded-lg text-[11px] font-bold transition-all ${filtroTiempo === 'ayer' ? 'bg-white shadow-sm text-[#ea0029]' : 'text-[#415364]/70 hover:text-[#415364]'}`}>Ayer</button>
@@ -822,93 +759,200 @@ export default function CRMPage() {
               </div>
               <div className="bg-white p-5 rounded-2xl border border-neutral-200/60 shadow-sm text-center transition-all hover:border-green-300 group">
                 <p className="text-[10px] font-bold text-green-600 uppercase tracking-widest">Éxito / Efectivas</p>
-                <p className="text-4xl font-light text-green-600 mt-2 group-hover:scale-105 transition-transform">{actividadesDia.filter(a => a.resultado === 'Contestó' || a.resultado === 'Respondio' || a.resultado === 'Efectivo').length}</p>
+                <p className="text-4xl font-light text-green-600 mt-2 group-hover:scale-105 transition-transform">
+                  {actividadesDia.filter(a => a.resultado === 'Contestó' || a.resultado === 'Respondio' || a.resultado === 'Efectivo').length}
+                </p>
               </div>
               <div className="bg-[#21242E] p-5 rounded-2xl border border-neutral-800 shadow-sm flex flex-col justify-center space-y-2 text-white">
                 <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest text-center border-b border-white/10 pb-1.5 mb-1.5">Impacto Por Canal</p>
-                <div className="flex justify-between items-center"><span className="text-[11px] font-bold text-white/80">Llamadas / Zoom</span><span className="text-sm font-bold text-[#ea0029]">{actividadesDia.filter(a => a.tipo_contacto === 'Llamada' || a.tipo_contacto === 'Zoom').length}</span></div>
-                <div className="flex justify-between items-center"><span className="text-[11px] font-bold text-white/80">WhatsApp / Email</span><span className="text-sm font-bold text-[#ea0029]">{actividadesDia.filter(a => a.tipo_contacto === 'WhatsApp' || a.tipo_contacto === 'Email').length}</span></div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[11px] font-bold text-white/80">Llamadas / Zoom</span>
+                  <span className="text-sm font-bold text-[#ea0029]">{actividadesDia.filter(a => a.tipo_contacto === 'Llamada' || a.tipo_contacto === 'Zoom').length}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[11px] font-bold text-white/80">WhatsApp / Email</span>
+                  <span className="text-sm font-bold text-[#ea0029]">{actividadesDia.filter(a => a.tipo_contacto === 'WhatsApp' || a.tipo_contacto === 'Email').length}</span>
+                </div>
               </div>
               <div className="bg-[#21242E] p-5 rounded-2xl border border-neutral-800 shadow-sm flex flex-col justify-center space-y-2 text-white">
                 <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest text-center border-b border-white/10 pb-1.5 mb-1.5">Rendimiento Agente</p>
-                <div className="flex justify-between items-center"><span className="text-[11px] font-bold text-white/80">Saúl Intriago</span><span className="text-sm font-bold text-[#dce3eb]">{actividadesDia.filter(a => a.agente.includes('Saúl')).length}</span></div>
-                <div className="flex justify-between items-center"><span className="text-[11px] font-bold text-white/80">Debbi Mera</span><span className="text-sm font-bold text-[#dce3eb]">{actividadesDia.filter(a => a.agente.includes('Debbi') || a.agente.includes('Debbie') || a.agente.includes('Débora')).length}</span></div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[11px] font-bold text-white/80">Saúl Intriago</span>
+                  <span className="text-sm font-bold text-[#dce3eb]">{actividadesDia.filter(a => a.agente.includes('Saúl')).length}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[11px] font-bold text-white/80">Debbi Mera</span>
+                  <span className="text-sm font-bold text-[#dce3eb]">{actividadesDia.filter(a => a.agente.includes('Debbi') || a.agente.includes('Debbie') || a.agente.includes('Débora')).length}</span>
+                </div>
               </div>
             </div>
 
             <div className="flex flex-col md:flex-row gap-5 flex-1 min-h-0">
+              
               <div className="bg-white rounded-2xl border border-neutral-200/60 shadow-sm p-6 w-full md:w-[35%] flex flex-col flex-shrink-0 overflow-y-auto custom-scrollbar">
                 <h3 className="text-sm font-bold text-[#415364] uppercase tracking-wider border-b border-neutral-100 pb-3 mb-5 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-[#ea0029]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Registro Rápido
+                  <svg className="w-5 h-5 text-[#ea0029]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                  Registro Rápido
                 </h3>
                 <form onSubmit={registrarActividadRapida} className="flex-1 flex flex-col space-y-4">
+                  
                   <div className="relative">
                     <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Buscar Cliente</label>
                     <div className="relative">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#415364]/40"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg></span>
-                      <input type="text" placeholder="Escribe nombre o teléfono..." value={busquedaLlamada} onChange={(e) => { setBusquedaLlamada(e.target.value); setMostrarOpcionesLlamada(true); setLlamadaClienteId(''); }} onFocus={() => setMostrarOpcionesLlamada(true)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl py-2.5 pl-9 pr-3 text-xs font-medium focus:outline-none focus:border-[#ea0029] text-[#415364]"/>
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#415364]/40">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                      </span>
+                      <input 
+                        type="text" 
+                        placeholder="Escribe nombre o teléfono..."
+                        value={busquedaLlamada}
+                        onChange={(e) => {
+                          setBusquedaLlamada(e.target.value);
+                          setMostrarOpcionesLlamada(true);
+                          setLlamadaClienteId(''); 
+                        }}
+                        onFocus={() => setMostrarOpcionesLlamada(true)}
+                        className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl py-2.5 pl-9 pr-3 text-xs font-medium focus:outline-none focus:border-[#ea0029] text-[#415364]"
+                      />
                     </div>
                     {busquedaLlamada && !llamadaClienteId && <p className="text-[9px] text-[#ea0029] mt-1.5 font-bold">⚠️ Haz clic en un prospecto abajo</p>}
                     {mostrarOpcionesLlamada && !llamadaClienteId && (
                       <ul className="absolute z-10 w-full mt-1.5 bg-white border border-neutral-200/80 rounded-xl shadow-xl max-h-48 overflow-y-auto custom-scrollbar">
                         {prospectosFiltradosParaLlamada.length > 0 ? (
                           prospectosFiltradosParaLlamada.map(c => (
-                            <li key={c.id} className="p-3 text-xs hover:bg-[#dce3eb]/30 cursor-pointer border-b border-neutral-100 last:border-0 flex flex-col transition-colors" onClick={() => { setLlamadaClienteId(c.id); setBusquedaLlamada(`${c.nombres} ${c.apellidos}`); setMostrarOpcionesLlamada(false); }}>
-                              <span className="font-bold text-[#415364]">{c.nombres} {c.apellidos}</span><span className="text-[10px] text-[#415364]/60 font-mono mt-0.5">{c.telefono}</span>
+                            <li 
+                              key={c.id} 
+                              className="p-3 text-xs hover:bg-[#dce3eb]/30 cursor-pointer border-b border-neutral-100 last:border-0 flex flex-col transition-colors"
+                              onClick={() => {
+                                setLlamadaClienteId(c.id);
+                                setBusquedaLlamada(`${c.nombres} ${c.apellidos}`);
+                                setMostrarOpcionesLlamada(false);
+                              }}
+                            >
+                              <span className="font-bold text-[#415364]">{c.nombres} {c.apellidos}</span>
+                              <span className="text-[10px] text-[#415364]/60 font-mono mt-0.5">{c.telefono}</span>
                             </li>
                           ))
-                        ) : (<li className="p-3 text-xs text-[#415364]/40 text-center font-medium">No encontrado</li>)}
+                        ) : (
+                          <li className="p-3 text-xs text-[#415364]/40 text-center font-medium">No encontrado</li>
+                        )}
                       </ul>
                     )}
                   </div>
+
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Asesor</label>
-                      <select value={llamadaAgente} onChange={(e) => setLlamadaAgente(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-xl p-2.5 text-xs font-bold text-[#415364] focus:outline-none focus:border-[#ea0029]"><option value="Saúl Intriago">Saúl</option><option value="Debbi Mera">Debbi</option></select>
+                      <select value={llamadaAgente} onChange={(e) => setLlamadaAgente(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-xl p-2.5 text-xs font-bold text-[#415364] focus:outline-none focus:border-[#ea0029]">
+                        <option value="Saúl Intriago">Saúl</option>
+                        <option value="Debbi Mera">Debbi</option>
+                      </select>
                     </div>
                     <div>
                       <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Canal</label>
-                      <select value={tipoContacto} onChange={(e) => setTipoContacto(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-xl p-2.5 text-xs font-bold text-[#415364] focus:outline-none focus:border-[#ea0029]"><option value="Llamada">Llamada</option><option value="WhatsApp">WhatsApp</option><option value="Zoom">Zoom</option><option value="Email">Email</option><option value="Reunión">Presencial</option></select>
+                      <select value={tipoContacto} onChange={(e) => setTipoContacto(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-xl p-2.5 text-xs font-bold text-[#415364] focus:outline-none focus:border-[#ea0029]">
+                        <option value="Llamada">Llamada</option>
+                        <option value="WhatsApp">WhatsApp</option>
+                        <option value="Zoom">Zoom</option>
+                        <option value="Email">Email</option>
+                        <option value="Reunión">Presencial</option>
+                      </select>
                     </div>
                   </div>
+
                   <div>
                     <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Resultado</label>
                     <select value={llamadaResultado} onChange={(e) => setLlamadaResultado(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-2.5 text-xs font-bold text-[#415364] focus:outline-none focus:border-[#ea0029]">
-                      {tipoContacto === 'Llamada' || tipoContacto === 'Zoom' ? (<><option value="Contestó">✅ Contestó / Asistió</option><option value="No contestó">❌ No contestó / Faltó</option><option value="Equivocado">🚫 Número Erróneo</option></>) : tipoContacto === 'WhatsApp' ? (<><option value="Respondio">✅ Respondió el chat</option><option value="Enviado">✔️ Enviado (Sin resp)</option><option value="Leido">👀 Leído (Visto)</option></>) : (<><option value="Efectivo">✅ Efectivo / Realizado</option><option value="Fallido">❌ Cancelado</option></>)}
+                      {tipoContacto === 'Llamada' || tipoContacto === 'Zoom' ? (
+                        <>
+                          <option value="Contestó">✅ Contestó / Asistió</option>
+                          <option value="No contestó">❌ No contestó / Faltó</option>
+                          <option value="Equivocado">🚫 Número Erróneo</option>
+                        </>
+                      ) : tipoContacto === 'WhatsApp' ? (
+                        <>
+                          <option value="Respondio">✅ Respondió el chat</option>
+                          <option value="Enviado">✔️ Enviado (Sin resp)</option>
+                          <option value="Leido">👀 Leído (Visto)</option>
+                        </>
+                      ) : (
+                        <>
+                          <option value="Efectivo">✅ Efectivo / Realizado</option>
+                          <option value="Fallido">❌ Cancelado</option>
+                        </>
+                      )}
                     </select>
                   </div>
+
                   <div>
                     <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Notas del Contacto</label>
-                    <textarea rows={2} value={llamadaNota} onChange={(e) => setLlamadaNota(e.target.value)} placeholder="Ej: Le gustó la suite..." className="w-full bg-white border border-[#415364]/20 rounded-xl p-3 text-xs font-medium text-[#415364] focus:outline-none focus:border-[#ea0029] resize-none transition-all"></textarea>
+                    <textarea rows={2} value={llamadaNota} onChange={(e) => setLlamadaNota(e.target.value)} placeholder="Ej: Le gustó la suite, pide descuento..." className="w-full bg-white border border-[#415364]/20 rounded-xl p-3 text-xs font-medium text-[#415364] focus:outline-none focus:border-[#ea0029] resize-none transition-all"></textarea>
                   </div>
+                  
                   <div className="bg-[#415364]/5 border border-[#415364]/10 p-4 rounded-xl mt-2">
-                    <label className="block text-[10px] font-bold text-[#415364] uppercase mb-2.5 flex items-center gap-1.5"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg> Agendar Siguiente Paso</label>
+                    <label className="block text-[10px] font-bold text-[#415364] uppercase mb-2.5 flex items-center gap-1.5">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                      Agendar Siguiente Paso
+                    </label>
                     <div className="grid grid-cols-2 gap-2.5">
-                      <input type="date" value={proximaFechaRapida} onChange={(e) => setProximaFechaRapida(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]" />
-                      <select value={proximaAccionRapida} onChange={(e) => setProximaAccionRapida(e.target.value)} className="w-full bg-white border border-[#415364]/20 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]"><option value="">-- Acción --</option><option value="Llamar">Llamar</option><option value="WhatsApp">WhatsApp</option><option value="Reunión">Reunión / Zoom</option><option value="Cotización">Cotización</option></select>
+                      <input 
+                        type="date" 
+                        value={proximaFechaRapida} 
+                        onChange={(e) => setProximaFechaRapida(e.target.value)} 
+                        className="w-full bg-white border border-[#415364]/20 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]" 
+                      />
+                      <select 
+                        value={proximaAccionRapida} 
+                        onChange={(e) => setProximaAccionRapida(e.target.value)} 
+                        className="w-full bg-white border border-[#415364]/20 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]"
+                      >
+                        <option value="">-- Acción --</option>
+                        <option value="Llamar">Llamar</option>
+                        <option value="WhatsApp">WhatsApp</option>
+                        <option value="Reunión">Reunión / Zoom</option>
+                        <option value="Cotización">Cotización</option>
+                      </select>
                     </div>
                   </div>
-                  <button type="submit" disabled={guardandoActividadRapida || !llamadaClienteId} className={`w-full py-3.5 mt-auto text-white text-[11px] font-bold uppercase tracking-widest rounded-xl transition shadow-md ${!llamadaClienteId ? 'bg-[#415364]/30 cursor-not-allowed' : 'bg-[#ea0029] hover:bg-[#c90022]'}`}>{guardandoActividadRapida ? 'Procesando...' : 'Guardar y Actualizar'}</button>
+
+                  <button type="submit" disabled={guardandoActividadRapida || !llamadaClienteId} className={`w-full py-3.5 mt-auto text-white text-[11px] font-bold uppercase tracking-widest rounded-xl transition shadow-md ${!llamadaClienteId ? 'bg-[#415364]/30 cursor-not-allowed' : 'bg-[#ea0029] hover:bg-[#c90022]'}`}>
+                    {guardandoActividadRapida ? 'Procesando...' : 'Guardar y Actualizar'}
+                  </button>
                 </form>
               </div>
 
               <div className="bg-white rounded-2xl border border-neutral-200/60 shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
                 <div className="p-5 border-b border-neutral-100 flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-[#415364] uppercase tracking-wide flex items-center gap-2"><svg className="w-5 h-5 text-[#ea0029]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg> {tituloActividad[filtroTiempo]}</h3>
+                  <h3 className="text-sm font-bold text-[#415364] uppercase tracking-wide flex items-center gap-2">
+                    <svg className="w-5 h-5 text-[#ea0029]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                    {tituloActividad[filtroTiempo]}
+                  </h3>
                 </div>
                 <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
                   {actividadesDia.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-center p-6"><svg className="w-12 h-12 text-[#415364]/20 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><p className="text-[#415364]/50 text-xs font-bold uppercase tracking-wider">No hay flujo registrado<br/>para este periodo.</p></div>
+                    <div className="h-full flex flex-col items-center justify-center text-center p-6">
+                      <svg className="w-12 h-12 text-[#415364]/20 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                      <p className="text-[#415364]/50 text-xs font-bold uppercase tracking-wider">No hay flujo registrado<br/>para este periodo.</p>
+                    </div>
                   ) : (
                     <div className="space-y-4">
                       {actividadesDia.map((act) => (
                         <div key={act.id} className="flex gap-4 p-4 bg-white border border-[#415364]/10 rounded-xl hover:shadow-md transition-shadow group">
                           <div className="text-center pt-1 min-w-[55px]">
-                            {filtroTiempo !== 'hoy' && filtroTiempo !== 'ayer' ? (<><span className="block text-[10px] font-bold text-[#415364]/60 mb-0.5">{new Date(act.created_at).toLocaleDateString('es-EC', {day:'2-digit', month:'short'})}</span><span className="text-[10px] font-mono font-bold text-[#ea0029]">{new Date(act.created_at).toLocaleTimeString('es-EC', {hour: '2-digit', minute:'2-digit'})}</span></>) : (<span className="text-[11px] font-mono font-bold text-[#ea0029]">{new Date(act.created_at).toLocaleTimeString('es-EC', {hour: '2-digit', minute:'2-digit'})}</span>)}
+                            {filtroTiempo !== 'hoy' && filtroTiempo !== 'ayer' ? (
+                              <>
+                                <span className="block text-[10px] font-bold text-[#415364]/60 mb-0.5">{new Date(act.created_at).toLocaleDateString('es-EC', {day:'2-digit', month:'short'})}</span>
+                                <span className="text-[10px] font-mono font-bold text-[#ea0029]">{new Date(act.created_at).toLocaleTimeString('es-EC', {hour: '2-digit', minute:'2-digit'})}</span>
+                              </>
+                            ) : (
+                              <span className="text-[11px] font-mono font-bold text-[#ea0029]">{new Date(act.created_at).toLocaleTimeString('es-EC', {hour: '2-digit', minute:'2-digit'})}</span>
+                            )}
                           </div>
                           <div className="flex-1 border-l border-[#415364]/10 pl-4">
                             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                              <span className="text-sm font-bold text-[#415364]">{act.clientes?.nombres} {act.clientes?.apellidos}</span><span className="text-[12px] opacity-70 group-hover:opacity-100 transition-opacity">{act.tipo_contacto === 'WhatsApp' ? '💬' : act.tipo_contacto === 'Email' ? '📧' : act.tipo_contacto === 'Zoom' ? '📹' : act.tipo_contacto === 'Reunión' ? '🤝' : '📞'}</span><span className={`text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider border ${act.resultado.includes('Contestó') || act.resultado.includes('Respondio') || act.resultado.includes('Efectivo') ? 'bg-green-50 text-green-700 border-green-200' : 'bg-neutral-100 text-neutral-600 border-neutral-200'}`}>{act.resultado}</span>
+                              <span className="text-sm font-bold text-[#415364]">{act.clientes?.nombres} {act.clientes?.apellidos}</span>
+                              <span className="text-[12px] opacity-70 group-hover:opacity-100 transition-opacity">{act.tipo_contacto === 'WhatsApp' ? '💬' : act.tipo_contacto === 'Email' ? '📧' : act.tipo_contacto === 'Zoom' ? '📹' : act.tipo_contacto === 'Reunión' ? '🤝' : '📞'}</span>
+                              <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider border ${act.resultado.includes('Contestó') || act.resultado.includes('Respondio') || act.resultado.includes('Efectivo') ? 'bg-green-50 text-green-700 border-green-200' : 'bg-neutral-100 text-neutral-600 border-neutral-200'}`}>{act.resultado}</span>
                             </div>
                             <p className="text-[12px] text-[#415364]/80 leading-relaxed font-medium">{act.notas || 'Sin notas adicionales'}</p>
                             <p className="text-[9px] font-bold text-[#415364]/40 mt-2 uppercase tracking-widest">Agente: {act.agente}</p>
@@ -919,46 +963,160 @@ export default function CRMPage() {
                   )}
                 </div>
               </div>
+
             </div>
           </div>
         )}
       </div>
 
       {/* --- MODALES Y PANEL LATERAL --- */}
-      {clienteSeleccionado && <div className="fixed inset-0 bg-[#21242E]/80 z-40 transition-opacity backdrop-blur-sm" onClick={() => setClienteSeleccionado(null)}></div>}
+      {clienteSeleccionado && (
+        <div className="fixed inset-0 bg-[#21242E]/80 z-40 transition-opacity backdrop-blur-sm" onClick={() => setClienteSeleccionado(null)}></div>
+      )}
+
       <div className={`fixed top-0 right-0 h-full w-full max-w-[400px] bg-[#F9F7F5] shadow-2xl border-l border-neutral-200 transform transition-transform duration-300 z-50 flex flex-col ${clienteSeleccionado ? 'translate-x-0' : 'translate-x-full'}`}>
         {clienteSeleccionado && (
           <>
             <div className="p-6 bg-[#21242E] relative flex-shrink-0 shadow-md">
               <button onClick={() => setClienteSeleccionado(null)} className="absolute top-4 right-4 text-white/50 hover:text-white bg-white/10 rounded-full w-8 h-8 flex items-center justify-center transition-colors">✕</button>
-              <h2 className="text-xl font-bold text-white pr-8 leading-tight flex items-center gap-2">{clienteSeleccionado.nombres} {clienteSeleccionado.apellidos}</h2>
+              <h2 className="text-xl font-bold text-white pr-8 leading-tight flex items-center gap-2">
+                {clienteSeleccionado.tipo === 'cliente' && <svg className="w-5 h-5 text-[#D1C292]" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>}
+                {clienteSeleccionado.nombres} {clienteSeleccionado.apellidos}
+              </h2>
+              <div className="flex flex-wrap items-center gap-2 mt-3">
+                <span className="bg-white/10 text-white border border-white/20 text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">{clienteSeleccionado.origen_captacion || 'Sin origen'}</span>
+                {clienteSeleccionado.ciudad_residencia && (
+                  <span className="bg-[#ea0029]/20 text-[#ea0029] border border-[#ea0029]/30 text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">📍 {clienteSeleccionado.ciudad_residencia}</span>
+                )}
+              </div>
             </div>
+
             <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+              
+              {/* BOTONES DE CONTACTO DIRECTO */}
               <div className="bg-white p-4 rounded-xl border border-neutral-200/60 shadow-sm space-y-3">
                 <p className="text-[10px] font-bold text-[#415364]/60 uppercase tracking-widest border-b border-neutral-100 pb-2">Acciones de Contacto</p>
                 <div className="grid grid-cols-2 gap-2">
-                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'bienvenida')} className="flex flex-col items-center justify-center gap-1 bg-[#25D366] text-white py-2.5 rounded-xl shadow-sm"><span className="text-[11px] font-bold uppercase tracking-wider">Welcome</span></button>
-                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'campana')} className="flex flex-col items-center justify-center gap-1 bg-[#128C7E] text-white py-2.5 rounded-xl shadow-sm"><span className="text-[11px] font-bold uppercase tracking-wider">Campaña</span></button>
-                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'libre')} className="flex flex-col items-center justify-center gap-1 bg-white text-[#415364] border border-[#415364]/20 py-2.5 rounded-xl shadow-sm"><span className="text-[11px] font-bold uppercase tracking-wider">Chat Libre</span></button>
-                  <button onClick={() => { setPlantillaActivaId(PLANTILLAS_CORREO[0].id); setImagenPortada('fachada'); setTemaColor('terracota'); setMostrarModalPreviewCorreo(true); }} className="flex flex-col items-center justify-center gap-1 bg-[#415364] text-white py-2.5 rounded-xl shadow-sm"><span className="text-[11px] font-bold uppercase tracking-wider">Diseñar Correo</span></button>
+                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'bienvenida')} className="flex flex-col items-center justify-center gap-1 bg-[#25D366] hover:bg-[#1DA851] text-white py-2.5 rounded-xl transition shadow-sm border border-transparent">
+                    <svg className="w-4 h-4 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span className="text-[11px] font-bold uppercase tracking-wider mt-0.5">Welcome</span>
+                  </button>
+                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'campana')} className="flex flex-col items-center justify-center gap-1 bg-[#128C7E] hover:bg-[#075E54] text-white py-2.5 rounded-xl transition shadow-sm border border-transparent">
+                    <svg className="w-4 h-4 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path></svg>
+                    <span className="text-[11px] font-bold uppercase tracking-wider mt-0.5">Campaña</span>
+                  </button>
+                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'libre')} className="flex flex-col items-center justify-center gap-1 bg-white hover:bg-neutral-50 text-[#415364] py-2.5 rounded-xl transition shadow-sm border border-[#415364]/20">
+                    <svg className="w-4 h-4 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                    <span className="text-[11px] font-bold uppercase tracking-wider mt-0.5">Chat Libre</span>
+                  </button>
+                  <button onClick={() => abrirCorreo(clienteSeleccionado)} className="flex flex-col items-center justify-center gap-1 bg-[#415364] hover:bg-[#21242E] text-white py-2.5 rounded-xl transition shadow-sm border border-transparent">
+                    <svg className="w-4 h-4 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                    <span className="text-[11px] font-bold uppercase tracking-wider mt-0.5">Diseñar Correo</span>
+                  </button>
                 </div>
               </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white p-4 rounded-xl border border-neutral-200/60 shadow-sm">
                   <label className="block text-[9px] font-bold text-[#415364]/60 uppercase tracking-widest mb-1.5">Fase Embudo</label>
-                  <select value={clienteSeleccionado.estado} onChange={(e) => actualizarCampoRapido(clienteSeleccionado.id, 'estado', e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/10 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]">{estados.map(est => <option key={est} value={est}>{est}</option>)}</select>
+                  <select value={clienteSeleccionado.estado} onChange={(e) => actualizarCampoRapido(clienteSeleccionado.id, 'estado', e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/10 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]">
+                    {estados.map(est => <option key={est} value={est}>{est}</option>)}
+                  </select>
                 </div>
                 <div className="bg-white p-4 rounded-xl border border-neutral-200/60 shadow-sm">
                   <label className="block text-[9px] font-bold text-[#415364]/60 uppercase tracking-widest mb-1.5">Termómetro</label>
-                  <select value={clienteSeleccionado.temperatura || '❄️ Frío'} onChange={(e) => actualizarCampoRapido(clienteSeleccionado.id, 'temperatura', e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/10 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]"><option value="🔥 Caliente">🔥 Caliente</option><option value="☀️ Tibio">☀️ Tibio</option><option value="❄️ Frío">❄️ Frío</option></select>
+                  <select value={clienteSeleccionado.temperatura || '❄️ Frío'} onChange={(e) => actualizarCampoRapido(clienteSeleccionado.id, 'temperatura', e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/10 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]">
+                    <option value="🔥 Caliente">🔥 Caliente</option>
+                    <option value="☀️ Tibio">☀️ Tibio</option>
+                    <option value="❄️ Frío">❄️ Frío</option>
+                  </select>
                 </div>
               </div>
+
+              {/* === PASE VIP === */}
+              <div className="bg-white border border-[#D1C292] p-5 rounded-2xl shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1.5 h-full bg-[#D1C292]"></div>
+                <h3 className="text-[11px] font-bold text-[#21242E] flex items-center gap-2 uppercase tracking-widest mb-1">
+                  <svg className="w-4 h-4 text-[#D1C292]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                  Pase VIP: Inventario
+                </h3>
+                <p className="text-[10px] text-[#415364]/70 leading-relaxed mb-3">Autoriza el email del prospecto para ver precios y planos en la web.</p>
+                <div className="flex gap-2">
+                  <select
+                    value={tiempoVIP}
+                    onChange={(e) => setTiempoVIP(Number(e.target.value))}
+                    className="w-[35%] bg-[#dce3eb]/30 border border-[#415364]/20 text-[#415364] rounded-xl p-2 text-[11px] font-bold outline-none focus:border-[#ea0029]"
+                  >
+                    <option value={1}>1 Hora</option>
+                    <option value={2}>2 Horas</option>
+                    <option value={12}>12 Horas</option>
+                    <option value={24}>24 Horas</option>
+                    <option value={48}>48 Horas</option>
+                  </select>
+                  <button 
+                    onClick={() => otorgarAccesoVIP(clienteSeleccionado.email)}
+                    disabled={activandoVIP || !clienteSeleccionado.email}
+                    className={`w-[65%] py-2.5 text-white rounded-xl text-[10px] font-bold transition-all shadow-md uppercase tracking-wider ${!clienteSeleccionado.email ? 'bg-[#415364]/30 cursor-not-allowed' : 'bg-[#21242E] hover:bg-black border border-[#D1C292]/30'}`}
+                  >
+                    {activandoVIP ? 'Generando...' : !clienteSeleccionado.email ? '❌ Sin Email' : 'Generar Pase'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-white border border-neutral-200/60 p-5 rounded-2xl shadow-sm space-y-3">
+                <h3 className="text-[11px] font-bold text-[#ea0029] flex items-center gap-1.5 uppercase tracking-widest border-b border-neutral-100 pb-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                  Agendar Siguiente Paso
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Fecha</label>
+                    <input type="date" value={fechaAccion} onChange={(e) => setFechaAccion(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]" />
+                  </div>
+                  <div>
+                    <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Tipo de Acción</label>
+                    <select value={tipoAccion} onChange={(e) => setTipoAccion(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]">
+                      {tiposAccion.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Objetivo / Detalles</label>
+                  <input type="text" value={detalleAccion} onChange={(e) => setDetalleAccion(e.target.value)} placeholder="Ej: Llamar para confirmar cita..." className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg p-2 text-[11px] font-medium text-[#415364] outline-none focus:border-[#ea0029]" />
+                </div>
+                <div className="flex justify-end pt-1">
+                  <button id="btn-guardar-tarea" onClick={guardarProximaTarea} disabled={guardandoTarea} className="px-4 py-2 bg-[#415364] text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-[#21242E] transition-colors shadow-sm">
+                    {guardandoTarea ? 'Guardando...' : 'Guardar Tarea'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-white border border-neutral-200/60 p-5 rounded-2xl shadow-sm">
+                <label className="block text-[11px] font-bold text-[#415364] tracking-widest mb-3 uppercase flex items-center gap-2 border-b border-neutral-100 pb-2">
+                  <svg className="w-4 h-4 text-[#ea0029]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                  Log de Seguimiento
+                </label>
+                <div className="flex flex-col gap-3 mb-4">
+                  <textarea rows={2} value={nuevaNotaTexto} onChange={(e) => setNuevaNotaTexto(e.target.value)} placeholder="Escribe aquí el resumen de tu conversación..." className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs font-medium text-[#415364] focus:outline-none focus:border-[#ea0029] resize-none transition-colors" />
+                  <button onClick={agregarNotaBitacora} disabled={!nuevaNotaTexto.trim() || guardandoNota} className="self-end px-4 py-2 bg-[#ea0029] text-white text-[10px] font-bold uppercase tracking-widest rounded-lg disabled:opacity-50 hover:bg-[#c90022] transition-colors shadow-sm">
+                    {guardandoNota ? 'Registrando...' : 'Agregar Registro'}
+                  </button>
+                </div>
+                <div className="bg-[#F9F7F5] p-4 rounded-xl border border-[#415364]/10 h-[180px] overflow-y-auto custom-scrollbar shadow-inner">
+                  {clienteSeleccionado.notas ? (
+                    <div className="text-[11px] text-[#415364] whitespace-pre-wrap leading-relaxed font-medium">{clienteSeleccionado.notas}</div>
+                  ) : (
+                    <p className="text-[11px] text-[#415364]/40 text-center italic mt-12 font-bold">Sin actividad registrada aún.</p>
+                  )}
+                </div>
+              </div>
+
             </div>
           </>
         )}
       </div>
 
-      {/* === ESTUDIO DE DISEÑO DE CORREO 100% IDÉNTICO AL REAL === */}
+      {/* === ESTUDIO DE DISEÑO DE CORREO (Z-INDEX 90) === */}
       {mostrarModalPreviewCorreo && clienteSeleccionado && (() => {
         
         // 1. GENERADOR HTML EN VIVO DENTRO DEL CRM
@@ -971,15 +1129,28 @@ export default function CRMPage() {
           const enlaceWhatsApp = `https://wa.me/593979469472?text=${encodeURIComponent(`Hola Saúl, recibí tu correo sobre Arienzo y me gustaría más información.`)}`;
           const enlaceCalendly = `https://calendly.com/saul-intriago/asesoria-inmobiliaria`;
 
-          // SISTEMA DE TEMAS (Basado en Branding Arienzo)
+          // SISTEMA DE TEMAS DE COLOR OFICIALES DE ARIENZO
           let colorFondoCabecera = '#21242E';
           let colorAcento = '#D1C292'; 
           let colorBoton = '#964B36'; 
           let colorTextoBoton = '#ffffff';
 
-          if (temaColor === 'terracota') { colorFondoCabecera = '#964B36'; colorAcento = '#964B36'; colorBoton = '#21242E'; } 
-          else if (temaColor === 'dorado') { colorFondoCabecera = '#21242E'; colorAcento = '#D1C292'; colorBoton = '#D1C292'; colorTextoBoton = '#21242E'; } 
-          else if (temaColor === 'navy') { colorFondoCabecera = '#21242E'; colorAcento = '#21242E'; colorBoton = '#964B36'; }
+          if (temaColor === 'terracota') { 
+            colorFondoCabecera = '#964B36'; 
+            colorAcento = '#964B36'; 
+            colorBoton = '#21242E'; 
+          } 
+          else if (temaColor === 'dorado') { 
+            colorFondoCabecera = '#21242E'; 
+            colorAcento = '#D1C292'; 
+            colorBoton = '#D1C292'; 
+            colorTextoBoton = '#21242E'; 
+          } 
+          else if (temaColor === 'navy') { 
+            colorFondoCabecera = '#21242E'; 
+            colorAcento = '#21242E'; 
+            colorBoton = '#964B36'; 
+          }
 
           const htmlCabecera = `
             <!DOCTYPE html>
@@ -1102,7 +1273,6 @@ export default function CRMPage() {
                 {/* PANEL DERECHO: VISTA PREVIA EXACTA */}
                 <div className="flex-1 bg-[#dce3eb] p-0 md:p-6 overflow-hidden flex justify-center">
                   <div className="w-full max-w-[600px] h-full bg-white shadow-2xl overflow-y-auto custom-scrollbar border border-neutral-300">
-                     {/* El div mágico que inyecta el HTML puro para asegurar el scroll */}
                      <div dangerouslySetInnerHTML={{ __html: htmlAEnviar }} />
                   </div>
                 </div>
@@ -1112,7 +1282,7 @@ export default function CRMPage() {
               <div className="bg-white p-5 border-t border-neutral-200 flex justify-end gap-4 flex-shrink-0">
                 <button onClick={() => setMostrarModalPreviewCorreo(false)} className="px-6 py-2.5 text-xs font-bold text-[#415364] border border-[#415364]/20 rounded-xl hover:bg-[#415364]/5 transition-colors">Cancelar</button>
                 <button onClick={enviarCorreoFinal} disabled={enviandoCorreoCRM} className="px-8 py-3 bg-[#ea0029] text-white text-xs font-bold uppercase tracking-widest rounded-xl shadow-md hover:bg-[#c90022] transition-colors disabled:opacity-50">
-                  {enviandoCorreoCRM ? 'Enviando Diseño HTML...' : 'Aprobar y Enviar Correo'}
+                  {enviandoCorreoCRM ? 'Enviando...' : 'Aprobar y Enviar Correo'}
                 </button>
               </div>
             </div>
