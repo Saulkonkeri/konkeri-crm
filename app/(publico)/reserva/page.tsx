@@ -81,15 +81,15 @@ const traducirTipologia = (tipologiaDB: string) => {
 };
 
 const PlanIcon = () => (
-  <svg className="w-5 h-5 md:w-4 md:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 4v16h16V4H4zm4 0v16m8-16v16M4 12h16" /></svg>
+  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 4v16h16V4H4zm4 0v16m8-16v16M4 12h16" /></svg>
 );
 
 const ViewIcon = () => (
-  <svg className="w-5 h-5 md:w-4 md:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
 );
 
 const ChatIcon = () => (
-  <svg className="w-5 h-5 md:w-4 md:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
 );
 
 export default function ReservaExpressPage() {
@@ -110,7 +110,6 @@ export default function ReservaExpressPage() {
   const [formData, setFormData] = useState({ nombres: '', cedula: '', email: '', telefono: '' });
   const [cargandoReserva, setCargandoReserva] = useState(false);
 
-  // Generar ID de Sesión Anónima al Cargar
   useEffect(() => {
     const id = localStorage.getItem('arienzo_session_id') || `sess_${Math.random().toString(36).substring(2, 11)}`;
     localStorage.setItem('arienzo_session_id', id);
@@ -358,7 +357,7 @@ export default function ReservaExpressPage() {
           </div>
         )}
 
-        {/* MAPA E INVENTARIO CON CUADRÍCULA ESTILIZADA (Evitando auto-zoom móvil) */}
+        {/* MAPA E INVENTARIO CON CUADRÍCULA ESTILIZADA */}
         {paso === 'mapa' && (
           <div className="space-y-4 md:space-y-4 animate-in slide-in-from-bottom-8 duration-500 w-full max-w-5xl mx-auto flex flex-col items-center">
             
@@ -379,38 +378,38 @@ export default function ReservaExpressPage() {
               <div className="flex flex-col w-full">
                 
                 {/* ROOFTOP */}
-                <div className="flex items-stretch gap-1 md:gap-2 mb-2 w-full">
-                  <div className="w-14 min-w-[3.5rem] md:w-20 md:min-w-[5rem] shrink-0 text-[8px] md:text-[10px] font-bold text-[#415364]/50 uppercase tracking-widest flex items-center justify-end pr-2 md:pr-4">Cima</div>
-                  <div className="flex-1 bg-[#D1C292]/10 border border-[#D1C292]/40 p-2 md:p-3 rounded-t-xl text-center flex items-center justify-center">
-                    <span className="text-[8px] md:text-[10px] font-bold text-[#8A7A55] uppercase tracking-widest">Rooftop & Amenidades Exclusivas</span>
+                <div className="flex items-stretch gap-0.5 md:gap-2 mb-1.5 md:mb-2 w-full">
+                  <div className="w-10 min-w-[2.5rem] md:w-16 md:min-w-[4rem] shrink-0 text-[6px] md:text-[9px] font-bold text-[#415364]/70 uppercase tracking-widest flex items-center justify-end pr-1 md:pr-3">Cima</div>
+                  <div className="flex-1 bg-[#D1C292]/10 border border-[#D1C292]/40 p-1.5 md:p-3 rounded-t-xl text-center flex items-center justify-center">
+                    <span className="text-[6px] md:text-[10px] font-bold text-[#8A7A55] uppercase tracking-widest">Rooftop & Amenidades Exclusivas</span>
                   </div>
                 </div>
 
                 {/* VISTAS */}
-                <div className="flex items-stretch gap-1 md:gap-2 mb-3 md:mb-4 w-full">
-                  <div className="w-14 min-w-[3.5rem] md:w-20 md:min-w-[5rem] shrink-0 flex flex-col justify-center pr-2 md:pr-4">
-                    <span className="text-[8px] md:text-[10px] font-bold text-[#415364]/50 uppercase tracking-widest text-right leading-tight">Vistas</span>
+                <div className="flex items-stretch gap-0.5 md:gap-2 mb-2 md:mb-3 w-full">
+                  <div className="w-10 min-w-[2.5rem] md:w-16 md:min-w-[4rem] shrink-0 flex flex-col justify-center pr-1 md:pr-3">
+                    <span className="text-[6px] md:text-[9px] font-bold text-[#415364]/70 uppercase tracking-widest text-right leading-tight">Vistas</span>
                   </div>
-                  <div className="flex-1 grid grid-cols-[4fr_4fr_10fr_5fr_9fr] gap-1 md:gap-2">
-                    <button onClick={() => {setVistaActiva('urb'); registrarAccion('VIO_VISTA_GENERAL', undefined, 'Vio vista general a la Urbanización');}} className="col-span-1 bg-[#F9F7F5] hover:bg-neutral-100 shadow-sm rounded-lg py-1.5 md:py-2 px-1 flex flex-col items-center justify-center border border-neutral-200 transition-colors group">
-                      <span className="text-[6px] md:text-[8px] font-bold uppercase tracking-widest text-[#415364]/70 group-hover:text-neutral-800 text-center leading-tight">A la<br/>Urb.</span>
+                  <div className="flex-1 grid grid-cols-[4fr_4fr_10fr_5fr_9fr] gap-0.5 md:gap-2">
+                    <button onClick={() => {setVistaActiva('urb'); registrarAccion('VIO_VISTA_GENERAL', undefined, 'Vio vista general a la Urbanización');}} className="col-span-1 bg-stone-50 hover:bg-stone-100 shadow-sm rounded-lg py-1 md:py-1.5 px-0.5 md:px-1 flex flex-col items-center justify-center border border-stone-200 transition-colors group">
+                      <span className="text-[4px] md:text-[7px] font-bold uppercase tracking-widest text-stone-500 group-hover:text-stone-700 text-center leading-tight">A la<br/>Urb.</span>
                     </button>
-                    <button onClick={() => {setVistaActiva('wyndham'); registrarAccion('VIO_VISTA_GENERAL', undefined, 'Vio vista general al Wyndham');}} className="col-span-1 bg-sky-50/70 hover:bg-sky-100 shadow-sm rounded-lg py-1.5 md:py-2 px-1 flex flex-col items-center justify-center border border-sky-200 transition-colors group">
-                      <span className="text-[6px] md:text-[8px] font-bold uppercase tracking-widest text-sky-700 group-hover:text-sky-900 text-center leading-tight">Wyndham<br/>/ Mar</span>
+                    <button onClick={() => {setVistaActiva('wyndham'); registrarAccion('VIO_VISTA_GENERAL', undefined, 'Vio vista general al Wyndham');}} className="col-span-1 bg-sky-50 hover:bg-sky-100 shadow-sm rounded-lg py-1 md:py-1.5 px-0.5 md:px-1 flex flex-col items-center justify-center border border-sky-200 transition-colors group">
+                      <span className="text-[4px] md:text-[7px] font-bold uppercase tracking-widest text-sky-600 group-hover:text-sky-800 text-center leading-tight">Wyndham<br/>/ Mar</span>
                     </button>
-                    <button onClick={() => {setVistaActiva('panoramica'); registrarAccion('VIO_VISTA_GENERAL', undefined, 'Vio vista Panorámica Frontal');}} className="col-span-3 bg-[#964B36]/5 hover:bg-[#964B36]/15 shadow-sm rounded-lg py-1.5 md:py-2 px-1 flex flex-col items-center justify-center border border-[#964B36]/30 transition-colors group">
-                      <span className="text-[7px] md:text-[9px] font-bold uppercase tracking-widest text-[#964B36] text-center leading-tight">Vista Panorámica Frontal<br/><span className="text-[5px] md:text-[7px] opacity-70 mt-0.5 inline-block">La Quadra / Umiña / Mar</span></span>
+                    <button onClick={() => {setVistaActiva('panoramica'); registrarAccion('VIO_VISTA_GENERAL', undefined, 'Vio vista Panorámica Frontal');}} className="col-span-3 bg-[#964B36]/5 hover:bg-[#964B36]/15 shadow-sm rounded-lg py-1 md:py-1.5 px-0.5 md:px-1 flex flex-col items-center justify-center border border-[#964B36]/30 transition-colors group">
+                      <span className="text-[5px] md:text-[8px] font-bold uppercase tracking-widest text-[#964B36] text-center leading-tight">Vista Panorámica Frontal<br/><span className="text-[4px] md:text-[6px] opacity-70">La Quadra / Umiña / Mar</span></span>
                     </button>
                   </div>
                 </div>
 
                 {/* PISOS */}
                 {PISOS_EDIFICIO.map(piso => (
-                  <div key={piso} className="flex items-stretch gap-1 md:gap-2 mb-1.5 md:mb-2 w-full">
-                    {/* ALINEACIÓN ESTRICTA COLUMNA IZQUIERDA Y TEXTO CLARO */}
-                    <div className="w-14 min-w-[3.5rem] md:w-20 md:min-w-[5rem] shrink-0 flex items-center justify-end pr-2 md:pr-4 text-[9px] md:text-[11px] font-bold text-[#415364]/70 uppercase tracking-widest">Piso {piso}</div>
+                  <div key={piso} className="flex items-stretch gap-0.5 md:gap-2 mb-1 md:mb-1.5 w-full">
+                    {/* ALINEACIÓN ESTRICTA COLUMNA IZQUIERDA */}
+                    <div className="w-10 min-w-[2.5rem] md:w-16 md:min-w-[4rem] shrink-0 flex items-center justify-end pr-1 md:pr-3 text-[7px] md:text-[11px] font-bold text-[#415364]/70 uppercase tracking-widest">Piso {piso}</div>
                     
-                    <div className="flex-1 grid gap-1 md:gap-2 grid-cols-[4fr_4fr_10fr_5fr_9fr]">
+                    <div className="flex-1 grid gap-0.5 md:gap-2 grid-cols-[4fr_4fr_10fr_5fr_9fr]">
                       {LAYOUT_FACHADA[piso].map((idUnidad, colIndex) => {
                         if (!idUnidad) return <div key={`empty-${piso}-${colIndex}`} className="invisible"></div>;
                         const unidad = obtenerDatosUnidad(idUnidad);
@@ -421,7 +420,6 @@ export default function ReservaExpressPage() {
                         const reservado = unidad.estado === 'RESERVADO' || unidad.estado === 'VENDIDO' || unidad.estado === 'BLOQUEADO' || unidad.estado === 'SEPARADO';
                         const desactivado = noCoincide || reservado;
                         
-                        // Si está desactivada, usamos opacity en vez de fondo para que el edificio respire
                         let botonEstilo = desactivado ? "border border-neutral-200 bg-[#F9F7F5]/50 cursor-not-allowed opacity-40" : "bg-white border-2 border-[#964B36] shadow-md cursor-pointer transform hover:-translate-y-1 hover:shadow-lg hover:bg-[#964B36]/5 relative z-10";
                         if (['604', '504', '404'].includes(String(unidad.id))) botonEstilo += " col-span-2";
 
@@ -438,10 +436,10 @@ export default function ReservaExpressPage() {
                                 registrarAccion('ABRIO_UNIDAD', String(unidad.id), 'Revisó detalles de unidad');
                               } 
                             }}
-                            className={`w-full h-full flex flex-col items-center justify-center p-1 md:p-2 rounded-xl transition-all duration-300 min-h-[45px] md:min-h-[55px] overflow-hidden select-none touch-manipulation ${botonEstilo}`}
+                            className={`w-full h-full flex flex-col items-center justify-center p-0.5 md:p-1.5 rounded-lg md:rounded-xl transition-all duration-300 min-h-[35px] md:min-h-[55px] overflow-hidden select-none touch-manipulation ${botonEstilo}`}
                           >
-                            <span className={`text-[12px] md:text-[14px] font-bold tracking-tight leading-none ${textoIdEstilo}`}>{unidad.id}</span>
-                            {!desactivado && <span className={`mt-1 text-[6px] md:text-[7.5px] text-center leading-tight uppercase tracking-wider whitespace-normal px-0.5 ${textoTipoEstilo}`}>{unidad.tipo}</span>}
+                            <span className={`text-[10px] md:text-[14px] font-bold tracking-tight leading-none ${textoIdEstilo}`}>{unidad.id}</span>
+                            {!desactivado && <span className={`mt-0.5 md:mt-1 text-[4px] md:text-[7px] text-center leading-tight uppercase tracking-wider whitespace-normal px-0.5 ${textoTipoEstilo}`}>{unidad.tipo}</span>}
                           </button>
                         );
                       })}
@@ -450,11 +448,11 @@ export default function ReservaExpressPage() {
                 ))}
 
                 {/* PLANTA BAJA */}
-                <div className="flex items-stretch gap-1 md:gap-2 mt-2 w-full">
-                  <div className="w-14 min-w-[3.5rem] md:w-20 md:min-w-[5rem] shrink-0 text-[8px] md:text-[10px] font-bold text-[#415364]/50 uppercase tracking-widest flex items-center justify-end pr-2 md:pr-4">PB</div>
-                  <div className="flex-1 bg-[#21242E] p-3 md:p-4 rounded-b-xl text-center flex flex-col justify-center shadow-inner border border-[#21242E]">
-                    <span className="text-[9px] md:text-[11px] font-bold text-[#D1C292] uppercase tracking-widest">Planta Baja / Ingreso Principal</span>
-                    <span className="text-[6px] md:text-[8px] mt-1 uppercase tracking-widest text-white/50">Lobby Design • Locales Comerciales • Estacionamientos</span>
+                <div className="flex items-stretch gap-0.5 md:gap-2 mt-1 md:mt-2 w-full">
+                  <div className="w-10 min-w-[2.5rem] md:w-16 md:min-w-[4rem] shrink-0 text-[6px] md:text-[10px] font-bold text-[#415364]/70 uppercase tracking-widest flex items-center justify-end pr-1 md:pr-3">PB</div>
+                  <div className="flex-1 bg-[#21242E] p-2 md:p-4 rounded-b-xl text-center flex flex-col justify-center shadow-inner border border-[#21242E]">
+                    <span className="text-[7px] sm:text-[11px] font-bold text-[#D1C292] uppercase tracking-widest">Planta Baja / Ingreso Principal</span>
+                    <span className="text-[5px] sm:text-[8px] mt-0.5 md:mt-1 uppercase tracking-widest text-white/50">Lobby Design • Locales Comerciales • Estacionamientos</span>
                   </div>
                 </div>
 
@@ -465,7 +463,7 @@ export default function ReservaExpressPage() {
 
         {/* === MODALES DE VISUALIZACIÓN === */}
         {vistaActiva && (
-          <div className="fixed inset-0 bg-[#21242E]/90 z-[60] flex flex-col items-center justify-center p-4 sm:p-6 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setVistaActiva(null)}>
+          <div className="fixed inset-0 bg-[#21242E]/90 z-[60] flex flex-col items-center justify-center p-4 sm:p-6 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setVistaActiva(null)}>
             <div className="relative w-full max-w-4xl bg-white p-2 md:p-3 rounded-2xl shadow-2xl flex flex-col items-center animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
               <button onClick={() => setVistaActiva(null)} className="absolute top-4 right-4 bg-white/90 text-[#21242E] w-8 h-8 rounded-full flex items-center justify-center font-bold hover:bg-neutral-100 z-10 shadow-sm transition-colors">&times;</button>
               <div className="w-full rounded-xl overflow-hidden bg-[#F9F7F5] flex items-center justify-center min-h-[300px]">
@@ -480,7 +478,7 @@ export default function ReservaExpressPage() {
         )}
 
         {planoUrlActivo && (
-          <div className="fixed inset-0 bg-[#21242E]/90 z-[60] flex flex-col items-center justify-center p-4 sm:p-6 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setPlanoUrlActivo(null)}>
+          <div className="fixed inset-0 bg-[#21242E]/90 z-[60] flex flex-col items-center justify-center p-4 sm:p-6 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setPlanoUrlActivo(null)}>
             <div className="relative w-full max-w-3xl bg-white p-2 md:p-4 rounded-2xl shadow-2xl flex flex-col items-center animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
               <button onClick={() => setPlanoUrlActivo(null)} className="absolute top-4 right-4 bg-white/90 text-[#21242E] w-8 h-8 rounded-full flex items-center justify-center font-bold hover:bg-neutral-100 z-10 shadow-sm transition-colors">&times;</button>
               <div className="w-full rounded-xl overflow-hidden bg-[#F9F7F5] flex items-center justify-center min-h-[400px]">
@@ -494,53 +492,53 @@ export default function ReservaExpressPage() {
           </div>
         )}
 
-        {/* MODAL UNIDAD SELECCIONADA CON MÁRGENES MÓVILES SEGUROS */}
+        {/* MODAL UNIDAD SELECCIONADA CON FORMATO DE TARJETA FLOTANTE Y MÁRGENES MÓVILES SEGUROS */}
         {unidadSeleccionada && paso === 'mapa' && !vistaActiva && !planoUrlActivo && (
-          <div className="fixed inset-0 bg-[#21242E]/70 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-in fade-in">
-            <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden transform transition-transform animate-in slide-in-from-bottom-8 mx-auto mx-0 sm:mx-4">
+          <div className="fixed inset-0 bg-[#21242E]/70 z-50 flex items-center justify-center p-4 sm:p-6 backdrop-blur-sm animate-in fade-in">
+            <div className="bg-white w-full max-w-md rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden transform transition-transform animate-in zoom-in-95 mx-auto">
               
-              <div className="bg-[#21242E] p-6 relative flex items-center justify-between">
+              <div className="bg-[#21242E] p-5 md:p-6 relative flex items-center justify-between">
                 <div>
-                  <span className="text-[9px] font-bold tracking-widest text-[#D1C292] uppercase border border-[#D1C292]/30 bg-[#D1C292]/10 px-2 py-0.5 rounded">Unidad Seleccionada</span>
-                  <h3 className="text-3xl font-bold text-white mt-2 tracking-tight">Dpto. {unidadSeleccionada.id}</h3>
+                  <span className="text-[8px] md:text-[9px] font-bold tracking-widest text-[#D1C292] uppercase border border-[#D1C292]/30 bg-[#D1C292]/10 px-2 py-0.5 rounded">Unidad Seleccionada</span>
+                  <h3 className="text-2xl md:text-3xl font-bold text-white mt-1.5 md:mt-2 tracking-tight">Dpto. {unidadSeleccionada.id}</h3>
                 </div>
-                <button onClick={() => setUnidadSeleccionada(null)} className="bg-white/10 text-white/70 w-8 h-8 rounded-full flex items-center justify-center font-bold hover:bg-white/20 hover:text-white transition-colors">&times;</button>
+                <button onClick={() => setUnidadSeleccionada(null)} className="bg-white/10 text-white/70 w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center font-bold hover:bg-white/20 hover:text-white transition-colors">&times;</button>
               </div>
 
-              <div className="p-6">
-                <div className="space-y-4 mb-6">
+              <div className="p-5 md:p-6">
+                <div className="space-y-3 md:space-y-4 mb-5 md:mb-6">
                   
-                  <div className="flex justify-between items-center pb-3 border-b border-neutral-100">
-                    <span className="text-xs font-bold text-[#415364]/60 uppercase tracking-widest">Tipología</span>
-                    <span className="font-bold text-[#21242E]">{unidadSeleccionada.tipo}</span>
+                  <div className="flex justify-between items-center pb-2.5 md:pb-3 border-b border-neutral-100">
+                    <span className="text-[10px] md:text-xs font-bold text-[#415364]/60 uppercase tracking-widest">Tipología</span>
+                    <span className="font-bold text-[#21242E] text-sm md:text-base">{unidadSeleccionada.tipo}</span>
                   </div>
 
-                  <div className="flex justify-between items-center pb-3 border-b border-neutral-100">
-                    <span className="text-xs font-bold text-[#415364]/60 uppercase tracking-widest">Área Total</span>
-                    <span className="font-bold text-[#21242E]">{unidadSeleccionada.area} m²</span>
+                  <div className="flex justify-between items-center pb-2.5 md:pb-3 border-b border-neutral-100">
+                    <span className="text-[10px] md:text-xs font-bold text-[#415364]/60 uppercase tracking-widest">Área Total</span>
+                    <span className="font-bold text-[#21242E] text-sm md:text-base">{unidadSeleccionada.area} m²</span>
                   </div>
 
-                  <div className="flex justify-between items-start pb-3 border-b border-neutral-100">
+                  <div className="flex justify-between items-start pb-2.5 md:pb-3 border-b border-neutral-100">
                     <div className="flex flex-col">
-                      <span className="text-xs font-bold text-[#415364]/60 uppercase tracking-widest">Valor por m²</span>
-                      <span className="text-[9px] text-[#D1C292] uppercase tracking-widest font-bold mt-1">Pre-Lanzamiento</span>
+                      <span className="text-[10px] md:text-xs font-bold text-[#415364]/60 uppercase tracking-widest">Valor por m²</span>
+                      <span className="text-[8px] md:text-[9px] text-[#D1C292] uppercase tracking-widest font-bold mt-1">Pre-Lanzamiento</span>
                     </div>
                     <div className="text-right flex flex-col items-end">
-                      <span className="font-bold text-[#21242E] text-base font-mono">${calcularM2Lanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                      <span className="text-[9px] text-[#415364]/40 uppercase tracking-widest font-bold mt-1">Sin anexos</span>
+                      <span className="font-bold text-[#21242E] text-sm md:text-base font-mono">${calcularM2Lanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                      <span className="text-[8px] md:text-[9px] text-[#415364]/40 uppercase tracking-widest font-bold mt-1">Sin anexos</span>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 pt-2">
+                  <div className="grid grid-cols-2 gap-3 pt-1 md:pt-2">
                     <button 
                       onClick={() => {
                         setPlanoUrlActivo(obtenerUrlPlano(unidadSeleccionada.area));
                         registrarAccion('VIO_PLANO_INTERNO', String(unidadSeleccionada.id), 'Abrió imagen del plano');
                       }} 
-                      className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl border border-neutral-200 bg-[#F9F7F5] hover:border-[#964B36] hover:bg-white transition-colors group"
+                      className="flex flex-col items-center justify-center gap-1.5 md:gap-2 p-2.5 md:p-3 rounded-xl border border-neutral-200 bg-[#F9F7F5] hover:border-[#964B36] hover:bg-white transition-colors group"
                     >
                       <div className="text-[#415364] group-hover:text-[#964B36] transition-colors"><PlanIcon /></div>
-                      <span className="text-[10px] md:text-[9px] font-bold text-[#415364] uppercase tracking-widest group-hover:text-[#964B36] transition-colors">Ver Plano</span>
+                      <span className="text-[9px] font-bold text-[#415364] uppercase tracking-widest group-hover:text-[#964B36] transition-colors">Ver Plano</span>
                     </button>
                     
                     <button 
@@ -548,31 +546,31 @@ export default function ReservaExpressPage() {
                         setVistaActiva(obtenerKeyVista(unidadSeleccionada));
                         registrarAccion('VIO_IMAGEN_VISTA', String(unidadSeleccionada.id), `Vio vista: ${unidadSeleccionada.vista}`);
                       }} 
-                      className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl border border-neutral-200 bg-[#F9F7F5] hover:border-[#964B36] hover:bg-white transition-colors group"
+                      className="flex flex-col items-center justify-center gap-1.5 md:gap-2 p-2.5 md:p-3 rounded-xl border border-neutral-200 bg-[#F9F7F5] hover:border-[#964B36] hover:bg-white transition-colors group"
                     >
                       <div className="text-[#415364] group-hover:text-[#964B36] transition-colors"><ViewIcon /></div>
-                      <span className="text-[10px] md:text-[9px] font-bold text-[#415364] uppercase tracking-widest group-hover:text-[#964B36] transition-colors">Ver Vista</span>
+                      <span className="text-[9px] font-bold text-[#415364] uppercase tracking-widest group-hover:text-[#964B36] transition-colors">Ver Vista</span>
                     </button>
                   </div>
                 </div>
 
-                <div className="bg-[#F9F7F5] p-5 rounded-2xl border border-[#EAE3DC] mb-6 flex justify-between items-center">
+                <div className="bg-[#F9F7F5] p-4 md:p-5 rounded-2xl border border-[#EAE3DC] mb-5 md:mb-6 flex justify-between items-center">
                   <div>
-                    <span className="text-[10px] font-bold text-[#415364]/60 uppercase tracking-widest block mb-1">Inversión Total</span>
-                    <span className="text-[8px] text-[#964B36] font-bold uppercase tracking-widest">
+                    <span className="text-[9px] md:text-[10px] font-bold text-[#415364]/60 uppercase tracking-widest block mb-1">Inversión Total</span>
+                    <span className="text-[7px] md:text-[8px] text-[#964B36] font-bold uppercase tracking-widest">
                       {(unidadSeleccionada.tipo || '').includes('3 Dorm') ? 'Incluye 2 parqueos y 1 bodega' : 'Incluye 1 parqueo y 1 bodega'}
                     </span>
                   </div>
-                  <span className="text-2xl font-bold text-[#21242E] tracking-tight">
+                  <span className="text-xl md:text-2xl font-bold text-[#21242E] tracking-tight">
                     ${unidadSeleccionada.precio?.toLocaleString('en-US') || 0}
                   </span>
                 </div>
 
-                <div className="space-y-3">
-                  <button onClick={() => { setPaso('formulario'); registrarAccion('ABRIO_FORMULARIO_RESERVA', String(unidadSeleccionada.id), 'Dio clic en botón de bloqueo web'); }} className="w-full bg-[#964B36] text-white font-bold uppercase tracking-widest text-[13px] md:text-[11px] py-4 rounded-xl hover:bg-[#7d3e2c] transition-all shadow-md">
+                <div className="space-y-2.5 md:space-y-3">
+                  <button onClick={() => { setPaso('formulario'); registrarAccion('ABRIO_FORMULARIO_RESERVA', String(unidadSeleccionada.id), 'Dio clic en botón de bloqueo web'); }} className="w-full bg-[#964B36] text-white font-bold uppercase tracking-widest text-[10px] md:text-[11px] py-3.5 md:py-4 rounded-xl hover:bg-[#7d3e2c] transition-all shadow-md">
                     Bloquear Unidad Web ($2,500)
                   </button>
-                  <button onClick={contactarAsesor} className="w-full bg-white border border-neutral-200 text-[#21242E] font-bold uppercase tracking-widest text-[13px] md:text-[11px] py-3.5 rounded-xl hover:bg-[#F9F7F5] hover:border-neutral-300 transition-all flex items-center justify-center gap-2">
+                  <button onClick={contactarAsesor} className="w-full bg-white border border-neutral-200 text-[#21242E] font-bold uppercase tracking-widest text-[10px] md:text-[11px] py-3 md:py-3.5 rounded-xl hover:bg-[#F9F7F5] hover:border-neutral-300 transition-all flex items-center justify-center gap-2">
                     <ChatIcon /> Cotizar con Asesor
                   </button>
                 </div>
