@@ -362,9 +362,9 @@ export default function ReservaExpressPage() {
           </div>
         )}
 
-        {/* MAPA E INVENTARIO CON CUADRÍCULA MATEMÁTICA EXACTA */}
+        {/* MAPA E INVENTARIO CON CUADRÍCULA CALIBRADA (Paredes perfectas y proporciones exactas al dibujo) */}
         {paso === 'mapa' && (
-          <div className="space-y-3 md:space-y-4 animate-in slide-in-from-bottom-8 duration-500 w-full max-w-5xl mx-auto flex flex-col items-center">
+          <div className="space-y-4 md:space-y-4 animate-in slide-in-from-bottom-8 duration-500 w-full max-w-5xl mx-auto flex flex-col items-center">
             
             <div className="flex flex-col md:flex-row w-full md:justify-between items-center md:items-end px-2 gap-3 mb-1">
               <div className="w-full text-center md:text-left">
@@ -385,7 +385,7 @@ export default function ReservaExpressPage() {
                 {/* ROOFTOP */}
                 <div className="flex items-stretch gap-0.5 md:gap-1.5 mb-1 md:mb-1.5 w-full">
                   <div className="w-14 min-w-[3.5rem] md:w-20 md:min-w-[5rem] shrink-0 text-[8px] md:text-[9px] font-bold text-[#415364]/50 uppercase tracking-widest flex items-center justify-end pr-1 md:pr-3">Cima</div>
-                  <div className="flex-1 bg-[#D1C292]/10 border border-[#D1C292]/40 p-1 md:p-2 rounded-t-xl text-center flex items-center justify-center">
+                  <div className="flex-1 bg-[#D1C292]/10 border border-[#D1C292]/40 p-1.5 md:p-2 rounded-t-xl text-center flex items-center justify-center">
                     <span className="text-[6px] md:text-[10px] font-bold text-[#8A7A55] uppercase tracking-widest">Rooftop & Amenidades Exclusivas</span>
                   </div>
                 </div>
@@ -395,8 +395,8 @@ export default function ReservaExpressPage() {
                   <div className="w-14 min-w-[3.5rem] md:w-20 md:min-w-[5rem] shrink-0 flex flex-col justify-center pr-1 md:pr-3">
                     <span className="text-[8px] md:text-[9px] font-bold text-[#415364]/50 uppercase tracking-widest text-right leading-tight">Vistas</span>
                   </div>
-                  {/* Grid de Vistas perfectamente alineado con los 5 bloques del edificio */}
-                  <div className="flex-1 grid grid-cols-[2fr_4fr_8fr_3fr_8fr] gap-0.5 md:gap-1.5">
+                  {/* Grid BASE 5 columnas basado en m2 reales: 3fr 4fr 8fr 5fr 7fr */}
+                  <div className="flex-1 grid grid-cols-[3fr_4fr_8fr_5fr_7fr] gap-0.5 md:gap-1.5">
                     <button onClick={() => {setVistaActiva('urb'); registrarAccion('VIO_VISTA_GENERAL', undefined, 'Vio vista general a la Ciudad');}} className="col-span-1 bg-[#F9F7F5] hover:bg-neutral-100 shadow-sm rounded-lg py-1 md:py-1.5 px-0.5 md:px-1 flex flex-col items-center justify-center border border-neutral-200 transition-colors group">
                       <span className="text-[5px] md:text-[8px] font-bold uppercase tracking-widest text-[#415364]/70 group-hover:text-neutral-800 text-center leading-tight">A la<br/>Ciudad</span>
                     </button>
@@ -410,57 +410,61 @@ export default function ReservaExpressPage() {
                 </div>
 
                 {/* PISOS */}
-                {PISOS_EDIFICIO.map(piso => (
-                  <div key={piso} className="flex items-stretch gap-0.5 md:gap-1.5 mb-1 md:mb-1.5 w-full">
-                    <div className="w-14 min-w-[3.5rem] md:w-20 md:min-w-[5rem] shrink-0 flex items-center justify-end pr-1 md:pr-3 text-[9px] md:text-[11px] font-bold text-[#415364]/70 uppercase tracking-widest">Piso {piso}</div>
-                    
-                    {/* LA MAGIA DEL GRID: 5 columnas exactas que dictan la proporción real */}
-                    <div className="flex-1 grid gap-0.5 md:gap-1.5 grid-cols-[2fr_4fr_8fr_3fr_8fr]">
-                      {LAYOUT_FACHADA[piso].map((idUnidad, colIndex) => {
-                        if (!idUnidad) return <div key={`empty-${piso}-${colIndex}`} className="invisible"></div>;
-                        const unidad = obtenerDatosUnidad(idUnidad);
-                        
-                        if (!unidad) return <div key={`notfound-${idUnidad}`} className="invisible"></div>;
+                {PISOS_EDIFICIO.map(piso => {
+                  const isPisoAlto = piso >= 4;
+                  return (
+                    <div key={piso} className="flex items-stretch gap-0.5 md:gap-1.5 mb-1 md:mb-1.5 w-full">
+                      <div className="w-14 min-w-[3.5rem] md:w-20 md:min-w-[5rem] shrink-0 flex items-center justify-end pr-1 md:pr-3 text-[9px] md:text-[11px] font-bold text-[#415364]/70 uppercase tracking-widest">Piso {piso}</div>
+                      
+                      {/* Grid universal que asegura que todas las divisiones coincidan verticalmente */}
+                      <div className="flex-1 grid gap-0.5 md:gap-1.5 grid-cols-[3fr_4fr_8fr_5fr_7fr]">
+                        {LAYOUT_FACHADA[piso].map((idUnidad, colIndex) => {
+                          if (!idUnidad) return <div key={`empty-${piso}-${colIndex}`} className="invisible"></div>;
+                          const unidad = obtenerDatosUnidad(idUnidad);
+                          if (!unidad) return <div key={`notfound-${idUnidad}`} className="invisible"></div>;
 
-                        const noCoincide = unidad.tipo !== filtroTipo;
-                        const reservado = unidad.estado === 'RESERVADO' || unidad.estado === 'VENDIDO' || unidad.estado === 'BLOQUEADO' || unidad.estado === 'SEPARADO';
-                        const desactivado = noCoincide || reservado;
-                        
-                        let botonEstilo = desactivado ? "border border-neutral-200 bg-[#F2F0ED] cursor-not-allowed opacity-70" : "bg-white border-2 border-[#964B36] shadow-sm cursor-pointer transform hover:-translate-y-0.5 hover:shadow-md hover:bg-[#964B36]/5 relative z-10";
-                        
-                        // En los pisos altos (4,5,6), la primera unidad (404, 504, 604) ocupa exactamente el espacio de las dos de abajo (x01 + x05)
-                        if (['604', '504', '404'].includes(String(unidad.id))) {
-                          botonEstilo += " col-span-2";
-                        }
+                          const noCoincide = unidad.tipo !== filtroTipo;
+                          const reservado = unidad.estado === 'RESERVADO' || unidad.estado === 'VENDIDO' || unidad.estado === 'BLOQUEADO' || unidad.estado === 'SEPARADO';
+                          const desactivado = noCoincide || reservado;
+                          
+                          let botonEstilo = desactivado ? "border border-neutral-200 bg-[#F2F0ED] cursor-not-allowed opacity-70" : "bg-white border-2 border-[#964B36] shadow-sm cursor-pointer transform hover:-translate-y-0.5 hover:shadow-md hover:bg-[#964B36]/5 relative z-10";
+                          
+                          // Lógica Maestra: En los pisos altos, la primera unidad de la izquierda engloba las 2 columnas de abajo.
+                          if (isPisoAlto && colIndex === 0) {
+                            botonEstilo += " col-span-2";
+                          } else {
+                            botonEstilo += " col-span-1";
+                          }
 
-                        let textoIdEstilo = desactivado ? "text-[#415364]/50" : "text-[#964B36] font-bold";
-                        let textoTipoEstilo = desactivado ? "text-[#415364]/40" : "text-[#415364] font-medium";
+                          let textoIdEstilo = desactivado ? "text-[#415364]/50" : "text-[#964B36] font-bold";
+                          let textoTipoEstilo = desactivado ? "text-[#415364]/40" : "text-[#415364] font-medium";
 
-                        return (
-                          <button
-                            key={unidad.id}
-                            disabled={desactivado}
-                            onClick={() => { 
-                              if(!desactivado) {
-                                setUnidadSeleccionada(unidad);
-                                registrarAccion('ABRIO_UNIDAD', String(unidad.id), 'Revisó detalles de unidad');
-                              } 
-                            }}
-                            className={`w-full h-full flex flex-col items-center justify-center p-0.5 md:p-1 rounded-lg md:rounded-xl transition-all duration-300 min-h-[48px] md:min-h-[58px] overflow-hidden select-none touch-manipulation ${botonEstilo}`}
-                          >
-                            <span className={`text-[12px] md:text-[14px] font-bold tracking-tight leading-none ${textoIdEstilo}`}>{unidad.id}</span>
-                            {!desactivado && <span className={`mt-0.5 md:mt-1 text-[5px] md:text-[7.5px] text-center leading-tight uppercase tracking-wider whitespace-normal px-0.5 ${textoTipoEstilo}`}>{unidad.tipo}</span>}
-                          </button>
-                        );
-                      })}
+                          return (
+                            <button
+                              key={unidad.id}
+                              disabled={desactivado}
+                              onClick={() => { 
+                                if(!desactivado) {
+                                  setUnidadSeleccionada(unidad);
+                                  registrarAccion('ABRIO_UNIDAD', String(unidad.id), 'Revisó detalles de unidad');
+                                } 
+                              }}
+                              className={`w-full h-full flex flex-col items-center justify-center p-0.5 md:p-1 rounded-lg md:rounded-xl transition-all duration-300 min-h-[48px] md:min-h-[56px] overflow-hidden select-none touch-manipulation ${botonEstilo}`}
+                            >
+                              <span className={`text-[12px] md:text-[14px] font-bold tracking-tight leading-none ${textoIdEstilo}`}>{unidad.id}</span>
+                              {!desactivado && <span className={`mt-0.5 md:mt-1 text-[5px] md:text-[7.5px] text-center leading-tight uppercase tracking-wider whitespace-normal px-0.5 ${textoTipoEstilo}`}>{unidad.tipo}</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
 
                 {/* PLANTA BAJA */}
                 <div className="flex items-stretch gap-0.5 md:gap-1.5 mt-1 md:mt-1.5 w-full">
                   <div className="w-14 min-w-[3.5rem] md:w-20 md:min-w-[5rem] shrink-0 text-[8px] md:text-[10px] font-bold text-[#415364]/50 uppercase tracking-widest flex items-center justify-end pr-1 md:pr-3">PB</div>
-                  <div className="flex-1 bg-[#21242E] p-2 md:p-2.5 rounded-b-xl text-center flex flex-col justify-center shadow-inner border border-[#21242E]">
+                  <div className="flex-1 bg-[#21242E] p-2.5 md:p-3 rounded-b-xl text-center flex flex-col justify-center shadow-inner border border-[#21242E]">
                     <span className="text-[7px] sm:text-[11px] font-bold text-[#D1C292] uppercase tracking-widest">Planta Baja / Ingreso Principal</span>
                     <span className="text-[5px] sm:text-[8px] mt-0.5 uppercase tracking-widest text-white/50">Lobby Design • Locales Comerciales • Estacionamientos</span>
                   </div>
