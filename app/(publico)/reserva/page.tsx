@@ -362,7 +362,7 @@ export default function ReservaExpressPage() {
           </div>
         )}
 
-        {/* MAPA E INVENTARIO CON MATRIZ MAESTRA ALINEADA */}
+        {/* MAPA E INVENTARIO CON MATRIZ EXACTA PROPORCIONADA POR EL CLIENTE */}
         {paso === 'mapa' && (
           <div className="space-y-4 md:space-y-4 animate-in slide-in-from-bottom-8 duration-500 w-full max-w-5xl mx-auto flex flex-col items-center">
             
@@ -395,16 +395,14 @@ export default function ReservaExpressPage() {
                   <div className="w-14 min-w-[3.5rem] md:w-20 md:min-w-[5rem] shrink-0 flex flex-col justify-center pr-1 md:pr-3">
                     <span className="text-[8px] md:text-[9px] font-bold text-[#415364]/50 uppercase tracking-widest text-right leading-tight">Vistas</span>
                   </div>
-                  {/* GRID MAESTRO DE 5 COLUMNAS: 11fr 13fr 30fr 14fr 32fr */}
-                  <div className="flex-1 grid gap-0.5 md:gap-1.5" style={{ gridTemplateColumns: '11fr 13fr 30fr 14fr 32fr' }}>
-                    <button onClick={() => {setVistaActiva('urb'); registrarAccion('VIO_VISTA_GENERAL', undefined, 'Vio vista general a la Ciudad');}} style={{ gridColumn: 'span 1' }} className="w-full h-full bg-[#F9F7F5] hover:bg-neutral-100 shadow-sm rounded-lg py-1 md:py-1.5 px-0.5 md:px-1 flex flex-col items-center justify-center border border-neutral-200 transition-colors group">
+                  <div className="flex-1 grid gap-0.5 md:gap-1.5" style={{ gridTemplateColumns: '12fr 18fr 70fr' }}>
+                    <button onClick={() => {setVistaActiva('urb'); registrarAccion('VIO_VISTA_GENERAL', undefined, 'Vio vista general a la Ciudad');}} className="w-full h-full bg-[#F9F7F5] hover:bg-neutral-100 shadow-sm rounded-lg py-1 md:py-1.5 flex flex-col items-center justify-center border border-neutral-200 transition-colors group">
                       <span className="text-[5px] md:text-[8px] font-bold uppercase tracking-widest text-[#415364]/70 group-hover:text-neutral-800 text-center leading-tight">A la<br/>Ciudad</span>
                     </button>
-                    <button onClick={() => {setVistaActiva('wyndham'); registrarAccion('VIO_VISTA_GENERAL', undefined, 'Vio vista general al Wyndham');}} style={{ gridColumn: 'span 1' }} className="w-full h-full bg-sky-50/70 hover:bg-sky-100 shadow-sm rounded-lg py-1 md:py-1.5 px-0.5 md:px-1 flex flex-col items-center justify-center border border-sky-200 transition-colors group">
+                    <button onClick={() => {setVistaActiva('wyndham'); registrarAccion('VIO_VISTA_GENERAL', undefined, 'Vio vista general al Wyndham');}} className="w-full h-full bg-sky-50/70 hover:bg-sky-100 shadow-sm rounded-lg py-1 md:py-1.5 flex flex-col items-center justify-center border border-sky-200 transition-colors group">
                       <span className="text-[5px] md:text-[8px] font-bold uppercase tracking-widest text-sky-700 group-hover:text-sky-900 text-center leading-tight">Wyndham<br/>/ Mar</span>
                     </button>
-                    {/* La Panorámica ocupa el resto (Columnas 3, 4 y 5) */}
-                    <button onClick={() => {setVistaActiva('panoramica'); registrarAccion('VIO_VISTA_GENERAL', undefined, 'Vio vista Panorámica Frontal');}} style={{ gridColumn: 'span 3' }} className="w-full h-full bg-[#964B36]/5 hover:bg-[#964B36]/15 shadow-sm rounded-lg py-1 md:py-1.5 px-0.5 md:px-1 flex flex-col items-center justify-center border border-[#964B36]/30 transition-colors group">
+                    <button onClick={() => {setVistaActiva('panoramica'); registrarAccion('VIO_VISTA_GENERAL', undefined, 'Vio vista Panorámica Frontal');}} className="w-full h-full bg-[#964B36]/5 hover:bg-[#964B36]/15 shadow-sm rounded-lg py-1 md:py-1.5 flex flex-col items-center justify-center border border-[#964B36]/30 transition-colors group">
                       <span className="text-[6px] md:text-[9px] font-bold uppercase tracking-widest text-[#964B36] text-center leading-tight">Vista Panorámica Frontal<br/><span className="text-[4px] md:text-[6px] opacity-70 mt-0.5 inline-block">La Quadra / Umiña / Mar</span></span>
                     </button>
                   </div>
@@ -413,13 +411,17 @@ export default function ReservaExpressPage() {
                 {/* PISOS */}
                 {PISOS_EDIFICIO.map(piso => {
                   const isPisoAlto = piso >= 4;
+                  
+                  // GRID INDEPENDIENTE, BASADO EXACTAMENTE EN LA FÓRMULA DEL CLIENTE:
+                  const gridCols = isPisoAlto 
+                    ? '22fr 33fr 15fr 30fr' 
+                    : '12fr 18fr 25fr 15fr 30fr';
 
                   return (
                     <div key={piso} className="flex items-stretch gap-0.5 md:gap-1.5 mb-1 md:mb-1.5 w-full">
                       <div className="w-14 min-w-[3.5rem] md:w-20 md:min-w-[5rem] shrink-0 flex items-center justify-end pr-1 md:pr-3 text-[9px] md:text-[11px] font-bold text-[#415364]/70 uppercase tracking-widest">Piso {piso}</div>
                       
-                      {/* GRID MAESTRO: Alineación milimétrica para que las suites (Columna 4) bajen rectas */}
-                      <div className="flex-1 grid gap-0.5 md:gap-1.5" style={{ gridTemplateColumns: '11fr 13fr 30fr 14fr 32fr' }}>
+                      <div className="flex-1 grid gap-0.5 md:gap-1.5" style={{ gridTemplateColumns: gridCols }}>
                         {LAYOUT_FACHADA[piso].map((idUnidad, colIndex) => {
                           if (!idUnidad) return <div key={`empty-${piso}-${colIndex}`} className="invisible"></div>;
                           const unidad = obtenerDatosUnidad(idUnidad);
@@ -430,15 +432,7 @@ export default function ReservaExpressPage() {
                           const desactivado = noCoincide || reservado;
                           
                           let botonEstilo = desactivado ? "border border-neutral-200 bg-[#F2F0ED] cursor-not-allowed opacity-70" : "bg-white border-2 border-[#964B36] shadow-sm cursor-pointer transform hover:-translate-y-0.5 hover:shadow-md hover:bg-[#964B36]/5 relative z-10";
-                          let spanStyle = {};
-
-                          // EN PISOS ALTOS: La 604, 504, 404 ocupa exacto el espacio de las Columnas 1 y 2
-                          if (isPisoAlto && colIndex === 0) {
-                            spanStyle = { gridColumn: 'span 2' };
-                          } else {
-                            spanStyle = { gridColumn: 'span 1' };
-                          }
-
+                          
                           let textoIdEstilo = desactivado ? "text-[#415364]/50" : "text-[#964B36] font-bold";
                           let textoTipoEstilo = desactivado ? "text-[#415364]/40" : "text-[#415364] font-medium";
 
@@ -446,7 +440,6 @@ export default function ReservaExpressPage() {
                             <button
                               key={unidad.id}
                               disabled={desactivado}
-                              style={spanStyle}
                               onClick={() => { 
                                 if(!desactivado) {
                                   setUnidadSeleccionada(unidad);
