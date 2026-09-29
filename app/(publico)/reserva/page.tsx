@@ -362,9 +362,9 @@ export default function ReservaExpressPage() {
           </div>
         )}
 
-        {/* MAPA E INVENTARIO CON CUADRÍCULA UNIVERSAL (Paredes perfectas, 403 grande) */}
+        {/* MAPA E INVENTARIO CON CUADRÍCULA CALIBRADA (Paredes perfectas y tamaños proporcionales) */}
         {paso === 'mapa' && (
-          <div className="space-y-3 md:space-y-4 animate-in slide-in-from-bottom-8 duration-500 w-full max-w-5xl mx-auto flex flex-col items-center">
+          <div className="space-y-4 md:space-y-4 animate-in slide-in-from-bottom-8 duration-500 w-full max-w-5xl mx-auto flex flex-col items-center">
             
             <div className="flex flex-col md:flex-row w-full md:justify-between items-center md:items-end px-2 gap-3 mb-1">
               <div className="w-full text-center md:text-left">
@@ -395,15 +395,15 @@ export default function ReservaExpressPage() {
                   <div className="w-14 min-w-[3.5rem] md:w-20 md:min-w-[5rem] shrink-0 flex flex-col justify-center pr-1 md:pr-3">
                     <span className="text-[8px] md:text-[9px] font-bold text-[#415364]/50 uppercase tracking-widest text-right leading-tight">Vistas</span>
                   </div>
-                  {/* Grid Universal: 4fr_4fr_10fr_5fr_9fr */}
-                  <div className="flex-1 grid grid-cols-[4fr_4fr_10fr_5fr_9fr] gap-0.5 md:gap-1.5">
-                    <button onClick={() => {setVistaActiva('urb'); registrarAccion('VIO_VISTA_GENERAL', undefined, 'Vio vista general a la Ciudad');}} className="col-span-1 bg-[#F9F7F5] hover:bg-neutral-100 shadow-sm rounded-lg py-1 md:py-1.5 px-0.5 md:px-1 flex flex-col items-center justify-center border border-neutral-200 transition-colors group">
+                  {/* Grid Universal alineado con los pisos de abajo */}
+                  <div className="flex-1 grid grid-cols-[6fr_8fr_16fr_10fr_18fr] gap-0.5 md:gap-1.5">
+                    <button onClick={() => {setVistaActiva('urb'); registrarAccion('VIO_VISTA_GENERAL', undefined, 'Vio vista general a la Ciudad');}} className="col-span-2 bg-[#F9F7F5] hover:bg-neutral-100 shadow-sm rounded-lg py-1 md:py-1.5 px-0.5 md:px-1 flex flex-col items-center justify-center border border-neutral-200 transition-colors group">
                       <span className="text-[5px] md:text-[8px] font-bold uppercase tracking-widest text-[#415364]/70 group-hover:text-neutral-800 text-center leading-tight">A la<br/>Ciudad</span>
                     </button>
                     <button onClick={() => {setVistaActiva('wyndham'); registrarAccion('VIO_VISTA_GENERAL', undefined, 'Vio vista general al Wyndham');}} className="col-span-1 bg-sky-50/70 hover:bg-sky-100 shadow-sm rounded-lg py-1 md:py-1.5 px-0.5 md:px-1 flex flex-col items-center justify-center border border-sky-200 transition-colors group">
                       <span className="text-[5px] md:text-[8px] font-bold uppercase tracking-widest text-sky-700 group-hover:text-sky-900 text-center leading-tight">Wyndham<br/>/ Mar</span>
                     </button>
-                    <button onClick={() => {setVistaActiva('panoramica'); registrarAccion('VIO_VISTA_GENERAL', undefined, 'Vio vista Panorámica Frontal');}} className="col-span-3 bg-[#964B36]/5 hover:bg-[#964B36]/15 shadow-sm rounded-lg py-1 md:py-1.5 px-0.5 md:px-1 flex flex-col items-center justify-center border border-[#964B36]/30 transition-colors group">
+                    <button onClick={() => {setVistaActiva('panoramica'); registrarAccion('VIO_VISTA_GENERAL', undefined, 'Vio vista Panorámica Frontal');}} className="col-span-2 bg-[#964B36]/5 hover:bg-[#964B36]/15 shadow-sm rounded-lg py-1 md:py-1.5 px-0.5 md:px-1 flex flex-col items-center justify-center border border-[#964B36]/30 transition-colors group">
                       <span className="text-[6px] md:text-[9px] font-bold uppercase tracking-widest text-[#964B36] text-center leading-tight">Vista Panorámica Frontal<br/><span className="text-[4px] md:text-[6px] opacity-70 mt-0.5 inline-block">La Quadra / Umiña / Mar</span></span>
                     </button>
                   </div>
@@ -414,8 +414,8 @@ export default function ReservaExpressPage() {
                   <div key={piso} className="flex items-stretch gap-0.5 md:gap-1.5 mb-1 md:mb-1.5 w-full">
                     <div className="w-14 min-w-[3.5rem] md:w-20 md:min-w-[5rem] shrink-0 flex items-center justify-end pr-1 md:pr-3 text-[9px] md:text-[11px] font-bold text-[#415364]/70 uppercase tracking-widest">Piso {piso}</div>
                     
-                    {/* GRID UNIVERSAL PARA QUE PAREDES COINCIDAN */}
-                    <div className="flex-1 grid gap-0.5 md:gap-1.5 grid-cols-[4fr_4fr_10fr_5fr_9fr]">
+                    {/* GRID UNIVERSAL PARA QUE PAREDES COINCIDAN EXACTAMENTE */}
+                    <div className="flex-1 grid gap-0.5 md:gap-1.5 grid-cols-[6fr_8fr_16fr_10fr_18fr]">
                       {LAYOUT_FACHADA[piso].map((idUnidad, colIndex) => {
                         if (!idUnidad) return <div key={`empty-${piso}-${colIndex}`} className="invisible"></div>;
                         const unidad = obtenerDatosUnidad(idUnidad);
@@ -426,11 +426,11 @@ export default function ReservaExpressPage() {
                         const reservado = unidad.estado === 'RESERVADO' || unidad.estado === 'VENDIDO' || unidad.estado === 'BLOQUEADO' || unidad.estado === 'SEPARADO';
                         const desactivado = noCoincide || reservado;
                         
-                        // Altura perfecta (46px movil, 52px pc para encajar en 1 sola pantalla)
+                        // Altura perfecta (48px movil, 56px pc para encajar en 1 sola pantalla)
                         let botonEstilo = desactivado ? "border border-neutral-200 bg-[#F2F0ED] cursor-not-allowed opacity-70" : "bg-white border-2 border-[#964B36] shadow-sm cursor-pointer transform hover:-translate-y-0.5 hover:shadow-md hover:bg-[#964B36]/5 relative z-10";
                         
-                        // INVERSIÓN: Ahora los x03 son los gigantes
-                        if (['603', '503', '403'].includes(String(unidad.id))) {
+                        // INVERSIÓN ARQUITECTÓNICA: x04 arriba engloban el espacio de las dos de abajo (col-span-2)
+                        if (['604', '504', '404'].includes(String(unidad.id))) {
                           botonEstilo += " col-span-2";
                         }
 
@@ -447,7 +447,7 @@ export default function ReservaExpressPage() {
                                 registrarAccion('ABRIO_UNIDAD', String(unidad.id), 'Revisó detalles de unidad');
                               } 
                             }}
-                            className={`w-full h-full flex flex-col items-center justify-center p-0.5 md:p-1 rounded-lg md:rounded-xl transition-all duration-300 min-h-[46px] md:min-h-[52px] overflow-hidden select-none touch-manipulation ${botonEstilo}`}
+                            className={`w-full h-full flex flex-col items-center justify-center p-0.5 md:p-1 rounded-lg md:rounded-xl transition-all duration-300 min-h-[48px] md:min-h-[56px] overflow-hidden select-none touch-manipulation ${botonEstilo}`}
                           >
                             <span className={`text-[12px] md:text-[14px] font-bold tracking-tight leading-none ${textoIdEstilo}`}>{unidad.id}</span>
                             {!desactivado && <span className={`mt-0.5 md:mt-1 text-[5px] md:text-[7.5px] text-center leading-tight uppercase tracking-wider whitespace-normal px-0.5 ${textoTipoEstilo}`}>{unidad.tipo}</span>}
