@@ -362,7 +362,7 @@ export default function ReservaExpressPage() {
           </div>
         )}
 
-        {/* MAPA E INVENTARIO CON LA CUADRÍCULA MAESTRA EXACTA AL DIBUJO DEL CLIENTE */}
+        {/* MAPA E INVENTARIO (GRID EXACTO DEL DIBUJO) */}
         {paso === 'mapa' && (
           <div className="space-y-4 md:space-y-4 animate-in slide-in-from-bottom-8 duration-500 w-full max-w-5xl mx-auto flex flex-col items-center">
             
@@ -395,8 +395,8 @@ export default function ReservaExpressPage() {
                   <div className="w-14 min-w-[3.5rem] md:w-20 md:min-w-[5rem] shrink-0 flex flex-col justify-center pr-1 md:pr-3">
                     <span className="text-[8px] md:text-[9px] font-bold text-[#415364]/50 uppercase tracking-widest text-right leading-tight">Vistas</span>
                   </div>
-                  {/* GRID BASE 5 COLUMNAS MAESTRO: 12% - 18% - 32% - 14% - 24% */}
-                  <div className="flex-1 grid gap-0.5 md:gap-1.5" style={{ gridTemplateColumns: '12fr 18fr 32fr 14fr 24fr' }}>
+                  {/* GRID MAESTRO DE VISTAS (10 - 15 - 28 - 12 - 22) */}
+                  <div className="flex-1 grid gap-0.5 md:gap-1.5" style={{ gridTemplateColumns: '10fr 15fr 28fr 12fr 22fr' }}>
                     <button onClick={() => {setVistaActiva('urb'); registrarAccion('VIO_VISTA_GENERAL', undefined, 'Vio vista general a la Ciudad');}} style={{ gridColumn: 'span 1' }} className="w-full h-full bg-[#F9F7F5] hover:bg-neutral-100 shadow-sm rounded-lg py-1 md:py-1.5 px-0.5 md:px-1 flex flex-col items-center justify-center border border-neutral-200 transition-colors group">
                       <span className="text-[5px] md:text-[8px] font-bold uppercase tracking-widest text-[#415364]/70 group-hover:text-neutral-800 text-center leading-tight">A la<br/>Ciudad</span>
                     </button>
@@ -417,8 +417,8 @@ export default function ReservaExpressPage() {
                     <div key={piso} className="flex items-stretch gap-0.5 md:gap-1.5 mb-1 md:mb-1.5 w-full">
                       <div className="w-14 min-w-[3.5rem] md:w-20 md:min-w-[5rem] shrink-0 flex items-center justify-end pr-1 md:pr-3 text-[9px] md:text-[11px] font-bold text-[#415364]/70 uppercase tracking-widest">Piso {piso}</div>
                       
-                      {/* GRID BASE 5 COLUMNAS MAESTRO: Las paredes bajan rectas sin fallar un milímetro */}
-                      <div className="flex-1 grid gap-0.5 md:gap-1.5" style={{ gridTemplateColumns: '12fr 18fr 32fr 14fr 24fr' }}>
+                      {/* GRID MAESTRO DE DEPARTAMENTOS: (10 - 15 - 28 - 12 - 22) */}
+                      <div className="flex-1 grid gap-0.5 md:gap-1.5" style={{ gridTemplateColumns: '10fr 15fr 28fr 12fr 22fr' }}>
                         {LAYOUT_FACHADA[piso].map((idUnidad, colIndex) => {
                           if (!idUnidad) return <div key={`empty-${piso}-${colIndex}`} className="invisible"></div>;
                           const unidad = obtenerDatosUnidad(idUnidad);
@@ -431,11 +431,13 @@ export default function ReservaExpressPage() {
                           let botonEstilo = desactivado ? "border border-neutral-200 bg-[#F2F0ED] cursor-not-allowed opacity-70" : "bg-white border-2 border-[#964B36] shadow-sm cursor-pointer transform hover:-translate-y-0.5 hover:shadow-md hover:bg-[#964B36]/5 relative z-10";
                           let spanStyle = {};
 
-                          // LÓGICA DE FUSIÓN DE COLUMNAS PARA PISOS ALTOS (Tal cual tu dibujo)
+                          // LÓGICA ARQUITECTÓNICA EXACTA AL DIBUJO:
+                          // En pisos altos, el primero (x04) ocupa el espacio de los dos de abajo (x01 + x05) -> span 2. 
+                          // Así será más grande que la x05, pero no tapará la línea de la x03.
                           if (isPisoAlto && colIndex === 0) {
-                            spanStyle = { gridColumn: 'span 2' }; // La 604, 504, 404 absorben las columnas 1 y 2
+                            spanStyle = { gridColumn: 'span 2' };
                           } else {
-                            spanStyle = { gridColumn: 'span 1' }; // El resto toma su columna natural
+                            spanStyle = { gridColumn: 'span 1' };
                           }
 
                           let textoIdEstilo = desactivado ? "text-[#415364]/50" : "text-[#964B36] font-bold";
