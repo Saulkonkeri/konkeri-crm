@@ -80,6 +80,36 @@ const traducirTipologia = (tipologiaDB: string) => {
   return tipologiaDB;
 };
 
+// --- MOTOR MATEMÁTICO DE ANCHOS PORCENTUALES ---
+// Esto reemplaza al inestable CSS Grid y asegura que las proporciones sean exactas en todos los dispositivos
+const getAnchoUnidad = (piso: number | string, index: number) => {
+  // FILA DE VISTAS
+  if (piso === 'vistas') {
+    if (index === 0) return '12%'; // A la ciudad (Alinea con 301)
+    if (index === 1) return '18%'; // Wyndham (Alinea con 305)
+    if (index === 2) return '70%'; // Panoramica (Suma exacta de 304 + 303 + 302)
+  }
+  
+  // PISOS ALTOS (4 Unidades)
+  if (typeof piso === 'number' && piso >= 4) {
+    if (index === 0) return '30%'; // x04 (Suma exacta de la 301 + 305)
+    if (index === 1) return '32%'; // x03 (El gigante)
+    if (index === 2) return '14%'; // x02 (La Suite, un poco mayor que la x01)
+    if (index === 3) return '24%'; // x01
+  }
+  
+  // PISOS BAJOS (5 Unidades)
+  if (typeof piso === 'number' && piso < 4) {
+    if (index === 0) return '12%'; // x01 (La más pequeña)
+    if (index === 1) return '18%'; // x05 (2 dorms pequeño)
+    if (index === 2) return '32%'; // x04 (El gigante)
+    if (index === 3) return '14%'; // x03 (La Suite, un poco mayor que la x01)
+    if (index === 4) return '24%'; // x02
+  }
+  
+  return '20%'; // Fallback
+};
+
 const PlanIcon = () => (
   <svg className="w-5 h-5 md:w-4 md:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 4v16h16V4H4zm4 0v16m8-16v16M4 12h16" /></svg>
 );
@@ -362,7 +392,7 @@ export default function ReservaExpressPage() {
           </div>
         )}
 
-        {/* MAPA E INVENTARIO (GRID EXACTO DEL DIBUJO) */}
+        {/* MAPA E INVENTARIO CON LA ESTRUCTURA MATEMÁTICA PERFECTA (FLEXBOX) */}
         {paso === 'mapa' && (
           <div className="space-y-4 md:space-y-4 animate-in slide-in-from-bottom-8 duration-500 w-full max-w-5xl mx-auto flex flex-col items-center">
             
@@ -383,71 +413,66 @@ export default function ReservaExpressPage() {
               <div className="flex flex-col w-full">
                 
                 {/* ROOFTOP */}
-                <div className="flex items-stretch gap-0.5 md:gap-1.5 mb-1 md:mb-1.5 w-full">
-                  <div className="w-14 min-w-[3.5rem] md:w-20 md:min-w-[5rem] shrink-0 text-[8px] md:text-[9px] font-bold text-[#415364]/50 uppercase tracking-widest flex items-center justify-end pr-1 md:pr-3">Cima</div>
-                  <div className="flex-1 bg-[#D1C292]/10 border border-[#D1C292]/40 p-1.5 md:p-2 rounded-t-xl text-center flex items-center justify-center">
-                    <span className="text-[6px] md:text-[10px] font-bold text-[#8A7A55] uppercase tracking-widest">Rooftop & Amenidades Exclusivas</span>
+                <div className="flex items-stretch mb-1 md:mb-1.5 w-full">
+                  <div className="w-14 min-w-[3.5rem] md:w-20 md:min-w-[5rem] shrink-0 text-[8px] md:text-[9px] font-bold text-[#415364]/50 uppercase tracking-widest flex items-center justify-end pr-1.5 md:pr-3">Cima</div>
+                  <div className="flex-1 flex w-full">
+                    <div className="w-full px-0.5 md:px-1">
+                      <div className="bg-[#D1C292]/10 border border-[#D1C292]/40 p-1.5 md:p-2 rounded-t-xl text-center flex items-center justify-center h-full w-full">
+                        <span className="text-[6px] md:text-[10px] font-bold text-[#8A7A55] uppercase tracking-widest">Rooftop & Amenidades Exclusivas</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* VISTAS */}
-                <div className="flex items-stretch gap-0.5 md:gap-1.5 mb-2 md:mb-3 w-full">
-                  <div className="w-14 min-w-[3.5rem] md:w-20 md:min-w-[5rem] shrink-0 flex flex-col justify-center pr-1 md:pr-3">
+                {/* VISTAS (12% - 18% - 70%) */}
+                <div className="flex items-stretch mb-2 md:mb-3 w-full">
+                  <div className="w-14 min-w-[3.5rem] md:w-20 md:min-w-[5rem] shrink-0 flex flex-col justify-center pr-1.5 md:pr-3">
                     <span className="text-[8px] md:text-[9px] font-bold text-[#415364]/50 uppercase tracking-widest text-right leading-tight">Vistas</span>
                   </div>
-                  {/* GRID MAESTRO DE VISTAS (10 - 15 - 28 - 12 - 22) */}
-                  <div className="flex-1 grid gap-0.5 md:gap-1.5" style={{ gridTemplateColumns: '10fr 15fr 28fr 12fr 22fr' }}>
-                    <button onClick={() => {setVistaActiva('urb'); registrarAccion('VIO_VISTA_GENERAL', undefined, 'Vio vista general a la Ciudad');}} style={{ gridColumn: 'span 1' }} className="w-full h-full bg-[#F9F7F5] hover:bg-neutral-100 shadow-sm rounded-lg py-1 md:py-1.5 px-0.5 md:px-1 flex flex-col items-center justify-center border border-neutral-200 transition-colors group">
-                      <span className="text-[5px] md:text-[8px] font-bold uppercase tracking-widest text-[#415364]/70 group-hover:text-neutral-800 text-center leading-tight">A la<br/>Ciudad</span>
-                    </button>
-                    <button onClick={() => {setVistaActiva('wyndham'); registrarAccion('VIO_VISTA_GENERAL', undefined, 'Vio vista general al Wyndham');}} style={{ gridColumn: 'span 1' }} className="w-full h-full bg-sky-50/70 hover:bg-sky-100 shadow-sm rounded-lg py-1 md:py-1.5 px-0.5 md:px-1 flex flex-col items-center justify-center border border-sky-200 transition-colors group">
-                      <span className="text-[5px] md:text-[8px] font-bold uppercase tracking-widest text-sky-700 group-hover:text-sky-900 text-center leading-tight">Wyndham<br/>/ Mar</span>
-                    </button>
-                    <button onClick={() => {setVistaActiva('panoramica'); registrarAccion('VIO_VISTA_GENERAL', undefined, 'Vio vista Panorámica Frontal');}} style={{ gridColumn: 'span 3' }} className="w-full h-full bg-[#964B36]/5 hover:bg-[#964B36]/15 shadow-sm rounded-lg py-1 md:py-1.5 px-0.5 md:px-1 flex flex-col items-center justify-center border border-[#964B36]/30 transition-colors group">
-                      <span className="text-[6px] md:text-[9px] font-bold uppercase tracking-widest text-[#964B36] text-center leading-tight">Vista Panorámica Frontal<br/><span className="text-[4px] md:text-[6px] opacity-70 mt-0.5 inline-block">La Quadra / Umiña / Mar</span></span>
-                    </button>
+                  <div className="flex-1 flex w-full -mx-0.5 md:-mx-1">
+                    <div style={{ width: getAnchoUnidad('vistas', 0) }} className="px-0.5 md:px-1">
+                      <button onClick={() => {setVistaActiva('urb'); registrarAccion('VIO_VISTA_GENERAL', undefined, 'Vio vista general a la Ciudad');}} className="w-full h-full bg-[#F9F7F5] hover:bg-neutral-100 shadow-sm rounded-lg py-1 md:py-1.5 flex flex-col items-center justify-center border border-neutral-200 transition-colors group">
+                        <span className="text-[5px] md:text-[8px] font-bold uppercase tracking-widest text-[#415364]/70 group-hover:text-neutral-800 text-center leading-tight">A la<br/>Ciudad</span>
+                      </button>
+                    </div>
+                    <div style={{ width: getAnchoUnidad('vistas', 1) }} className="px-0.5 md:px-1">
+                      <button onClick={() => {setVistaActiva('wyndham'); registrarAccion('VIO_VISTA_GENERAL', undefined, 'Vio vista general al Wyndham');}} className="w-full h-full bg-sky-50/70 hover:bg-sky-100 shadow-sm rounded-lg py-1 md:py-1.5 flex flex-col items-center justify-center border border-sky-200 transition-colors group">
+                        <span className="text-[5px] md:text-[8px] font-bold uppercase tracking-widest text-sky-700 group-hover:text-sky-900 text-center leading-tight">Wyndham<br/>/ Mar</span>
+                      </button>
+                    </div>
+                    <div style={{ width: getAnchoUnidad('vistas', 2) }} className="px-0.5 md:px-1">
+                      <button onClick={() => {setVistaActiva('panoramica'); registrarAccion('VIO_VISTA_GENERAL', undefined, 'Vio vista Panorámica Frontal');}} className="w-full h-full bg-[#964B36]/5 hover:bg-[#964B36]/15 shadow-sm rounded-lg py-1 md:py-1.5 flex flex-col items-center justify-center border border-[#964B36]/30 transition-colors group">
+                        <span className="text-[6px] md:text-[9px] font-bold uppercase tracking-widest text-[#964B36] text-center leading-tight">Vista Panorámica Frontal<br/><span className="text-[4px] md:text-[6px] opacity-70 mt-0.5 inline-block">La Quadra / Umiña / Mar</span></span>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
                 {/* PISOS */}
-                {PISOS_EDIFICIO.map(piso => {
-                  const isPisoAlto = piso >= 4;
+                {PISOS_EDIFICIO.map(piso => (
+                  <div key={piso} className="flex items-stretch mb-1 md:mb-1.5 w-full">
+                    <div className="w-14 min-w-[3.5rem] md:w-20 md:min-w-[5rem] shrink-0 flex items-center justify-end pr-1.5 md:pr-3 text-[9px] md:text-[11px] font-bold text-[#415364]/70 uppercase tracking-widest">Piso {piso}</div>
+                    
+                    <div className="flex-1 flex w-full -mx-0.5 md:-mx-1">
+                      {LAYOUT_FACHADA[piso].map((idUnidad, colIndex) => {
+                        if (!idUnidad) return null;
+                        const unidad = obtenerDatosUnidad(idUnidad);
+                        if (!unidad) return null;
 
-                  return (
-                    <div key={piso} className="flex items-stretch gap-0.5 md:gap-1.5 mb-1 md:mb-1.5 w-full">
-                      <div className="w-14 min-w-[3.5rem] md:w-20 md:min-w-[5rem] shrink-0 flex items-center justify-end pr-1 md:pr-3 text-[9px] md:text-[11px] font-bold text-[#415364]/70 uppercase tracking-widest">Piso {piso}</div>
-                      
-                      {/* GRID MAESTRO DE DEPARTAMENTOS: (10 - 15 - 28 - 12 - 22) */}
-                      <div className="flex-1 grid gap-0.5 md:gap-1.5" style={{ gridTemplateColumns: '10fr 15fr 28fr 12fr 22fr' }}>
-                        {LAYOUT_FACHADA[piso].map((idUnidad, colIndex) => {
-                          if (!idUnidad) return <div key={`empty-${piso}-${colIndex}`} className="invisible"></div>;
-                          const unidad = obtenerDatosUnidad(idUnidad);
-                          if (!unidad) return <div key={`notfound-${idUnidad}`} className="invisible"></div>;
+                        const noCoincide = unidad.tipo !== filtroTipo;
+                        const reservado = unidad.estado === 'RESERVADO' || unidad.estado === 'VENDIDO' || unidad.estado === 'BLOQUEADO' || unidad.estado === 'SEPARADO';
+                        const desactivado = noCoincide || reservado;
+                        
+                        let botonEstilo = desactivado ? "border border-neutral-200 bg-[#F2F0ED] cursor-not-allowed opacity-70" : "bg-white border-2 border-[#964B36] shadow-sm cursor-pointer transform hover:-translate-y-0.5 hover:shadow-md hover:bg-[#964B36]/5 relative z-10";
+                        let textoIdEstilo = desactivado ? "text-[#415364]/50" : "text-[#964B36] font-bold";
+                        let textoTipoEstilo = desactivado ? "text-[#415364]/40" : "text-[#415364] font-medium";
 
-                          const noCoincide = unidad.tipo !== filtroTipo;
-                          const reservado = unidad.estado === 'RESERVADO' || unidad.estado === 'VENDIDO' || unidad.estado === 'BLOQUEADO' || unidad.estado === 'SEPARADO';
-                          const desactivado = noCoincide || reservado;
-                          
-                          let botonEstilo = desactivado ? "border border-neutral-200 bg-[#F2F0ED] cursor-not-allowed opacity-70" : "bg-white border-2 border-[#964B36] shadow-sm cursor-pointer transform hover:-translate-y-0.5 hover:shadow-md hover:bg-[#964B36]/5 relative z-10";
-                          let spanStyle = {};
+                        const anchoPorcentual = getAnchoUnidad(piso, colIndex);
 
-                          // LÓGICA ARQUITECTÓNICA EXACTA AL DIBUJO:
-                          // En pisos altos, el primero (x04) ocupa el espacio de los dos de abajo (x01 + x05) -> span 2. 
-                          // Así será más grande que la x05, pero no tapará la línea de la x03.
-                          if (isPisoAlto && colIndex === 0) {
-                            spanStyle = { gridColumn: 'span 2' };
-                          } else {
-                            spanStyle = { gridColumn: 'span 1' };
-                          }
-
-                          let textoIdEstilo = desactivado ? "text-[#415364]/50" : "text-[#964B36] font-bold";
-                          let textoTipoEstilo = desactivado ? "text-[#415364]/40" : "text-[#415364] font-medium";
-
-                          return (
+                        return (
+                          <div key={unidad.id} style={{ width: anchoPorcentual }} className="px-0.5 md:px-1">
                             <button
-                              key={unidad.id}
                               disabled={desactivado}
-                              style={spanStyle}
                               onClick={() => { 
                                 if(!desactivado) {
                                   setUnidadSeleccionada(unidad);
@@ -459,19 +484,23 @@ export default function ReservaExpressPage() {
                               <span className={`text-[12px] md:text-[14px] font-bold tracking-tight leading-none ${textoIdEstilo}`}>{unidad.id}</span>
                               {!desactivado && <span className={`mt-0.5 md:mt-1 text-[5px] md:text-[7.5px] text-center leading-tight uppercase tracking-wider whitespace-normal px-0.5 ${textoTipoEstilo}`}>{unidad.tipo}</span>}
                             </button>
-                          );
-                        })}
-                      </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
 
                 {/* PLANTA BAJA */}
-                <div className="flex items-stretch gap-0.5 md:gap-1.5 mt-1 md:mt-1.5 w-full">
-                  <div className="w-14 min-w-[3.5rem] md:w-20 md:min-w-[5rem] shrink-0 text-[8px] md:text-[10px] font-bold text-[#415364]/50 uppercase tracking-widest flex items-center justify-end pr-1 md:pr-3">PB</div>
-                  <div className="flex-1 bg-[#21242E] p-2.5 md:p-3 rounded-b-xl text-center flex flex-col justify-center shadow-inner border border-[#21242E]">
-                    <span className="text-[7px] sm:text-[11px] font-bold text-[#D1C292] uppercase tracking-widest">Planta Baja / Ingreso Principal</span>
-                    <span className="text-[5px] sm:text-[8px] mt-0.5 uppercase tracking-widest text-white/50">Lobby Design • Locales Comerciales • Estacionamientos</span>
+                <div className="flex items-stretch mt-1 md:mt-1.5 w-full">
+                  <div className="w-14 min-w-[3.5rem] md:w-20 md:min-w-[5rem] shrink-0 text-[8px] md:text-[10px] font-bold text-[#415364]/50 uppercase tracking-widest flex items-center justify-end pr-1.5 md:pr-3">PB</div>
+                  <div className="flex-1 flex w-full">
+                    <div className="w-full px-0.5 md:px-1">
+                      <div className="bg-[#21242E] p-2.5 md:p-3 rounded-b-xl text-center flex flex-col justify-center shadow-inner border border-[#21242E] w-full h-full">
+                        <span className="text-[7px] sm:text-[11px] font-bold text-[#D1C292] uppercase tracking-widest">Planta Baja / Ingreso Principal</span>
+                        <span className="text-[5px] sm:text-[8px] mt-0.5 uppercase tracking-widest text-white/50">Lobby Design • Locales Comerciales • Estacionamientos</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
