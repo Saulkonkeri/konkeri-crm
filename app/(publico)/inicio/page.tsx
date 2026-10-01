@@ -248,11 +248,19 @@ export default function ArienzoLandingPremium() {
     else if (distance < -50) prevImagen();
   };
 
-  const abrirModalVIP = () => { trackEvent('ABRIO_FORMULARIO', 'Hizo clic en botón Acceso Exclusivo'); setMostrarModalVip(true); };
-  const abrirCalendly = () => { trackEvent('ABRIO_CALENDLY', 'Abrió modal de agendamiento'); setMostrarModalCalendly(true); };
+  // ⚡ HANDLERS ACTIVOS PARA LOS BOTONES
+  const abrirModalVIP = () => { 
+    trackEvent('ABRIO_FORMULARIO', 'Hizo clic en botón Acceso Exclusivo'); 
+    setMostrarModalVip(true); 
+  };
+  
+  const abrirCalendly = () => { 
+    trackEvent('ABRIO_CALENDLY', 'Abrió modal de agendamiento'); 
+    setMostrarModalCalendly(true); 
+  };
 
   // ==========================================
-  // FUNCIÓN PRINCIPAL DE CAPTURA VIP (ORIGINAL FUNCIONAL + CORREO CORREGIDO A SOLICITUD)
+  // FUNCIÓN PRINCIPAL DE CAPTURA VIP
   // ==========================================
   const procesarSolicitudVIP = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -269,27 +277,13 @@ export default function ArienzoLandingPremium() {
         campana: 'Solicitud VIP Landing',
         estado: 'Interesado',
         temperatura: '☀️ Tibio',
-        estado_acceso: 'pendiente'
+        estado_acceso: 'pendiente',
+        created_at: new Date().toISOString()
       }], { onConflict: 'email' }).select(); 
 
       if (errorUpsert) {
         console.error("❌ ERROR UPSERT CLIENTES:", errorUpsert);
       }
-
-      // Notificación con la etiqueta correcta de SOLICITUD (Ya no de ingreso)
-      fetch('/api/notificar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tipo: "solicitud_vip",
-          datos: { 
-            email: correoLimpio,
-            nombres: formData.nombres,
-            telefono: formData.telefono,
-            fecha: new Date().toLocaleString('es-EC') 
-          }
-        })
-      }).catch(err => console.log("Nota API: ", err));
 
       localStorage.setItem('arienzo_lead_email', correoLimpio);
       await trackEvent('REGISTRO_COMPLETADO', `Registró datos VIP. Correo: ${correoLimpio}`, { email: correoLimpio, telefono: formData.telefono });
@@ -324,26 +318,13 @@ export default function ArienzoLandingPremium() {
         origen: 'Web Pública - Descarga Brochure',
         campana: 'Descarga Brochure',
         estado: 'Interesado',
-        temperatura: '☀️ Tibio'
+        temperatura: '☀️ Tibio',
+        created_at: new Date().toISOString()
       }], { onConflict: 'email' }).select();
 
       if (errorDescarga) {
           console.error("❌ ERROR DESCARGA BROCHURE CLIENTES:", errorDescarga);
       }
-
-      fetch('/api/notificar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tipo: "descarga_brochure",
-          datos: { 
-            email: correoLimpio,
-            nombres: formBrochure.nombres,
-            telefono: formBrochure.telefono,
-            fecha: new Date().toLocaleString('es-EC') 
-          }
-        })
-      }).catch(err => console.log("Nota API: ", err));
 
       localStorage.setItem('arienzo_lead_email', correoLimpio);
       await trackEvent('DESCARGA_BROCHURE', `Descargó el brochure. Correo: ${correoLimpio}`, { email: correoLimpio, telefono: formBrochure.telefono });
@@ -784,6 +765,174 @@ export default function ArienzoLandingPremium() {
           </div>
         </div>
       </section>
+
+      {/* MODAL CERRADURA VIP */}
+      {mostrarModalVip && (
+        <div className="fixed inset-0 bg-[#21242E]/95 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white w-full max-w-md p-10 rounded-2xl relative shadow-2xl animate-in zoom-in-95">
+            <button 
+              onClick={() => { setMostrarModalVip(false); setSolicitudEnviada(false); }}
+              className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-900 font-bold w-8 h-8 flex items-center justify-center bg-neutral-100 rounded-full transition-colors"
+            >
+              &times;
+            </button>
+            
+            {!solicitudEnviada ? (
+              <>
+                <div className="text-center mb-8">
+                  <div className="w-12 h-1 bg-[#964B36] mx-auto mb-6 rounded-full"></div>
+                  <h3 className="text-2xl font-medium text-neutral-900 mb-2 tracking-tight">Acceso al Inventario</h3>
+                  <p className="text-xs text-neutral-500 font-medium">Validaremos tu perfil para habilitar el acceso seguro a los <strong>planos arquitectónicos, disponibilidad en tiempo real y precios de lanzamiento.</strong></p>
+                </div>
+
+                <form onSubmit={procesarSolicitudVIP} className="space-y-4">
+                  <div>
+                    <input 
+                      required 
+                      type="text" 
+                      placeholder="Nombres Completos" 
+                      autoComplete="name"
+                      value={formData.nombres} 
+                      onChange={e => setFormData({...formData, nombres: e.target.value.replace(/[0-9!@#$%^&*()_+=\[\]{};':"\\|,.<>/?]/g, '')})} 
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#964B36] transition-colors" 
+                    />
+                  </div>
+                  <div>
+                    <input 
+                      required 
+                      type="tel" 
+                      placeholder="WhatsApp (Solo números)" 
+                      autoComplete="tel"
+                      value={formData.telefono} 
+                      onChange={e => setFormData({...formData, telefono: e.target.value.replace(/\D/g, '').slice(0, 15)})} 
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#964B36] transition-colors" 
+                    />
+                  </div>
+                  <div>
+                    <input 
+                      required 
+                      type="email" 
+                      placeholder="Correo Electrónico" 
+                      autoComplete="email"
+                      pattern="^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"
+                      title="Debe incluir @ y un dominio válido (ej. correo@gmail.com)"
+                      value={formData.email} 
+                      onChange={e => setFormData({...formData, email: e.target.value})} 
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#964B36] transition-colors invalid:focus:border-red-400" 
+                    />
+                  </div>
+                  
+                  <button 
+                    type="submit" 
+                    disabled={cargando}
+                    className="w-full bg-[#964B36] text-white py-4 rounded-xl text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-[#7d3e2c] transition-all mt-4 shadow-lg disabled:opacity-70"
+                  >
+                    {cargando ? 'Procesando...' : 'Acceder al Inventario'}
+                  </button>
+                </form>
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl shadow-inner">✓</div>
+                <h3 className="text-2xl font-medium text-neutral-900 mb-3 tracking-tight">Solicitud Recibida</h3>
+                <p className="text-sm text-neutral-500 font-medium leading-relaxed mb-8">
+                  Nuestro equipo comercial validará tu información y te contactará brevemente para entregarte tu pase de acceso exclusivo.
+                </p>
+                <button 
+                  onClick={() => { setMostrarModalVip(false); setSolicitudEnviada(false); }}
+                  className="bg-neutral-900 text-white rounded-xl px-8 py-4 text-[11px] font-bold uppercase tracking-widest hover:bg-neutral-800 transition-colors w-full"
+                >
+                  Cerrar
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DESCARGA BROCHURE */}
+      {mostrarModalBrochure && (
+        <div className="fixed inset-0 bg-[#21242E]/95 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white w-full max-w-md p-10 rounded-2xl relative shadow-2xl animate-in zoom-in-95">
+            <button 
+              onClick={() => { setMostrarModalBrochure(false); setBrochureDescargado(false); }}
+              className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-900 font-bold w-8 h-8 flex items-center justify-center bg-neutral-100 rounded-full transition-colors"
+            >
+              &times;
+            </button>
+            
+            {!brochureDescargado ? (
+              <>
+                <div className="text-center mb-8">
+                  <div className="w-12 h-1 bg-[#D1C292] mx-auto mb-6 rounded-full"></div>
+                  <h3 className="text-2xl font-medium text-neutral-900 mb-2 tracking-tight">Descargar Brochure</h3>
+                  <p className="text-xs text-neutral-500 font-medium">Ingresa tus datos para habilitar la descarga inmediata del archivo PDF oficial del proyecto.</p>
+                </div>
+
+                <form onSubmit={procesarDescargaBrochure} className="space-y-4">
+                  <div>
+                    <input 
+                      required 
+                      type="text" 
+                      placeholder="Nombres Completos" 
+                      autoComplete="name"
+                      value={formBrochure.nombres} 
+                      onChange={e => setFormBrochure({...formBrochure, nombres: e.target.value.replace(/[0-9!@#$%^&*()_+=\[\]{};':"\\|,.<>/?]/g, '')})} 
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#D1C292] transition-colors" 
+                    />
+                  </div>
+                  <div>
+                    <input 
+                      required 
+                      type="tel" 
+                      placeholder="WhatsApp (Solo números)" 
+                      autoComplete="tel"
+                      value={formBrochure.telefono} 
+                      onChange={e => setFormBrochure({...formBrochure, telefono: e.target.value.replace(/\D/g, '').slice(0, 15)})} 
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#D1C292] transition-colors" 
+                    />
+                  </div>
+                  <div>
+                    <input 
+                      required 
+                      type="email" 
+                      placeholder="Correo Electrónico" 
+                      autoComplete="email"
+                      pattern="^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"
+                      title="Debe incluir @ y un dominio válido (ej. correo@gmail.com)"
+                      value={formBrochure.email} 
+                      onChange={e => setFormBrochure({...formBrochure, email: e.target.value})} 
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#D1C292] transition-colors invalid:focus:border-red-400" 
+                    />
+                  </div>
+                  
+                  <button 
+                    type="submit" 
+                    disabled={cargando}
+                    className="w-full bg-[#21242E] text-white py-4 rounded-xl text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-black transition-all mt-4 shadow-lg disabled:opacity-70"
+                  >
+                    {cargando ? 'Procesando...' : 'Descargar PDF'}
+                  </button>
+                </form>
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl shadow-inner">📥</div>
+                <h3 className="text-2xl font-medium text-neutral-900 mb-3 tracking-tight">¡Descarga en curso!</h3>
+                <p className="text-sm text-neutral-500 font-medium leading-relaxed mb-8">
+                  El brochure de Arienzo se está abriendo en una nueva pestaña.
+                </p>
+                <button 
+                  onClick={() => { setMostrarModalBrochure(false); setBrochureDescargado(false); }}
+                  className="bg-neutral-900 text-white rounded-xl px-8 py-4 text-[11px] font-bold uppercase tracking-widest hover:bg-neutral-800 transition-colors w-full"
+                >
+                  Cerrar
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* MODAL CALENDLY */}
       {mostrarModalCalendly && (
