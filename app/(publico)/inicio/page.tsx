@@ -252,7 +252,7 @@ export default function ArienzoLandingPremium() {
   const abrirCalendly = () => { trackEvent('ABRIO_CALENDLY', 'Abrió modal de agendamiento'); setMostrarModalCalendly(true); };
 
   // ==========================================
-  // FUNCIÓN PRINCIPAL DE CAPTURA VIP (REPARADA FINAL)
+  // FUNCIÓN PRINCIPAL DE CAPTURA VIP (PURA: SIN CORREOS)
   // ==========================================
   const procesarSolicitudVIP = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -276,7 +276,6 @@ export default function ArienzoLandingPremium() {
       if (errorUpsert) {
         console.error("❌ ERROR UPSERT CLIENTES:", errorUpsert);
         
-        // Plan B: Inserción mínima si falla el upsert
         const { error: errorInsertBasico } = await supabase.from('clientes').insert([{
            nombres: formData.nombres,
            telefono: formData.telefono,
@@ -291,21 +290,6 @@ export default function ArienzoLandingPremium() {
             console.error("❌ ERROR INSERT BÁSICO CLIENTES:", errorInsertBasico);
         }
       }
-
-      // Llamada a la API para enviar el correo / notificación
-      fetch('/api/notificar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tipo: "solicitud_vip",
-          datos: { 
-            email: correoLimpio,
-            nombres: formData.nombres,
-            telefono: formData.telefono,
-            fecha: new Date().toLocaleString('es-EC') 
-          }
-        })
-      }).catch(err => console.log("Nota API: ", err));
 
       localStorage.setItem('arienzo_lead_email', correoLimpio);
       await trackEvent('REGISTRO_COMPLETADO', `Registró datos VIP. Correo: ${correoLimpio}`, { email: correoLimpio, telefono: formData.telefono });
@@ -324,7 +308,7 @@ export default function ArienzoLandingPremium() {
   };
 
   // ==========================================
-  // FUNCIÓN DESCARGA BROCHURE (REPARADA FINAL)
+  // FUNCIÓN DESCARGA BROCHURE (PURA: SIN CORREOS)
   // ==========================================
   const procesarDescargaBrochure = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -347,21 +331,6 @@ export default function ArienzoLandingPremium() {
       if (errorDescarga) {
           console.error("❌ ERROR DESCARGA BROCHURE CLIENTES:", errorDescarga);
       }
-
-      // Notificar por API
-      fetch('/api/notificar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tipo: "descarga_brochure",
-          datos: { 
-            email: correoLimpio,
-            nombres: formBrochure.nombres,
-            telefono: formBrochure.telefono,
-            fecha: new Date().toLocaleString('es-EC') 
-          }
-        })
-      }).catch(err => console.log("Nota API: ", err));
 
       localStorage.setItem('arienzo_lead_email', correoLimpio);
       await trackEvent('DESCARGA_BROCHURE', `Descargó el brochure. Correo: ${correoLimpio}`, { email: correoLimpio, telefono: formBrochure.telefono });
