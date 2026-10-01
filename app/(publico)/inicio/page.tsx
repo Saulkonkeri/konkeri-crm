@@ -4,6 +4,14 @@ import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 
+// Generador de UUID matemático para arreglar el Radar
+const generateUUID = () => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 export default function ArienzoLandingPremium() {
   const [mostrarModalVip, setMostrarModalVip] = useState(false);
   const [mostrarModalCalendly, setMostrarModalCalendly] = useState(false);
@@ -38,38 +46,41 @@ export default function ArienzoLandingPremium() {
     try {
       let visitorId = localStorage.getItem('arienzo_visitor_id');
       if (!visitorId) {
-        visitorId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'id-' + Math.random().toString(36).substring(2, 10);
+        visitorId = generateUUID();
         localStorage.setItem('arienzo_visitor_id', visitorId);
       }
 
       let sessionId = sessionStorage.getItem('arienzo_session_id');
-      if (!sessionId) {
-        sessionId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'sess-' + Math.random().toString(36).substring(2, 10);
+      // Corrección: Generar siempre UUID válido en lugar de 'sess-...'
+      if (!sessionId || sessionId.startsWith('sess-')) {
+        sessionId = generateUUID();
         sessionStorage.setItem('arienzo_session_id', sessionId);
       }
 
-      const eventId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'evt-' + Date.now();
-
+      const eventId = generateUUID();
       const urlParams = new URLSearchParams(window.location.search);
-      const metadata = {
-        utm_source: urlParams.get('utm_source'),
-        utm_campaign: urlParams.get('utm_campaign'),
-        referrer: document.referrer || 'Directo',
-        dispositivo: /Mobile|Android|iP(hone|od|ad)/i.test(navigator.userAgent) ? 'Móvil' : 'Desktop',
-        meta_event_id: eventId
-      };
+      
+      const emailConocido = localStorage.getItem('arienzo_lead_email') || datosUsuario?.email || formData.email || formBrochure.email;
 
-      const emailConocido = localStorage.getItem('arienzo_lead_email') || formData.email || formBrochure.email;
-
-      await supabase.from('tracking_inventario').insert([{
+      // Usamos upsert simple para el radar con captura de errores
+      const { error } = await supabase.from('tracking_inventario').insert([{
         visitor_id: visitorId,
         session_id: sessionId,
         email_cliente: emailConocido || 'Anónimo',
         accion,
         detalle,
-        metadata
+        metadata: {
+          utm_source: urlParams.get('utm_source'),
+          utm_campaign: urlParams.get('utm_campaign'),
+          referrer: document.referrer || 'Directo',
+          dispositivo: /Mobile|Android|iP(hone|od|ad)/i.test(navigator.userAgent) ? 'Móvil' : 'Desktop',
+          meta_event_id: eventId
+        }
       }]);
 
+      if (error) console.error("❌ Error en Radar:", error);
+
+      // Meta Pixel
       if (typeof window !== 'undefined' && (window as any).fbq) {
         const fbq = (window as any).fbq;
         if (accion === 'REGISTRO_COMPLETADO' || accion === 'DESCARGA_BROCHURE') {
@@ -87,6 +98,7 @@ export default function ArienzoLandingPremium() {
         }
       }
 
+      // Meta CAPI
       let metaEventName = accion;
       if (accion === 'REGISTRO_COMPLETADO' || accion === 'DESCARGA_BROCHURE') metaEventName = 'Lead';
       else if (accion === 'CLIC_WHATSAPP') metaEventName = 'Contact';
@@ -108,6 +120,7 @@ export default function ArienzoLandingPremium() {
         }).catch(() => {});
       }
 
+      // Google Analytics
       if (typeof window !== 'undefined' && typeof (window as any).gtag !== 'undefined') {
         const gtag = (window as any).gtag;
         if (accion === 'REGISTRO_COMPLETADO' || accion === 'DESCARGA_BROCHURE') {
@@ -121,7 +134,9 @@ export default function ArienzoLandingPremium() {
         }
       }
 
-    } catch (error) {}
+    } catch (error) {
+      console.error("Error general tracking:", error);
+    }
   };
 
   useEffect(() => {
@@ -228,7 +243,8 @@ export default function ArienzoLandingPremium() {
     const correoLimpio = formData.email.trim().toLowerCase();
 
     try {
-      const { error: errorCliente } = await supabase.from('clientes').upsert([{
+      // Capturamos el error para ver exactamente por qué no guarda el Lead
+      const { error: errorUpsert } = await supabase.from('clientes').upsert([{
         nombres: formData.nombres,
         telefono: formData.telefono,
         email: correoLimpio,
@@ -241,16 +257,22 @@ export default function ArienzoLandingPremium() {
         estado_acceso: 'pendiente'
       }], { onConflict: 'email' });
 
-      if (errorCliente) {
-        await supabase.from('clientes')
-          .update({ 
-            estado_acceso: 'pendiente', 
-            nombres: formData.nombres, 
-            telefono: formData.telefono,
-            estado: 'Interesado',
-            temperatura: '☀️ Tibio'
-          })
-          .eq('email', correoLimpio);
+      if (errorUpsert) {
+        console.error("❌ ERROR UPSERT CLIENTES:", errorUpsert);
+        
+        // Plan B: Intentar solo insertar los datos básicos si falla el upsert completo
+        const { error: errorInsertBasico } = await supabase.from('clientes').insert([{
+           nombres: formData.nombres,
+           telefono: formData.telefono,
+           email: correoLimpio,
+           tipo: 'prospecto',
+           origen: 'Web Pública - Solicitud Acceso Exclusivo',
+           estado: 'Interesado'
+        }]);
+        
+        if (errorInsertBasico) {
+            console.error("❌ ERROR INSERT BÁSICO CLIENTES:", errorInsertBasico);
+        }
       }
 
       localStorage.setItem('arienzo_lead_email', correoLimpio);
@@ -264,6 +286,7 @@ export default function ArienzoLandingPremium() {
 
       setSolicitudEnviada(true);
     } catch (error) {
+      console.error("❌ ERROR CRÍTICO CAPTURA:", error);
       alert("Hubo un problema grave en la ejecución.");
     } finally {
       setCargando(false);
@@ -276,7 +299,7 @@ export default function ArienzoLandingPremium() {
     const correoLimpio = formBrochure.email.trim().toLowerCase();
 
     try {
-      await supabase.from('clientes').upsert([{
+      const { error: errorDescarga } = await supabase.from('clientes').upsert([{
         nombres: formBrochure.nombres,
         telefono: formBrochure.telefono,
         email: correoLimpio,
@@ -287,6 +310,10 @@ export default function ArienzoLandingPremium() {
         estado: 'Interesado',
         temperatura: '☀️ Tibio'
       }], { onConflict: 'email' });
+
+      if (errorDescarga) {
+          console.error("❌ ERROR DESCARGA BROCHURE CLIENTES:", errorDescarga);
+      }
 
       localStorage.setItem('arienzo_lead_email', correoLimpio);
       
@@ -303,6 +330,7 @@ export default function ArienzoLandingPremium() {
       }, 4000);
       
     } catch (error) {
+      console.error("❌ ERROR CRÍTICO DESCARGA:", error);
       alert("Hubo un problema al procesar la descarga.");
     } finally {
       setCargando(false);
@@ -524,7 +552,7 @@ export default function ArienzoLandingPremium() {
                 <div className="w-8 h-[2px] bg-[#D1C292] mb-4 transition-all duration-300 group-hover:w-16"></div>
                 <h4 className="text-xl font-medium text-neutral-900 mb-3">Área Comercial</h4>
                 <p className="text-sm text-neutral-600 font-medium leading-relaxed">
-                  Un retail de planta baja curado para complementar tu experiencia. Marcas seleccionadas por su calidad, conveniencia y afinidad con el proyecto.
+                  Un retail de planta baja curado para complementar tu experiencia. Marcas seleccionadas por su calidad, conveniencia y affinity con el proyecto.
                 </p>
               </div>
             </div>
