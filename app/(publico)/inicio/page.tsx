@@ -213,6 +213,28 @@ export default function ArienzoLandingPremium() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [imagenIndex, imagenesGaleria.length]);
 
+  // ==========================================
+  // FUNCIONES DE LA GALERÍA MOVIDAS ARRIBA
+  // ==========================================
+  const clickImagen = (index: number) => { 
+    const realIndex = index % imagenesGaleria.length;
+    trackEvent('VIO_ARQUITECTURA', `Abrió render ${realIndex + 1} de la galería`); 
+    setImagenIndex(realIndex); 
+  };
+  
+  const prevImagen = (e?: React.MouseEvent) => { 
+    if(e) e.stopPropagation(); 
+    setImagenIndex((prev) => prev !== null ? (prev - 1 + imagenesGaleria.length) % imagenesGaleria.length : null); 
+  };
+  
+  const nextImagen = (e?: React.MouseEvent) => { 
+    if(e) e.stopPropagation(); 
+    setImagenIndex((prev) => prev !== null ? (prev + 1) % imagenesGaleria.length : null); 
+  };
+
+  // ==========================================
+  // FUNCIONES TÁCTILES
+  // ==========================================
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchEndX(null);
     setTouchStartX(e.targetTouches[0].clientX);
