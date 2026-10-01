@@ -214,7 +214,7 @@ export default function ArienzoLandingPremium() {
   }, [imagenIndex, imagenesGaleria.length]);
 
   // ==========================================
-  // FUNCIONES DE LA GALERÍA MOVIDAS ARRIBA
+  // FUNCIONES DE LA GALERÍA
   // ==========================================
   const clickImagen = (index: number) => { 
     const realIndex = index % imagenesGaleria.length;
@@ -232,9 +232,6 @@ export default function ArienzoLandingPremium() {
     setImagenIndex((prev) => prev !== null ? (prev + 1) % imagenesGaleria.length : null); 
   };
 
-  // ==========================================
-  // FUNCIONES TÁCTILES
-  // ==========================================
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchEndX(null);
     setTouchStartX(e.targetTouches[0].clientX);
@@ -255,7 +252,7 @@ export default function ArienzoLandingPremium() {
   const abrirCalendly = () => { trackEvent('ABRIO_CALENDLY', 'Abrió modal de agendamiento'); setMostrarModalCalendly(true); };
 
   // ==========================================
-  // FUNCIÓN PRINCIPAL DE CAPTURA VIP (REPARADA)
+  // FUNCIÓN PRINCIPAL DE CAPTURA VIP (REPARADA FINAL)
   // ==========================================
   const procesarSolicitudVIP = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -263,14 +260,13 @@ export default function ArienzoLandingPremium() {
     const correoLimpio = formData.email.trim().toLowerCase();
 
     try {
-      // Usamos .select() para obligar a Supabase a mostrarnos si falla por RLS o falta de columna
+      // SE ELIMINÓ 'origen_captacion' PORQUE NO EXISTE EN LA BASE DE DATOS
       const { data, error: errorUpsert } = await supabase.from('clientes').upsert([{
         nombres: formData.nombres,
         telefono: formData.telefono,
         email: correoLimpio,
         tipo: 'prospecto',
         origen: 'Web Pública - Solicitud Acceso Exclusivo',
-        origen_captacion: 'Página Web / Landing Page',
         campana: 'Solicitud VIP Landing',
         estado: 'Interesado',
         temperatura: '☀️ Tibio',
@@ -279,20 +275,6 @@ export default function ArienzoLandingPremium() {
 
       if (errorUpsert) {
         console.error("❌ ERROR UPSERT CLIENTES:", errorUpsert);
-        
-        // Plan B: Intentar inserción mínima vital
-        const { error: errorInsertBasico } = await supabase.from('clientes').insert([{
-           nombres: formData.nombres,
-           telefono: formData.telefono,
-           email: correoLimpio,
-           tipo: 'prospecto',
-           origen: 'Web Pública - Solicitud Acceso Exclusivo',
-           estado: 'Interesado'
-        }]).select();
-        
-        if (errorInsertBasico) {
-            console.error("❌ ERROR INSERT BÁSICO CLIENTES:", errorInsertBasico);
-        }
       }
 
       // Llamada a la API para enviar el correo / notificación
@@ -327,7 +309,7 @@ export default function ArienzoLandingPremium() {
   };
 
   // ==========================================
-  // FUNCIÓN DESCARGA BROCHURE (REPARADA)
+  // FUNCIÓN DESCARGA BROCHURE (REPARADA FINAL)
   // ==========================================
   const procesarDescargaBrochure = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -335,13 +317,13 @@ export default function ArienzoLandingPremium() {
     const correoLimpio = formBrochure.email.trim().toLowerCase();
 
     try {
+      // SE ELIMINÓ 'origen_captacion' PORQUE NO EXISTE EN LA BASE DE DATOS
       const { data, error: errorDescarga } = await supabase.from('clientes').upsert([{
         nombres: formBrochure.nombres,
         telefono: formBrochure.telefono,
         email: correoLimpio,
         tipo: 'prospecto',
         origen: 'Web Pública - Descarga Brochure',
-        origen_captacion: 'Página Web / Landing Page',
         campana: 'Descarga Brochure',
         estado: 'Interesado',
         temperatura: '☀️ Tibio'
