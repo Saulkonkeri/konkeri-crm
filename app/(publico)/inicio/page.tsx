@@ -260,7 +260,6 @@ export default function ArienzoLandingPremium() {
     const correoLimpio = formData.email.trim().toLowerCase();
 
     try {
-      // SE ELIMINÓ 'origen_captacion' PORQUE NO EXISTE EN LA BASE DE DATOS
       const { data, error: errorUpsert } = await supabase.from('clientes').upsert([{
         nombres: formData.nombres,
         telefono: formData.telefono,
@@ -270,11 +269,27 @@ export default function ArienzoLandingPremium() {
         campana: 'Solicitud VIP Landing',
         estado: 'Interesado',
         temperatura: '☀️ Tibio',
-        estado_acceso: 'pendiente'
+        estado_acceso: 'pendiente',
+        created_at: new Date().toISOString() // 🔥 FECHA FORZADA AL MOMENTO ACTUAL
       }], { onConflict: 'email' }).select(); 
 
       if (errorUpsert) {
         console.error("❌ ERROR UPSERT CLIENTES:", errorUpsert);
+        
+        // Plan B: Inserción mínima si falla el upsert
+        const { error: errorInsertBasico } = await supabase.from('clientes').insert([{
+           nombres: formData.nombres,
+           telefono: formData.telefono,
+           email: correoLimpio,
+           tipo: 'prospecto',
+           origen: 'Web Pública - Solicitud Acceso Exclusivo',
+           estado: 'Interesado',
+           created_at: new Date().toISOString() // 🔥 FECHA FORZADA AL MOMENTO ACTUAL
+        }]).select();
+        
+        if (errorInsertBasico) {
+            console.error("❌ ERROR INSERT BÁSICO CLIENTES:", errorInsertBasico);
+        }
       }
 
       // Llamada a la API para enviar el correo / notificación
@@ -317,7 +332,6 @@ export default function ArienzoLandingPremium() {
     const correoLimpio = formBrochure.email.trim().toLowerCase();
 
     try {
-      // SE ELIMINÓ 'origen_captacion' PORQUE NO EXISTE EN LA BASE DE DATOS
       const { data, error: errorDescarga } = await supabase.from('clientes').upsert([{
         nombres: formBrochure.nombres,
         telefono: formBrochure.telefono,
@@ -326,7 +340,8 @@ export default function ArienzoLandingPremium() {
         origen: 'Web Pública - Descarga Brochure',
         campana: 'Descarga Brochure',
         estado: 'Interesado',
-        temperatura: '☀️ Tibio'
+        temperatura: '☀️ Tibio',
+        created_at: new Date().toISOString() // 🔥 FECHA FORZADA AL MOMENTO ACTUAL
       }], { onConflict: 'email' }).select();
 
       if (errorDescarga) {

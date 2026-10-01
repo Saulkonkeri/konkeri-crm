@@ -268,7 +268,7 @@ export default function RadarCentral() {
   };
 
   // ==========================================
-  // LÓGICA PESTAÑA 2: RADAR INVENTARIO
+  // LÓGICA PESTAÑA 2: RADAR INVENTARIO (CON FILTROS CORREGIDOS)
   // ==========================================
   const generarAnalisisComercial = (sesion: SesionCliente) => {
     if (sesion.eventos.length === 0) return "Sin datos suficientes para analizar.";
@@ -299,16 +299,21 @@ export default function RadarCentral() {
         .from('tracking_inventario')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(2000); // AUMENTADO PARA PREVENIR CORTES
+        .limit(2000); 
 
       if (data) {
-        const accionesIgnoradas = ['SOLICITUD_ACCESO_VIP','ABRIO_CALENDLY','VISITA_LANDING','ABRIO_FORMULARIO','CLIC_WHATSAPP','REGISTRO_COMPLETADO','CLIC_DISPONIBILIDAD','DESCARGA_BROCHURE'];
+        // 🔥 FILTRO MEJORADO: Ignorar eventos de landing y links de captura
+        const accionesIgnoradas = ['SOLICITUD_ACCESO_VIP','ABRIO_CALENDLY','VISITA_LANDING','ABRIO_FORMULARIO','CLIC_WHATSAPP','REGISTRO_COMPLETADO','CLIC_DISPONIBILIDAD','DESCARGA_BROCHURE', 'VISITA_CAPTURA'];
+        
         const dataFiltrada = data.filter(row => {
           const esAccionValida = !accionesIgnoradas.includes(row.accion);
           const noEsScroll = !row.accion.startsWith('SCROLL_');
           const noEsVista = !row.accion.startsWith('VIO_');
-          const noEsLanding = !(row.detalle || '').toUpperCase().includes('LANDING');
-          return esAccionValida && noEsScroll && noEsVista && noEsLanding;
+          const detalleMayus = (row.detalle || '').toUpperCase();
+          const noEsLanding = !detalleMayus.includes('LANDING');
+          const noEsCaptura = !detalleMayus.includes('CAPTURA') && !detalleMayus.includes('LINK DIRECTO'); // <-- Filtro clave
+          
+          return esAccionValida && noEsScroll && noEsVista && noEsLanding && noEsCaptura;
         });
 
         const datosCronologicos = [...dataFiltrada].reverse();
@@ -376,7 +381,6 @@ export default function RadarCentral() {
       if (filtroTiempo === '30d') fechaLimite.setDate(fechaLimite.getDate() - 30);
       if (filtroTiempo === 'hoy') fechaLimite.setHours(0,0,0,0);
 
-      // FIX SUPABASE: Buscar DESCENDENTE y con limite alto para asegurar que no se corten los datos de hoy
       const { data } = await supabase
         .from('tracking_inventario')
         .select('*')
@@ -385,7 +389,6 @@ export default function RadarCentral() {
         .limit(3000); 
 
       if (data) {
-        // Invertir el orden para que la lógica interna procese de viejo a nuevo cronológicamente
         const datosCronologicos = [...data].reverse();
         setEventosWeb(datosCronologicos);
         procesarVisitantes(datosCronologicos);
@@ -446,12 +449,10 @@ export default function RadarCentral() {
       else if (v.score >= 8) v.nivelInteraccion = 'MEDIO';
       else v.nivelInteraccion = 'BAJO';
 
-      // Ordenar eventos del más reciente al más antiguo para el visualizador
       v.eventos.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       return v;
     });
 
-    // Ordenar visitantes: el de la actividad más reciente primero
     resultado.sort((a, b) => b.ultimaActividad.getTime() - a.ultimaActividad.getTime());
     setVisitantesAgrupados(resultado);
   };
@@ -544,7 +545,10 @@ export default function RadarCentral() {
                     <tr key={cliente.id} className={`transition-colors ${activo ? 'bg-green-50/10' : caducado ? 'bg-[#ea0029]/5' : 'hover:bg-[#dce3eb]/30'}`}>
                       <td className="px-6 py-4">
                         <div className="font-bold text-[#415364] whitespace-nowrap">{cliente.nombres}</div>
-                        <div className="text-[10px] text-[#415364]/50 mt-0.5">Ingresó: {new Date(cliente.created_at).toLocaleDateString('es-EC')}</div>
+                        {/* 🔥 MOSTRAR FECHA Y HORA DE SOLICITUD AQUÍ */}
+                        <div className="text-[10px] text-[#415364]/50 mt-0.5">
+                          Solicitó: {new Date(cliente.created_at).toLocaleDateString('es-EC')} a las {new Date(cliente.created_at).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className={`inline-flex items-center text-[9px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider border whitespace-nowrap ${activo ? 'bg-green-50 text-green-700 border-green-200' : caducado ? 'bg-[#ea0029]/10 text-[#ea0029] border-[#ea0029]/20' : 'bg-[#dce3eb]/50 text-[#415364]/60 border-[#415364]/10'}`}>
