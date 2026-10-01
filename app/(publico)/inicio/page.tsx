@@ -252,7 +252,7 @@ export default function ArienzoLandingPremium() {
   const abrirCalendly = () => { trackEvent('ABRIO_CALENDLY', 'Abrió modal de agendamiento'); setMostrarModalCalendly(true); };
 
   // ==========================================
-  // FUNCIÓN PRINCIPAL DE CAPTURA VIP (REPARADA CON ETIQUETA DE CORREO CORRECTA)
+  // FUNCIÓN PRINCIPAL DE CAPTURA VIP (REPARADA FINAL)
   // ==========================================
   const procesarSolicitudVIP = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -292,12 +292,12 @@ export default function ArienzoLandingPremium() {
         }
       }
 
-      // Llamada a la API para enviar el correo / notificación (Etiqueta Corregida)
+      // Llamada a la API para enviar el correo / notificación
       fetch('/api/notificar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          tipo: "solicitud_vip", // 🔥 AQUÍ CORREGIMOS LA ETIQUETA PARA EL CORREO
+          tipo: "solicitud_vip",
           datos: { 
             email: correoLimpio,
             nombres: formData.nombres,
@@ -324,7 +324,7 @@ export default function ArienzoLandingPremium() {
   };
 
   // ==========================================
-  // FUNCIÓN DESCARGA BROCHURE (REPARADA CON ETIQUETA DE CORREO CORRECTA)
+  // FUNCIÓN DESCARGA BROCHURE (REPARADA FINAL)
   // ==========================================
   const procesarDescargaBrochure = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -348,12 +348,12 @@ export default function ArienzoLandingPremium() {
           console.error("❌ ERROR DESCARGA BROCHURE CLIENTES:", errorDescarga);
       }
 
-      // Notificar por API (Etiqueta Corregida)
+      // Notificar por API
       fetch('/api/notificar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          tipo: "descarga_brochure", // 🔥 AQUÍ CORREGIMOS LA ETIQUETA PARA EL CORREO
+          tipo: "descarga_brochure",
           datos: { 
             email: correoLimpio,
             nombres: formBrochure.nombres,
