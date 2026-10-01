@@ -117,29 +117,32 @@ export default function ReservaExpressPage() {
     registrarAccionInicial('VISITA_LANDING', 'Ingresó al Inventario VIP');
   }, []);
 
+  // AQUÍ ESTÁN LAS CORRECCIONES PARA MOSTRAR ERRORES DEL RADAR EN CONSOLA
   const registrarAccionInicial = async (accion: string, detalleAdicional?: string) => {
     try {
-      await supabase.from('tracking_inventario').insert([{
+      const { error } = await supabase.from('tracking_inventario').insert([{
         session_id: sessionId || 'sess_init',
         accion: accion,
         detalle: detalleAdicional || null,
         metadata: { url: window.location.href }
       }]);
-    } catch (error) { console.error("Error en radar:", error); }
+      if (error) console.error("❌ Supabase bloqueó la acción inicial:", error);
+    } catch (error) { console.error("Error de conexión:", error); }
   };
 
   const registrarAccion = async (accion: string, idUnidad?: string, detalleAdicional?: string) => {
     const correoActivo = formData.email || emailAcceso || null;
     try {
-      await supabase.from('tracking_inventario').insert([{
+      const { error } = await supabase.from('tracking_inventario').insert([{
         session_id: sessionId,
         email_cliente: correoActivo,
         accion: accion,
         unidad_id: idUnidad || null,
         detalle: detalleAdicional || null
       }]);
+      if (error) console.error("❌ Supabase bloqueó el radar:", error);
     } catch (error) {
-      console.error("Error en radar:", error);
+      console.error("Error de conexión:", error);
     }
   };
 
