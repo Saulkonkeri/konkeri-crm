@@ -252,7 +252,7 @@ export default function ArienzoLandingPremium() {
   const abrirCalendly = () => { trackEvent('ABRIO_CALENDLY', 'Abrió modal de agendamiento'); setMostrarModalCalendly(true); };
 
   // ==========================================
-  // FUNCIÓN PRINCIPAL DE CAPTURA VIP (PURA: SIN CORREOS)
+  // FUNCIÓN PRINCIPAL DE CAPTURA VIP (ORIGINAL FUNCIONAL + CORREO CORREGIDO A SOLICITUD)
   // ==========================================
   const procesarSolicitudVIP = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -269,27 +269,27 @@ export default function ArienzoLandingPremium() {
         campana: 'Solicitud VIP Landing',
         estado: 'Interesado',
         temperatura: '☀️ Tibio',
-        estado_acceso: 'pendiente',
-        created_at: new Date().toISOString() // 🔥 FECHA FORZADA AL MOMENTO ACTUAL
+        estado_acceso: 'pendiente'
       }], { onConflict: 'email' }).select(); 
 
       if (errorUpsert) {
         console.error("❌ ERROR UPSERT CLIENTES:", errorUpsert);
-        
-        const { error: errorInsertBasico } = await supabase.from('clientes').insert([{
-           nombres: formData.nombres,
-           telefono: formData.telefono,
-           email: correoLimpio,
-           tipo: 'prospecto',
-           origen: 'Web Pública - Solicitud Acceso Exclusivo',
-           estado: 'Interesado',
-           created_at: new Date().toISOString() // 🔥 FECHA FORZADA AL MOMENTO ACTUAL
-        }]).select();
-        
-        if (errorInsertBasico) {
-            console.error("❌ ERROR INSERT BÁSICO CLIENTES:", errorInsertBasico);
-        }
       }
+
+      // Notificación con la etiqueta correcta de SOLICITUD (Ya no de ingreso)
+      fetch('/api/notificar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tipo: "solicitud_vip",
+          datos: { 
+            email: correoLimpio,
+            nombres: formData.nombres,
+            telefono: formData.telefono,
+            fecha: new Date().toLocaleString('es-EC') 
+          }
+        })
+      }).catch(err => console.log("Nota API: ", err));
 
       localStorage.setItem('arienzo_lead_email', correoLimpio);
       await trackEvent('REGISTRO_COMPLETADO', `Registró datos VIP. Correo: ${correoLimpio}`, { email: correoLimpio, telefono: formData.telefono });
@@ -308,7 +308,7 @@ export default function ArienzoLandingPremium() {
   };
 
   // ==========================================
-  // FUNCIÓN DESCARGA BROCHURE (PURA: SIN CORREOS)
+  // FUNCIÓN DESCARGA BROCHURE
   // ==========================================
   const procesarDescargaBrochure = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -324,13 +324,26 @@ export default function ArienzoLandingPremium() {
         origen: 'Web Pública - Descarga Brochure',
         campana: 'Descarga Brochure',
         estado: 'Interesado',
-        temperatura: '☀️ Tibio',
-        created_at: new Date().toISOString() // 🔥 FECHA FORZADA AL MOMENTO ACTUAL
+        temperatura: '☀️ Tibio'
       }], { onConflict: 'email' }).select();
 
       if (errorDescarga) {
           console.error("❌ ERROR DESCARGA BROCHURE CLIENTES:", errorDescarga);
       }
+
+      fetch('/api/notificar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tipo: "descarga_brochure",
+          datos: { 
+            email: correoLimpio,
+            nombres: formBrochure.nombres,
+            telefono: formBrochure.telefono,
+            fecha: new Date().toLocaleString('es-EC') 
+          }
+        })
+      }).catch(err => console.log("Nota API: ", err));
 
       localStorage.setItem('arienzo_lead_email', correoLimpio);
       await trackEvent('DESCARGA_BROCHURE', `Descargó el brochure. Correo: ${correoLimpio}`, { email: correoLimpio, telefono: formBrochure.telefono });
