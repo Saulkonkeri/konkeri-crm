@@ -74,19 +74,15 @@ export default function GestorOperacionesPage() {
     inicializarEcosistema();
   }, []);
 
-  // Resetear estados al cambiar de unidad
   useEffect(() => {
     setReservaExitosa(false);
   }, [reservaForm.propiedadId]);
 
-  // Selección dinámica de propiedades y clientes
   const clienteActivoReserva = clientes.find(c => c.id === reservaForm.clienteId);
   const propiedadActivaReserva = propiedades.find(p => p.id.toString() === reservaForm.propiedadId.toString());
-  
   const clienteActivoCierre = clientes.find(c => c.id === cierreForm.clienteId);
   const propiedadActivaCierre = propiedades.find(p => p.id.toString() === cierreForm.propiedadId.toString());
 
-  // --- FUNCIÓN 1: PROCESAR LA RESERVA ---
   const procesarReserva = async () => {
     if (!reservaForm.clienteId || !reservaForm.propiedadId || !reservaForm.montoReserva) {
       alert("Completar Cliente, Unidad y Monto para registrar la reserva.");
@@ -97,7 +93,6 @@ export default function GestorOperacionesPage() {
       const codigoGenerado = `RES-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${Math.floor(1000 + Math.random() * 9000)}`;
       setCodigoReserva(codigoGenerado);
       
-      // Simulando actualización de estado para que aparezca en la pestaña 2
       setPropiedades(prev => prev.map(p => p.id.toString() === reservaForm.propiedadId.toString() ? { ...p, estado: 'Reservado' } : p));
       setReservaExitosa(true);
       alert("Reserva aplicada exitosamente. Unidad bloqueada.");
@@ -108,7 +103,6 @@ export default function GestorOperacionesPage() {
     }
   };
 
-  // --- FUNCIÓN DE IMPRESIÓN GENÉRICA ---
   const imprimirDocumento = (idElemento: string, tituloVentana: string) => {
     if (typeof window === 'undefined') return;
     const contenido = document.getElementById(idElemento)?.innerHTML;
@@ -128,7 +122,7 @@ export default function GestorOperacionesPage() {
             .pagina-a4 { width: 210mm; height: 297mm; padding: 15mm 15mm; box-sizing: border-box; page-break-after: always; overflow: hidden; background: #ffffff; position: relative; margin: 0 auto; }
             .cuadro-input { border-bottom: 1px solid #8C8A87; min-height: 14px; display: inline-block; width: 100%; }
             .checkbox-box { width: 10px; height: 10px; border: 1px solid #8C8A87; display: inline-block; margin-right: 4px; vertical-align: middle; background: white; }
-            .seccion-titulo { background-color: #F2EFEB; color: #B94A36; font-weight: bold; text-transform: uppercase; font-size: 8px; padding: 4px 8px; border-left: 3px solid #B94A36; margin-bottom: 8px; margin-top: 10px; letter-spacing: 0.05em; }
+            .seccion-titulo { background-color: #F2EFEB; color: #B94A36; font-weight: bold; text-transform: uppercase; font-size: 8px; padding: 4px 8px; border-left: 3px solid #B94A36; margin-bottom: 6px; margin-top: 8px; letter-spacing: 0.05em; }
             .text-xxs { font-size: 7px; line-height: 1.2; }
           </style>
         </head>
@@ -164,9 +158,7 @@ export default function GestorOperacionesPage() {
           </div>
         </div>
 
-        {/* ==========================================
-            PESTAÑA 1: RESERVA Y RECIBO DE CAJA
-           ========================================== */}
+        {/* PESTAÑA 1: RESERVA Y RECIBO DE CAJA */}
         {activeTab === 'reserva' && (
           <div className="bg-white border border-neutral-200/60 rounded-2xl p-6 md:p-8 shadow-sm max-w-4xl mx-auto">
             <div className="mb-6 border-b border-neutral-100 pb-4">
@@ -235,9 +227,7 @@ export default function GestorOperacionesPage() {
           </div>
         )}
 
-        {/* ==========================================
-            PESTAÑA 2: PREPARAR EXPEDIENTE (NUEVO FLUJO)
-           ========================================== */}
+        {/* PESTAÑA 2: PREPARAR EXPEDIENTE */}
         {activeTab === 'cierre_venta' && (
           <div className="bg-white border border-neutral-200/60 rounded-2xl p-6 md:p-8 shadow-sm max-w-4xl mx-auto">
              <div className="mb-6 border-b border-neutral-100 pb-4">
@@ -258,7 +248,6 @@ export default function GestorOperacionesPage() {
                   <label className="text-[10px] font-bold text-[#415364]/60 uppercase block mb-1.5">2. Unidad Reservada Vinculada</label>
                   <select value={cierreForm.propiedadId} onChange={(e) => setCierreForm({...cierreForm, propiedadId: e.target.value})} className="w-full text-xs bg-white border border-[#415364]/20 p-3 rounded-xl outline-none font-bold text-[#ea0029] focus:border-[#ea0029]">
                     <option value="">-- Seleccione Unidad Reservada --</option>
-                    {/* Solo muestra propiedades que ya están reservadas */}
                     {propiedades.filter(p => p.estado === 'Reservado').map(p => <option key={p.id} value={p.id}>Unidad {p.unidad || p.numero} (Reservada)</option>)}
                   </select>
                 </div>
@@ -284,15 +273,15 @@ export default function GestorOperacionesPage() {
         )}
 
         {/* =========================================================================
-            PLANTILLAS OCULTAS PARA GENERACIÓN DE PDF (SEPARADAS)
+            PLANTILLAS OCULTAS PARA GENERACIÓN DE PDF
            ========================================================================= */}
         
-        {/* PLANTILLA 1: SOLO RECIBO (Se imprime en la pestaña Reserva) */}
+        {/* PLANTILLA 1: SOLO RECIBO */}
         <div id="impresion-recibo" className="hidden">
           <div className="pagina-a4">
             <div className="flex justify-between items-end border-b-2 border-[#B94A36] pb-4 mb-8">
               <div>
-                <h2 className="text-2xl font-bold tracking-widest text-[#B94A36] uppercase mb-1">KONKERI S.A.S.</h2>
+                <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" alt="Arienzo" className="h-10 mb-2 object-contain" />
                 <p className="text-[8px] tracking-widest text-[#8C8A87] uppercase font-bold">RUC: 1391937895001</p>
               </div>
               <div className="text-right">
@@ -336,7 +325,7 @@ export default function GestorOperacionesPage() {
             </div>
 
             <div className="mt-6 p-4 bg-neutral-50 border border-neutral-200 rounded-md text-[6.5pt] leading-tight text-justify text-neutral-500">
-              <p><strong>Nota importante / Cláusula de Reserva:</strong> El valor entregado en concepto de reserva implica la aceptación formal de la unidad y su respectivo bloqueo comercial. Se entiende y acepta que, en caso de desistimiento o retiros voluntarios por motivos ajenos a la promotora (Konkeri S.A.S.), dicho valor no será reembolsado, destinándose íntegramente a cubrir los gastos administrativos y de lucro cesante generados por la desincorporación temporal del inventario.</p>
+              <p><strong>Nota importante / Cláusula de Reserva:</strong> El valor entregado en concepto de reserva implica la aceptación formal de la unidad y su respectivo bloqueo comercial. Se entiende y acepta que, en caso de desistimiento o retiros voluntarios por motivos ajenos a la promotora (Arienzo S.A.S.), dicho valor no será reembolsado, destinándose íntegramente a cubrir los gastos administrativos y de lucro cesante generados por la desincorporación temporal del inventario.</p>
             </div>
 
             <div className="mt-12 grid grid-cols-2 gap-16 px-12">
@@ -345,20 +334,26 @@ export default function GestorOperacionesPage() {
                 <p className="text-[8px] text-[#8C8A87]">C.C. {clienteActivoReserva?.cedula || '_______________'}</p>
               </div>
               <div className="text-center border-t border-[#8C8A87] pt-2">
-                <p className="text-[9px] font-bold uppercase tracking-wider">Konkeri S.A.S.</p>
+                <p className="text-[9px] font-bold uppercase tracking-wider">Arienzo S.A.S.</p>
                 <p className="text-[8px] text-[#8C8A87]">Recibí Conforme</p>
               </div>
+            </div>
+            
+            <div className="absolute bottom-6 left-0 right-0 text-center text-[7px] text-[#8C8A87] uppercase tracking-widest">
+              Arienzo S.A.S. • Promotora Inmobiliaria • Página 1 de 1
             </div>
           </div>
         </div>
 
-        {/* PLANTILLA 2: FORMULARIOS VACÍOS (Se imprimen en la pestaña Cierre/Venta) */}
+        {/* PLANTILLA 2: FORMULARIOS VACÍOS */}
         <div id="impresion-formularios" className="hidden">
           
           {/* HOJA A: FORMULARIO KYC */}
           <div className="pagina-a4 text-xxs">
             <div className="flex justify-between items-end border-b-2 border-[#B94A36] pb-2 mb-2">
-              <div><h1 className="text-lg font-bold tracking-widest text-[#B94A36] uppercase">KONKERI S.A.S.</h1></div>
+              <div>
+                <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" alt="Arienzo" className="h-8 object-contain" />
+              </div>
               <div className="text-right">
                 <h2 className="text-[10px] font-bold uppercase tracking-wide">FORMULARIO INFORMACIÓN BÁSICA DEL CLIENTE</h2>
                 <p className="text-[8px] text-[#8C8A87] uppercase mt-0.5">Persona Natural</p>
@@ -424,31 +419,42 @@ export default function GestorOperacionesPage() {
               </div>
             </div>
 
-            <div className="seccion-titulo">5. CONDICIÓN DE PERSONA EXPUESTA POLÍTICAMENTE (PEP's)</div>
+            <div className="seccion-titulo">5. REFERENCIA PERSONAL (Familiar que no viva con usted)</div>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2 mb-2">
+              <div className="col-span-2 flex items-center"><span className="w-48">NOMBRES Y APELLIDOS:</span> <span className="cuadro-input"></span></div>
+              <div className="flex items-center"><span className="w-32">TELEFONO DOMICILIO:</span> <span className="cuadro-input"></span></div>
+              <div className="flex items-center"><span className="w-32">TELEFONO CELULAR:</span> <span className="cuadro-input"></span></div>
+              <div className="col-span-2 flex items-center"><span className="w-48">DIRECCION (Lo mas detallada):</span> <span className="cuadro-input"></span></div>
+            </div>
+
+            <div className="seccion-titulo">6. CONDICIÓN DE PERSONA EXPUESTA POLÍTICAMENTE (PEP's)</div>
             <div className="mb-2 text-justify">
               <p>Declaro bajo juramento que <span className="checkbox-box ml-1"></span> SI <span className="checkbox-box ml-1"></span> NO me encuentro ejerciendo un cargo público destacado o tengo una relación de las incluidas en la normativa PEP.</p>
               <div className="flex items-center mt-1"><span className="w-16">CARGO:</span> <span className="cuadro-input"></span></div>
             </div>
 
-            <div className="seccion-titulo">6. DECLARACIÓN DE VERACIDAD Y LICITUD DE FONDOS</div>
-            <div className="mb-6 text-justify">
+            <div className="seccion-titulo">7. DECLARACIÓN DE VERACIDAD Y LICITUD DE FONDOS</div>
+            <div className="mb-4 text-justify">
               <p>1. El origen de los fondos y bienes entregados son lícitos y legítimos, y que no provienen de actividades relacionadas con el cultivo, fabricación, almacenamiento o tráfico ilícito de sustancias, lavado de dinero u otra actividad ilegal.</p>
               <p>2. La información registrada es veraz y asumo cualquier responsabilidad por eventual falsedad. Autorizo expresamente a realizar el análisis y las verificaciones de los datos.</p>
             </div>
 
-            <div className="mt-12 grid grid-cols-4 gap-4 px-2">
+            <div className="mt-6 grid grid-cols-4 gap-4 px-2">
               <div className="text-center border-t border-[#8C8A87] pt-2"><p className="text-[8px] font-bold">FIRMA DEL CLIENTE</p></div>
               <div className="text-center border-t border-[#8C8A87] pt-2"><p className="text-[8px] font-bold">FIRMA CÓNYUGE</p></div>
               <div className="text-center border-t border-[#8C8A87] pt-2"><p className="text-[8px] font-bold">OFICIAL DE CUMPLIMIENTO</p></div>
               <div className="text-center border-t border-[#8C8A87] pt-2"><p className="text-[8px] font-bold">GERENTE GENERAL</p></div>
             </div>
-            <div className="absolute bottom-6 left-0 right-0 text-center text-[7px] text-[#8C8A87] uppercase tracking-widest">Konkeri S.A.S. • Formulario Conozca a su Cliente • Página 1 de 2</div>
+            
+            <div className="absolute bottom-6 left-0 right-0 text-center text-[7px] text-[#8C8A87] uppercase tracking-widest">Arienzo S.A.S. • Formulario Conozca a su Cliente • Página 1 de 2</div>
           </div>
 
           {/* HOJA B: FORMULARIO LICITUD DE FONDOS */}
           <div className="pagina-a4 text-xxs">
             <div className="flex justify-between items-end border-b-2 border-[#B94A36] pb-2 mb-4">
-              <div><h1 className="text-lg font-bold tracking-widest text-[#B94A36] uppercase">KONKERI S.A.S.</h1></div>
+              <div>
+                <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" alt="Arienzo" className="h-8 object-contain" />
+              </div>
               <div className="text-right"><h2 className="text-[11px] font-bold uppercase tracking-wide">FORMULARIO LICITUD DE FONDOS</h2></div>
             </div>
 
@@ -491,17 +497,33 @@ export default function GestorOperacionesPage() {
             <div className="mb-6 text-justify text-[8px] leading-relaxed space-y-2">
               <div className="flex items-center mb-2"><span className="w-64 font-bold">Los fondos de esta transacción Provienen de:</span> <span className="cuadro-input"></span></div>
               <p>Declaro expresamente que el origen de los fondos entregados son lícitos y legítimos, y que no provienen, entre otras, de actividades relacionadas con el cultivo, fabricación, almacenamiento, transporte o tráfico ilícito de sustancias estupefacientes o psicotrópicas, lavado de dinero o cualquier otra actividad ilegal.</p>
-              <p>Además autorizo a la compañía Konkeri S.A.S., para que efectúe todas las indagaciones que razonablemente considere oportuno realizar para comprobar el origen de tales bienes.</p>
-              <p>En caso que se inicien investigaciones sobre el firmante, relacionadas con las actividades antes señaladas, o de producirse transacciones inusual o injustificadas, la compañía Konkeri S.A.S. podrá proporcionar a las autoridades competentes toda la información que tenga sobre las mismas o que le sea requerida.</p>
-              <p>En tal sentido, renuncio a presentar en contra de la compañía Konkeri S.A.S., de sus funcionarios o empleados, cualquier reclamo o acción legal, judicial, extrajudicial, administrativa, civil, penal o arbitral en la eventualidad de producirse tales hechos. Autorizo a la compañía a obtener de cualquier fuente de información, mi comportamiento crediticio y demás activos o pasivos.</p>
+              <p>Además autorizo a la compañía Arienzo S.A.S., para que efectúe todas las indagaciones que razonablemente considere oportuno realizar para comprobar el origen de tales bienes.</p>
+              <p>En caso que se inicien investigaciones sobre el firmante, relacionadas con las actividades antes señaladas, o de producirse transacciones inusual o injustificadas, la compañía Arienzo S.A.S. podrá proporcionar a las autoridades competentes toda la información que tenga sobre las mismas o que le sea requerida.</p>
+              <p>En tal sentido, renuncio a presentar en contra de la compañía Arienzo S.A.S., de sus funcionarios o empleados, cualquier reclamo o acción legal, judicial, extrajudicial, administrativa, civil, penal o arbitral en la eventualidad de producirse tales hechos. Autorizo a la compañía a obtener de cualquier fuente de información, mi comportamiento crediticio y demás activos o pasivos.</p>
             </div>
 
-            <div className="mt-16 grid grid-cols-3 gap-8 px-8">
-              <div className="text-center border-t border-[#8C8A87] pt-2"><p className="text-[9px] font-bold">FIRMA DE QUIEN PROVEE LOS FONDOS</p><p className="text-[7px] text-[#8C8A87] mt-1">C.C. / Pasaporte:</p></div>
-              <div className="text-center border-t border-[#8C8A87] pt-2"><p className="text-[9px] font-bold">OFICIAL DE CUMPLIMIENTO</p><p className="text-[7px] text-[#8C8A87] mt-1">Uso exclusivo Konkeri S.A.S.</p></div>
-              <div className="text-center border-t border-[#8C8A87] pt-2"><p className="text-[9px] font-bold">GERENTE GENERAL</p><p className="text-[7px] text-[#8C8A87] mt-1">Representante Legal</p></div>
+            {/* SECCIÓN DE FIRMAS ACTUALIZADA (COMO LA IMAGEN) */}
+            <div className="mt-8 border-2 border-[#333333] flex text-[#333333]">
+              {/* Recuadro Izquierdo */}
+              <div className="w-1/2 flex items-end justify-center pb-4 border-r-2 border-[#333333] h-32">
+                 <div className="w-3/4 border-t border-[#333333] text-center pt-1">
+                    <span className="font-bold text-[9px]">Firma de quien provee los fondos</span>
+                 </div>
+              </div>
+              {/* Recuadro Derecho */}
+              <div className="w-1/2 flex flex-col items-center h-32 pt-2 pb-4">
+                 <span className="font-bold text-[9px] mb-2">PARA USO EXCLUSIVO DE ARIENZO S.A.S.</span>
+                 <div className="flex-grow"></div>
+                 <div className="w-3/4 border-t border-[#333333] text-center pt-1 mb-6">
+                    <span className="text-[8px]">FIRMA</span>
+                 </div>
+                 <div className="w-3/4 border-t border-[#333333] text-center pt-1">
+                    <span className="text-[8px]">Nombre completo de quien recibe la información</span>
+                 </div>
+              </div>
             </div>
-            <div className="absolute bottom-6 left-0 right-0 text-center text-[7px] text-[#8C8A87] uppercase tracking-widest">Konkeri S.A.S. • Formulario Licitud de Fondos • Página 2 de 2</div>
+
+            <div className="absolute bottom-6 left-0 right-0 text-center text-[7px] text-[#8C8A87] uppercase tracking-widest">Arienzo S.A.S. • Formulario Licitud de Fondos • Página 2 de 2</div>
           </div>
         </div>
 
