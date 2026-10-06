@@ -366,10 +366,12 @@ export default function GestorOperacionesPage() {
             </div>
 
             <div className="seccion-titulo">1. DATOS PERSONALES</div>
+            {/* LÍNEAS INDIVIDUALES PARA LOS NOMBRES */}
             <div className="grid grid-cols-2 gap-x-6 gap-y-2 mb-2">
-              <div className="col-span-2 flex items-center"><span className="w-24">PRIMER APELLIDO:</span> <span className="cuadro-input"></span></div>
-              <div className="col-span-2 flex items-center"><span className="w-24">SEGUNDO APELLIDO:</span> <span className="cuadro-input"></span></div>
-              <div className="col-span-2 flex items-center"><span className="w-24">NOMBRES:</span> <span className="cuadro-input"></span></div>
+              <div className="col-span-2 flex items-end"><span className="w-32 pb-0.5">PRIMER APELLIDO:</span> <span className="cuadro-input"></span></div>
+              <div className="col-span-2 flex items-end"><span className="w-32 pb-0.5">SEGUNDO APELLIDO:</span> <span className="cuadro-input"></span></div>
+              <div className="col-span-2 flex items-end"><span className="w-32 pb-0.5">NOMBRES:</span> <span className="cuadro-input"></span></div>
+              
               <div className="flex items-center gap-2"><span className="checkbox-box"></span> CEDULA <span className="checkbox-box ml-2"></span> PASAPORTE <span className="ml-2">NUMERO:</span> <span className="cuadro-input w-24"></span></div>
               <div className="flex items-center gap-1"><span>FECHA NACIMIENTO:</span> DIA<span className="cuadro-input w-6"></span> MES<span className="cuadro-input w-6"></span> AÑO<span className="cuadro-input w-8"></span></div>
               <div className="flex items-center"><span className="w-24">NACIONALIDAD:</span> <span className="cuadro-input"></span></div>
@@ -439,7 +441,8 @@ export default function GestorOperacionesPage() {
               <p>2. La información registrada es veraz y asumo cualquier responsabilidad por eventual falsedad. Autorizo expresamente a realizar el análisis y las verificaciones de los datos.</p>
             </div>
 
-            <div className="mt-6 grid grid-cols-4 gap-4 px-2">
+            {/* SECCIÓN DE FIRMAS CON ESPACIO MUY AMPLIO (mt-24) */}
+            <div className="mt-24 grid grid-cols-4 gap-6 px-2">
               <div className="text-center border-t border-[#8C8A87] pt-2"><p className="text-[8px] font-bold">FIRMA DEL CLIENTE</p></div>
               <div className="text-center border-t border-[#8C8A87] pt-2"><p className="text-[8px] font-bold">FIRMA CÓNYUGE</p></div>
               <div className="text-center border-t border-[#8C8A87] pt-2"><p className="text-[8px] font-bold">OFICIAL DE CUMPLIMIENTO</p></div>
@@ -502,15 +505,12 @@ export default function GestorOperacionesPage() {
               <p>En tal sentido, renuncio a presentar en contra de la compañía Arienzo S.A.S., de sus funcionarios o empleados, cualquier reclamo o acción legal, judicial, extrajudicial, administrativa, civil, penal o arbitral en la eventualidad de producirse tales hechos. Autorizo a la compañía a obtener de cualquier fuente de información, mi comportamiento crediticio y demás activos o pasivos.</p>
             </div>
 
-            {/* SECCIÓN DE FIRMAS ACTUALIZADA (COMO LA IMAGEN) */}
             <div className="mt-8 border-2 border-[#333333] flex text-[#333333]">
-              {/* Recuadro Izquierdo */}
               <div className="w-1/2 flex items-end justify-center pb-4 border-r-2 border-[#333333] h-32">
                  <div className="w-3/4 border-t border-[#333333] text-center pt-1">
                     <span className="font-bold text-[9px]">Firma de quien provee los fondos</span>
                  </div>
               </div>
-              {/* Recuadro Derecho */}
               <div className="w-1/2 flex flex-col items-center h-32 pt-2 pb-4">
                  <span className="font-bold text-[9px] mb-2">PARA USO EXCLUSIVO DE ARIENZO S.A.S.</span>
                  <div className="flex-grow"></div>
