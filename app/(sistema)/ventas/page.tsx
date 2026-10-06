@@ -43,8 +43,11 @@ export default function GestorOperacionesPage() {
   const hoyStr = new Date().toISOString().split('T')[0];
   const [codigoInforme, setCodigoInforme] = useState(`INF-${new Date().getFullYear()}${String(new Date().getMonth()+1).padStart(2, '0')}-${Math.floor(1000 + Math.random() * 9000)}`);
   const [infReservaValor, setInfReservaValor] = useState<number>(2500);
+  
   const [tipoInicial, setTipoInicial] = useState<'porcentaje' | 'valor'>('porcentaje');
   const [valorInicial, setValorInicial] = useState<number>(15); 
+  const [mesesInicial, setMesesInicial] = useState<number>(1); 
+  
   const [fechaReservaInf, setFechaReservaInf] = useState(hoyStr);
   const [fechaFirmaPromesa, setFechaFirmaPromesa] = useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
   const [tipoEntrada, setTipoEntrada] = useState<'porcentaje' | 'valor'>('porcentaje');
@@ -378,6 +381,8 @@ export default function GestorOperacionesPage() {
                         <label className="block text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">Reserva Existente ($)</label>
                         <input type="number" value={infReservaValor} onChange={(e) => setInfReservaValor(Number(e.target.value))} className="w-full bg-white/10 border border-white/20 rounded-xl p-3 text-sm font-mono font-bold text-white outline-none" />
                       </div>
+                      
+                      {/* CAJA ABONO INICIAL CON LA OPCIÓN DE DIVIDIR */}
                       <div className="space-y-2 border border-white/10 p-3.5 rounded-xl bg-[#1a1c23]">
                         <div className="flex justify-between items-center mb-3">
                           <label className="text-[10px] font-bold text-white uppercase tracking-widest">Abono Inicial Total</label>
@@ -387,7 +392,13 @@ export default function GestorOperacionesPage() {
                           </div>
                         </div>
                         <input type="number" value={valorInicial} onChange={(e) => setValorInicial(Number(e.target.value))} className="w-full bg-white rounded-lg p-2.5 text-sm font-mono font-bold text-[#21242E] outline-none" />
+                        
+                        <div className="flex justify-between items-center pt-3 mt-3 border-t border-white/10">
+                          <label className="text-[10px] font-bold text-white/50 uppercase">Diferir en (Meses):</label>
+                          <input type="number" min="1" max="12" value={mesesInicial} onChange={(e) => setMesesInicial(Math.max(1, Number(e.target.value)))} className="w-16 bg-white/10 border border-white/20 text-white rounded-lg p-2 text-xs font-bold outline-none text-center focus:border-[#D1C292]" />
+                        </div>
                       </div>
+
                       <div className="space-y-3">
                         <div className="flex justify-between items-center">
                           <label className="text-[10px] font-bold text-white/60 uppercase tracking-widest">Entrada Diferida</label>
@@ -417,7 +428,7 @@ export default function GestorOperacionesPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6 bg-[#F9F7F5] p-4 rounded-xl border border-neutral-100">
                       <div><label className="block text-[10px] font-bold uppercase mb-1">Firma Reserva</label><input type="date" value={fechaReservaInf} onChange={(e)=>setFechaReservaInf(e.target.value)} className="w-full text-xs p-2 border rounded-md" /></div>
                       <div><label className="block text-[10px] font-bold uppercase mb-1">Firma Promesa</label><input type="date" value={fechaFirmaPromesa} onChange={(e)=>setFechaFirmaPromesa(e.target.value)} className="w-full text-xs p-2 border rounded-md" /></div>
-                      <div><label className="block text-[10px] font-bold uppercase mb-1">Mes Inicio Cuotas</label><input type="number" value={mesInicio} onChange={(e)=>setMesInicio(Number(e.target.value))} className="w-full text-xs p-2 border rounded-md" /></div>
+                      <div><label className="block text-[10px] font-bold uppercase mb-1">Mes Inicio Obra</label><input type="number" value={mesInicio} onChange={(e)=>setMesInicio(Number(e.target.value))} className="w-full text-xs p-2 border rounded-md" /></div>
                       <div><label className="block text-[10px] font-bold uppercase mb-1">Día de Pago Fijo</label><input type="number" value={diaPago} onChange={(e)=>setDiaPago(Number(e.target.value))} className="w-full text-xs p-2 border rounded-md" /></div>
                     </div>
 
@@ -432,7 +443,7 @@ export default function GestorOperacionesPage() {
                     <div className="max-h-60 overflow-y-auto border border-[#415364]/10 rounded-xl divide-y divide-[#415364]/5">
                       {cronogramaCuotas.map(cuota => (
                         <div key={cuota.numeroCuota} className="flex justify-between items-center p-3">
-                          <span className="text-[11px] font-bold text-[#415364]">C{cuota.numeroCuota} <span className="opacity-70 ml-2">{cuota.fechaPago}</span></span>
+                          <span className="text-[11px] font-bold text-[#415364]">Dividendo {cuota.numeroCuota} <span className="opacity-70 ml-2">{cuota.fechaPago}</span></span>
                           <div className="flex items-center border-b border-dashed border-[#415364]/30 pb-0.5">
                             <span className="text-xs mr-1 font-bold text-[#415364]/50">$</span>
                             <input type="number" value={Number(cuota.valor.toFixed(2))} onChange={(e) => actualizarValorCuota(cuota.numeroCuota, Number(e.target.value))} className="w-24 text-right text-sm font-bold font-mono outline-none" />
@@ -456,6 +467,14 @@ export default function GestorOperacionesPage() {
                   <div className="flex justify-between"><span className="text-[11px] font-bold uppercase">Cuota Inicial Total</span><span className="font-bold font-mono">${calcInforme.cuotaInicialTotal.toLocaleString('en-US',{minimumFractionDigits:2})}</span></div>
                   <div className="flex justify-between pl-4 text-[10px] text-neutral-500"><span>Reserva:</span><span className="font-mono">${infReservaValor.toLocaleString('en-US',{minimumFractionDigits:2})}</span></div>
                   <div className="flex justify-between pl-4 text-[10px] text-neutral-500"><span>Saldo Firma:</span><span className="font-mono">${calcInforme.saldoFirmaPromesa.toLocaleString('en-US',{minimumFractionDigits:2})}</span></div>
+                  
+                  {mesesInicial > 1 && calcInforme.saldoFirmaPromesa > 0 && (
+                    <div className="flex justify-between pl-4 pr-3 py-2 text-[10px] font-bold text-[#ea0029] bg-[#ea0029]/5 rounded-lg border border-[#ea0029]/10 mt-1">
+                      <span>↳ Dividido en {mesesInicial} pagos:</span>
+                      <span className="font-mono">${(calcInforme.saldoFirmaPromesa / mesesInicial).toLocaleString('en-US', {minimumFractionDigits: 2})} c/u</span>
+                    </div>
+                  )}
+
                   <div className="flex justify-between border-t border-neutral-100 pt-3"><span className="text-[11px] font-bold uppercase">Diferido Obra</span><span className="font-bold font-mono">${calcInforme.entradaDiferirTotal.toLocaleString('en-US',{minimumFractionDigits:2})}</span></div>
                   <div className="flex justify-between border-t-2 border-[#21242E] pt-3 mt-2"><span className="text-[12px] font-bold uppercase">Contra Entrega</span><span className="font-bold text-[#B94A36] font-mono">${calcInforme.contraEntrega.toLocaleString('en-US',{minimumFractionDigits:2})}</span></div>
                 </div>
@@ -571,7 +590,8 @@ export default function GestorOperacionesPage() {
                   
                   {/* HEADER */}
                   <div className="flex justify-between items-center mb-4">
-                    <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" alt="Arienzo" className="h-8 object-contain" />
+                    {/* AQUÍ EL LOGO MÁS PEQUEÑO: Se cambió h-8 por h-6 y se agregó max-w-[120px] */}
+                    <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" alt="Arienzo" className="h-6 max-w-[120px] object-contain" />
                     <h1 className="text-xl font-bold tracking-widest uppercase text-[#333333]">Informe de Negocio</h1>
                     <div className="text-right text-[8px] uppercase tracking-wider text-[#333333]">
                        <p><strong>FECHA:</strong> {new Date().toLocaleDateString('es-ES')}</p>
@@ -632,8 +652,35 @@ export default function GestorOperacionesPage() {
                                     <tr className="border-b border-[#333333] bg-neutral-50"><th className="p-1 border-r border-[#333333] text-center">Detalle / Cuota</th><th className="p-1 border-r border-[#333333] text-center">Fecha Pago</th><th className="p-1 text-right">Monto $</th></tr>
                                 </thead>
                                 <tbody className="divide-y divide-[#333333]/30">
-                                    <tr><td className="p-1 border-r border-[#333333] font-bold">Reserva</td><td className="p-1 border-r border-[#333333] text-center font-mono">{formatearFechaLegible(fechaReservaInf)}</td><td className="p-1 text-right font-mono font-bold">${infReservaValor.toLocaleString('en-US', {minimumFractionDigits:2})}</td></tr>
-                                    <tr><td className="p-1 border-r border-[#333333] font-bold">Cuota Inicial (Firma)</td><td className="p-1 border-r border-[#333333] text-center font-mono">{formatearFechaLegible(fechaFirmaPromesa)}</td><td className="p-1 text-right font-mono font-bold">${calcInforme.saldoFirmaPromesa.toLocaleString('en-US', {minimumFractionDigits:2})}</td></tr>
+                                    <tr>
+                                      <td className="p-1 border-r border-[#333333] font-bold">Reserva</td>
+                                      <td className="p-1 border-r border-[#333333] text-center font-mono">{formatearFechaLegible(fechaReservaInf)}</td>
+                                      <td className="p-1 text-right font-mono font-bold">${infReservaValor.toLocaleString('en-US', {minimumFractionDigits:2})}</td>
+                                    </tr>
+                                    
+                                    {/* GENERACIÓN DINÁMICA DE ABONOS INICIALES */}
+                                    {mesesInicial === 1 ? (
+                                      <tr>
+                                        <td className="p-1 border-r border-[#333333] font-bold">Cuota Inicial (Firma)</td>
+                                        <td className="p-1 border-r border-[#333333] text-center font-mono">{formatearFechaLegible(fechaFirmaPromesa)}</td>
+                                        <td className="p-1 text-right font-mono font-bold">${calcInforme.saldoFirmaPromesa.toLocaleString('en-US', {minimumFractionDigits:2})}</td>
+                                      </tr>
+                                    ) : (
+                                      Array.from({ length: mesesInicial }).map((_, i) => {
+                                        const d = new Date(fechaFirmaPromesa + "T12:00:00");
+                                        d.setMonth(d.getMonth() + i);
+                                        const dateStr = d.toISOString().split('T')[0];
+                                        return (
+                                          <tr key={`abono-${i}`}>
+                                            <td className="p-1 border-r border-[#333333] font-bold text-neutral-700 pl-2">Abono Inicial {i+1}</td>
+                                            <td className="p-1 border-r border-[#333333] text-center font-mono">{formatearFechaLegible(dateStr)}</td>
+                                            <td className="p-1 text-right font-mono font-bold">${(calcInforme.saldoFirmaPromesa / mesesInicial).toLocaleString('en-US', {minimumFractionDigits:2})}</td>
+                                          </tr>
+                                        );
+                                      })
+                                    )}
+
+                                    {/* CRONOGRAMA DE OBRA */}
                                     {cronogramaCuotas.map(c => (
                                         <tr key={c.numeroCuota}><td className="p-1 border-r border-[#333333] pl-2 text-[7px] text-neutral-600">Dividendo {c.numeroCuota}</td><td className="p-1 border-r border-[#333333] text-center font-mono">{c.fechaPago}</td><td className="p-1 text-right font-mono text-neutral-600">${c.valor.toLocaleString('en-US', {minimumFractionDigits:2})}</td></tr>
                                     ))}
@@ -731,7 +778,7 @@ export default function GestorOperacionesPage() {
 
             <div className="seccion-titulo">7. DECLARACIÓN DE VERACIDAD Y LICITUD DE FONDOS</div>
             <div className="mb-4 text-justify">
-              <p>1. El origen de los fondos y bienes entregados son lícitos y legítimos, y que no provienen de actividades relacionadas con el cultivo, fabricación, almacenamiento o tráfico ilícito de sustancias, lavado de dinero u otra actividad ilegal.</p>
+              <p>1. El origen de los fondos y bienes entregados son lícitos y legítimos, y que no provienen de activities relacionadas con el cultivo, fabricación, almacenamiento o tráfico ilícito de sustancias, lavado de dinero u otra actividad ilegal.</p>
               <p>2. La información registrada es veraz y asumo cualquier responsabilidad por eventual falsedad. Autorizo expresamente a realizar el análisis y las verificaciones de los datos.</p>
             </div>
 
