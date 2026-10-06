@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Gestor de Operaciones (Reserva, Informe Negocio y Expediente)
+// Actualizacion para Vercel - Gestor de Operaciones (Reserva, Informe Negocio y Expediente) - v2 Forzando Vercel
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
