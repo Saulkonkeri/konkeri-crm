@@ -45,7 +45,6 @@ export default function GestorOperacionesPage() {
   const [infReservaValor, setInfReservaValor] = useState<number>(2500);
   const [tipoInicial, setTipoInicial] = useState<'porcentaje' | 'valor'>('porcentaje');
   const [valorInicial, setValorInicial] = useState<number>(15); 
-  const [infSaldoFirmaValor, setInfSaldoFirmaValor] = useState<number>(0);
   const [fechaReservaInf, setFechaReservaInf] = useState(hoyStr);
   const [fechaFirmaPromesa, setFechaFirmaPromesa] = useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
   const [tipoEntrada, setTipoEntrada] = useState<'porcentaje' | 'valor'>('porcentaje');
@@ -181,6 +180,12 @@ export default function GestorOperacionesPage() {
       nuevoCrono = nuevoCrono.map(c => !c.esEditable ? { ...c, valor: valorRepartido } : c);
     }
     setCronogramaCuotas(nuevoCrono);
+  };
+
+  const reiniciarCuotas = () => {
+    if (mesesConstruccion <= 0) return;
+    const valorBaseCuota = calcInforme.entradaDiferirTotal / mesesConstruccion;
+    setCronogramaCuotas(cronogramaCuotas.map(c => ({ ...c, valor: valorBaseCuota, esEditable: false })));
   };
 
   const aplicarPlanRefuerzos = () => {
@@ -403,7 +408,10 @@ export default function GestorOperacionesPage() {
                   <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-sm">
                     <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-5 border-b border-neutral-100 pb-4">
                       <h2 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest">4. Ajuste de Cuotas y Fechas</h2>
-                      <button onClick={() => setMostrarCalculadoraRefuerzos(!mostrarCalculadoraRefuerzos)} className="text-[10px] bg-[#ea0029] text-white px-4 py-2 rounded-lg font-bold uppercase tracking-wider">⚡ Cuota Balón</button>
+                      <div className="flex gap-2">
+                        <button onClick={reiniciarCuotas} className="text-[10px] text-[#415364]/60 hover:text-[#415364] font-bold uppercase tracking-wider bg-[#dce3eb]/50 px-3 py-2 rounded-lg transition-colors">↻ Reiniciar</button>
+                        <button onClick={() => setMostrarCalculadoraRefuerzos(!mostrarCalculadoraRefuerzos)} className="text-[10px] bg-[#ea0029] text-white px-4 py-2 rounded-lg font-bold uppercase tracking-wider">⚡ Cuota Balón</button>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6 bg-[#F9F7F5] p-4 rounded-xl border border-neutral-100">
@@ -453,7 +461,7 @@ export default function GestorOperacionesPage() {
                 </div>
 
                 <button onClick={() => imprimirDocumento('impresion-informe', 'Informe_Negocio')} disabled={!propiedadActivaInforme} className="w-full bg-[#21242E] text-white rounded-xl p-3.5 text-[11px] font-bold uppercase tracking-widest hover:bg-neutral-800 transition-colors mt-8 disabled:opacity-50">
-                  📄 Imprimir Informe
+                  📄 Imprimir Informe Oficial
                 </button>
               </div>
             </div>
@@ -494,7 +502,7 @@ export default function GestorOperacionesPage() {
                     <p className="text-[11px] text-[#415364]/70">Formulario Conozca a su Cliente + Licitud de Fondos.</p>
                   </div>
                   <button onClick={() => imprimirDocumento('impresion-formularios-kyc', 'Formularios_Expediente')} className="w-full md:w-auto bg-[#ea0029] text-white px-8 py-4 rounded-xl font-bold text-xs tracking-wider uppercase transition-colors shadow-md">
-                    🖨️ Imprimir
+                    🖨️ Imprimir Documentos
                   </button>
                 </div>
               ) : (
