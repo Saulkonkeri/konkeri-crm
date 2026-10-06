@@ -382,7 +382,7 @@ export default function GestorOperacionesPage() {
                         <input type="number" value={infReservaValor} onChange={(e) => setInfReservaValor(Number(e.target.value))} className="w-full bg-white/10 border border-white/20 rounded-xl p-3 text-sm font-mono font-bold text-white outline-none" />
                       </div>
                       
-                      {/* CAJA ABONO INICIAL CON LA OPCIÓN DE DIVIDIR */}
+                      {/* CAJA ABONO INICIAL CON DIVISIÓN */}
                       <div className="space-y-2 border border-white/10 p-3.5 rounded-xl bg-[#1a1c23]">
                         <div className="flex justify-between items-center mb-3">
                           <label className="text-[10px] font-bold text-white uppercase tracking-widest">Abono Inicial Total</label>
@@ -590,7 +590,6 @@ export default function GestorOperacionesPage() {
                   
                   {/* HEADER */}
                   <div className="flex justify-between items-center mb-4">
-                    {/* AQUÍ EL LOGO MÁS PEQUEÑO: Se cambió h-8 por h-6 y se agregó max-w-[120px] */}
                     <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" alt="Arienzo" className="h-6 max-w-[120px] object-contain" />
                     <h1 className="text-xl font-bold tracking-widest uppercase text-[#333333]">Informe de Negocio</h1>
                     <div className="text-right text-[8px] uppercase tracking-wider text-[#333333]">
@@ -778,7 +777,7 @@ export default function GestorOperacionesPage() {
 
             <div className="seccion-titulo">7. DECLARACIÓN DE VERACIDAD Y LICITUD DE FONDOS</div>
             <div className="mb-4 text-justify">
-              <p>1. El origen de los fondos y bienes entregados son lícitos y legítimos, y que no provienen de activities relacionadas con el cultivo, fabricación, almacenamiento o tráfico ilícito de sustancias, lavado de dinero u otra actividad ilegal.</p>
+              <p>1. El origen de los fondos y bienes entregados son lícitos y legítimos, y que no provienen de actividades relacionadas con el cultivo, fabricación, almacenamiento o tráfico ilícito de sustancias, lavado de dinero u otra actividad ilegal.</p>
               <p>2. La información registrada es veraz y asumo cualquier responsabilidad por eventual falsedad. Autorizo expresamente a realizar el análisis y las verificaciones de los datos.</p>
             </div>
 
