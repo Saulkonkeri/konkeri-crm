@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Gestor de Operaciones v3
+// Actualizacion para Vercel - Gestor de Operaciones v4 (Correccion Observaciones)
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -37,6 +37,9 @@ export default function GestorOperacionesPage() {
   const [pestañaInforme, setPestañaInforme] = useState<'configurar' | 'previsualizar'>('configurar');
   const [informeForm, setInformeForm] = useState({ clienteId: '', propiedadId: '' });
   const [formaFinanciamiento, setFormaFinanciamiento] = useState('Crédito Directo');
+  
+  // AQUI ESTABA EL ERROR: Faltaba declarar esta variable
+  const [observacionesNegocio, setObservacionesNegocio] = useState('');
   
   // Sistema de Notas Dinámicas
   const [notas, setNotas] = useState<NotaObservacion[]>([]);
@@ -101,7 +104,7 @@ export default function GestorOperacionesPage() {
   const formatearFechaLegible = (fechaIso: string) => {
     if (!fechaIso) return '---';
     const partes = fechaIso.split('-');
-    if(partes.length !== 3) return fechaIso; // Por si el usuario la editó a mano en formato libre
+    if(partes.length !== 3) return fechaIso; 
     const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     const mesIndex = parseInt(partes[1], 10) - 1;
     if(isNaN(mesIndex)) return fechaIso;
@@ -183,7 +186,7 @@ export default function GestorOperacionesPage() {
           id: `ini-${i}`,
           tipo: 'inicial',
           numeroCuota: i + 1,
-          fechaPago: dateStr, // Guarda el ISO para el input de fecha
+          fechaPago: dateStr, 
           valor: valorAbono,
           esEditable: false
         });
@@ -222,7 +225,6 @@ export default function GestorOperacionesPage() {
        nuevoCrono[index].valor = nuevoValor;
        nuevoCrono[index].esEditable = true;
 
-       // Si es cuota de construcción, rebalanceamos las demás de construcción
        if (nuevoCrono[index].tipo === 'construccion') {
          const construccionCrono = nuevoCrono.filter(c => c.tipo === 'construccion');
          const saldoRestante = calcInforme.entradaDiferirTotal - construccionCrono.filter(c => c.esEditable).reduce((acc, curr) => acc + curr.valor, 0);
@@ -232,7 +234,6 @@ export default function GestorOperacionesPage() {
            nuevoCrono = nuevoCrono.map(c => (c.tipo === 'construccion' && !c.esEditable) ? { ...c, valor: valorRepartido } : c);
          }
        }
-       // Si es cuota inicial, rebalanceamos las iniciales
        else if (nuevoCrono[index].tipo === 'inicial') {
          const inicialCrono = nuevoCrono.filter(c => c.tipo === 'inicial');
          const saldoRestante = calcInforme.saldoFirmaPromesa - inicialCrono.filter(c => c.esEditable).reduce((acc, curr) => acc + curr.valor, 0);
@@ -247,7 +248,6 @@ export default function GestorOperacionesPage() {
   };
 
   const reiniciarCuotas = () => {
-    // Forzamos la regeneración cambiando temporalmente un estado y regresándolo
     const prevMeses = mesesConstruccion;
     setMesesConstruccion(0);
     setTimeout(() => setMesesConstruccion(prevMeses), 10);
@@ -547,7 +547,6 @@ export default function GestorOperacionesPage() {
                                   {cuota.tipo === 'inicial' ? `Abono Inicial ${cuota.numeroCuota}` : `Dividendo ${cuota.numeroCuota}`}
                                 </span>
                                 
-                                {/* AHORA LA FECHA ES EDITABLE INDIVIDUALMENTE */}
                                 <div className="flex items-center gap-4">
                                   <input type="date" value={cuota.fechaPago} onChange={(e) => actualizarAtributoCuota(cuota.id, 'fechaPago', e.target.value)} className="text-xs p-1.5 border border-transparent hover:border-[#415364]/20 rounded-md bg-transparent outline-none text-[#415364]/70 font-medium w-32" />
                                   <div className="flex items-center border-b border-dashed border-[#415364]/30 pb-0.5 w-28 justify-end">
@@ -620,14 +619,13 @@ export default function GestorOperacionesPage() {
                                       
                                       {/* SISTEMA DE NOTAS Y OBSERVACIONES IMPRESO */}
                                       <p className="font-bold text-[7pt] text-[#B94A36] mb-1">Notas y Observaciones:</p>
-                                      {observacionesNegocio && <p className="text-[7pt] leading-relaxed font-bold mb-2">- {observacionesNegocio}</p>}
                                       {notas.map(n => (
                                         <div key={n.id} className="mb-2">
                                            <span className="font-bold text-[#ea0029] text-[7pt]">{n.titulo}: </span>
                                            <span className="text-[7pt] text-[#333333] normal-case">{n.descripcion}</span>
                                         </div>
                                       ))}
-                                      {!observacionesNegocio && notas.length === 0 && <p className="text-[7pt] italic text-neutral-400">Sin observaciones especiales.</p>}
+                                      {notas.length === 0 && <p className="text-[7pt] italic text-neutral-400">Sin observaciones especiales.</p>}
                                   </div>
                               </div>
                           </div>
@@ -760,152 +758,58 @@ export default function GestorOperacionesPage() {
           </div>
         )}
 
-        {/* PLANTILLA C: FORMULARIOS KYC VACÍOS (DOC. EXPEDIENTE) */}
-        <div id="impresion-formularios-kyc" className="hidden">
-          
-          {/* HOJA 1: FORMULARIO KYC */}
-          <div className="pagina-a4 text-xxs">
-            <div className="flex justify-between items-end border-b-2 border-[#B94A36] pb-2 mb-2">
-              <div><img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" alt="Arienzo" className="h-8 object-contain" /></div>
-              <div className="text-right"><h2 className="text-[10px] font-bold uppercase tracking-wide">FORMULARIO INFORMACIÓN BÁSICA DEL CLIENTE</h2><p className="text-[8px] text-[#8C8A87] uppercase mt-0.5">Persona Natural</p></div>
-            </div>
-            
-            <div className="flex justify-end gap-6 text-[8px] mb-2"><div>FECHA: <span className="cuadro-input w-24"></span></div><div>CIUDAD: <span className="cuadro-input w-32"></span></div></div>
+        {/* =========================================================================
+            PLANTILLAS OCULTAS PARA GENERACIÓN DE PDF
+           ========================================================================= */}
 
-            <div className="seccion-titulo">1. DATOS PERSONALES</div>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-2 mb-2">
-              <div className="col-span-2 flex items-end"><span className="w-32 pb-0.5">PRIMER APELLIDO:</span> <span className="cuadro-input"></span></div>
-              <div className="col-span-2 flex items-end"><span className="w-32 pb-0.5">SEGUNDO APELLIDO:</span> <span className="cuadro-input"></span></div>
-              <div className="col-span-2 flex items-end"><span className="w-32 pb-0.5">NOMBRES:</span> <span className="cuadro-input"></span></div>
-              <div className="flex items-center gap-2"><span className="checkbox-box"></span> CEDULA <span className="checkbox-box ml-2"></span> PASAPORTE <span className="ml-2">NUMERO:</span> <span className="cuadro-input w-24"></span></div>
-              <div className="flex items-center gap-1"><span>FECHA NACIMIENTO:</span> DIA<span className="cuadro-input w-6"></span> MES<span className="cuadro-input w-6"></span> AÑO<span className="cuadro-input w-8"></span></div>
-              <div className="flex items-center"><span className="w-24">NACIONALIDAD:</span> <span className="cuadro-input"></span></div>
-              <div className="flex items-center"><span className="w-20">ESTADO CIVIL:</span> <span className="cuadro-input"></span></div>
-              <div className="flex items-center"><span className="w-32">CIUDAD DE RESIDENCIA:</span> <span className="cuadro-input"></span></div>
-              <div className="flex items-center"><span className="w-10">PAÍS:</span> <span className="cuadro-input"></span></div>
-              <div className="flex items-center"><span className="w-32">TELEFONO DOMICILIO:</span> <span className="cuadro-input"></span></div>
-              <div className="flex items-center"><span className="w-32">TELEFONO CELULAR:</span> <span className="cuadro-input"></span></div>
-              <div className="col-span-2 flex items-center"><span className="w-48">CORREO ELECTRONICO PERSONAL:</span> <span className="cuadro-input"></span></div>
-              <div className="col-span-2 flex items-center"><span className="w-48">CORREO ELECTRONICO LABORAL:</span> <span className="cuadro-input"></span></div>
-              <div className="col-span-2 flex items-center"><span className="w-48">DIRECCION DOMICILIO (Lo mas detallada):</span> <span className="cuadro-input"></span></div>
-              <div className="col-span-2 flex items-center gap-4 mt-1"><span>NIVEL ACADEMICO:</span><span className="checkbox-box"></span> BACHILLERATO <span className="checkbox-box"></span> TECNOLOGICO <span className="checkbox-box"></span> UNIVERSITARIO <span className="checkbox-box"></span> POSTGRADO</div>
-              <div className="col-span-2 flex items-center gap-4"><span>ACTIVIDAD ECONOMICA:</span><span className="checkbox-box"></span> RELACION DEPENDENCIA <span className="checkbox-box"></span> INDEPENDIENTE <span className="checkbox-box"></span> JUBILADO <span className="checkbox-box"></span> AMA DE CASA</div>
-              <div className="flex items-center"><span className="w-40">EMPRESA DONDE TRABAJA:</span> <span className="cuadro-input"></span></div>
-              <div className="flex items-center"><span className="w-16">CARGO:</span> <span className="cuadro-input"></span></div>
-              <div className="flex items-center"><span className="w-40">INGRESOS MENSUALES US$:</span> <span className="cuadro-input"></span></div>
-              <div className="flex items-center"><span className="w-32">TELEFONO OFICINA:</span> <span className="cuadro-input"></span></div>
-            </div>
-
-            <div className="seccion-titulo">2. INFORMACIÓN CÓNYUGE</div>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-2 mb-2">
-              <div className="col-span-2 flex items-center"><span className="w-48">APELLIDOS Y NOMBRES COMPLETOS:</span> <span className="cuadro-input"></span></div>
-              <div className="flex items-center gap-2"><span className="checkbox-box"></span> CEDULA <span className="checkbox-box ml-2"></span> PASAPORTE <span className="ml-2">NUMERO:</span> <span className="cuadro-input w-24"></span></div>
-              <div className="flex items-center gap-1"><span>FECHA NACIMIENTO:</span> DIA<span className="cuadro-input w-6"></span> MES<span className="cuadro-input w-6"></span> AÑO<span className="cuadro-input w-8"></span></div>
-              <div className="flex items-center"><span className="w-24">NACIONALIDAD:</span> <span className="cuadro-input"></span></div>
-              <div className="flex items-center"><span className="w-32">TELEFONO CELULAR:</span> <span className="cuadro-input"></span></div>
-              <div className="col-span-2 flex items-center gap-4 mt-1"><span>ACTIVIDAD ECONOMICA:</span><span className="checkbox-box"></span> RELACION DEPENDENCIA <span className="checkbox-box"></span> INDEPENDIENTE <span className="checkbox-box"></span> JUBILADO <span className="checkbox-box"></span> AMA DE CASA</div>
-              <div className="flex items-center"><span className="w-40">EMPRESA DONDE TRABAJA:</span> <span className="cuadro-input"></span></div>
-              <div className="flex items-center"><span className="w-16">CARGO:</span> <span className="cuadro-input"></span></div>
-              <div className="flex items-center"><span className="w-40">INGRESOS MENSUALES US$:</span> <span className="cuadro-input"></span></div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div><div className="seccion-titulo">3. INFORMACIÓN PATRIMONIAL</div><div className="grid grid-cols-1 gap-2"><div className="flex items-center gap-2"><span>VIVIENDA:</span><span className="checkbox-box"></span> PROPIA <span className="checkbox-box"></span> ARRENDADA <span className="checkbox-box"></span> HIPOTECADA</div><div className="flex items-center gap-2"><span>OTROS BIENES:</span><span className="checkbox-box"></span> TERRENO <span className="checkbox-box"></span> CASA/DPTO <span className="checkbox-box"></span> VEHICULO</div></div></div>
-              <div><div className="seccion-titulo">4. INFORMACIÓN FINANCIERA</div><div className="grid grid-cols-1 gap-2"><div className="flex items-center"><span className="w-32">TOTAL INGRESOS US$:</span> <span className="cuadro-input"></span></div><div className="flex items-center"><span className="w-32">TOTAL EGRESOS US$:</span> <span className="cuadro-input"></span></div></div></div>
-            </div>
-
-            <div className="seccion-titulo">5. REFERENCIA PERSONAL (Familiar que no viva con usted)</div>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-2 mb-2">
-              <div className="col-span-2 flex items-center"><span className="w-48">NOMBRES Y APELLIDOS:</span> <span className="cuadro-input"></span></div>
-              <div className="flex items-center"><span className="w-32">TELEFONO DOMICILIO:</span> <span className="cuadro-input"></span></div>
-              <div className="flex items-center"><span className="w-32">TELEFONO CELULAR:</span> <span className="cuadro-input"></span></div>
-              <div className="col-span-2 flex items-center"><span className="w-48">DIRECCION (Lo mas detallada):</span> <span className="cuadro-input"></span></div>
-            </div>
-
-            <div className="seccion-titulo">6. CONDICIÓN DE PERSONA EXPUESTA POLÍTICAMENTE (PEP's)</div>
-            <div className="mb-2 text-justify">
-              <p>Declaro bajo juramento que <span className="checkbox-box ml-1"></span> SI <span className="checkbox-box ml-1"></span> NO me encuentro ejerciendo un cargo público destacado o tengo una relación de las incluidas en la normativa PEP.</p>
-              <div className="flex items-center mt-1"><span className="w-16">CARGO:</span> <span className="cuadro-input"></span></div>
-            </div>
-
-            <div className="seccion-titulo">7. DECLARACIÓN DE VERACIDAD Y LICITUD DE FONDOS</div>
-            <div className="mb-4 text-justify">
-              <p>1. El origen de los fondos y bienes entregados son lícitos y legítimos, y que no provienen de actividades relacionadas con el cultivo, fabricación, almacenamiento o tráfico ilícito de sustancias, lavado de dinero u otra actividad ilegal.</p>
-              <p>2. La información registrada es veraz y asumo cualquier responsabilidad por eventual falsedad. Autorizo expresamente a realizar el análisis y las verificaciones de los datos.</p>
-            </div>
-
-            <div className="mt-24 grid grid-cols-4 gap-6 px-2">
-              <div className="text-center border-t border-[#8C8A87] pt-2"><p className="text-[8px] font-bold">FIRMA DEL CLIENTE</p></div>
-              <div className="text-center border-t border-[#8C8A87] pt-2"><p className="text-[8px] font-bold">FIRMA CÓNYUGE</p></div>
-              <div className="text-center border-t border-[#8C8A87] pt-2"><p className="text-[8px] font-bold">OFICIAL DE CUMPLIMIENTO</p></div>
-              <div className="text-center border-t border-[#8C8A87] pt-2"><p className="text-[8px] font-bold">GERENTE GENERAL</p></div>
-            </div>
-            <div className="absolute bottom-6 left-0 right-0 text-center text-[7px] text-[#8C8A87] uppercase tracking-widest">Arienzo S.A.S. • Formulario Conozca a su Cliente • Página 1 de 2</div>
-          </div>
-
-          {/* HOJA 2: FORMULARIO LICITUD DE FONDOS */}
-          <div className="pagina-a4 text-xxs">
-            <div className="flex justify-between items-end border-b-2 border-[#B94A36] pb-2 mb-4">
-              <div><img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" alt="Arienzo" className="h-8 object-contain" /></div>
-              <div className="text-right"><h2 className="text-[11px] font-bold uppercase tracking-wide">FORMULARIO LICITUD DE FONDOS</h2></div>
-            </div>
-
-            <div className="flex justify-end gap-6 text-[8px] mb-4"><div>CIUDAD: <span className="cuadro-input w-32"></span></div><div>FECHA: <span className="cuadro-input w-24"></span></div></div>
-
-            <div className="seccion-titulo">INFORMACIÓN DEL CLIENTE</div>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-3 mb-4">
-              <div className="col-span-2 flex items-center"><span className="w-40">NOMBRE O RAZON SOCIAL:</span> <span className="cuadro-input"></span></div>
-              <div className="flex items-center gap-2"><span className="w-24">IDENTIFICACION:</span><span className="checkbox-box"></span> CEDULA <span className="checkbox-box ml-1"></span> RUC <span className="checkbox-box ml-1"></span> PASAPORTE</div>
-              <div className="flex items-center"><span className="w-10">No.:</span> <span className="cuadro-input"></span></div>
-              <div className="flex items-center"><span className="w-12">PAIS:</span> <span className="cuadro-input"></span></div>
-              <div className="flex items-center"><span className="w-16">CIUDAD:</span> <span className="cuadro-input"></span></div>
-              <div className="col-span-2 flex items-center"><span className="w-20">DIRECCION:</span> <span className="cuadro-input"></span></div>
-              <div className="col-span-2 flex items-center"><span className="w-24">TELEFONO(S):</span> <span className="cuadro-input"></span></div>
-            </div>
-
-            <div className="seccion-titulo">INFORMACION DEL TERCERO QUE REALIZA LA TRANSACCION O DE QUIEN PROVIENEN LOS FONDOS (SI APLICA)</div>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-3 mb-4">
-              <div className="col-span-2 flex items-center"><span className="w-40">NOMBRE O RAZON SOCIAL:</span> <span className="cuadro-input"></span></div>
-              <div className="flex items-center gap-2"><span className="w-24">IDENTIFICACION:</span><span className="checkbox-box"></span> CEDULA <span className="checkbox-box ml-1"></span> RUC <span className="checkbox-box ml-1"></span> PASAPORTE</div>
-              <div className="flex items-center"><span className="w-10">No.:</span> <span className="cuadro-input"></span></div>
-              <div className="flex items-center"><span className="w-12">PAIS:</span> <span className="cuadro-input"></span></div>
-              <div className="flex items-center"><span className="w-16">CIUDAD:</span> <span className="cuadro-input"></span></div>
-              <div className="col-span-2 flex items-center"><span className="w-20">DIRECCION:</span> <span className="cuadro-input"></span></div>
-              <div className="col-span-2 flex items-center"><span className="w-48">VINCULO CON LA RELACION (O CLIENTE):</span> <span className="cuadro-input"></span></div>
-            </div>
-
-            <div className="seccion-titulo">INFORMACION DE LA TRANSACCION</div>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-3 mb-4">
-              <div className="flex items-center"><span className="w-20">MONEDA:</span> <span className="cuadro-input"></span></div>
-              <div className="flex items-center"><span className="w-20">VALOR:</span> <span className="cuadro-input"></span></div>
-              <div className="col-span-2 flex items-center gap-4"><span className="w-36">TIPO DE TRANSACCION:</span><span className="checkbox-box"></span> COMPRA DE INMUEBLES <span className="checkbox-box ml-4"></span> OTROS (Especifique) <span className="cuadro-input w-40"></span></div>
-              <div className="col-span-2 flex items-center gap-4"><span className="w-36">MEDIO DE PAGO:</span><span className="checkbox-box"></span> TRANSFERENCIA <span className="checkbox-box ml-2"></span> EFECTIVO <span className="checkbox-box ml-2"></span> CHEQUE <span className="checkbox-box ml-2"></span> DEPOSITO</div>
-            </div>
-
-            <div className="seccion-titulo">DECLARACION DE ORIGEN DE LOS FONDOS</div>
-            <div className="mb-6 text-justify text-[8px] leading-relaxed space-y-2">
-              <div className="flex items-center mb-2"><span className="w-64 font-bold">Los fondos de esta transacción Provienen de:</span> <span className="cuadro-input"></span></div>
-              <p>Declaro expresamente que el origen de los fondos entregados son lícitos y legítimos, y que no provienen, entre otras, de actividades relacionadas con el cultivo, fabricación, almacenamiento, transporte o tráfico ilícito de sustancias estupefacientes o psicotrópicas, lavado de dinero o cualquier otra actividad ilegal.</p>
-              <p>Además autorizo a la compañía Arienzo S.A.S., para que efectúe todas las indagaciones que razonablemente considere oportuno realizar para comprobar el origen de tales bienes.</p>
-              <p>En caso que se inicien investigaciones sobre el firmante, relacionadas con las actividades antes señaladas, o de producirse transacciones inusual o injustificadas, la compañía Arienzo S.A.S. podrá proporcionar a las autoridades competentes toda la información que tenga sobre las mismas o que le sea requerida.</p>
-              <p>En tal sentido, renuncio a presentar en contra de la compañía Arienzo S.A.S., de sus funcionarios o empleados, cualquier reclamo o acción legal, judicial, extrajudicial, administrativa, civil, penal o arbitral en la eventualidad de producirse tales hechos. Autorizo a la compañía a obtener de cualquier fuente de información, mi comportamiento crediticio y demás activos o pasivos.</p>
-            </div>
-
-            <div className="mt-8 border-2 border-[#333333] flex text-[#333333]">
-              <div className="w-1/2 flex items-end justify-center pb-4 border-r-2 border-[#333333] h-32">
-                 <div className="w-3/4 border-t border-[#333333] text-center pt-1"><span className="font-bold text-[9px]">Firma de quien provee los fondos</span></div>
+        {/* PLANTILLA A: RECIBO DE CAJA */}
+        <div id="impresion-recibo" className="hidden">
+          <div className="pagina-a4">
+            <div className="flex justify-between items-end border-b-2 border-[#B94A36] pb-4 mb-8">
+              <div>
+                <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" alt="Arienzo" className="h-10 mb-2 object-contain" />
+                <p className="text-[8px] tracking-widest text-[#8C8A87] uppercase font-bold">RUC: 1391937895001</p>
               </div>
-              <div className="w-1/2 flex flex-col items-center h-32 pt-2 pb-4">
-                 <span className="font-bold text-[9px] mb-2">PARA USO EXCLUSIVO DE ARIENZO S.A.S.</span>
-                 <div className="flex-grow"></div>
-                 <div className="w-3/4 border-t border-[#333333] text-center pt-1 mb-6"><span className="text-[8px]">FIRMA</span></div>
-                 <div className="w-3/4 border-t border-[#333333] text-center pt-1"><span className="text-[8px]">Nombre completo de quien recibe la información</span></div>
+              <div className="text-right"><h1 className="text-lg font-light text-[#B94A36] tracking-widest uppercase">Recibo de Caja</h1><p className="text-xs font-mono font-bold mt-1">N° {codigoReserva || 'RES-BORRADOR'}</p></div>
+            </div>
+            <div className="bg-white border border-[#EAE3DC] p-6 rounded-md shadow-sm">
+              <div className="flex justify-between items-center border-b border-[#EAE3DC] pb-4 mb-4"><span className="text-[10px] uppercase font-bold text-[#8C8A87] tracking-wider">Fecha de Emisión:</span><span className="text-sm font-medium">{new Date().toLocaleDateString('es-ES')}</span></div>
+              <div className="flex justify-between items-center border-b border-[#EAE3DC] pb-4 mb-4"><span className="text-[10px] uppercase font-bold text-[#8C8A87] tracking-wider">Monto Recibido:</span><span className="text-xl font-mono font-bold text-[#B94A36]">${reservaForm.montoReserva.toLocaleString('en-US', {minimumFractionDigits: 2})}</span></div>
+              <div className="flex justify-between items-center border-b border-[#EAE3DC] pb-4 mb-4"><span className="text-[10px] uppercase font-bold text-[#8C8A87] tracking-wider">Recibimos de:</span><span className="text-sm font-bold uppercase">{clienteActivoReserva?.nombres || ''} {clienteActivoReserva?.apellidos || ''}</span></div>
+              <div className="flex flex-col border-b border-[#EAE3DC] pb-4 mb-4">
+                <span className="text-[10px] uppercase font-bold text-[#8C8A87] tracking-wider mb-2">Por Concepto de:</span>
+                <span className="text-sm text-justify leading-relaxed mb-3">Reserva y bloqueo comercial de la siguiente unidad perteneciente al Proyecto Inmobiliario "Arienzo Boutique Living", ubicado en el sector Barbasquillo, Manta.</span>
+                <div className="grid grid-cols-4 gap-3 bg-[#FCFBFA] border border-[#EAE3DC] p-3 rounded-md">
+                  <div><span className="text-[8px] uppercase font-bold text-[#8C8A87] block">Unidad Inm.</span><span className="text-xs font-bold text-[#333333]">{propiedadActivaReserva?.unidad || propiedadActivaReserva?.numero || '---'}</span></div>
+                  <div><span className="text-[8px] uppercase font-bold text-[#8C8A87] block">Nivel / Piso</span><span className="text-xs font-medium text-[#333333]">{propiedadActivaReserva?.piso || 'N/A'}</span></div>
+                  <div><span className="text-[8px] uppercase font-bold text-[#8C8A87] block">Tipología</span><span className="text-xs font-medium text-[#333333]">{propiedadActivaReserva?.tipologia || 'N/A'}</span></div>
+                  <div><span className="text-[8px] uppercase font-bold text-[#8C8A87] block">Área Útil</span><span className="text-xs font-medium text-[#333333]">{propiedadActivaReserva?.area_total || 'N/A'} m²</span></div>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4 bg-[#F2EFEB] p-4 rounded-md">
+                <div><span className="text-[9px] uppercase font-bold text-[#8C8A87] block mb-1">Método:</span><span className="text-[11px] font-medium">{reservaForm.formaPago}</span></div>
+                <div><span className="text-[9px] uppercase font-bold text-[#8C8A87] block mb-1">Entidad Bancaria:</span><span className="text-[11px] font-medium">{reservaForm.bancoOrigen || 'N/A'}</span></div>
+                <div><span className="text-[9px] uppercase font-bold text-[#8C8A87] block mb-1">Ref / Documento:</span><span className="text-[11px] font-mono font-medium">{reservaForm.numeroComprobante || 'N/A'}</span></div>
               </div>
             </div>
-
-            <div className="absolute bottom-6 left-0 right-0 text-center text-[7px] text-[#8C8A87] uppercase tracking-widest">Arienzo S.A.S. • Formulario Licitud de Fondos • Página 2 de 2</div>
+            <div className="mt-6 p-4 bg-neutral-50 border border-neutral-200 rounded-md text-[6.5pt] leading-tight text-justify text-neutral-500">
+              <p><strong>Nota importante / Cláusula de Reserva:</strong> El valor entregado en concepto de reserva implica la aceptación formal de la unidad y su respectivo bloqueo comercial. Se entiende y acepta que, en caso de desistimiento o retiros voluntarios por motivos ajenos a la promotora (Arienzo S.A.S.), dicho valor no será reembolsado, destinándose íntegramente a cubrir los gastos administrativos y de lucro cesante generados por la desincorporación temporal del inventario.</p>
+            </div>
+            <div className="mt-12 grid grid-cols-2 gap-16 px-12">
+              <div className="text-center border-t border-[#8C8A87] pt-2">
+                <p className="text-[9px] font-bold uppercase tracking-wider">{clienteActivoReserva?.nombres || 'FIRMA DEL CLIENTE'} {clienteActivoReserva?.apellidos || ''}</p>
+                <p className="text-[8px] text-[#8C8A87]">C.C. {clienteActivoReserva?.cedula || '_______________'}</p>
+              </div>
+              <div className="text-center border-t border-[#8C8A87] pt-2">
+                <p className="text-[9px] font-bold uppercase tracking-wider">Arienzo S.A.S.</p>
+                <p className="text-[8px] text-[#8C8A87]">Recibí Conforme</p>
+              </div>
+            </div>
+            <div className="absolute bottom-6 left-0 right-0 text-center text-[7px] text-[#8C8A87] uppercase tracking-widest">Arienzo S.A.S. • Promotora Inmobiliaria • Página 1 de 1</div>
           </div>
         </div>
+
+        {/* EL RESTO DE PLANTILLAS SE ENCUENTRAN EN EL PREVISUALIZADOR ARRIBA O AQUI DEPENDIENDO DEL TAB */}
 
       </div>
     </div>
