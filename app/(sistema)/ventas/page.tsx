@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Gestor de Operaciones v4 (Correccion Observaciones)
+// Actualizacion para Vercel - Gestor de Operaciones v5 (Formatos Pulidos)
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -37,8 +37,6 @@ export default function GestorOperacionesPage() {
   const [pestañaInforme, setPestañaInforme] = useState<'configurar' | 'previsualizar'>('configurar');
   const [informeForm, setInformeForm] = useState({ clienteId: '', propiedadId: '' });
   const [formaFinanciamiento, setFormaFinanciamiento] = useState('Crédito Directo');
-  
-  // AQUI ESTABA EL ERROR: Faltaba declarar esta variable
   const [observacionesNegocio, setObservacionesNegocio] = useState('');
   
   // Sistema de Notas Dinámicas
@@ -175,7 +173,6 @@ export default function GestorOperacionesPage() {
     
     let cuotasGeneradas: CuotaMes[] = [];
 
-    // 1. Generar Cuotas Iniciales (Firma de Promesa dividida)
     if (calcInforme.saldoFirmaPromesa > 0 && mesesInicial > 0) {
       const valorAbono = calcInforme.saldoFirmaPromesa / mesesInicial;
       for (let i = 0; i < mesesInicial; i++) {
@@ -193,7 +190,6 @@ export default function GestorOperacionesPage() {
       }
     }
 
-    // 2. Generar Cuotas de Construcción
     if (mesesConstruccion > 0 && calcInforme.entradaDiferirTotal > 0) {
       const valorBaseCuota = calcInforme.entradaDiferirTotal / mesesConstruccion;
       for (let i = 0; i < mesesConstruccion; i++) {
@@ -284,7 +280,7 @@ export default function GestorOperacionesPage() {
           <style>
             @page { size: A4 portrait; margin: 0mm; }
             body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; margin: 0; background: #ffffff; font-family: ui-sans-serif, system-ui; }
-            .pagina-a4 { width: 210mm; height: 297mm; padding: 10mm 15mm; box-sizing: border-box; page-break-after: always; overflow: hidden; position: relative; }
+            .pagina-a4 { width: 210mm; height: 297mm; padding: 12mm 15mm; box-sizing: border-box; page-break-after: always; overflow: hidden; position: relative; }
             .cuadro-input { border-bottom: 1px solid #8C8A87; min-height: 14px; display: inline-block; width: 100%; }
             .checkbox-box { width: 10px; height: 10px; border: 1px solid #8C8A87; display: inline-block; margin-right: 4px; vertical-align: middle; }
             .seccion-titulo { background-color: #F2EFEB; color: #B94A36; font-weight: bold; text-transform: uppercase; font-size: 8px; padding: 4px 8px; border-left: 3px solid #B94A36; margin-bottom: 6px; margin-top: 8px; letter-spacing: 0.05em; }
@@ -393,7 +389,7 @@ export default function GestorOperacionesPage() {
            ======================================================= */}
         {activeTab === 'informe_negocio' && (
           <div className="animate-in fade-in">
-            {/* CABECERA INFORME NEGOCIO (ESTILO COTIZADOR) */}
+            {/* CABECERA INFORME NEGOCIO */}
             <div className="mb-6 flex justify-end">
               {propiedadActivaInforme && (
                 <div className="flex bg-[#dce3eb]/50 p-1.5 rounded-xl border border-[#415364]/10 shadow-inner">
@@ -445,7 +441,6 @@ export default function GestorOperacionesPage() {
                               </select>
                             </div>
                             
-                            {/* SISTEMA DE NOTAS Y OBSERVACIONES */}
                             <div className="bg-[#415364]/5 border border-[#415364]/10 rounded-xl p-4 mt-2">
                                <div className="flex justify-between items-center mb-3">
                                   <label className="text-[10px] font-bold text-[#415364] uppercase">Notas y Observaciones del Negocio</label>
@@ -562,119 +557,133 @@ export default function GestorOperacionesPage() {
                     )}
                   </>
                 ) : (
-                  /* PREVISUALIZADOR DEL INFORME DE NEGOCIO */
-                  <div className="bg-[#1a1c23] p-6 rounded-2xl shadow-inner flex justify-center border border-[#415364]/30 overflow-x-auto min-h-[500px]">
-                    <div id="plantilla-pdf-arienzo" className="bg-white w-[210mm] min-h-[297mm] flex flex-col text-neutral-900 shadow-2xl scale-95 sm:scale-100 origin-top transform p-10 box-border">
+                  /* =========================================================================
+                     PREVISUALIZADOR DEL INFORME DE NEGOCIO (PDF)
+                     Diseño Ajustado y Refinado
+                     ========================================================================= */
+                  <div className="bg-[#1a1c23] p-8 rounded-2xl shadow-inner flex justify-center border border-[#415364]/30 overflow-x-auto min-h-[600px]">
+                    <div id="plantilla-pdf-arienzo" className="bg-white w-[210mm] flex flex-col text-[#222222] shadow-2xl scale-95 sm:scale-100 origin-top transform p-10 box-border border-b-4 border-[#B94A36]">
                         {/* HEADER */}
-                        <div className="flex justify-between items-center mb-6">
-                          <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" alt="Arienzo" className="h-6 max-w-[120px] object-contain" />
-                          <h1 className="text-[16pt] font-bold tracking-widest uppercase text-[#333333]">Informe de Negocio</h1>
-                          <div className="text-right text-[7pt] uppercase tracking-wider text-[#333333]">
+                        <div className="flex justify-between items-center mb-6 border-b border-[#333333]/20 pb-4">
+                          <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" alt="Arienzo" className="h-7 max-w-[140px] object-contain" />
+                          <h1 className="text-[14pt] font-bold tracking-widest uppercase text-[#333333] ml-4">Informe de Negocio</h1>
+                          <div className="text-right text-[7pt] uppercase tracking-wider text-[#555555]">
                              <p><strong>FECHA:</strong> {new Date().toLocaleDateString('es-ES')}</p>
                              <p><strong>CÓDIGO:</strong> {codigoInforme}</p>
                           </div>
                         </div>
                         
-                        {/* INFORMACIÓN DEL CLIENTE */}
-                        <div className="bg-[#F2EFEB] text-[#B94A36] font-bold text-[7pt] px-2 py-1 uppercase border border-[#333333] tracking-widest mt-2">Información del Cliente</div>
-                        <div className="grid grid-cols-4 gap-y-2 gap-x-4 text-[7pt] border-l border-r border-b border-[#333333] p-3 uppercase">
-                            <div className="col-span-2"><strong>Empresa / Cliente:</strong> {clienteActivoInforme?.nombres || '---'} {clienteActivoInforme?.apellidos || ''}</div>
-                            <div className="col-span-2"><strong>RUC / Cédula / Pass:</strong> {clienteActivoInforme?.cedula || '---'}</div>
-                            <div className="col-span-2"><strong>Representante Legal:</strong> {clienteActivoInforme?.representante_legal || '---'}</div>
-                            <div className="col-span-2"><strong>Estado Civil:</strong> {clienteActivoInforme?.estado_civil || '---'}</div>
-                            <div className="col-span-2"><strong>Ciudad Residencia:</strong> {clienteActivoInforme?.ciudad || '---'}</div>
-                            <div className="col-span-2"><strong>Teléfono Fijo:</strong> {clienteActivoInforme?.telefono_domicilio || '---'}</div>
-                            <div className="col-span-4"><strong>Dirección:</strong> {clienteActivoInforme?.direccion_domicilio || '---'}</div>
-                            <div className="col-span-2"><strong>E-mail:</strong> <span className="lowercase">{clienteActivoInforme?.email || '---'}</span></div>
-                            <div className="col-span-2"><strong>Celular:</strong> {clienteActivoInforme?.telefono || '---'}</div>
-                        </div>
-
-                        {/* DESCRIPCIÓN DEL PRODUCTO */}
-                        <div className="bg-[#F2EFEB] text-[#B94A36] font-bold text-[7pt] px-2 py-1 uppercase border border-[#333333] tracking-widest mt-4">Descripción del Producto</div>
-                        <div className="grid grid-cols-4 gap-y-2 gap-x-4 text-[7pt] border-l border-r border-b border-[#333333] p-3 uppercase">
-                            <div><strong>Departamento No.:</strong> {propiedadActivaInforme?.unidad || propiedadActivaInforme?.numero}</div>
-                            <div><strong>Área Útil:</strong> {propiedadActivaInforme?.area_interior || propiedadActivaInforme?.area_total || '0.00'} m²</div>
-                            <div><strong>Terraza A:</strong> {propiedadActivaInforme?.terraza_a || '0.00'} m²</div>
-                            <div><strong>Área Total:</strong> {propiedadActivaInforme?.area_total || '0.00'} m²</div>
-                            <div><strong>Bodega No.:</strong> {propiedadActivaInforme?.bodega_asignada || '---'}</div>
-                            <div><strong>Parqueo No.:</strong> {propiedadActivaInforme?.parqueadero_asignado || '---'}</div>
-                            <div><strong>Terraza B:</strong> {propiedadActivaInforme?.terraza_b || '0.00'} m²</div>
-                            <div><strong>Dormitorios:</strong> {propiedadActivaInforme?.no_dormitorios || '---'}</div>
-                        </div>
-                        
-                        {/* NEGOCIO Y TABLA */}
-                        <div className="flex gap-4 mt-4 flex-1 items-stretch">
-                          <div className="w-1/2 flex flex-col h-full">
-                              <div className="bg-[#F2EFEB] text-[#B94A36] font-bold text-[7pt] px-2 py-1 uppercase border border-[#333333] tracking-widest">Condiciones de Negocio</div>
-                              <div className="border-l border-r border-b border-[#333333] p-3 text-[8pt] uppercase space-y-2 flex-1 flex flex-col">
-                                  <div className="flex justify-between items-center"><span>Precio del Inmueble:</span> <strong className="font-mono text-[9pt]">${calcInforme.precioListaOriginal.toLocaleString('en-US', {minimumFractionDigits:2})}</strong></div>
-                                  <div className="flex justify-between items-center"><span>Descuento Aplicado:</span> <strong className="font-mono text-[9pt] text-[#ea0029]">${calcInforme.montoDescuentoCalculado.toLocaleString('en-US', {minimumFractionDigits:2})}</strong></div>
-                                  <div className="flex justify-between items-center text-[9pt] border-t border-[#333333] pt-2 mt-2">
-                                      <span className="font-bold text-[#B94A36]">PRECIO FINAL ACORDADO:</span> <strong className="font-mono text-[11pt] text-[#B94A36]">${calcInforme.precioTotal.toLocaleString('en-US', {minimumFractionDigits:2})}</strong>
-                                  </div>
-                                  
-                                  <div className="mt-8 pt-4 border-t border-dashed border-[#333333]/50">
-                                      <p className="font-bold text-[7pt] text-[#B94A36] mb-1">Tipo de Financiamiento:</p>
-                                      <p className="font-bold text-[8pt] mb-4">{formaFinanciamiento}</p>
-                                      
-                                      {/* SISTEMA DE NOTAS Y OBSERVACIONES IMPRESO */}
-                                      <p className="font-bold text-[7pt] text-[#B94A36] mb-1">Notas y Observaciones:</p>
-                                      {notas.map(n => (
-                                        <div key={n.id} className="mb-2">
-                                           <span className="font-bold text-[#ea0029] text-[7pt]">{n.titulo}: </span>
-                                           <span className="text-[7pt] text-[#333333] normal-case">{n.descripcion}</span>
-                                        </div>
-                                      ))}
-                                      {notas.length === 0 && <p className="text-[7pt] italic text-neutral-400">Sin observaciones especiales.</p>}
-                                  </div>
-                              </div>
-                          </div>
-
-                          <div className="w-1/2 flex flex-col h-full">
-                              <div className="bg-[#F2EFEB] text-[#B94A36] font-bold text-[7pt] px-2 py-1 uppercase border border-[#333333] tracking-widest">Tabla de Pagos</div>
-                              <div className="border-l border-r border-b border-[#333333] flex-1">
-                                  <table className="w-full text-[7pt] text-left uppercase">
-                                      <thead>
-                                          <tr className="border-b border-[#333333] bg-neutral-50"><th className="p-1 border-r border-[#333333] text-center w-2/5">Detalle / Cuota</th><th className="p-1 border-r border-[#333333] text-center w-1/4">Fecha</th><th className="p-1 text-right w-1/3">Monto $</th></tr>
-                                      </thead>
-                                      <tbody className="divide-y divide-[#333333]/30">
-                                          <tr>
-                                            <td className="p-1 border-r border-[#333333] font-bold text-center">Reserva</td>
-                                            <td className="p-1 border-r border-[#333333] text-center font-mono">{formatearFechaLegible(fechaReservaInf)}</td>
-                                            <td className="p-1 text-right font-mono font-bold">${infReservaValor.toLocaleString('en-US', {minimumFractionDigits:2})}</td>
-                                          </tr>
-                                          
-                                          {/* RENDERIZADO DEL CRONOGRAMA COMBINADO */}
-                                          {cronogramaCuotas.map(c => (
-                                              <tr key={c.id}>
-                                                <td className={`p-1 border-r border-[#333333] pl-2 ${c.tipo === 'inicial' ? 'font-bold text-neutral-700' : 'text-[6pt] text-neutral-600'}`}>
-                                                  {c.tipo === 'inicial' ? `Abono Inicial ${c.numeroCuota}` : `Dividendo ${c.numeroCuota}`}
-                                                </td>
-                                                <td className="p-1 border-r border-[#333333] text-center font-mono">{formatearFechaLegible(c.fechaPago)}</td>
-                                                <td className={`p-1 text-right font-mono ${c.tipo === 'inicial' ? 'font-bold' : 'text-neutral-600'}`}>${c.valor.toLocaleString('en-US', {minimumFractionDigits:2})}</td>
-                                              </tr>
-                                          ))}
-                                          
-                                          <tr className="border-t-[1.5px] border-[#333333] bg-[#F2EFEB]/50">
-                                            <td className="p-1 border-r border-[#333333] font-bold text-[#B94A36] text-center">Contraentrega</td>
-                                            <td className="p-1 border-r border-[#333333] text-center font-mono font-bold text-neutral-400">FINAL</td>
-                                            <td className="p-1 text-right font-mono font-bold text-[#B94A36]">${calcInforme.contraEntrega.toLocaleString('en-US', {minimumFractionDigits:2})}</td>
-                                          </tr>
-                                      </tbody>
-                                  </table>
-                              </div>
-                          </div>
-                        </div>
-                        
-                        {/* FIRMAS INFORME */}
-                        <div className="mt-12 grid grid-cols-2 gap-16 px-12 pt-4">
-                            <div className="text-center border-t border-[#333333] pt-2">
-                                <p className="text-[7pt] font-bold uppercase tracking-widest">{clienteActivoInforme?.nombres || 'FIRMA DEL CLIENTE'} {clienteActivoInforme?.apellidos || ''}</p>
-                                <p className="text-[6pt] text-neutral-500 mt-0.5">C.C. {clienteActivoInforme?.cedula || '_______________'}</p>
+                        <div className="flex-1 flex flex-col space-y-5">
+                          {/* INFORMACIÓN DEL CLIENTE */}
+                          <div>
+                            <div className="bg-[#F2EFEB] text-[#B94A36] font-bold text-[7pt] px-3 py-1.5 uppercase border-t border-l border-r border-[#333333] tracking-widest">Información del Cliente</div>
+                            <div className="grid grid-cols-4 gap-y-2.5 gap-x-4 text-[7pt] border border-[#333333] p-4 uppercase">
+                                <div className="col-span-2"><strong>Empresa / Cliente:</strong> <span className="text-neutral-700">{clienteActivoInforme?.nombres || '---'} {clienteActivoInforme?.apellidos || ''}</span></div>
+                                <div className="col-span-2"><strong>RUC / Cédula / Pass:</strong> <span className="text-neutral-700">{clienteActivoInforme?.cedula || '---'}</span></div>
+                                <div className="col-span-2"><strong>Representante Legal:</strong> <span className="text-neutral-700">{clienteActivoInforme?.representante_legal || '---'}</span></div>
+                                <div className="col-span-2"><strong>Estado Civil:</strong> <span className="text-neutral-700">{clienteActivoInforme?.estado_civil || '---'}</span></div>
+                                <div className="col-span-2"><strong>Ciudad Residencia:</strong> <span className="text-neutral-700">{clienteActivoInforme?.ciudad || '---'}</span></div>
+                                <div className="col-span-2"><strong>Teléfono Fijo:</strong> <span className="text-neutral-700">{clienteActivoInforme?.telefono_domicilio || '---'}</span></div>
+                                <div className="col-span-4"><strong>Dirección:</strong> <span className="text-neutral-700">{clienteActivoInforme?.direccion_domicilio || '---'}</span></div>
+                                <div className="col-span-2"><strong>E-mail:</strong> <span className="lowercase text-neutral-700">{clienteActivoInforme?.email || '---'}</span></div>
+                                <div className="col-span-2"><strong>Celular:</strong> <span className="text-neutral-700">{clienteActivoInforme?.telefono || '---'}</span></div>
                             </div>
-                            <div className="text-center border-t border-[#333333] pt-2">
-                                <p className="text-[7pt] font-bold uppercase tracking-widest">Arienzo S.A.S.</p>
-                                <p className="text-[6pt] text-neutral-500 mt-0.5">{nombreAsesor}</p>
+                          </div>
+
+                          {/* DESCRIPCIÓN DEL PRODUCTO */}
+                          <div>
+                            <div className="bg-[#F2EFEB] text-[#B94A36] font-bold text-[7pt] px-3 py-1.5 uppercase border-t border-l border-r border-[#333333] tracking-widest">Descripción del Producto</div>
+                            <div className="grid grid-cols-4 gap-y-2.5 gap-x-4 text-[7pt] border border-[#333333] p-4 uppercase">
+                                <div><strong>Departamento No.:</strong> <span className="text-neutral-700">{propiedadActivaInforme?.unidad || propiedadActivaInforme?.numero}</span></div>
+                                <div><strong>Área Útil:</strong> <span className="text-neutral-700">{propiedadActivaInforme?.area_interior || propiedadActivaInforme?.area_total || '0.00'} m²</span></div>
+                                <div><strong>Terraza A:</strong> <span className="text-neutral-700">{propiedadActivaInforme?.terraza_a || '0.00'} m²</span></div>
+                                <div><strong>Área Total:</strong> <span className="text-neutral-700">{propiedadActivaInforme?.area_total || '0.00'} m²</span></div>
+                                <div><strong>Bodega No.:</strong> <span className="text-neutral-700">{propiedadActivaInforme?.bodega_asignada || '---'}</span></div>
+                                <div><strong>Parqueo No.:</strong> <span className="text-neutral-700">{propiedadActivaInforme?.parqueadero_asignado || '---'}</span></div>
+                                <div><strong>Terraza B:</strong> <span className="text-neutral-700">{propiedadActivaInforme?.terraza_b || '0.00'} m²</span></div>
+                                <div><strong>Dormitorios:</strong> <span className="text-neutral-700">{propiedadActivaInforme?.no_dormitorios || '---'}</span></div>
+                            </div>
+                          </div>
+                          
+                          {/* NEGOCIO Y TABLA (BLOQUES FLEXIBLES) */}
+                          <div className="flex gap-5 mt-2">
+                            {/* COLUMNA IZQ: CONDICIONES */}
+                            <div className="w-1/2 flex flex-col h-auto">
+                                <div className="bg-[#F2EFEB] text-[#B94A36] font-bold text-[7pt] px-3 py-1.5 uppercase border-t border-l border-r border-[#333333] tracking-widest">Condiciones de Negocio</div>
+                                <div className="border border-[#333333] p-4 text-[8pt] uppercase space-y-3 h-full">
+                                    <div className="flex justify-between items-center"><span>Precio del Inmueble:</span> <strong className="font-mono text-[9pt]">${calcInforme.precioListaOriginal.toLocaleString('en-US', {minimumFractionDigits:2})}</strong></div>
+                                    <div className="flex justify-between items-center"><span>Descuento Aplicado:</span> <strong className="font-mono text-[9pt] text-[#ea0029]">${calcInforme.montoDescuentoCalculado.toLocaleString('en-US', {minimumFractionDigits:2})}</strong></div>
+                                    <div className="flex justify-between items-center text-[9pt] border-t border-[#333333]/30 pt-3 mt-3">
+                                        <span className="font-bold text-[#B94A36]">PRECIO FINAL ACORDADO:</span> <strong className="font-mono text-[11pt] text-[#B94A36]">${calcInforme.precioTotal.toLocaleString('en-US', {minimumFractionDigits:2})}</strong>
+                                    </div>
+                                    
+                                    <div className="mt-8 pt-4 border-t border-[#333333]/20">
+                                        <p className="font-bold text-[7pt] text-[#B94A36] mb-1">Tipo de Financiamiento:</p>
+                                        <p className="font-bold text-[8pt] mb-4 text-neutral-800">{formaFinanciamiento}</p>
+                                        
+                                        {/* SISTEMA DE NOTAS Y OBSERVACIONES IMPRESO */}
+                                        <p className="font-bold text-[7pt] text-[#B94A36] mb-1">Notas y Observaciones:</p>
+                                        <div className="space-y-1.5">
+                                          {observacionesNegocio && <p className="text-[7pt] text-neutral-700 leading-snug"><span className="font-bold text-neutral-900">- Distribución:</span> {observacionesNegocio}</p>}
+                                          {notas.map(n => (
+                                            <p key={n.id} className="text-[7pt] text-neutral-700 leading-snug normal-case">
+                                              <span className="font-bold uppercase text-[#ea0029]">- {n.titulo}: </span>
+                                              {n.descripcion}
+                                            </p>
+                                          ))}
+                                          {!observacionesNegocio && notas.length === 0 && <p className="text-[7pt] italic text-neutral-400">Sin observaciones especiales registradas.</p>}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* COLUMNA DER: TABLA PAGOS */}
+                            <div className="w-1/2 flex flex-col h-auto">
+                                <div className="bg-[#F2EFEB] text-[#B94A36] font-bold text-[7pt] px-3 py-1.5 uppercase border-t border-l border-r border-[#333333] tracking-widest">Tabla de Pagos</div>
+                                <div className="border border-[#333333] flex-1">
+                                    <table className="w-full text-[7pt] text-left uppercase">
+                                        <thead>
+                                            <tr className="border-b border-[#333333] bg-neutral-50"><th className="px-2 py-1.5 border-r border-[#333333]/30 text-center w-[45%]">Detalle / Cuota</th><th className="px-2 py-1.5 border-r border-[#333333]/30 text-center w-[25%]">Fecha</th><th className="px-2 py-1.5 text-right w-[30%]">Monto $</th></tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-[#333333]/20">
+                                            <tr>
+                                              <td className="px-2 py-1.5 border-r border-[#333333]/30 font-bold text-neutral-800">Reserva</td>
+                                              <td className="px-2 py-1.5 border-r border-[#333333]/30 text-center font-mono text-neutral-700">{formatearFechaLegible(fechaReservaInf)}</td>
+                                              <td className="px-2 py-1.5 text-right font-mono font-bold text-neutral-900">${infReservaValor.toLocaleString('en-US', {minimumFractionDigits:2})}</td>
+                                            </tr>
+                                            
+                                            {/* RENDERIZADO DEL CRONOGRAMA COMBINADO */}
+                                            {cronogramaCuotas.map(c => (
+                                                <tr key={c.id}>
+                                                  <td className={`px-2 py-1.5 border-r border-[#333333]/30 pl-3 ${c.tipo === 'inicial' ? 'font-bold text-neutral-800' : 'text-[6pt] text-neutral-600'}`}>
+                                                    {c.tipo === 'inicial' ? `Abono Inicial ${c.numeroCuota}` : `Dividendo ${c.numeroCuota}`}
+                                                  </td>
+                                                  <td className="px-2 py-1.5 border-r border-[#333333]/30 text-center font-mono text-neutral-700">{formatearFechaLegible(c.fechaPago)}</td>
+                                                  <td className={`px-2 py-1.5 text-right font-mono ${c.tipo === 'inicial' ? 'font-bold text-neutral-900' : 'text-neutral-600'}`}>${c.valor.toLocaleString('en-US', {minimumFractionDigits:2})}</td>
+                                                </tr>
+                                            ))}
+                                            
+                                            <tr className="border-t-2 border-[#333333] bg-[#F2EFEB]/40">
+                                              <td className="px-2 py-2 border-r border-[#333333]/30 font-bold text-[#B94A36] uppercase tracking-wider">Contraentrega</td>
+                                              <td className="px-2 py-2 border-r border-[#333333]/30 text-center font-mono font-bold text-[#B94A36]">PAGO FINAL</td>
+                                              <td className="px-2 py-2 text-right font-mono font-bold text-[#B94A36] text-[8pt]">${calcInforme.contraEntrega.toLocaleString('en-US', {minimumFractionDigits:2})}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* FIRMAS INFORME (Siempre empujadas al fondo con buen margen) */}
+                        <div className="mt-16 pt-8 grid grid-cols-2 gap-16 px-12">
+                            <div className="text-center border-t border-[#333333] pt-3">
+                                <p className="text-[7pt] font-bold uppercase tracking-widest text-neutral-800">{clienteActivoInforme?.nombres || 'FIRMA DEL CLIENTE'} {clienteActivoInforme?.apellidos || ''}</p>
+                                <p className="text-[6pt] text-neutral-500 mt-1">C.C. {clienteActivoInforme?.cedula || '_______________'}</p>
+                            </div>
+                            <div className="text-center border-t border-[#333333] pt-3">
+                                <p className="text-[7pt] font-bold uppercase tracking-widest text-neutral-800">Arienzo S.A.S.</p>
+                                <p className="text-[6pt] text-neutral-500 mt-1">{nombreAsesor}</p>
                             </div>
                         </div>
 
@@ -809,7 +818,152 @@ export default function GestorOperacionesPage() {
           </div>
         </div>
 
-        {/* EL RESTO DE PLANTILLAS SE ENCUENTRAN EN EL PREVISUALIZADOR ARRIBA O AQUI DEPENDIENDO DEL TAB */}
+        {/* PLANTILLA C: FORMULARIOS KYC VACÍOS (DOC. EXPEDIENTE) */}
+        <div id="impresion-formularios-kyc" className="hidden">
+          
+          {/* HOJA 1: FORMULARIO KYC */}
+          <div className="pagina-a4 text-xxs">
+            <div className="flex justify-between items-end border-b-2 border-[#B94A36] pb-2 mb-2">
+              <div><img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" alt="Arienzo" className="h-8 object-contain" /></div>
+              <div className="text-right"><h2 className="text-[10px] font-bold uppercase tracking-wide">FORMULARIO INFORMACIÓN BÁSICA DEL CLIENTE</h2><p className="text-[8px] text-[#8C8A87] uppercase mt-0.5">Persona Natural</p></div>
+            </div>
+            
+            <div className="flex justify-end gap-6 text-[8px] mb-2"><div>FECHA: <span className="cuadro-input w-24"></span></div><div>CIUDAD: <span className="cuadro-input w-32"></span></div></div>
+
+            <div className="seccion-titulo">1. DATOS PERSONALES</div>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2 mb-2">
+              <div className="col-span-2 flex items-end"><span className="w-32 pb-0.5">PRIMER APELLIDO:</span> <span className="cuadro-input"></span></div>
+              <div className="col-span-2 flex items-end"><span className="w-32 pb-0.5">SEGUNDO APELLIDO:</span> <span className="cuadro-input"></span></div>
+              <div className="col-span-2 flex items-end"><span className="w-32 pb-0.5">NOMBRES:</span> <span className="cuadro-input"></span></div>
+              <div className="flex items-center gap-2"><span className="checkbox-box"></span> CEDULA <span className="checkbox-box ml-2"></span> PASAPORTE <span className="ml-2">NUMERO:</span> <span className="cuadro-input w-24"></span></div>
+              <div className="flex items-center gap-1"><span>FECHA NACIMIENTO:</span> DIA<span className="cuadro-input w-6"></span> MES<span className="cuadro-input w-6"></span> AÑO<span className="cuadro-input w-8"></span></div>
+              <div className="flex items-center"><span className="w-24">NACIONALIDAD:</span> <span className="cuadro-input"></span></div>
+              <div className="flex items-center"><span className="w-20">ESTADO CIVIL:</span> <span className="cuadro-input"></span></div>
+              <div className="flex items-center"><span className="w-32">CIUDAD DE RESIDENCIA:</span> <span className="cuadro-input"></span></div>
+              <div className="flex items-center"><span className="w-10">PAÍS:</span> <span className="cuadro-input"></span></div>
+              <div className="flex items-center"><span className="w-32">TELEFONO DOMICILIO:</span> <span className="cuadro-input"></span></div>
+              <div className="flex items-center"><span className="w-32">TELEFONO CELULAR:</span> <span className="cuadro-input"></span></div>
+              <div className="col-span-2 flex items-center"><span className="w-48">CORREO ELECTRONICO PERSONAL:</span> <span className="cuadro-input"></span></div>
+              <div className="col-span-2 flex items-center"><span className="w-48">CORREO ELECTRONICO LABORAL:</span> <span className="cuadro-input"></span></div>
+              <div className="col-span-2 flex items-center"><span className="w-48">DIRECCION DOMICILIO (Lo mas detallada):</span> <span className="cuadro-input"></span></div>
+              <div className="col-span-2 flex items-center gap-4 mt-1"><span>NIVEL ACADEMICO:</span><span className="checkbox-box"></span> BACHILLERATO <span className="checkbox-box"></span> TECNOLOGICO <span className="checkbox-box"></span> UNIVERSITARIO <span className="checkbox-box"></span> POSTGRADO</div>
+              <div className="col-span-2 flex items-center gap-4"><span>ACTIVIDAD ECONOMICA:</span><span className="checkbox-box"></span> RELACION DEPENDENCIA <span className="checkbox-box"></span> INDEPENDIENTE <span className="checkbox-box"></span> JUBILADO <span className="checkbox-box"></span> AMA DE CASA</div>
+              <div className="flex items-center"><span className="w-40">EMPRESA DONDE TRABAJA:</span> <span className="cuadro-input"></span></div>
+              <div className="flex items-center"><span className="w-16">CARGO:</span> <span className="cuadro-input"></span></div>
+              <div className="flex items-center"><span className="w-40">INGRESOS MENSUALES US$:</span> <span className="cuadro-input"></span></div>
+              <div className="flex items-center"><span className="w-32">TELEFONO OFICINA:</span> <span className="cuadro-input"></span></div>
+            </div>
+
+            <div className="seccion-titulo">2. INFORMACIÓN CÓNYUGE</div>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2 mb-2">
+              <div className="col-span-2 flex items-center"><span className="w-48">APELLIDOS Y NOMBRES COMPLETOS:</span> <span className="cuadro-input"></span></div>
+              <div className="flex items-center gap-2"><span className="checkbox-box"></span> CEDULA <span className="checkbox-box ml-2"></span> PASAPORTE <span className="ml-2">NUMERO:</span> <span className="cuadro-input w-24"></span></div>
+              <div className="flex items-center gap-1"><span>FECHA NACIMIENTO:</span> DIA<span className="cuadro-input w-6"></span> MES<span className="cuadro-input w-6"></span> AÑO<span className="cuadro-input w-8"></span></div>
+              <div className="flex items-center"><span className="w-24">NACIONALIDAD:</span> <span className="cuadro-input"></span></div>
+              <div className="flex items-center"><span className="w-32">TELEFONO CELULAR:</span> <span className="cuadro-input"></span></div>
+              <div className="col-span-2 flex items-center gap-4 mt-1"><span>ACTIVIDAD ECONOMICA:</span><span className="checkbox-box"></span> RELACION DEPENDENCIA <span className="checkbox-box"></span> INDEPENDIENTE <span className="checkbox-box"></span> JUBILADO <span className="checkbox-box"></span> AMA DE CASA</div>
+              <div className="flex items-center"><span className="w-40">EMPRESA DONDE TRABAJA:</span> <span className="cuadro-input"></span></div>
+              <div className="flex items-center"><span className="w-16">CARGO:</span> <span className="cuadro-input"></span></div>
+              <div className="flex items-center"><span className="w-40">INGRESOS MENSUALES US$:</span> <span className="cuadro-input"></span></div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div><div className="seccion-titulo">3. INFORMACIÓN PATRIMONIAL</div><div className="grid grid-cols-1 gap-2"><div className="flex items-center gap-2"><span>VIVIENDA:</span><span className="checkbox-box"></span> PROPIA <span className="checkbox-box"></span> ARRENDADA <span className="checkbox-box"></span> HIPOTECADA</div><div className="flex items-center gap-2"><span>OTROS BIENES:</span><span className="checkbox-box"></span> TERRENO <span className="checkbox-box"></span> CASA/DPTO <span className="checkbox-box"></span> VEHICULO</div></div></div>
+              <div><div className="seccion-titulo">4. INFORMACIÓN FINANCIERA</div><div className="grid grid-cols-1 gap-2"><div className="flex items-center"><span className="w-32">TOTAL INGRESOS US$:</span> <span className="cuadro-input"></span></div><div className="flex items-center"><span className="w-32">TOTAL EGRESOS US$:</span> <span className="cuadro-input"></span></div></div></div>
+            </div>
+
+            <div className="seccion-titulo">5. REFERENCIA PERSONAL (Familiar que no viva con usted)</div>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2 mb-2">
+              <div className="col-span-2 flex items-center"><span className="w-48">NOMBRES Y APELLIDOS:</span> <span className="cuadro-input"></span></div>
+              <div className="flex items-center"><span className="w-32">TELEFONO DOMICILIO:</span> <span className="cuadro-input"></span></div>
+              <div className="flex items-center"><span className="w-32">TELEFONO CELULAR:</span> <span className="cuadro-input"></span></div>
+              <div className="col-span-2 flex items-center"><span className="w-48">DIRECCION (Lo mas detallada):</span> <span className="cuadro-input"></span></div>
+            </div>
+
+            <div className="seccion-titulo">6. CONDICIÓN DE PERSONA EXPUESTA POLÍTICAMENTE (PEP's)</div>
+            <div className="mb-2 text-justify">
+              <p>Declaro bajo juramento que <span className="checkbox-box ml-1"></span> SI <span className="checkbox-box ml-1"></span> NO me encuentro ejerciendo un cargo público destacado o tengo una relación de las incluidas en la normativa PEP.</p>
+              <div className="flex items-center mt-1"><span className="w-16">CARGO:</span> <span className="cuadro-input"></span></div>
+            </div>
+
+            <div className="seccion-titulo">7. DECLARACIÓN DE VERACIDAD Y LICITUD DE FONDOS</div>
+            <div className="mb-4 text-justify">
+              <p>1. El origen de los fondos y bienes entregados son lícitos y legítimos, y que no provienen de actividades relacionadas con el cultivo, fabricación, almacenamiento o tráfico ilícito de sustancias, lavado de dinero u otra actividad ilegal.</p>
+              <p>2. La información registrada es veraz y asumo cualquier responsabilidad por eventual falsedad. Autorizo expresamente a realizar el análisis y las verificaciones de los datos.</p>
+            </div>
+
+            <div className="mt-24 grid grid-cols-4 gap-6 px-2">
+              <div className="text-center border-t border-[#8C8A87] pt-2"><p className="text-[8px] font-bold">FIRMA DEL CLIENTE</p></div>
+              <div className="text-center border-t border-[#8C8A87] pt-2"><p className="text-[8px] font-bold">FIRMA CÓNYUGE</p></div>
+              <div className="text-center border-t border-[#8C8A87] pt-2"><p className="text-[8px] font-bold">OFICIAL DE CUMPLIMIENTO</p></div>
+              <div className="text-center border-t border-[#8C8A87] pt-2"><p className="text-[8px] font-bold">GERENTE GENERAL</p></div>
+            </div>
+            <div className="absolute bottom-6 left-0 right-0 text-center text-[7px] text-[#8C8A87] uppercase tracking-widest">Arienzo S.A.S. • Formulario Conozca a su Cliente • Página 1 de 2</div>
+          </div>
+
+          {/* HOJA 2: FORMULARIO LICITUD DE FONDOS */}
+          <div className="pagina-a4 text-xxs">
+            <div className="flex justify-between items-end border-b-2 border-[#B94A36] pb-2 mb-4">
+              <div><img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" alt="Arienzo" className="h-8 object-contain" /></div>
+              <div className="text-right"><h2 className="text-[11px] font-bold uppercase tracking-wide">FORMULARIO LICITUD DE FONDOS</h2></div>
+            </div>
+
+            <div className="flex justify-end gap-6 text-[8px] mb-4"><div>CIUDAD: <span className="cuadro-input w-32"></span></div><div>FECHA: <span className="cuadro-input w-24"></span></div></div>
+
+            <div className="seccion-titulo">INFORMACIÓN DEL CLIENTE</div>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-3 mb-4">
+              <div className="col-span-2 flex items-center"><span className="w-40">NOMBRE O RAZON SOCIAL:</span> <span className="cuadro-input"></span></div>
+              <div className="flex items-center gap-2"><span className="w-24">IDENTIFICACION:</span><span className="checkbox-box"></span> CEDULA <span className="checkbox-box ml-1"></span> RUC <span className="checkbox-box ml-1"></span> PASAPORTE</div>
+              <div className="flex items-center"><span className="w-10">No.:</span> <span className="cuadro-input"></span></div>
+              <div className="flex items-center"><span className="w-12">PAIS:</span> <span className="cuadro-input"></span></div>
+              <div className="flex items-center"><span className="w-16">CIUDAD:</span> <span className="cuadro-input"></span></div>
+              <div className="col-span-2 flex items-center"><span className="w-20">DIRECCION:</span> <span className="cuadro-input"></span></div>
+              <div className="col-span-2 flex items-center"><span className="w-24">TELEFONO(S):</span> <span className="cuadro-input"></span></div>
+            </div>
+
+            <div className="seccion-titulo">INFORMACION DEL TERCERO QUE REALIZA LA TRANSACCION O DE QUIEN PROVIENEN LOS FONDOS (SI APLICA)</div>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-3 mb-4">
+              <div className="col-span-2 flex items-center"><span className="w-40">NOMBRE O RAZON SOCIAL:</span> <span className="cuadro-input"></span></div>
+              <div className="flex items-center gap-2"><span className="w-24">IDENTIFICACION:</span><span className="checkbox-box"></span> CEDULA <span className="checkbox-box ml-1"></span> RUC <span className="checkbox-box ml-1"></span> PASAPORTE</div>
+              <div className="flex items-center"><span className="w-10">No.:</span> <span className="cuadro-input"></span></div>
+              <div className="flex items-center"><span className="w-12">PAIS:</span> <span className="cuadro-input"></span></div>
+              <div className="flex items-center"><span className="w-16">CIUDAD:</span> <span className="cuadro-input"></span></div>
+              <div className="col-span-2 flex items-center"><span className="w-20">DIRECCION:</span> <span className="cuadro-input"></span></div>
+              <div className="col-span-2 flex items-center"><span className="w-48">VINCULO CON LA RELACION (O CLIENTE):</span> <span className="cuadro-input"></span></div>
+            </div>
+
+            <div className="seccion-titulo">INFORMACION DE LA TRANSACCION</div>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-3 mb-4">
+              <div className="flex items-center"><span className="w-20">MONEDA:</span> <span className="cuadro-input"></span></div>
+              <div className="flex items-center"><span className="w-20">VALOR:</span> <span className="cuadro-input"></span></div>
+              <div className="col-span-2 flex items-center gap-4"><span className="w-36">TIPO DE TRANSACCION:</span><span className="checkbox-box"></span> COMPRA DE INMUEBLES <span className="checkbox-box ml-4"></span> OTROS (Especifique) <span className="cuadro-input w-40"></span></div>
+              <div className="col-span-2 flex items-center gap-4"><span className="w-36">MEDIO DE PAGO:</span><span className="checkbox-box"></span> TRANSFERENCIA <span className="checkbox-box ml-2"></span> EFECTIVO <span className="checkbox-box ml-2"></span> CHEQUE <span className="checkbox-box ml-2"></span> DEPOSITO</div>
+            </div>
+
+            <div className="seccion-titulo">DECLARACION DE ORIGEN DE LOS FONDOS</div>
+            <div className="mb-6 text-justify text-[8px] leading-relaxed space-y-2">
+              <div className="flex items-center mb-2"><span className="w-64 font-bold">Los fondos de esta transacción Provienen de:</span> <span className="cuadro-input"></span></div>
+              <p>Declaro expresamente que el origen de los fondos entregados son lícitos y legítimos, y que no provienen, entre otras, de actividades relacionadas con el cultivo, fabricación, almacenamiento, transporte o tráfico ilícito de sustancias estupefacientes o psicotrópicas, lavado de dinero o cualquier otra actividad ilegal.</p>
+              <p>Además autorizo a la compañía Arienzo S.A.S., para que efectúe todas las indagaciones que razonablemente considere oportuno realizar para comprobar el origen de tales bienes.</p>
+              <p>En caso que se inicien investigaciones sobre el firmante, relacionadas con las actividades antes señaladas, o de producirse transacciones inusual o injustificadas, la compañía Arienzo S.A.S. podrá proporcionar a las autoridades competentes toda la información que tenga sobre las mismas o que le sea requerida.</p>
+              <p>En tal sentido, renuncio a presentar en contra de la compañía Arienzo S.A.S., de sus funcionarios o empleados, cualquier reclamo o acción legal, judicial, extrajudicial, administrativa, civil, penal o arbitral en la eventualidad de producirse tales hechos. Autorizo a la compañía a obtener de cualquier fuente de información, mi comportamiento crediticio y demás activos o pasivos.</p>
+            </div>
+
+            <div className="mt-8 border-2 border-[#333333] flex text-[#333333]">
+              <div className="w-1/2 flex items-end justify-center pb-4 border-r-2 border-[#333333] h-32">
+                 <div className="w-3/4 border-t border-[#333333] text-center pt-1"><span className="font-bold text-[9px]">Firma de quien provee los fondos</span></div>
+              </div>
+              <div className="w-1/2 flex flex-col items-center h-32 pt-2 pb-4">
+                 <span className="font-bold text-[9px] mb-2">PARA USO EXCLUSIVO DE ARIENZO S.A.S.</span>
+                 <div className="flex-grow"></div>
+                 <div className="w-3/4 border-t border-[#333333] text-center pt-1 mb-6"><span className="text-[8px]">FIRMA</span></div>
+                 <div className="w-3/4 border-t border-[#333333] text-center pt-1"><span className="text-[8px]">Nombre completo de quien recibe la información</span></div>
+              </div>
+            </div>
+
+            <div className="absolute bottom-6 left-0 right-0 text-center text-[7px] text-[#8C8A87] uppercase tracking-widest">Arienzo S.A.S. • Formulario Licitud de Fondos • Página 2 de 2</div>
+          </div>
+        </div>
 
       </div>
     </div>
