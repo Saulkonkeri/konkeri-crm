@@ -1,14 +1,22 @@
-// Actualizacion para Vercel - Gestor de Operaciones (Reserva, Informe Negocio y Expediente) - v2 Forzando Vercel
+// Actualizacion para Vercel - Gestor de Operaciones v3
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 
 interface CuotaMes {
-  numeroCuota: number;
+  id: string;
+  tipo: 'inicial' | 'construccion';
+  numeroCuota: number | string;
   fechaPago: string;
   valor: number;
   esEditable: boolean;
+}
+
+interface NotaObservacion {
+  id: string;
+  titulo: string;
+  descripcion: string;
 }
 
 export default function GestorOperacionesPage() {
@@ -22,50 +30,44 @@ export default function GestorOperacionesPage() {
   const [reservaExitosa, setReservaExitosa] = useState(false);
   const [codigoReserva, setCodigoReserva] = useState('');
   const [reservaForm, setReservaForm] = useState({
-    clienteId: '',
-    propiedadId: '',
-    montoReserva: 2500,
-    formaPago: 'Transferencia Bancaria',
-    bancoOrigen: '',
-    numeroComprobante: '',
-    fechaPago: new Date().toISOString().split('T')[0],
+    clienteId: '', propiedadId: '', montoReserva: 2500, formaPago: 'Transferencia Bancaria', bancoOrigen: '', numeroComprobante: '', fechaPago: new Date().toISOString().split('T')[0],
   });
 
   // ================= ESTADOS: PESTAÑA 2 (INFORME NEGOCIO) =================
-  const [informeForm, setInformeForm] = useState({
-    clienteId: '',
-    propiedadId: '',
-  });
+  const [pestañaInforme, setPestañaInforme] = useState<'configurar' | 'previsualizar'>('configurar');
+  const [informeForm, setInformeForm] = useState({ clienteId: '', propiedadId: '' });
   const [formaFinanciamiento, setFormaFinanciamiento] = useState('Crédito Directo');
-  const [observacionesNegocio, setObservacionesNegocio] = useState('');
+  
+  // Sistema de Notas Dinámicas
+  const [notas, setNotas] = useState<NotaObservacion[]>([]);
+  
   const [tipoDescuento, setTipoDescuento] = useState<'porcentaje' | 'valor'>('porcentaje');
   const [valorDescuento, setValorDescuento] = useState<number>(0);
   const hoyStr = new Date().toISOString().split('T')[0];
   const [codigoInforme, setCodigoInforme] = useState(`INF-${new Date().getFullYear()}${String(new Date().getMonth()+1).padStart(2, '0')}-${Math.floor(1000 + Math.random() * 9000)}`);
-  const [infReservaValor, setInfReservaValor] = useState<number>(2500);
   
+  const [infReservaValor, setInfReservaValor] = useState<number>(2500);
   const [tipoInicial, setTipoInicial] = useState<'porcentaje' | 'valor'>('porcentaje');
   const [valorInicial, setValorInicial] = useState<number>(15); 
   const [mesesInicial, setMesesInicial] = useState<number>(1); 
   
   const [fechaReservaInf, setFechaReservaInf] = useState(hoyStr);
   const [fechaFirmaPromesa, setFechaFirmaPromesa] = useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+  
   const [tipoEntrada, setTipoEntrada] = useState<'porcentaje' | 'valor'>('porcentaje');
   const [valorEntrada, setValorEntrada] = useState<number>(25); 
   const [mesesConstruccion, setMesesConstruccion] = useState(24);
   const [diaPago, setDiaPago] = useState(5);
   const [mesInicio, setMesInicio] = useState(new Date().getMonth() + 1); 
   const [anioInicio, setAnioInicio] = useState(new Date().getFullYear());
+  
   const [cronogramaCuotas, setCronogramaCuotas] = useState<CuotaMes[]>([]);
   const [mostrarCalculadoraRefuerzos, setMostrarCalculadoraRefuerzos] = useState(false);
   const [cuotaBaseRapida, setCuotaBaseRapida] = useState<number | ''>('');
   const [mesesRefuerzoRapido, setMesesRefuerzoRapido] = useState<string>('');
 
   // ================= ESTADOS: PESTAÑA 3 (EXPEDIENTE KYC) =================
-  const [cierreForm, setCierreForm] = useState({
-    clienteId: '',
-    propiedadId: '',
-  });
+  const [cierreForm, setCierreForm] = useState({ clienteId: '', propiedadId: '' });
 
   // DATOS GENERALES
   const [nombreAsesor, setNombreAsesor] = useState<string>('Saúl Intriago / Debbi Mera');
@@ -99,8 +101,10 @@ export default function GestorOperacionesPage() {
   const formatearFechaLegible = (fechaIso: string) => {
     if (!fechaIso) return '---';
     const partes = fechaIso.split('-');
+    if(partes.length !== 3) return fechaIso; // Por si el usuario la editó a mano en formato libre
     const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     const mesIndex = parseInt(partes[1], 10) - 1;
+    if(isNaN(mesIndex)) return fechaIso;
     return `${partes[2]}-${mesesNombres[mesIndex].substring(0,3).toUpperCase()}-${partes[0]}`;
   };
 
@@ -124,6 +128,12 @@ export default function GestorOperacionesPage() {
   };
 
   // ================= LÓGICA PESTAÑA 2 (INFORME NEGOCIO) =================
+  const agregarNota = () => setNotas([...notas, { id: Date.now().toString(), titulo: '', descripcion: '' }]);
+  const actualizarNota = (id: string, campo: 'titulo' | 'descripcion', valor: string) => {
+    setNotas(notas.map(n => n.id === id ? { ...n, [campo]: valor } : n));
+  };
+  const eliminarNota = (id: string) => setNotas(notas.filter(n => n.id !== id));
+
   const clienteActivoInforme = clientes.find(c => c.id === informeForm.clienteId);
   const propiedadActivaInforme = propiedades.find(p => p.id.toString() === informeForm.propiedadId.toString());
 
@@ -156,39 +166,91 @@ export default function GestorOperacionesPage() {
   }, [propiedadActivaInforme, tipoInicial, valorInicial, tipoEntrada, valorEntrada, tipoDescuento, valorDescuento, infReservaValor]);
 
   useEffect(() => {
-    if (!propiedadActivaInforme || calcInforme.entradaDiferirTotal <= 0 || mesesConstruccion <= 0) {
+    if (!propiedadActivaInforme || (calcInforme.entradaDiferirTotal <= 0 && calcInforme.saldoFirmaPromesa <= 0) ) {
       setCronogramaCuotas([]); return;
     }
-    const valorBaseCuota = calcInforme.entradaDiferirTotal / mesesConstruccion;
-    const mesesNombres = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
     
-    const cuotasCalculadas = Array.from({ length: mesesConstruccion }, (_, i) => {
-      const mesRelativo = (mesInicio - 1) + i;
-      const fechaCuota = new Date(anioInicio, mesRelativo, diaPago);
-      return {
-        numeroCuota: i + 1,
-        fechaPago: `${String(fechaCuota.getDate()).padStart(2, '0')}-${mesesNombres[fechaCuota.getMonth()].toUpperCase()}-${fechaCuota.getFullYear()}`,
-        valor: valorBaseCuota, esEditable: false,
-      };
-    });
-    setCronogramaCuotas(cuotasCalculadas);
-  }, [propiedadActivaInforme, mesesConstruccion, calcInforme.entradaDiferirTotal, diaPago, mesInicio, anioInicio]);
+    let cuotasGeneradas: CuotaMes[] = [];
 
-  const actualizarValorCuota = (cuotaNumero: number, nuevoValor: number) => {
-    let nuevoCrono = cronogramaCuotas.map(c => c.numeroCuota === cuotaNumero ? { ...c, valor: nuevoValor, esEditable: true } : c);
-    const saldoRestante = calcInforme.entradaDiferirTotal - nuevoCrono.filter(c => c.esEditable).reduce((acc, curr) => acc + curr.valor, 0);
-    const automaticos = nuevoCrono.filter(c => !c.esEditable);
-    if (automaticos.length > 0) {
-      const valorRepartido = Math.max(0, saldoRestante / automaticos.length);
-      nuevoCrono = nuevoCrono.map(c => !c.esEditable ? { ...c, valor: valorRepartido } : c);
+    // 1. Generar Cuotas Iniciales (Firma de Promesa dividida)
+    if (calcInforme.saldoFirmaPromesa > 0 && mesesInicial > 0) {
+      const valorAbono = calcInforme.saldoFirmaPromesa / mesesInicial;
+      for (let i = 0; i < mesesInicial; i++) {
+        const d = new Date(fechaFirmaPromesa + "T12:00:00");
+        d.setMonth(d.getMonth() + i);
+        const dateStr = d.toISOString().split('T')[0];
+        cuotasGeneradas.push({
+          id: `ini-${i}`,
+          tipo: 'inicial',
+          numeroCuota: i + 1,
+          fechaPago: dateStr, // Guarda el ISO para el input de fecha
+          valor: valorAbono,
+          esEditable: false
+        });
+      }
+    }
+
+    // 2. Generar Cuotas de Construcción
+    if (mesesConstruccion > 0 && calcInforme.entradaDiferirTotal > 0) {
+      const valorBaseCuota = calcInforme.entradaDiferirTotal / mesesConstruccion;
+      for (let i = 0; i < mesesConstruccion; i++) {
+        const mesRelativo = (mesInicio - 1) + i;
+        const fechaCuota = new Date(anioInicio, mesRelativo, diaPago);
+        const dateStr = fechaCuota.toISOString().split('T')[0];
+        cuotasGeneradas.push({
+          id: `cons-${i}`,
+          tipo: 'construccion',
+          numeroCuota: i + 1,
+          fechaPago: dateStr,
+          valor: valorBaseCuota,
+          esEditable: false
+        });
+      }
+    }
+
+    setCronogramaCuotas(cuotasGeneradas);
+  }, [propiedadActivaInforme, mesesConstruccion, calcInforme.entradaDiferirTotal, calcInforme.saldoFirmaPromesa, diaPago, mesInicio, anioInicio, mesesInicial, fechaFirmaPromesa]);
+
+  const actualizarAtributoCuota = (id: string, campo: 'valor' | 'fechaPago', nuevoValor: any) => {
+    let nuevoCrono = [...cronogramaCuotas];
+    const index = nuevoCrono.findIndex(c => c.id === id);
+    if(index === -1) return;
+
+    if (campo === 'fechaPago') {
+       nuevoCrono[index].fechaPago = nuevoValor;
+    } else if (campo === 'valor') {
+       nuevoCrono[index].valor = nuevoValor;
+       nuevoCrono[index].esEditable = true;
+
+       // Si es cuota de construcción, rebalanceamos las demás de construcción
+       if (nuevoCrono[index].tipo === 'construccion') {
+         const construccionCrono = nuevoCrono.filter(c => c.tipo === 'construccion');
+         const saldoRestante = calcInforme.entradaDiferirTotal - construccionCrono.filter(c => c.esEditable).reduce((acc, curr) => acc + curr.valor, 0);
+         const automaticos = construccionCrono.filter(c => !c.esEditable);
+         if (automaticos.length > 0) {
+           const valorRepartido = Math.max(0, saldoRestante / automaticos.length);
+           nuevoCrono = nuevoCrono.map(c => (c.tipo === 'construccion' && !c.esEditable) ? { ...c, valor: valorRepartido } : c);
+         }
+       }
+       // Si es cuota inicial, rebalanceamos las iniciales
+       else if (nuevoCrono[index].tipo === 'inicial') {
+         const inicialCrono = nuevoCrono.filter(c => c.tipo === 'inicial');
+         const saldoRestante = calcInforme.saldoFirmaPromesa - inicialCrono.filter(c => c.esEditable).reduce((acc, curr) => acc + curr.valor, 0);
+         const automaticos = inicialCrono.filter(c => !c.esEditable);
+         if (automaticos.length > 0) {
+           const valorRepartido = Math.max(0, saldoRestante / automaticos.length);
+           nuevoCrono = nuevoCrono.map(c => (c.tipo === 'inicial' && !c.esEditable) ? { ...c, valor: valorRepartido } : c);
+         }
+       }
     }
     setCronogramaCuotas(nuevoCrono);
   };
 
   const reiniciarCuotas = () => {
-    if (mesesConstruccion <= 0) return;
-    const valorBaseCuota = calcInforme.entradaDiferirTotal / mesesConstruccion;
-    setCronogramaCuotas(cronogramaCuotas.map(c => ({ ...c, valor: valorBaseCuota, esEditable: false })));
+    // Forzamos la regeneración cambiando temporalmente un estado y regresándolo
+    const prevMeses = mesesConstruccion;
+    setMesesConstruccion(0);
+    setTimeout(() => setMesesConstruccion(prevMeses), 10);
   };
 
   const aplicarPlanRefuerzos = () => {
@@ -198,7 +260,12 @@ export default function GestorOperacionesPage() {
     if (mesesExtra.length === 0) return;
     const saldoRef = calcInforme.entradaDiferirTotal - (base * (mesesConstruccion - mesesExtra.length));
     const valRef = saldoRef / mesesExtra.length;
-    setCronogramaCuotas(cronogramaCuotas.map(c => ({ ...c, valor: mesesExtra.includes(c.numeroCuota) ? valRef : base, esEditable: true })));
+    setCronogramaCuotas(cronogramaCuotas.map(c => {
+      if(c.tipo === 'construccion') {
+         return { ...c, valor: mesesExtra.includes(Number(c.numeroCuota)) ? valRef : base, esEditable: true };
+      }
+      return c;
+    }));
     setMostrarCalculadoraRefuerzos(false); 
   };
 
@@ -325,163 +392,325 @@ export default function GestorOperacionesPage() {
             TAB 2: INFORME DE NEGOCIO
            ======================================================= */}
         {activeTab === 'informe_negocio' && (
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 animate-in fade-in">
-            {/* CONFIGURADOR */}
-            <div className="xl:col-span-2 space-y-5">
-              <div className="bg-white rounded-2xl border border-[#D1C292] p-6 shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1.5 h-full bg-[#D1C292]"></div>
-                <h2 className="text-[11px] font-bold text-[#21242E] uppercase tracking-widest mb-4 flex items-center gap-2">1. Vinculación de Negocio</h2>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[10px] font-bold text-[#415364]/60 uppercase block mb-1.5">Cliente Titular</label>
-                    <select value={informeForm.clienteId} onChange={(e) => setInformeForm({...informeForm, clienteId: e.target.value})} className="w-full bg-[#F9F7F5] border border-[#D1C292]/50 rounded-xl p-3 text-xs font-bold focus:border-[#ea0029] outline-none">
-                      <option value="">— Seleccionar —</option>
-                      {clientes.map(c => <option key={c.id} value={c.id}>{c.nombres} {c.apellidos}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-[#415364]/60 uppercase block mb-1.5">Unidad Reservada</label>
-                    <select value={informeForm.propiedadId} onChange={(e) => setInformeForm({...informeForm, propiedadId: e.target.value})} className="w-full bg-[#F9F7F5] border border-[#D1C292]/50 rounded-xl p-3 text-xs font-bold focus:border-[#ea0029] outline-none">
-                      <option value="">— Seleccionar —</option>
-                      {propiedades.filter(p => p.estado === 'Reservado').map(p => <option key={p.id} value={p.id}>Unidad {p.unidad || p.numero} (Reservada)</option>)}
-                    </select>
-                  </div>
-                </div>
-              </div>
-
+          <div className="animate-in fade-in">
+            {/* CABECERA INFORME NEGOCIO (ESTILO COTIZADOR) */}
+            <div className="mb-6 flex justify-end">
               {propiedadActivaInforme && (
-                <>
-                  <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-sm space-y-5">
-                    <h2 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest border-b border-neutral-100 pb-2">2. Condiciones de Negocio</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                      <div>
-                        <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Tipo de Financiamiento</label>
-                        <select value={formaFinanciamiento} onChange={(e) => setFormaFinanciamiento(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs font-bold outline-none">
-                           <option>Crédito Directo</option><option>Contado</option><option>Crédito Hipotecario (Banco)</option><option>BIESS</option><option>Canje</option><option>Estructura Mixta</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Observaciones Adicionales</label>
-                        <input type="text" value={observacionesNegocio} onChange={(e) => setObservacionesNegocio(e.target.value)} placeholder="Ej. 40% CD - 60% Banco Pichincha" className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs font-medium outline-none" />
-                      </div>
-                    </div>
-                    <div className="pt-4 border-t border-neutral-100">
-                      <div className="flex bg-[#dce3eb]/50 p-1.5 rounded-xl border border-[#415364]/10 w-fit mb-4">
-                        <button onClick={() => setTipoDescuento('porcentaje')} className={`px-4 py-2 rounded-lg text-xs font-bold ${tipoDescuento === 'porcentaje' ? 'bg-white shadow-sm' : 'text-[#415364]/50'}`}>Descuento (%)</button>
-                        <button onClick={() => setTipoDescuento('valor')} className={`px-4 py-2 rounded-lg text-xs font-bold ${tipoDescuento === 'valor' ? 'bg-white shadow-sm' : 'text-[#415364]/50'}`}>Descuento Fijo ($)</button>
-                      </div>
-                      <input type="number" value={valorDescuento} onChange={(e) => setValorDescuento(Number(e.target.value))} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 font-mono font-bold outline-none" placeholder="0" />
-                    </div>
-                  </div>
-
-                  <div className="bg-[#21242E] rounded-2xl border border-neutral-800 p-6 shadow-xl space-y-6">
-                    <h2 className="text-[11px] font-bold text-[#D1C292] uppercase tracking-widest border-b border-white/10 pb-2">3. Flujo de Caja (Estructura)</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                      <div className="space-y-2">
-                        <label className="block text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">Reserva Existente ($)</label>
-                        <input type="number" value={infReservaValor} onChange={(e) => setInfReservaValor(Number(e.target.value))} className="w-full bg-white/10 border border-white/20 rounded-xl p-3 text-sm font-mono font-bold text-white outline-none" />
-                      </div>
-                      
-                      {/* CAJA ABONO INICIAL CON DIVISIÓN */}
-                      <div className="space-y-2 border border-white/10 p-3.5 rounded-xl bg-[#1a1c23]">
-                        <div className="flex justify-between items-center mb-3">
-                          <label className="text-[10px] font-bold text-white uppercase tracking-widest">Abono Inicial Total</label>
-                          <div className="flex bg-white/10 p-1 rounded-lg text-[10px] font-bold">
-                            <button onClick={() => setTipoInicial('porcentaje')} className={`px-2 py-1 rounded-md ${tipoInicial === 'porcentaje' ? 'bg-[#ea0029] text-white' : 'text-white/50'}`}>%</button>
-                            <button onClick={() => setTipoInicial('valor')} className={`px-2 py-1 rounded-md ${tipoInicial === 'valor' ? 'bg-[#ea0029] text-white' : 'text-white/50'}`}>$</button>
-                          </div>
-                        </div>
-                        <input type="number" value={valorInicial} onChange={(e) => setValorInicial(Number(e.target.value))} className="w-full bg-white rounded-lg p-2.5 text-sm font-mono font-bold text-[#21242E] outline-none" />
-                        
-                        <div className="flex justify-between items-center pt-3 mt-3 border-t border-white/10">
-                          <label className="text-[10px] font-bold text-white/50 uppercase">Diferir en (Meses):</label>
-                          <input type="number" min="1" max="12" value={mesesInicial} onChange={(e) => setMesesInicial(Math.max(1, Number(e.target.value)))} className="w-16 bg-white/10 border border-white/20 text-white rounded-lg p-2 text-xs font-bold outline-none text-center focus:border-[#D1C292]" />
-                        </div>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <label className="text-[10px] font-bold text-white/60 uppercase tracking-widest">Entrada Diferida</label>
-                          <div className="flex bg-white/10 p-1 rounded-lg text-[10px] font-bold">
-                            <button onClick={() => setTipoEntrada('porcentaje')} className={`px-2 py-1 rounded-md ${tipoEntrada === 'porcentaje' ? 'bg-[#ea0029] text-white' : 'text-white/50'}`}>%</button>
-                            <button onClick={() => setTipoEntrada('valor')} className={`px-2 py-1 rounded-md ${tipoEntrada === 'valor' ? 'bg-[#ea0029] text-white' : 'text-white/50'}`}>$</button>
-                          </div>
-                        </div>
-                        <input type="number" value={valorEntrada} onChange={(e) => setValorEntrada(Number(e.target.value))} className="w-full bg-white/10 border border-white/20 rounded-xl p-3 text-sm font-mono font-bold text-white outline-none" />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="block text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">Plazo de Obra (Meses)</label>
-                        <input type="number" value={mesesConstruccion} onChange={(e) => setMesesConstruccion(Number(e.target.value))} className="w-full bg-white/10 border border-white/20 rounded-xl p-3 text-sm font-mono font-bold text-white outline-none" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-sm">
-                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-5 border-b border-neutral-100 pb-4">
-                      <h2 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest">4. Ajuste de Cuotas y Fechas</h2>
-                      <div className="flex gap-2">
-                        <button onClick={reiniciarCuotas} className="text-[10px] text-[#415364]/60 hover:text-[#415364] font-bold uppercase tracking-wider bg-[#dce3eb]/50 px-3 py-2 rounded-lg transition-colors">↻ Reiniciar</button>
-                        <button onClick={() => setMostrarCalculadoraRefuerzos(!mostrarCalculadoraRefuerzos)} className="text-[10px] bg-[#ea0029] text-white px-4 py-2 rounded-lg font-bold uppercase tracking-wider">⚡ Cuota Balón</button>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6 bg-[#F9F7F5] p-4 rounded-xl border border-neutral-100">
-                      <div><label className="block text-[10px] font-bold uppercase mb-1">Firma Reserva</label><input type="date" value={fechaReservaInf} onChange={(e)=>setFechaReservaInf(e.target.value)} className="w-full text-xs p-2 border rounded-md" /></div>
-                      <div><label className="block text-[10px] font-bold uppercase mb-1">Firma Promesa</label><input type="date" value={fechaFirmaPromesa} onChange={(e)=>setFechaFirmaPromesa(e.target.value)} className="w-full text-xs p-2 border rounded-md" /></div>
-                      <div><label className="block text-[10px] font-bold uppercase mb-1">Mes Inicio Obra</label><input type="number" value={mesInicio} onChange={(e)=>setMesInicio(Number(e.target.value))} className="w-full text-xs p-2 border rounded-md" /></div>
-                      <div><label className="block text-[10px] font-bold uppercase mb-1">Día de Pago Fijo</label><input type="number" value={diaPago} onChange={(e)=>setDiaPago(Number(e.target.value))} className="w-full text-xs p-2 border rounded-md" /></div>
-                    </div>
-
-                    {mostrarCalculadoraRefuerzos && (
-                      <div className="mb-5 p-5 bg-[#415364] border border-[#21242E] rounded-xl flex gap-4">
-                         <div className="flex-1"><label className="text-[9px] font-bold text-[#dce3eb]/70 uppercase mb-1.5 block">Cuota Fija Base ($)</label><input type="number" value={cuotaBaseRapida} onChange={e => setCuotaBaseRapida(e.target.value===''? '':Number(e.target.value))} className="w-full bg-white/10 p-2.5 text-xs text-white rounded-lg"/></div>
-                         <div className="flex-1"><label className="text-[9px] font-bold text-[#dce3eb]/70 uppercase mb-1.5 block">Meses Refuerzo (Ej: 12,24)</label><input type="text" value={mesesRefuerzoRapido} onChange={e => setMesesRefuerzoRapido(e.target.value)} className="w-full bg-white/10 p-2.5 text-xs text-white rounded-lg"/></div>
-                         <button onClick={aplicarPlanRefuerzos} className="bg-[#ea0029] text-white px-6 rounded-lg text-[11px] font-bold mt-5 h-10">Aplicar</button>
-                      </div>
-                    )}
-
-                    <div className="max-h-60 overflow-y-auto border border-[#415364]/10 rounded-xl divide-y divide-[#415364]/5">
-                      {cronogramaCuotas.map(cuota => (
-                        <div key={cuota.numeroCuota} className="flex justify-between items-center p-3">
-                          <span className="text-[11px] font-bold text-[#415364]">Dividendo {cuota.numeroCuota} <span className="opacity-70 ml-2">{cuota.fechaPago}</span></span>
-                          <div className="flex items-center border-b border-dashed border-[#415364]/30 pb-0.5">
-                            <span className="text-xs mr-1 font-bold text-[#415364]/50">$</span>
-                            <input type="number" value={Number(cuota.valor.toFixed(2))} onChange={(e) => actualizarValorCuota(cuota.numeroCuota, Number(e.target.value))} className="w-24 text-right text-sm font-bold font-mono outline-none" />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
+                <div className="flex bg-[#dce3eb]/50 p-1.5 rounded-xl border border-[#415364]/10 shadow-inner">
+                  <button onClick={() => setPestañaInforme('configurar')} className={`px-4 py-2 rounded-lg text-xs transition-all flex items-center gap-2 ${pestañaInforme === 'configurar' ? 'bg-white text-[#ea0029] shadow-sm font-bold' : 'text-[#415364]/70 hover:text-[#415364] font-semibold'}`}>
+                    ⚙️ Configurar Negocio
+                  </button>
+                  <button onClick={() => setPestañaInforme('previsualizar')} className={`px-4 py-2 rounded-lg text-xs transition-all flex items-center gap-2 ${pestañaInforme === 'previsualizar' ? 'bg-white text-[#ea0029] shadow-sm font-bold' : 'text-[#415364]/70 hover:text-[#415364] font-semibold'}`}>
+                    📄 Ver Documento Oficial
+                  </button>
+                </div>
               )}
             </div>
 
-            {/* RESUMEN DERECHA Y BOTÓN IMPRIMIR */}
-            <div className="xl:col-span-1 space-y-6">
-              <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-xl sticky top-6">
-                <h2 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest mb-3 border-b border-neutral-100 pb-2">Acuerdo Financiero</h2>
-                <div className="text-4xl font-bold tracking-tight text-[#415364] font-mono">${calcInforme.precioTotal.toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
-                <p className="text-[10px] font-bold uppercase text-[#415364]/50 mt-1">Precio Final de Venta</p>
-                
-                <div className="space-y-4 pt-5 border-t border-[#415364]/10 text-sm mt-5">
-                  <div className="flex justify-between"><span className="text-[11px] font-bold uppercase">Cuota Inicial Total</span><span className="font-bold font-mono">${calcInforme.cuotaInicialTotal.toLocaleString('en-US',{minimumFractionDigits:2})}</span></div>
-                  <div className="flex justify-between pl-4 text-[10px] text-neutral-500"><span>Reserva:</span><span className="font-mono">${infReservaValor.toLocaleString('en-US',{minimumFractionDigits:2})}</span></div>
-                  <div className="flex justify-between pl-4 text-[10px] text-neutral-500"><span>Saldo Firma:</span><span className="font-mono">${calcInforme.saldoFirmaPromesa.toLocaleString('en-US',{minimumFractionDigits:2})}</span></div>
-                  
-                  {mesesInicial > 1 && calcInforme.saldoFirmaPromesa > 0 && (
-                    <div className="flex justify-between pl-4 pr-3 py-2 text-[10px] font-bold text-[#ea0029] bg-[#ea0029]/5 rounded-lg border border-[#ea0029]/10 mt-1">
-                      <span>↳ Dividido en {mesesInicial} pagos:</span>
-                      <span className="font-mono">${(calcInforme.saldoFirmaPromesa / mesesInicial).toLocaleString('en-US', {minimumFractionDigits: 2})} c/u</span>
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              {/* CONFIGURADOR */}
+              <div className="xl:col-span-2 space-y-5">
+                {pestañaInforme === 'configurar' ? (
+                  <>
+                    <div className="bg-white rounded-2xl border border-[#D1C292] p-6 shadow-sm relative overflow-hidden">
+                      <div className="absolute top-0 left-0 w-1.5 h-full bg-[#D1C292]"></div>
+                      <h2 className="text-[11px] font-bold text-[#21242E] uppercase tracking-widest mb-4 flex items-center gap-2">1. Vinculación de Negocio</h2>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-[10px] font-bold text-[#415364]/60 uppercase block mb-1.5">Cliente Titular</label>
+                          <select value={informeForm.clienteId} onChange={(e) => setInformeForm({...informeForm, clienteId: e.target.value})} className="w-full bg-[#F9F7F5] border border-[#D1C292]/50 rounded-xl p-3 text-xs font-bold focus:border-[#ea0029] outline-none">
+                            <option value="">— Seleccionar —</option>
+                            {clientes.map(c => <option key={c.id} value={c.id}>{c.nombres} {c.apellidos}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-[#415364]/60 uppercase block mb-1.5">Unidad Reservada</label>
+                          <select value={informeForm.propiedadId} onChange={(e) => setInformeForm({...informeForm, propiedadId: e.target.value})} className="w-full bg-[#F9F7F5] border border-[#D1C292]/50 rounded-xl p-3 text-xs font-bold focus:border-[#ea0029] outline-none">
+                            <option value="">— Seleccionar —</option>
+                            {propiedades.filter(p => p.estado === 'Reservado').map(p => <option key={p.id} value={p.id}>Unidad {p.unidad || p.numero} (Reservada)</option>)}
+                          </select>
+                        </div>
+                      </div>
                     </div>
-                  )}
 
-                  <div className="flex justify-between border-t border-neutral-100 pt-3"><span className="text-[11px] font-bold uppercase">Diferido Obra</span><span className="font-bold font-mono">${calcInforme.entradaDiferirTotal.toLocaleString('en-US',{minimumFractionDigits:2})}</span></div>
-                  <div className="flex justify-between border-t-2 border-[#21242E] pt-3 mt-2"><span className="text-[12px] font-bold uppercase">Contra Entrega</span><span className="font-bold text-[#B94A36] font-mono">${calcInforme.contraEntrega.toLocaleString('en-US',{minimumFractionDigits:2})}</span></div>
+                    {propiedadActivaInforme && (
+                      <>
+                        <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-sm space-y-5">
+                          <h2 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest border-b border-neutral-100 pb-2">2. Condiciones de Negocio</h2>
+                          <div className="grid grid-cols-1 gap-5">
+                            <div>
+                              <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Tipo de Financiamiento</label>
+                              <select value={formaFinanciamiento} onChange={(e) => setFormaFinanciamiento(e.target.value)} className="w-full md:w-1/2 bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs font-bold outline-none">
+                                 <option>Crédito Directo</option><option>Contado</option><option>Crédito Hipotecario (Banco)</option><option>BIESS</option><option>Canje</option><option>Estructura Mixta</option>
+                              </select>
+                            </div>
+                            
+                            {/* SISTEMA DE NOTAS Y OBSERVACIONES */}
+                            <div className="bg-[#415364]/5 border border-[#415364]/10 rounded-xl p-4 mt-2">
+                               <div className="flex justify-between items-center mb-3">
+                                  <label className="text-[10px] font-bold text-[#415364] uppercase">Notas y Observaciones del Negocio</label>
+                                  <button onClick={agregarNota} className="text-[10px] font-bold bg-white text-[#ea0029] border border-[#ea0029]/30 px-3 py-1.5 rounded-lg shadow-sm">➕ Agregar Nota</button>
+                               </div>
+                               {notas.length === 0 && <p className="text-xs text-[#415364]/50 italic">No hay notas adicionales. El informe saldrá limpio.</p>}
+                               <div className="space-y-3">
+                                 {notas.map((nota, idx) => (
+                                    <div key={nota.id} className="flex flex-col sm:flex-row gap-2 bg-white p-2 rounded-lg border border-neutral-200">
+                                       <div className="flex-1">
+                                          <input type="text" placeholder="Título (Ej. Promoción, Bono...)" value={nota.titulo} onChange={e => actualizarNota(nota.id, 'titulo', e.target.value)} className="w-full text-[10px] font-bold uppercase text-[#ea0029] border-b border-neutral-200 pb-1 mb-1 outline-none" />
+                                          <input type="text" placeholder="Descripción de la observación..." value={nota.descripcion} onChange={e => actualizarNota(nota.id, 'descripcion', e.target.value)} className="w-full text-xs text-[#415364] outline-none" />
+                                       </div>
+                                       <button onClick={() => eliminarNota(nota.id)} className="text-[#415364]/40 hover:text-[#ea0029] px-2 text-sm">✖</button>
+                                    </div>
+                                 ))}
+                               </div>
+                            </div>
+                          </div>
+                          
+                          <div className="pt-4 border-t border-neutral-100">
+                            <div className="flex bg-[#dce3eb]/50 p-1.5 rounded-xl border border-[#415364]/10 w-fit mb-4">
+                              <button onClick={() => setTipoDescuento('porcentaje')} className={`px-4 py-2 rounded-lg text-xs font-bold ${tipoDescuento === 'porcentaje' ? 'bg-white shadow-sm' : 'text-[#415364]/50'}`}>Descuento (%)</button>
+                              <button onClick={() => setTipoDescuento('valor')} className={`px-4 py-2 rounded-lg text-xs font-bold ${tipoDescuento === 'valor' ? 'bg-white shadow-sm' : 'text-[#415364]/50'}`}>Descuento Fijo ($)</button>
+                            </div>
+                            <input type="number" value={valorDescuento} onChange={(e) => setValorDescuento(Number(e.target.value))} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 font-mono font-bold outline-none" placeholder="0" />
+                          </div>
+                        </div>
+
+                        <div className="bg-[#21242E] rounded-2xl border border-neutral-800 p-6 shadow-xl space-y-6">
+                          <h2 className="text-[11px] font-bold text-[#D1C292] uppercase tracking-widest border-b border-white/10 pb-2">3. Flujo de Caja (Estructura)</h2>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div className="space-y-2">
+                              <label className="block text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">Reserva Existente ($)</label>
+                              <input type="number" value={infReservaValor} onChange={(e) => setInfReservaValor(Number(e.target.value))} className="w-full bg-white/10 border border-white/20 rounded-xl p-3 text-sm font-mono font-bold text-white outline-none" />
+                            </div>
+                            
+                            <div className="space-y-2 border border-white/10 p-3.5 rounded-xl bg-[#1a1c23]">
+                              <div className="flex justify-between items-center mb-3">
+                                <label className="text-[10px] font-bold text-white uppercase tracking-widest">Abono Inicial Total</label>
+                                <div className="flex bg-white/10 p-1 rounded-lg text-[10px] font-bold">
+                                  <button onClick={() => setTipoInicial('porcentaje')} className={`px-2 py-1 rounded-md ${tipoInicial === 'porcentaje' ? 'bg-[#ea0029] text-white' : 'text-white/50'}`}>%</button>
+                                  <button onClick={() => setTipoInicial('valor')} className={`px-2 py-1 rounded-md ${tipoInicial === 'valor' ? 'bg-[#ea0029] text-white' : 'text-white/50'}`}>$</button>
+                                </div>
+                              </div>
+                              <input type="number" value={valorInicial} onChange={(e) => setValorInicial(Number(e.target.value))} className="w-full bg-white rounded-lg p-2.5 text-sm font-mono font-bold text-[#21242E] outline-none" />
+                              
+                              <div className="flex justify-between items-center pt-3 mt-3 border-t border-white/10">
+                                <label className="text-[10px] font-bold text-white/50 uppercase">Diferir en (Meses):</label>
+                                <input type="number" min="1" max="12" value={mesesInicial} onChange={(e) => setMesesInicial(Math.max(1, Number(e.target.value)))} className="w-16 bg-white/10 border border-white/20 text-white rounded-lg p-2 text-xs font-bold outline-none text-center focus:border-[#D1C292]" />
+                              </div>
+                            </div>
+
+                            <div className="space-y-3">
+                              <div className="flex justify-between items-center">
+                                <label className="text-[10px] font-bold text-white/60 uppercase tracking-widest">Entrada Diferida</label>
+                                <div className="flex bg-white/10 p-1 rounded-lg text-[10px] font-bold">
+                                  <button onClick={() => setTipoEntrada('porcentaje')} className={`px-2 py-1 rounded-md ${tipoEntrada === 'porcentaje' ? 'bg-[#ea0029] text-white' : 'text-white/50'}`}>%</button>
+                                  <button onClick={() => setTipoEntrada('valor')} className={`px-2 py-1 rounded-md ${tipoEntrada === 'valor' ? 'bg-[#ea0029] text-white' : 'text-white/50'}`}>$</button>
+                                </div>
+                              </div>
+                              <input type="number" value={valorEntrada} onChange={(e) => setValorEntrada(Number(e.target.value))} className="w-full bg-white/10 border border-white/20 rounded-xl p-3 text-sm font-mono font-bold text-white outline-none" />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="block text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">Plazo de Obra (Meses)</label>
+                              <input type="number" value={mesesConstruccion} onChange={(e) => setMesesConstruccion(Number(e.target.value))} className="w-full bg-white/10 border border-white/20 rounded-xl p-3 text-sm font-mono font-bold text-white outline-none" />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-sm">
+                          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-5 border-b border-neutral-100 pb-4">
+                            <h2 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest">4. Ajuste de Cuotas y Fechas (Completo)</h2>
+                            <div className="flex gap-2">
+                              <button onClick={reiniciarCuotas} className="text-[10px] text-[#415364]/60 hover:text-[#415364] font-bold uppercase tracking-wider bg-[#dce3eb]/50 px-3 py-2 rounded-lg transition-colors">↻ Reiniciar</button>
+                              <button onClick={() => setMostrarCalculadoraRefuerzos(!mostrarCalculadoraRefuerzos)} className="text-[10px] bg-[#ea0029] text-white px-4 py-2 rounded-lg font-bold uppercase tracking-wider">⚡ Cuota Balón</button>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6 bg-[#F9F7F5] p-4 rounded-xl border border-neutral-100">
+                            <div><label className="block text-[10px] font-bold uppercase mb-1">Firma Reserva</label><input type="date" value={fechaReservaInf} onChange={(e)=>setFechaReservaInf(e.target.value)} className="w-full text-xs p-2 border rounded-md" /></div>
+                            <div><label className="block text-[10px] font-bold uppercase mb-1">Firma Promesa / Inicio Iniciales</label><input type="date" value={fechaFirmaPromesa} onChange={(e)=>setFechaFirmaPromesa(e.target.value)} className="w-full text-xs p-2 border rounded-md" /></div>
+                            <div><label className="block text-[10px] font-bold uppercase mb-1">Mes Inicio Construcción</label><input type="number" value={mesInicio} onChange={(e)=>setMesInicio(Number(e.target.value))} className="w-full text-xs p-2 border rounded-md" /></div>
+                            <div><label className="block text-[10px] font-bold uppercase mb-1">Día de Pago Fijo (Const)</label><input type="number" value={diaPago} onChange={(e)=>setDiaPago(Number(e.target.value))} className="w-full text-xs p-2 border rounded-md" /></div>
+                          </div>
+
+                          {mostrarCalculadoraRefuerzos && (
+                            <div className="mb-5 p-5 bg-[#415364] border border-[#21242E] rounded-xl flex gap-4">
+                               <div className="flex-1"><label className="text-[9px] font-bold text-[#dce3eb]/70 uppercase mb-1.5 block">Cuota Fija Base ($)</label><input type="number" value={cuotaBaseRapida} onChange={e => setCuotaBaseRapida(e.target.value===''? '':Number(e.target.value))} className="w-full bg-white/10 p-2.5 text-xs text-white rounded-lg"/></div>
+                               <div className="flex-1"><label className="text-[9px] font-bold text-[#dce3eb]/70 uppercase mb-1.5 block">Meses Refuerzo (Ej: 12,24)</label><input type="text" value={mesesRefuerzoRapido} onChange={e => setMesesRefuerzoRapido(e.target.value)} className="w-full bg-white/10 p-2.5 text-xs text-white rounded-lg"/></div>
+                               <button onClick={aplicarPlanRefuerzos} className="bg-[#ea0029] text-white px-6 rounded-lg text-[11px] font-bold mt-5 h-10">Aplicar</button>
+                            </div>
+                          )}
+
+                          <div className="max-h-80 overflow-y-auto border border-[#415364]/10 rounded-xl divide-y divide-[#415364]/5 custom-scrollbar">
+                            {cronogramaCuotas.map(cuota => (
+                              <div key={cuota.id} className={`flex justify-between items-center p-3 ${cuota.tipo === 'inicial' ? 'bg-[#D1C292]/10' : ''}`}>
+                                <span className={`text-[11px] font-bold ${cuota.tipo === 'inicial' ? 'text-[#D1C292] w-32' : 'text-[#415364] w-32'}`}>
+                                  {cuota.tipo === 'inicial' ? `Abono Inicial ${cuota.numeroCuota}` : `Dividendo ${cuota.numeroCuota}`}
+                                </span>
+                                
+                                {/* AHORA LA FECHA ES EDITABLE INDIVIDUALMENTE */}
+                                <div className="flex items-center gap-4">
+                                  <input type="date" value={cuota.fechaPago} onChange={(e) => actualizarAtributoCuota(cuota.id, 'fechaPago', e.target.value)} className="text-xs p-1.5 border border-transparent hover:border-[#415364]/20 rounded-md bg-transparent outline-none text-[#415364]/70 font-medium w-32" />
+                                  <div className="flex items-center border-b border-dashed border-[#415364]/30 pb-0.5 w-28 justify-end">
+                                    <span className="text-xs mr-1 font-bold text-[#415364]/50">$</span>
+                                    <input type="number" value={Number(cuota.valor.toFixed(2))} onChange={(e) => actualizarAtributoCuota(cuota.id, 'valor', Number(e.target.value))} className="w-full text-right text-sm font-bold font-mono outline-none bg-transparent" />
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  /* PREVISUALIZADOR DEL INFORME DE NEGOCIO */
+                  <div className="bg-[#1a1c23] p-6 rounded-2xl shadow-inner flex justify-center border border-[#415364]/30 overflow-x-auto min-h-[500px]">
+                    <div id="plantilla-pdf-arienzo" className="bg-white w-[210mm] min-h-[297mm] flex flex-col text-neutral-900 shadow-2xl scale-95 sm:scale-100 origin-top transform p-10 box-border">
+                        {/* HEADER */}
+                        <div className="flex justify-between items-center mb-6">
+                          <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" alt="Arienzo" className="h-6 max-w-[120px] object-contain" />
+                          <h1 className="text-[16pt] font-bold tracking-widest uppercase text-[#333333]">Informe de Negocio</h1>
+                          <div className="text-right text-[7pt] uppercase tracking-wider text-[#333333]">
+                             <p><strong>FECHA:</strong> {new Date().toLocaleDateString('es-ES')}</p>
+                             <p><strong>CÓDIGO:</strong> {codigoInforme}</p>
+                          </div>
+                        </div>
+                        
+                        {/* INFORMACIÓN DEL CLIENTE */}
+                        <div className="bg-[#F2EFEB] text-[#B94A36] font-bold text-[7pt] px-2 py-1 uppercase border border-[#333333] tracking-widest mt-2">Información del Cliente</div>
+                        <div className="grid grid-cols-4 gap-y-2 gap-x-4 text-[7pt] border-l border-r border-b border-[#333333] p-3 uppercase">
+                            <div className="col-span-2"><strong>Empresa / Cliente:</strong> {clienteActivoInforme?.nombres || '---'} {clienteActivoInforme?.apellidos || ''}</div>
+                            <div className="col-span-2"><strong>RUC / Cédula / Pass:</strong> {clienteActivoInforme?.cedula || '---'}</div>
+                            <div className="col-span-2"><strong>Representante Legal:</strong> {clienteActivoInforme?.representante_legal || '---'}</div>
+                            <div className="col-span-2"><strong>Estado Civil:</strong> {clienteActivoInforme?.estado_civil || '---'}</div>
+                            <div className="col-span-2"><strong>Ciudad Residencia:</strong> {clienteActivoInforme?.ciudad || '---'}</div>
+                            <div className="col-span-2"><strong>Teléfono Fijo:</strong> {clienteActivoInforme?.telefono_domicilio || '---'}</div>
+                            <div className="col-span-4"><strong>Dirección:</strong> {clienteActivoInforme?.direccion_domicilio || '---'}</div>
+                            <div className="col-span-2"><strong>E-mail:</strong> <span className="lowercase">{clienteActivoInforme?.email || '---'}</span></div>
+                            <div className="col-span-2"><strong>Celular:</strong> {clienteActivoInforme?.telefono || '---'}</div>
+                        </div>
+
+                        {/* DESCRIPCIÓN DEL PRODUCTO */}
+                        <div className="bg-[#F2EFEB] text-[#B94A36] font-bold text-[7pt] px-2 py-1 uppercase border border-[#333333] tracking-widest mt-4">Descripción del Producto</div>
+                        <div className="grid grid-cols-4 gap-y-2 gap-x-4 text-[7pt] border-l border-r border-b border-[#333333] p-3 uppercase">
+                            <div><strong>Departamento No.:</strong> {propiedadActivaInforme?.unidad || propiedadActivaInforme?.numero}</div>
+                            <div><strong>Área Útil:</strong> {propiedadActivaInforme?.area_interior || propiedadActivaInforme?.area_total || '0.00'} m²</div>
+                            <div><strong>Terraza A:</strong> {propiedadActivaInforme?.terraza_a || '0.00'} m²</div>
+                            <div><strong>Área Total:</strong> {propiedadActivaInforme?.area_total || '0.00'} m²</div>
+                            <div><strong>Bodega No.:</strong> {propiedadActivaInforme?.bodega_asignada || '---'}</div>
+                            <div><strong>Parqueo No.:</strong> {propiedadActivaInforme?.parqueadero_asignado || '---'}</div>
+                            <div><strong>Terraza B:</strong> {propiedadActivaInforme?.terraza_b || '0.00'} m²</div>
+                            <div><strong>Dormitorios:</strong> {propiedadActivaInforme?.no_dormitorios || '---'}</div>
+                        </div>
+                        
+                        {/* NEGOCIO Y TABLA */}
+                        <div className="flex gap-4 mt-4 flex-1 items-stretch">
+                          <div className="w-1/2 flex flex-col h-full">
+                              <div className="bg-[#F2EFEB] text-[#B94A36] font-bold text-[7pt] px-2 py-1 uppercase border border-[#333333] tracking-widest">Condiciones de Negocio</div>
+                              <div className="border-l border-r border-b border-[#333333] p-3 text-[8pt] uppercase space-y-2 flex-1 flex flex-col">
+                                  <div className="flex justify-between items-center"><span>Precio del Inmueble:</span> <strong className="font-mono text-[9pt]">${calcInforme.precioListaOriginal.toLocaleString('en-US', {minimumFractionDigits:2})}</strong></div>
+                                  <div className="flex justify-between items-center"><span>Descuento Aplicado:</span> <strong className="font-mono text-[9pt] text-[#ea0029]">${calcInforme.montoDescuentoCalculado.toLocaleString('en-US', {minimumFractionDigits:2})}</strong></div>
+                                  <div className="flex justify-between items-center text-[9pt] border-t border-[#333333] pt-2 mt-2">
+                                      <span className="font-bold text-[#B94A36]">PRECIO FINAL ACORDADO:</span> <strong className="font-mono text-[11pt] text-[#B94A36]">${calcInforme.precioTotal.toLocaleString('en-US', {minimumFractionDigits:2})}</strong>
+                                  </div>
+                                  
+                                  <div className="mt-8 pt-4 border-t border-dashed border-[#333333]/50">
+                                      <p className="font-bold text-[7pt] text-[#B94A36] mb-1">Tipo de Financiamiento:</p>
+                                      <p className="font-bold text-[8pt] mb-4">{formaFinanciamiento}</p>
+                                      
+                                      {/* SISTEMA DE NOTAS Y OBSERVACIONES IMPRESO */}
+                                      <p className="font-bold text-[7pt] text-[#B94A36] mb-1">Notas y Observaciones:</p>
+                                      {observacionesNegocio && <p className="text-[7pt] leading-relaxed font-bold mb-2">- {observacionesNegocio}</p>}
+                                      {notas.map(n => (
+                                        <div key={n.id} className="mb-2">
+                                           <span className="font-bold text-[#ea0029] text-[7pt]">{n.titulo}: </span>
+                                           <span className="text-[7pt] text-[#333333] normal-case">{n.descripcion}</span>
+                                        </div>
+                                      ))}
+                                      {!observacionesNegocio && notas.length === 0 && <p className="text-[7pt] italic text-neutral-400">Sin observaciones especiales.</p>}
+                                  </div>
+                              </div>
+                          </div>
+
+                          <div className="w-1/2 flex flex-col h-full">
+                              <div className="bg-[#F2EFEB] text-[#B94A36] font-bold text-[7pt] px-2 py-1 uppercase border border-[#333333] tracking-widest">Tabla de Pagos</div>
+                              <div className="border-l border-r border-b border-[#333333] flex-1">
+                                  <table className="w-full text-[7pt] text-left uppercase">
+                                      <thead>
+                                          <tr className="border-b border-[#333333] bg-neutral-50"><th className="p-1 border-r border-[#333333] text-center w-2/5">Detalle / Cuota</th><th className="p-1 border-r border-[#333333] text-center w-1/4">Fecha</th><th className="p-1 text-right w-1/3">Monto $</th></tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-[#333333]/30">
+                                          <tr>
+                                            <td className="p-1 border-r border-[#333333] font-bold text-center">Reserva</td>
+                                            <td className="p-1 border-r border-[#333333] text-center font-mono">{formatearFechaLegible(fechaReservaInf)}</td>
+                                            <td className="p-1 text-right font-mono font-bold">${infReservaValor.toLocaleString('en-US', {minimumFractionDigits:2})}</td>
+                                          </tr>
+                                          
+                                          {/* RENDERIZADO DEL CRONOGRAMA COMBINADO */}
+                                          {cronogramaCuotas.map(c => (
+                                              <tr key={c.id}>
+                                                <td className={`p-1 border-r border-[#333333] pl-2 ${c.tipo === 'inicial' ? 'font-bold text-neutral-700' : 'text-[6pt] text-neutral-600'}`}>
+                                                  {c.tipo === 'inicial' ? `Abono Inicial ${c.numeroCuota}` : `Dividendo ${c.numeroCuota}`}
+                                                </td>
+                                                <td className="p-1 border-r border-[#333333] text-center font-mono">{formatearFechaLegible(c.fechaPago)}</td>
+                                                <td className={`p-1 text-right font-mono ${c.tipo === 'inicial' ? 'font-bold' : 'text-neutral-600'}`}>${c.valor.toLocaleString('en-US', {minimumFractionDigits:2})}</td>
+                                              </tr>
+                                          ))}
+                                          
+                                          <tr className="border-t-[1.5px] border-[#333333] bg-[#F2EFEB]/50">
+                                            <td className="p-1 border-r border-[#333333] font-bold text-[#B94A36] text-center">Contraentrega</td>
+                                            <td className="p-1 border-r border-[#333333] text-center font-mono font-bold text-neutral-400">FINAL</td>
+                                            <td className="p-1 text-right font-mono font-bold text-[#B94A36]">${calcInforme.contraEntrega.toLocaleString('en-US', {minimumFractionDigits:2})}</td>
+                                          </tr>
+                                      </tbody>
+                                  </table>
+                              </div>
+                          </div>
+                        </div>
+                        
+                        {/* FIRMAS INFORME */}
+                        <div className="mt-12 grid grid-cols-2 gap-16 px-12 pt-4">
+                            <div className="text-center border-t border-[#333333] pt-2">
+                                <p className="text-[7pt] font-bold uppercase tracking-widest">{clienteActivoInforme?.nombres || 'FIRMA DEL CLIENTE'} {clienteActivoInforme?.apellidos || ''}</p>
+                                <p className="text-[6pt] text-neutral-500 mt-0.5">C.C. {clienteActivoInforme?.cedula || '_______________'}</p>
+                            </div>
+                            <div className="text-center border-t border-[#333333] pt-2">
+                                <p className="text-[7pt] font-bold uppercase tracking-widest">Arienzo S.A.S.</p>
+                                <p className="text-[6pt] text-neutral-500 mt-0.5">{nombreAsesor}</p>
+                            </div>
+                        </div>
+
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* RESUMEN DERECHA Y BOTÓN IMPRIMIR */}
+              <div className="xl:col-span-1 space-y-6">
+                <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-xl sticky top-6">
+                  <h2 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest mb-3 border-b border-neutral-100 pb-2">Acuerdo Financiero</h2>
+                  <div className="text-4xl font-bold tracking-tight text-[#415364] font-mono">${calcInforme.precioTotal.toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
+                  <p className="text-[10px] font-bold uppercase text-[#415364]/50 mt-1">Precio Final de Venta</p>
+                  
+                  <div className="space-y-4 pt-5 border-t border-[#415364]/10 text-sm mt-5">
+                    <div className="flex justify-between"><span className="text-[11px] font-bold uppercase">Cuota Inicial Total</span><span className="font-bold font-mono">${calcInforme.cuotaInicialTotal.toLocaleString('en-US',{minimumFractionDigits:2})}</span></div>
+                    <div className="flex justify-between pl-4 text-[10px] text-neutral-500"><span>Reserva:</span><span className="font-mono">${infReservaValor.toLocaleString('en-US',{minimumFractionDigits:2})}</span></div>
+                    <div className="flex justify-between pl-4 text-[10px] text-neutral-500"><span>Saldo Firma:</span><span className="font-mono">${calcInforme.saldoFirmaPromesa.toLocaleString('en-US',{minimumFractionDigits:2})}</span></div>
+                    
+                    {mesesInicial > 1 && calcInforme.saldoFirmaPromesa > 0 && (
+                      <div className="flex justify-between pl-4 pr-3 py-2 text-[10px] font-bold text-[#ea0029] bg-[#ea0029]/5 rounded-lg border border-[#ea0029]/10 mt-1">
+                        <span>↳ Dividido en {mesesInicial} pagos</span>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between border-t border-neutral-100 pt-3"><span className="text-[11px] font-bold uppercase">Diferido Obra</span><span className="font-bold font-mono">${calcInforme.entradaDiferirTotal.toLocaleString('en-US',{minimumFractionDigits:2})}</span></div>
+                    <div className="flex justify-between border-t-2 border-[#21242E] pt-3 mt-2"><span className="text-[12px] font-bold uppercase">Contra Entrega</span><span className="font-bold text-[#B94A36] font-mono">${calcInforme.contraEntrega.toLocaleString('en-US',{minimumFractionDigits:2})}</span></div>
+                  </div>
+
+                  <button onClick={() => imprimirDocumento('plantilla-pdf-arienzo', 'Informe_Negocio')} disabled={!propiedadActivaInforme} className="w-full bg-[#21242E] text-white rounded-xl p-3.5 text-[11px] font-bold uppercase tracking-widest hover:bg-neutral-800 transition-colors mt-8 disabled:opacity-50">
+                    📄 Imprimir Informe Oficial
+                  </button>
                 </div>
-
-                <button onClick={() => imprimirDocumento('impresion-informe', 'Informe_Negocio')} disabled={!propiedadActivaInforme} className="w-full bg-[#21242E] text-white rounded-xl p-3.5 text-[11px] font-bold uppercase tracking-widest hover:bg-neutral-800 transition-colors mt-8 disabled:opacity-50">
-                  📄 Imprimir Informe Oficial
-                </button>
               </div>
             </div>
           </div>
@@ -530,182 +759,6 @@ export default function GestorOperacionesPage() {
             </div>
           </div>
         )}
-
-        {/* =========================================================================
-            PLANTILLAS OCULTAS PARA GENERACIÓN DE PDF
-           ========================================================================= */}
-
-        {/* PLANTILLA A: RECIBO DE CAJA */}
-        <div id="impresion-recibo" className="hidden">
-          <div className="pagina-a4">
-            <div className="flex justify-between items-end border-b-2 border-[#B94A36] pb-4 mb-8">
-              <div>
-                <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" alt="Arienzo" className="h-10 mb-2 object-contain" />
-                <p className="text-[8px] tracking-widest text-[#8C8A87] uppercase font-bold">RUC: 1391937895001</p>
-              </div>
-              <div className="text-right"><h1 className="text-lg font-light text-[#B94A36] tracking-widest uppercase">Recibo de Caja</h1><p className="text-xs font-mono font-bold mt-1">N° {codigoReserva || 'RES-BORRADOR'}</p></div>
-            </div>
-            <div className="bg-white border border-[#EAE3DC] p-6 rounded-md shadow-sm">
-              <div className="flex justify-between items-center border-b border-[#EAE3DC] pb-4 mb-4"><span className="text-[10px] uppercase font-bold text-[#8C8A87] tracking-wider">Fecha de Emisión:</span><span className="text-sm font-medium">{new Date().toLocaleDateString('es-ES')}</span></div>
-              <div className="flex justify-between items-center border-b border-[#EAE3DC] pb-4 mb-4"><span className="text-[10px] uppercase font-bold text-[#8C8A87] tracking-wider">Monto Recibido:</span><span className="text-xl font-mono font-bold text-[#B94A36]">${reservaForm.montoReserva.toLocaleString('en-US', {minimumFractionDigits: 2})}</span></div>
-              <div className="flex justify-between items-center border-b border-[#EAE3DC] pb-4 mb-4"><span className="text-[10px] uppercase font-bold text-[#8C8A87] tracking-wider">Recibimos de:</span><span className="text-sm font-bold uppercase">{clienteActivoReserva?.nombres || ''} {clienteActivoReserva?.apellidos || ''}</span></div>
-              <div className="flex flex-col border-b border-[#EAE3DC] pb-4 mb-4">
-                <span className="text-[10px] uppercase font-bold text-[#8C8A87] tracking-wider mb-2">Por Concepto de:</span>
-                <span className="text-sm text-justify leading-relaxed mb-3">Reserva y bloqueo comercial de la siguiente unidad perteneciente al Proyecto Inmobiliario "Arienzo Boutique Living", ubicado en el sector Barbasquillo, Manta.</span>
-                <div className="grid grid-cols-4 gap-3 bg-[#FCFBFA] border border-[#EAE3DC] p-3 rounded-md">
-                  <div><span className="text-[8px] uppercase font-bold text-[#8C8A87] block">Unidad Inm.</span><span className="text-xs font-bold text-[#333333]">{propiedadActivaReserva?.unidad || propiedadActivaReserva?.numero || '---'}</span></div>
-                  <div><span className="text-[8px] uppercase font-bold text-[#8C8A87] block">Nivel / Piso</span><span className="text-xs font-medium text-[#333333]">{propiedadActivaReserva?.piso || 'N/A'}</span></div>
-                  <div><span className="text-[8px] uppercase font-bold text-[#8C8A87] block">Tipología</span><span className="text-xs font-medium text-[#333333]">{propiedadActivaReserva?.tipologia || 'N/A'}</span></div>
-                  <div><span className="text-[8px] uppercase font-bold text-[#8C8A87] block">Área Útil</span><span className="text-xs font-medium text-[#333333]">{propiedadActivaReserva?.area_total || 'N/A'} m²</span></div>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-4 bg-[#F2EFEB] p-4 rounded-md">
-                <div><span className="text-[9px] uppercase font-bold text-[#8C8A87] block mb-1">Método:</span><span className="text-[11px] font-medium">{reservaForm.formaPago}</span></div>
-                <div><span className="text-[9px] uppercase font-bold text-[#8C8A87] block mb-1">Entidad Bancaria:</span><span className="text-[11px] font-medium">{reservaForm.bancoOrigen || 'N/A'}</span></div>
-                <div><span className="text-[9px] uppercase font-bold text-[#8C8A87] block mb-1">Ref / Documento:</span><span className="text-[11px] font-mono font-medium">{reservaForm.numeroComprobante || 'N/A'}</span></div>
-              </div>
-            </div>
-            <div className="mt-6 p-4 bg-neutral-50 border border-neutral-200 rounded-md text-[6.5pt] leading-tight text-justify text-neutral-500">
-              <p><strong>Nota importante / Cláusula de Reserva:</strong> El valor entregado en concepto de reserva implica la aceptación formal de la unidad y su respectivo bloqueo comercial. Se entiende y acepta que, en caso de desistimiento o retiros voluntarios por motivos ajenos a la promotora (Arienzo S.A.S.), dicho valor no será reembolsado, destinándose íntegramente a cubrir los gastos administrativos y de lucro cesante generados por la desincorporación temporal del inventario.</p>
-            </div>
-            <div className="mt-12 grid grid-cols-2 gap-16 px-12">
-              <div className="text-center border-t border-[#8C8A87] pt-2">
-                <p className="text-[9px] font-bold uppercase tracking-wider">{clienteActivoReserva?.nombres || 'FIRMA DEL CLIENTE'} {clienteActivoReserva?.apellidos || ''}</p>
-                <p className="text-[8px] text-[#8C8A87]">C.C. {clienteActivoReserva?.cedula || '_______________'}</p>
-              </div>
-              <div className="text-center border-t border-[#8C8A87] pt-2">
-                <p className="text-[9px] font-bold uppercase tracking-wider">Arienzo S.A.S.</p>
-                <p className="text-[8px] text-[#8C8A87]">Recibí Conforme</p>
-              </div>
-            </div>
-            <div className="absolute bottom-6 left-0 right-0 text-center text-[7px] text-[#8C8A87] uppercase tracking-widest">Arienzo S.A.S. • Promotora Inmobiliaria • Página 1 de 1</div>
-          </div>
-        </div>
-
-        {/* PLANTILLA B: INFORME DE NEGOCIO (EL NUEVO EXCEL) */}
-        <div id="impresion-informe" className="hidden">
-           <div className="pagina-a4 text-neutral-900 bg-white">
-              <div className="border-[1.5px] border-[#333333] p-1 flex-1 flex flex-col min-h-[270mm]">
-                <div className="border-[1.5px] border-[#333333] p-5 flex-1 flex flex-col">
-                  
-                  {/* HEADER */}
-                  <div className="flex justify-between items-center mb-4">
-                    <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" alt="Arienzo" className="h-6 max-w-[120px] object-contain" />
-                    <h1 className="text-xl font-bold tracking-widest uppercase text-[#333333]">Informe de Negocio</h1>
-                    <div className="text-right text-[8px] uppercase tracking-wider text-[#333333]">
-                       <p><strong>FECHA:</strong> {new Date().toLocaleDateString('es-ES')}</p>
-                       <p><strong>CÓDIGO:</strong> {codigoInforme}</p>
-                    </div>
-                  </div>
-                  
-                  {/* INFORMACIÓN DEL CLIENTE */}
-                  <div className="bg-[#F2EFEB] text-[#B94A36] font-bold text-[8px] px-2 py-1 uppercase border border-[#333333] tracking-widest mt-2">Información del Cliente</div>
-                  <div className="grid grid-cols-4 gap-y-2 gap-x-4 text-[8px] border-l border-r border-b border-[#333333] p-3 uppercase">
-                      <div className="col-span-2"><strong>Empresa / Cliente:</strong> {clienteActivoInforme?.nombres || '---'} {clienteActivoInforme?.apellidos || ''}</div>
-                      <div className="col-span-2"><strong>RUC / Cédula / Pass:</strong> {clienteActivoInforme?.cedula || '---'}</div>
-                      <div className="col-span-2"><strong>Representante Legal:</strong> {clienteActivoInforme?.representante_legal || '---'}</div>
-                      <div className="col-span-2"><strong>Estado Civil:</strong> {clienteActivoInforme?.estado_civil || '---'}</div>
-                      <div className="col-span-2"><strong>Ciudad Residencia:</strong> {clienteActivoInforme?.ciudad || '---'}</div>
-                      <div className="col-span-2"><strong>Teléfono Fijo:</strong> {clienteActivoInforme?.telefono_domicilio || '---'}</div>
-                      <div className="col-span-4"><strong>Dirección:</strong> {clienteActivoInforme?.direccion_domicilio || '---'}</div>
-                      <div className="col-span-2"><strong>E-mail:</strong> <span className="lowercase">{clienteActivoInforme?.email || '---'}</span></div>
-                      <div className="col-span-2"><strong>Celular:</strong> {clienteActivoInforme?.telefono || '---'}</div>
-                  </div>
-
-                  {/* DESCRIPCIÓN DEL PRODUCTO */}
-                  <div className="bg-[#F2EFEB] text-[#B94A36] font-bold text-[8px] px-2 py-1 uppercase border border-[#333333] tracking-widest mt-3">Descripción del Producto</div>
-                  <div className="grid grid-cols-4 gap-y-2 gap-x-4 text-[8px] border-l border-r border-b border-[#333333] p-3 uppercase">
-                      <div><strong>Departamento No.:</strong> {propiedadActivaInforme?.unidad || propiedadActivaInforme?.numero}</div>
-                      <div><strong>Área Útil:</strong> {propiedadActivaInforme?.area_interior || propiedadActivaInforme?.area_total || '0.00'} m²</div>
-                      <div><strong>Terraza A:</strong> {propiedadActivaInforme?.terraza_a || '0.00'} m²</div>
-                      <div><strong>Área Total:</strong> {propiedadActivaInforme?.area_total || '0.00'} m²</div>
-                      <div><strong>Bodega No.:</strong> {propiedadActivaInforme?.bodega_asignada || '---'}</div>
-                      <div><strong>Parqueo No.:</strong> {propiedadActivaInforme?.parqueadero_asignado || '---'}</div>
-                      <div><strong>Terraza B:</strong> {propiedadActivaInforme?.terraza_b || '0.00'} m²</div>
-                      <div><strong>Dormitorios:</strong> {propiedadActivaInforme?.no_dormitorios || '---'}</div>
-                  </div>
-                  
-                  {/* NEGOCIO Y TABLA */}
-                  <div className="flex gap-4 mt-3 flex-1">
-                    <div className="w-1/2 flex flex-col">
-                        <div className="bg-[#F2EFEB] text-[#B94A36] font-bold text-[8px] px-2 py-1 uppercase border border-[#333333] tracking-widest">Condiciones de Negocio</div>
-                        <div className="border-l border-r border-b border-[#333333] p-3 text-[9px] uppercase space-y-2 flex-1">
-                            <div className="flex justify-between items-center"><span>Precio del Inmueble:</span> <strong className="font-mono text-[10px]">${calcInforme.precioListaOriginal.toLocaleString('en-US', {minimumFractionDigits:2})}</strong></div>
-                            <div className="flex justify-between items-center"><span>Descuento Aplicado:</span> <strong className="font-mono text-[10px] text-[#ea0029]">${calcInforme.montoDescuentoCalculado.toLocaleString('en-US', {minimumFractionDigits:2})}</strong></div>
-                            <div className="flex justify-between items-center text-[10px] border-t border-[#333333] pt-2 mt-2">
-                                <span className="font-bold text-[#B94A36]">PRECIO FINAL ACORDADO:</span> <strong className="font-mono text-[12px] text-[#B94A36]">${calcInforme.precioTotal.toLocaleString('en-US', {minimumFractionDigits:2})}</strong>
-                            </div>
-                            <div className="mt-8 pt-4 border-t border-dashed border-[#333333]/50">
-                                <p className="font-bold text-[8px] text-[#B94A36] mb-1">Tipo de Financiamiento:</p>
-                                <p className="font-bold text-[10px]">{formaFinanciamiento}</p>
-                                <p className="font-bold text-[8px] text-[#B94A36] mt-4 mb-1">Observaciones / Distribución:</p>
-                                <p className="text-[8px] leading-relaxed">{observacionesNegocio || 'Sin observaciones.'}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="w-1/2 flex flex-col">
-                        <div className="bg-[#F2EFEB] text-[#B94A36] font-bold text-[8px] px-2 py-1 uppercase border border-[#333333] tracking-widest">Tabla de Pagos</div>
-                        <div className="border-l border-r border-b border-[#333333] flex-1 max-h-[140mm] overflow-hidden">
-                            <table className="w-full text-[8px] text-left uppercase">
-                                <thead>
-                                    <tr className="border-b border-[#333333] bg-neutral-50"><th className="p-1 border-r border-[#333333] text-center">Detalle / Cuota</th><th className="p-1 border-r border-[#333333] text-center">Fecha Pago</th><th className="p-1 text-right">Monto $</th></tr>
-                                </thead>
-                                <tbody className="divide-y divide-[#333333]/30">
-                                    <tr>
-                                      <td className="p-1 border-r border-[#333333] font-bold">Reserva</td>
-                                      <td className="p-1 border-r border-[#333333] text-center font-mono">{formatearFechaLegible(fechaReservaInf)}</td>
-                                      <td className="p-1 text-right font-mono font-bold">${infReservaValor.toLocaleString('en-US', {minimumFractionDigits:2})}</td>
-                                    </tr>
-                                    
-                                    {/* GENERACIÓN DINÁMICA DE ABONOS INICIALES */}
-                                    {mesesInicial === 1 ? (
-                                      <tr>
-                                        <td className="p-1 border-r border-[#333333] font-bold">Cuota Inicial (Firma)</td>
-                                        <td className="p-1 border-r border-[#333333] text-center font-mono">{formatearFechaLegible(fechaFirmaPromesa)}</td>
-                                        <td className="p-1 text-right font-mono font-bold">${calcInforme.saldoFirmaPromesa.toLocaleString('en-US', {minimumFractionDigits:2})}</td>
-                                      </tr>
-                                    ) : (
-                                      Array.from({ length: mesesInicial }).map((_, i) => {
-                                        const d = new Date(fechaFirmaPromesa + "T12:00:00");
-                                        d.setMonth(d.getMonth() + i);
-                                        const dateStr = d.toISOString().split('T')[0];
-                                        return (
-                                          <tr key={`abono-${i}`}>
-                                            <td className="p-1 border-r border-[#333333] font-bold text-neutral-700 pl-2">Abono Inicial {i+1}</td>
-                                            <td className="p-1 border-r border-[#333333] text-center font-mono">{formatearFechaLegible(dateStr)}</td>
-                                            <td className="p-1 text-right font-mono font-bold">${(calcInforme.saldoFirmaPromesa / mesesInicial).toLocaleString('en-US', {minimumFractionDigits:2})}</td>
-                                          </tr>
-                                        );
-                                      })
-                                    )}
-
-                                    {/* CRONOGRAMA DE OBRA */}
-                                    {cronogramaCuotas.map(c => (
-                                        <tr key={c.numeroCuota}><td className="p-1 border-r border-[#333333] pl-2 text-[7px] text-neutral-600">Dividendo {c.numeroCuota}</td><td className="p-1 border-r border-[#333333] text-center font-mono">{c.fechaPago}</td><td className="p-1 text-right font-mono text-neutral-600">${c.valor.toLocaleString('en-US', {minimumFractionDigits:2})}</td></tr>
-                                    ))}
-                                    <tr className="border-t-[1.5px] border-[#333333] bg-[#F2EFEB]/50"><td className="p-1 border-r border-[#333333] font-bold text-[#B94A36]">Contraentrega</td><td className="p-1 border-r border-[#333333] text-center font-mono font-bold text-neutral-400">PAGO FINAL</td><td className="p-1 text-right font-mono font-bold text-[#B94A36]">${calcInforme.contraEntrega.toLocaleString('en-US', {minimumFractionDigits:2})}</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                  </div>
-                  
-                  {/* FIRMAS INFORME */}
-                  <div className="mt-16 grid grid-cols-2 gap-16 px-12 pb-4">
-                      <div className="text-center border-t border-[#333333] pt-2">
-                          <p className="text-[8px] font-bold uppercase tracking-widest">{clienteActivoInforme?.nombres || 'FIRMA DEL CLIENTE'} {clienteActivoInforme?.apellidos || ''}</p>
-                          <p className="text-[7px] text-neutral-500 mt-0.5">C.C. {clienteActivoInforme?.cedula || '_______________'}</p>
-                      </div>
-                      <div className="text-center border-t border-[#333333] pt-2">
-                          <p className="text-[8px] font-bold uppercase tracking-widest">Arienzo S.A.S.</p>
-                          <p className="text-[7px] text-neutral-500 mt-0.5">{nombreAsesor}</p>
-                      </div>
-                  </div>
-
-                </div>
-              </div>
-           </div>
-        </div>
 
         {/* PLANTILLA C: FORMULARIOS KYC VACÍOS (DOC. EXPEDIENTE) */}
         <div id="impresion-formularios-kyc" className="hidden">
