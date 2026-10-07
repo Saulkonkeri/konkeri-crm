@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Gestor de Operaciones v6 (Bordes y Alturas Perfeccionadas)
+// Actualizacion para Vercel - Gestor de Operaciones v7 (Vectores, 1 Pagina y Descuento Condicional)
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -260,6 +260,7 @@ export default function GestorOperacionesPage() {
     setMostrarCalculadoraRefuerzos(false); 
   };
 
+  // ================= IMPRESIÓN =================
   const imprimirDocumento = (idElemento: string, tituloVentana: string) => {
     if (typeof window === 'undefined') return;
     const contenido = document.getElementById(idElemento)?.innerHTML;
@@ -272,13 +273,14 @@ export default function GestorOperacionesPage() {
           <title>${tituloVentana}</title>
           <script src="https://cdn.tailwindcss.com"></script>
           <style>
-            @page { size: A4 portrait; margin: 0mm; }
-            body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; margin: 0; background: #ffffff; font-family: ui-sans-serif, system-ui; }
-            .pagina-a4 { width: 210mm; min-height: 297mm; padding: 15mm 20mm; box-sizing: border-box; page-break-after: always; overflow: hidden; position: relative; }
+            @page { size: A4 portrait; margin: 0; }
+            body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; margin: 0; background: #ffffff; font-family: ui-sans-serif, system-ui, sans-serif; }
+            .pagina-a4 { width: 210mm !important; height: 297mm !important; padding: 12mm 15mm; box-sizing: border-box; overflow: hidden; position: relative; margin: 0 auto; }
             .cuadro-input { border-bottom: 1px solid #8C8A87; min-height: 14px; display: inline-block; width: 100%; }
             .checkbox-box { width: 10px; height: 10px; border: 1px solid #8C8A87; display: inline-block; margin-right: 4px; vertical-align: middle; }
             .seccion-titulo { background-color: #F2EFEB; color: #B94A36; font-weight: bold; text-transform: uppercase; font-size: 8px; padding: 4px 8px; border-left: 3px solid #B94A36; margin-bottom: 6px; margin-top: 8px; letter-spacing: 0.05em; }
             .text-xxs { font-size: 7px; line-height: 1.2; }
+            #plantilla-pdf-arienzo { transform: none !important; box-shadow: none !important; border: none !important; margin: 0 !important; }
           </style>
         </head>
         <body>${contenido}<script>setTimeout(() => { window.print(); window.close(); }, 700);</script></body>
@@ -365,12 +367,16 @@ export default function GestorOperacionesPage() {
                 </button>
               ) : (
                 <div className="mt-6 bg-[#21242E] p-6 rounded-2xl border border-neutral-800 flex flex-col md:flex-row items-center justify-between gap-4 text-white shadow-xl">
-                  <div>
-                    <span className="text-[#D1C292] font-bold text-xs uppercase tracking-wider flex items-center gap-2">✔ Unidad Bloqueada</span>
-                    <p className="text-[11px] text-white/70 mt-1">Imprima el recibo de caja para el cliente.</p>
+                  <div className="flex items-center gap-3">
+                    <svg className="w-6 h-6 text-[#D1C292]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <div>
+                      <span className="text-[#D1C292] font-bold text-xs uppercase tracking-wider">Unidad Bloqueada Exitosamente</span>
+                      <p className="text-[11px] text-white/70 mt-0.5">Imprima el recibo de caja para el cliente.</p>
+                    </div>
                   </div>
-                  <button onClick={() => imprimirDocumento('impresion-recibo', 'Recibo_Caja')} className="w-full md:w-auto bg-white hover:bg-neutral-100 text-[#21242E] px-6 py-3 rounded-xl font-bold text-xs tracking-wider uppercase transition-colors shadow-sm">
-                    🖨️ Generar Recibo de Caja
+                  <button onClick={() => imprimirDocumento('impresion-recibo', 'Recibo_Caja')} className="w-full md:w-auto bg-white hover:bg-neutral-100 text-[#21242E] px-6 py-3 rounded-xl font-bold text-xs tracking-wider uppercase transition-colors shadow-sm flex items-center justify-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                    Generar Recibo de Caja
                   </button>
                 </div>
               )}
@@ -388,10 +394,12 @@ export default function GestorOperacionesPage() {
               {propiedadActivaInforme && (
                 <div className="flex bg-[#dce3eb]/50 p-1.5 rounded-xl border border-[#415364]/10 shadow-inner">
                   <button onClick={() => setPestañaInforme('configurar')} className={`px-4 py-2 rounded-lg text-xs transition-all flex items-center gap-2 ${pestañaInforme === 'configurar' ? 'bg-white text-[#ea0029] shadow-sm font-bold' : 'text-[#415364]/70 hover:text-[#415364] font-semibold'}`}>
-                    ⚙️ Configurar Negocio
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    Configurar Negocio
                   </button>
                   <button onClick={() => setPestañaInforme('previsualizar')} className={`px-4 py-2 rounded-lg text-xs transition-all flex items-center gap-2 ${pestañaInforme === 'previsualizar' ? 'bg-white text-[#ea0029] shadow-sm font-bold' : 'text-[#415364]/70 hover:text-[#415364] font-semibold'}`}>
-                    📄 Ver Documento Oficial
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    Ver Documento Oficial
                   </button>
                 </div>
               )}
@@ -404,7 +412,7 @@ export default function GestorOperacionesPage() {
                   <>
                     <div className="bg-white rounded-2xl border border-[#D1C292] p-6 shadow-sm relative overflow-hidden">
                       <div className="absolute top-0 left-0 w-1.5 h-full bg-[#D1C292]"></div>
-                      <h2 className="text-[11px] font-bold text-[#21242E] uppercase tracking-widest mb-4 flex items-center gap-2">1. Vinculación de Negocio</h2>
+                      <h2 className="text-[11px] font-bold text-[#21242E] uppercase tracking-widest mb-4">1. Vinculación de Negocio</h2>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="text-[10px] font-bold text-[#415364]/60 uppercase block mb-1.5">Cliente Titular</label>
@@ -438,17 +446,22 @@ export default function GestorOperacionesPage() {
                             <div className="bg-[#415364]/5 border border-[#415364]/10 rounded-xl p-4 mt-2">
                                <div className="flex justify-between items-center mb-3">
                                   <label className="text-[10px] font-bold text-[#415364] uppercase">Notas y Observaciones del Negocio</label>
-                                  <button onClick={agregarNota} className="text-[10px] font-bold bg-white text-[#ea0029] border border-[#ea0029]/30 px-3 py-1.5 rounded-lg shadow-sm">➕ Agregar Nota</button>
+                                  <button onClick={agregarNota} className="text-[10px] font-bold bg-white text-[#ea0029] border border-[#ea0029]/30 px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-1">
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4"></path></svg>
+                                    Agregar Nota
+                                  </button>
                                </div>
                                {notas.length === 0 && <p className="text-xs text-[#415364]/50 italic">No hay notas adicionales. El informe saldrá limpio.</p>}
                                <div className="space-y-3">
                                  {notas.map((nota, idx) => (
-                                    <div key={nota.id} className="flex flex-col sm:flex-row gap-2 bg-white p-2 rounded-lg border border-neutral-200">
-                                       <div className="flex-1">
+                                    <div key={nota.id} className="flex flex-col sm:flex-row gap-2 bg-white p-2 rounded-lg border border-neutral-200 items-center">
+                                       <div className="flex-1 w-full">
                                           <input type="text" placeholder="Título (Ej. Promoción, Bono...)" value={nota.titulo} onChange={e => actualizarNota(nota.id, 'titulo', e.target.value)} className="w-full text-[10px] font-bold uppercase text-[#ea0029] border-b border-neutral-200 pb-1 mb-1 outline-none" />
                                           <input type="text" placeholder="Descripción de la observación..." value={nota.descripcion} onChange={e => actualizarNota(nota.id, 'descripcion', e.target.value)} className="w-full text-xs text-[#415364] outline-none" />
                                        </div>
-                                       <button onClick={() => eliminarNota(nota.id)} className="text-[#415364]/40 hover:text-[#ea0029] px-2 text-sm">✖</button>
+                                       <button onClick={() => eliminarNota(nota.id)} className="text-[#415364]/40 hover:text-[#ea0029] p-2">
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                       </button>
                                     </div>
                                  ))}
                                </div>
@@ -509,8 +522,14 @@ export default function GestorOperacionesPage() {
                           <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-5 border-b border-neutral-100 pb-4">
                             <h2 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest">4. Ajuste de Cuotas y Fechas (Completo)</h2>
                             <div className="flex gap-2">
-                              <button onClick={reiniciarCuotas} className="text-[10px] text-[#415364]/60 hover:text-[#415364] font-bold uppercase tracking-wider bg-[#dce3eb]/50 px-3 py-2 rounded-lg transition-colors">↻ Reiniciar</button>
-                              <button onClick={() => setMostrarCalculadoraRefuerzos(!mostrarCalculadoraRefuerzos)} className="text-[10px] bg-[#ea0029] text-white px-4 py-2 rounded-lg font-bold uppercase tracking-wider">⚡ Cuota Balón</button>
+                              <button onClick={reiniciarCuotas} className="text-[10px] text-[#415364]/60 hover:text-[#415364] font-bold uppercase tracking-wider bg-[#dce3eb]/50 px-3 py-2 rounded-lg transition-colors flex items-center gap-1">
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                Reiniciar
+                              </button>
+                              <button onClick={() => setMostrarCalculadoraRefuerzos(!mostrarCalculadoraRefuerzos)} className="text-[10px] bg-[#ea0029] text-white px-4 py-2 rounded-lg font-bold uppercase tracking-wider flex items-center gap-1">
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                Cuota Balón
+                              </button>
                             </div>
                           </div>
 
@@ -553,24 +572,25 @@ export default function GestorOperacionesPage() {
                 ) : (
                   /* =========================================================================
                      PREVISUALIZADOR DEL INFORME DE NEGOCIO (PDF)
-                     Diseño Ajustado y Refinado
+                     Diseño Exacto A4, Márgenes amplios, 1 Página, Descuento Inteligente
                      ========================================================================= */
-                  <div className="bg-[#1a1c23] p-8 rounded-2xl shadow-inner flex justify-center border border-[#415364]/30 overflow-x-auto min-h-[600px]">
-                    <div id="plantilla-pdf-arienzo" className="bg-white w-[210mm] flex flex-col text-[#222222] shadow-2xl scale-95 sm:scale-100 origin-top transform p-10 box-border border-b-4 border-[#B94A36]">
-                        
-                        {/* HEADER */}
-                        <div className="flex justify-between items-center mb-6 border-b border-[#333333]/20 pb-4">
-                          <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" alt="Arienzo" className="h-7 max-w-[140px] object-contain" />
-                          <h1 className="text-[14pt] font-bold tracking-widest uppercase text-[#333333] ml-4">Informe de Negocio</h1>
-                          <div className="text-right text-[7pt] uppercase tracking-wider text-[#555555]">
-                             <p><strong>FECHA:</strong> {new Date().toLocaleDateString('es-ES')}</p>
-                             <p><strong>CÓDIGO:</strong> {codigoInforme}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex-1 flex flex-col space-y-5">
-                          {/* INFORMACIÓN DEL CLIENTE */}
-                          <div>
+                  <div className="bg-[#1a1c23] py-10 rounded-2xl shadow-inner flex justify-center border border-[#415364]/30 overflow-x-auto min-h-[700px]">
+                    <div id="plantilla-pdf-arienzo" className="bg-white mx-auto text-[#222222] shadow-2xl relative box-border scale-95 sm:scale-100 origin-top overflow-hidden p-[12mm]" style={{ width: '210mm', height: '297mm' }}>
+                      <div className="border-[1.5px] border-[#333333] p-1 h-full flex flex-col">
+                        <div className="border-[1.5px] border-[#333333] p-5 h-full flex flex-col justify-between">
+                          
+                          <div className="flex-none">
+                            {/* HEADER */}
+                            <div className="flex justify-between items-center mb-5 border-b border-[#333333]/20 pb-4">
+                              <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" alt="Arienzo" className="h-6 max-w-[120px] object-contain" />
+                              <h1 className="text-[14pt] font-bold tracking-widest uppercase text-[#333333] ml-4">Informe de Negocio</h1>
+                              <div className="text-right text-[7pt] uppercase tracking-wider text-[#555555]">
+                                 <p><strong>FECHA:</strong> {new Date().toLocaleDateString('es-ES')}</p>
+                                 <p><strong>CÓDIGO:</strong> {codigoInforme}</p>
+                              </div>
+                            </div>
+                            
+                            {/* INFORMACIÓN DEL CLIENTE */}
                             <div className="bg-[#F2EFEB] text-[#B94A36] font-bold text-[7pt] px-3 py-1.5 uppercase border-t border-l border-r border-[#333333] tracking-widest">Información del Cliente</div>
                             <div className="grid grid-cols-4 gap-y-2.5 gap-x-4 text-[7pt] border border-[#333333] p-4 uppercase">
                                 <div className="col-span-2"><strong>Empresa / Cliente:</strong> <span className="text-neutral-700">{clienteActivoInforme?.nombres || '---'} {clienteActivoInforme?.apellidos || ''}</span></div>
@@ -583,11 +603,9 @@ export default function GestorOperacionesPage() {
                                 <div className="col-span-2"><strong>E-mail:</strong> <span className="lowercase text-neutral-700">{clienteActivoInforme?.email || '---'}</span></div>
                                 <div className="col-span-2"><strong>Celular:</strong> <span className="text-neutral-700">{clienteActivoInforme?.telefono || '---'}</span></div>
                             </div>
-                          </div>
 
-                          {/* DESCRIPCIÓN DEL PRODUCTO */}
-                          <div>
-                            <div className="bg-[#F2EFEB] text-[#B94A36] font-bold text-[7pt] px-3 py-1.5 uppercase border-t border-l border-r border-[#333333] tracking-widest">Descripción del Producto</div>
+                            {/* DESCRIPCIÓN DEL PRODUCTO */}
+                            <div className="bg-[#F2EFEB] text-[#B94A36] font-bold text-[7pt] px-3 py-1.5 uppercase border-t border-l border-r border-[#333333] tracking-widest mt-4">Descripción del Producto</div>
                             <div className="grid grid-cols-4 gap-y-2.5 gap-x-4 text-[7pt] border border-[#333333] p-4 uppercase">
                                 <div><strong>Departamento No.:</strong> <span className="text-neutral-700">{propiedadActivaInforme?.unidad || propiedadActivaInforme?.numero}</span></div>
                                 <div><strong>Área Útil:</strong> <span className="text-neutral-700">{propiedadActivaInforme?.area_interior || propiedadActivaInforme?.area_total || '0.00'} m²</span></div>
@@ -601,17 +619,25 @@ export default function GestorOperacionesPage() {
                           </div>
                           
                           {/* NEGOCIO Y TABLA (BLOQUES FLEXIBLES) */}
-                          <div className="flex gap-5 mt-2">
+                          <div className="flex gap-5 mt-4 flex-1 min-h-0">
                             
                             {/* COLUMNA IZQ: CONDICIONES */}
-                            <div className="w-1/2 flex flex-col h-auto">
-                                <div className="bg-[#F2EFEB] text-[#B94A36] font-bold text-[7pt] px-3 py-1.5 uppercase border-t border-l border-r border-[#333333] tracking-widest">Condiciones de Negocio</div>
-                                <div className="border border-[#333333] p-4 text-[8pt] uppercase space-y-3 flex-1 flex flex-col">
-                                    <div className="flex justify-between items-center"><span>Precio del Inmueble:</span> <strong className="font-mono text-[9pt]">${calcInforme.precioListaOriginal.toLocaleString('en-US', {minimumFractionDigits:2})}</strong></div>
-                                    <div className="flex justify-between items-center"><span>Descuento Aplicado:</span> <strong className="font-mono text-[9pt] text-[#ea0029]">${calcInforme.montoDescuentoCalculado.toLocaleString('en-US', {minimumFractionDigits:2})}</strong></div>
-                                    <div className="flex justify-between items-center text-[9pt] border-t border-[#333333]/30 pt-3 mt-3">
-                                        <span className="font-bold text-[#B94A36]">PRECIO FINAL ACORDADO:</span> <strong className="font-mono text-[11pt] text-[#B94A36]">${calcInforme.precioTotal.toLocaleString('en-US', {minimumFractionDigits:2})}</strong>
-                                    </div>
+                            <div className="w-1/2 flex flex-col h-full">
+                                <div className="flex-none bg-[#F2EFEB] text-[#B94A36] font-bold text-[7pt] px-3 py-1.5 uppercase border-t border-l border-r border-[#333333] tracking-widest">Condiciones de Negocio</div>
+                                <div className="border border-[#333333] p-4 text-[8pt] uppercase space-y-3 flex-1 flex flex-col overflow-hidden">
+                                    {calcInforme.montoDescuentoCalculado > 0 ? (
+                                      <>
+                                        <div className="flex justify-between items-center mb-1"><span>Precio Base:</span> <strong className="font-mono text-[9pt]">${calcInforme.precioListaOriginal.toLocaleString('en-US', {minimumFractionDigits:2})}</strong></div>
+                                        <div className="flex justify-between items-center mb-1"><span>Descuento Aplicado:</span> <strong className="font-mono text-[9pt] text-[#ea0029]">${calcInforme.montoDescuentoCalculado.toLocaleString('en-US', {minimumFractionDigits:2})}</strong></div>
+                                        <div className="flex justify-between items-center text-[9pt] border-t border-[#333333]/30 pt-3 mt-3">
+                                            <span className="font-bold text-[#B94A36]">PRECIO FINAL ACORDADO:</span> <strong className="font-mono text-[11pt] text-[#B94A36]">${calcInforme.precioTotal.toLocaleString('en-US', {minimumFractionDigits:2})}</strong>
+                                        </div>
+                                      </>
+                                    ) : (
+                                      <div className="flex justify-between items-center text-[9pt]">
+                                          <span className="font-bold text-[#B94A36]">VALOR DEL INMUEBLE:</span> <strong className="font-mono text-[11pt] text-[#B94A36]">${calcInforme.precioTotal.toLocaleString('en-US', {minimumFractionDigits:2})}</strong>
+                                      </div>
+                                    )}
                                     
                                     <div className="mt-8 pt-4 border-t border-[#333333]/20 flex-1">
                                         <p className="font-bold text-[7pt] text-[#B94A36] mb-1">Tipo de Financiamiento:</p>
@@ -634,55 +660,55 @@ export default function GestorOperacionesPage() {
                             </div>
 
                             {/* COLUMNA DER: TABLA PAGOS */}
-                            <div className="w-1/2 flex flex-col h-auto">
-                                <div className="bg-[#F2EFEB] text-[#B94A36] font-bold text-[7pt] px-3 py-1.5 uppercase border-t border-l border-r border-[#333333] tracking-widest">Tabla de Pagos</div>
-                                <div className="border border-[#333333] flex-1">
+                            <div className="w-1/2 flex flex-col h-full">
+                                <div className="flex-none bg-[#F2EFEB] text-[#B94A36] font-bold text-[7pt] px-3 py-1.5 uppercase border-t border-l border-r border-[#333333] tracking-widest">Tabla de Pagos</div>
+                                <div className="border border-[#333333] flex-1 overflow-hidden">
                                     <table className="w-full text-[7pt] text-left uppercase">
                                         <thead>
                                             <tr className="border-b border-[#333333] bg-neutral-50"><th className="px-2 py-1.5 border-r border-[#333333]/30 text-center w-[45%]">Detalle / Cuota</th><th className="px-2 py-1.5 border-r border-[#333333]/30 text-center w-[25%]">Fecha</th><th className="px-2 py-1.5 text-right w-[30%]">Monto $</th></tr>
                                         </thead>
                                         <tbody className="divide-y divide-[#333333]/20">
                                             <tr>
-                                              <td className="px-2 py-1.5 border-r border-[#333333]/30 font-bold text-neutral-800 text-center">Reserva</td>
-                                              <td className="px-2 py-1.5 border-r border-[#333333]/30 text-center font-mono text-neutral-700">{formatearFechaLegible(fechaReservaInf)}</td>
-                                              <td className="px-2 py-1.5 text-right font-mono font-bold text-neutral-900">${infReservaValor.toLocaleString('en-US', {minimumFractionDigits:2})}</td>
+                                              <td className="px-2 py-1 border-r border-[#333333]/30 font-bold text-neutral-800 text-center">Reserva</td>
+                                              <td className="px-2 py-1 border-r border-[#333333]/30 text-center font-mono text-neutral-700">{formatearFechaLegible(fechaReservaInf)}</td>
+                                              <td className="px-2 py-1 text-right font-mono font-bold text-neutral-900">${infReservaValor.toLocaleString('en-US', {minimumFractionDigits:2})}</td>
                                             </tr>
                                             
                                             {/* RENDERIZADO DEL CRONOGRAMA COMBINADO */}
                                             {cronogramaCuotas.map(c => (
                                                 <tr key={c.id}>
-                                                  <td className={`px-2 py-1.5 border-r border-[#333333]/30 pl-3 ${c.tipo === 'inicial' ? 'font-bold text-neutral-800' : 'text-[6pt] text-neutral-600'}`}>
+                                                  <td className={`px-2 py-1 border-r border-[#333333]/30 pl-3 ${c.tipo === 'inicial' ? 'font-bold text-neutral-800' : 'text-[6pt] text-neutral-600'}`}>
                                                     {c.tipo === 'inicial' ? `Abono Inicial ${c.numeroCuota}` : `Dividendo ${c.numeroCuota}`}
                                                   </td>
-                                                  <td className="px-2 py-1.5 border-r border-[#333333]/30 text-center font-mono text-neutral-700">{formatearFechaLegible(c.fechaPago)}</td>
-                                                  <td className={`px-2 py-1.5 text-right font-mono ${c.tipo === 'inicial' ? 'font-bold text-neutral-900' : 'text-neutral-600'}`}>${c.valor.toLocaleString('en-US', {minimumFractionDigits:2})}</td>
+                                                  <td className="px-2 py-1 border-r border-[#333333]/30 text-center font-mono text-neutral-700">{formatearFechaLegible(c.fechaPago)}</td>
+                                                  <td className={`px-2 py-1 text-right font-mono ${c.tipo === 'inicial' ? 'font-bold text-neutral-900' : 'text-neutral-600'}`}>${c.valor.toLocaleString('en-US', {minimumFractionDigits:2})}</td>
                                                 </tr>
                                             ))}
                                             
                                             <tr className="border-t-2 border-[#333333] bg-[#F2EFEB]/40">
-                                              <td className="px-2 py-2 border-r border-[#333333]/30 font-bold text-[#B94A36] text-center uppercase tracking-wider">Contraentrega</td>
-                                              <td className="px-2 py-2 border-r border-[#333333]/30 text-center font-mono font-bold text-[#B94A36]">PAGO FINAL</td>
-                                              <td className="px-2 py-2 text-right font-mono font-bold text-[#B94A36] text-[8pt]">${calcInforme.contraEntrega.toLocaleString('en-US', {minimumFractionDigits:2})}</td>
+                                              <td className="px-2 py-1.5 border-r border-[#333333]/30 font-bold text-[#B94A36] text-center uppercase tracking-wider">Contraentrega</td>
+                                              <td className="px-2 py-1.5 border-r border-[#333333]/30 text-center font-mono font-bold text-[#B94A36]">FINAL</td>
+                                              <td className="px-2 py-1.5 text-right font-mono font-bold text-[#B94A36] text-[8pt]">${calcInforme.contraEntrega.toLocaleString('en-US', {minimumFractionDigits:2})}</td>
                                             </tr>
                                         </tbody>
                                     </table>
                                 </div>
                             </div>
                           </div>
-                        </div>
-                        
-                        {/* FIRMAS INFORME */}
-                        <div className="mt-16 pt-8 grid grid-cols-2 gap-16 px-12">
-                            <div className="text-center border-t border-[#333333] pt-3">
-                                <p className="text-[7pt] font-bold uppercase tracking-widest text-neutral-800">{clienteActivoInforme?.nombres || 'FIRMA DEL CLIENTE'} {clienteActivoInforme?.apellidos || ''}</p>
-                                <p className="text-[6pt] text-neutral-500 mt-1">C.C. {clienteActivoInforme?.cedula || '_______________'}</p>
-                            </div>
-                            <div className="text-center border-t border-[#333333] pt-3">
-                                <p className="text-[7pt] font-bold uppercase tracking-widest text-neutral-800">Arienzo S.A.S.</p>
-                                <p className="text-[6pt] text-neutral-500 mt-1">{nombreAsesor}</p>
-                            </div>
-                        </div>
 
+                          {/* FIRMAS INFORME (Fixed position at bottom of the main frame) */}
+                          <div className="flex-none mt-8 pt-4 grid grid-cols-2 gap-16 px-10">
+                              <div className="text-center border-t border-[#333333] pt-2">
+                                  <p className="text-[7pt] font-bold uppercase tracking-widest text-neutral-800">{clienteActivoInforme?.nombres || 'FIRMA DEL CLIENTE'} {clienteActivoInforme?.apellidos || ''}</p>
+                                  <p className="text-[6pt] text-neutral-500 mt-1">C.C. {clienteActivoInforme?.cedula || '_______________'}</p>
+                              </div>
+                              <div className="text-center border-t border-[#333333] pt-2">
+                                  <p className="text-[7pt] font-bold uppercase tracking-widest text-neutral-800">Arienzo S.A.S.</p>
+                                  <p className="text-[6pt] text-neutral-500 mt-1">{nombreAsesor}</p>
+                              </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -710,8 +736,9 @@ export default function GestorOperacionesPage() {
                     <div className="flex justify-between border-t-2 border-[#21242E] pt-3 mt-2"><span className="text-[12px] font-bold uppercase">Contra Entrega</span><span className="font-bold text-[#B94A36] font-mono">${calcInforme.contraEntrega.toLocaleString('en-US',{minimumFractionDigits:2})}</span></div>
                   </div>
 
-                  <button onClick={() => imprimirDocumento('plantilla-pdf-arienzo', 'Informe_Negocio')} disabled={!propiedadActivaInforme} className="w-full bg-[#21242E] text-white rounded-xl p-3.5 text-[11px] font-bold uppercase tracking-widest hover:bg-neutral-800 transition-colors mt-8 disabled:opacity-50">
-                    📄 Imprimir Informe Oficial
+                  <button onClick={() => imprimirDocumento('plantilla-pdf-arienzo', 'Informe_Negocio')} disabled={!propiedadActivaInforme} className="w-full bg-[#21242E] text-white rounded-xl p-3.5 text-[11px] font-bold uppercase tracking-widest hover:bg-neutral-800 transition-colors mt-8 disabled:opacity-50 flex items-center justify-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                    Imprimir Informe Oficial
                   </button>
                 </div>
               </div>
@@ -752,8 +779,9 @@ export default function GestorOperacionesPage() {
                     <span className="text-[#B94A36] font-bold text-xs uppercase tracking-wider block mb-1">Expediente Listo para Imprimir</span>
                     <p className="text-[11px] text-[#415364]/70">Formulario Conozca a su Cliente + Licitud de Fondos.</p>
                   </div>
-                  <button onClick={() => imprimirDocumento('impresion-formularios-kyc', 'Formularios_Expediente')} className="w-full md:w-auto bg-[#ea0029] text-white px-8 py-4 rounded-xl font-bold text-xs tracking-wider uppercase transition-colors shadow-md">
-                    🖨️ Imprimir Documentos
+                  <button onClick={() => imprimirDocumento('impresion-formularios-kyc', 'Formularios_Expediente')} className="w-full md:w-auto bg-[#ea0029] text-white px-8 py-4 rounded-xl font-bold text-xs tracking-wider uppercase transition-colors shadow-md flex items-center justify-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                    Imprimir Documentos
                   </button>
                 </div>
               ) : (
