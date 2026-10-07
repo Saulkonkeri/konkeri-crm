@@ -1,4 +1,4 @@
-// Actualizacion para Vercel - Gestor de Operaciones v5 (Formatos Pulidos)
+// Actualizacion para Vercel - Gestor de Operaciones v6 (Bordes y Alturas Perfeccionadas)
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -39,7 +39,6 @@ export default function GestorOperacionesPage() {
   const [formaFinanciamiento, setFormaFinanciamiento] = useState('Crédito Directo');
   const [observacionesNegocio, setObservacionesNegocio] = useState('');
   
-  // Sistema de Notas Dinámicas
   const [notas, setNotas] = useState<NotaObservacion[]>([]);
   
   const [tipoDescuento, setTipoDescuento] = useState<'porcentaje' | 'valor'>('porcentaje');
@@ -70,7 +69,6 @@ export default function GestorOperacionesPage() {
   // ================= ESTADOS: PESTAÑA 3 (EXPEDIENTE KYC) =================
   const [cierreForm, setCierreForm] = useState({ clienteId: '', propiedadId: '' });
 
-  // DATOS GENERALES
   const [nombreAsesor, setNombreAsesor] = useState<string>('Saúl Intriago / Debbi Mera');
 
   const datosRespaldoClientes = [
@@ -109,7 +107,6 @@ export default function GestorOperacionesPage() {
     return `${partes[2]}-${mesesNombres[mesIndex].substring(0,3).toUpperCase()}-${partes[0]}`;
   };
 
-  // ================= LÓGICA PESTAÑA 1 (RESERVA) =================
   useEffect(() => { setReservaExitosa(false); }, [reservaForm.propiedadId]);
   const clienteActivoReserva = clientes.find(c => c.id === reservaForm.clienteId);
   const propiedadActivaReserva = propiedades.find(p => p.id.toString() === reservaForm.propiedadId.toString());
@@ -128,7 +125,6 @@ export default function GestorOperacionesPage() {
     } catch (err: any) { alert(`Error: ${err.message}`); } finally { setGuardando(false); }
   };
 
-  // ================= LÓGICA PESTAÑA 2 (INFORME NEGOCIO) =================
   const agregarNota = () => setNotas([...notas, { id: Date.now().toString(), titulo: '', descripcion: '' }]);
   const actualizarNota = (id: string, campo: 'titulo' | 'descripcion', valor: string) => {
     setNotas(notas.map(n => n.id === id ? { ...n, [campo]: valor } : n));
@@ -170,7 +166,6 @@ export default function GestorOperacionesPage() {
     if (!propiedadActivaInforme || (calcInforme.entradaDiferirTotal <= 0 && calcInforme.saldoFirmaPromesa <= 0) ) {
       setCronogramaCuotas([]); return;
     }
-    
     let cuotasGeneradas: CuotaMes[] = [];
 
     if (calcInforme.saldoFirmaPromesa > 0 && mesesInicial > 0) {
@@ -265,7 +260,6 @@ export default function GestorOperacionesPage() {
     setMostrarCalculadoraRefuerzos(false); 
   };
 
-  // ================= IMPRESIÓN =================
   const imprimirDocumento = (idElemento: string, tituloVentana: string) => {
     if (typeof window === 'undefined') return;
     const contenido = document.getElementById(idElemento)?.innerHTML;
@@ -280,7 +274,7 @@ export default function GestorOperacionesPage() {
           <style>
             @page { size: A4 portrait; margin: 0mm; }
             body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; margin: 0; background: #ffffff; font-family: ui-sans-serif, system-ui; }
-            .pagina-a4 { width: 210mm; height: 297mm; padding: 12mm 15mm; box-sizing: border-box; page-break-after: always; overflow: hidden; position: relative; }
+            .pagina-a4 { width: 210mm; min-height: 297mm; padding: 15mm 20mm; box-sizing: border-box; page-break-after: always; overflow: hidden; position: relative; }
             .cuadro-input { border-bottom: 1px solid #8C8A87; min-height: 14px; display: inline-block; width: 100%; }
             .checkbox-box { width: 10px; height: 10px; border: 1px solid #8C8A87; display: inline-block; margin-right: 4px; vertical-align: middle; }
             .seccion-titulo { background-color: #F2EFEB; color: #B94A36; font-weight: bold; text-transform: uppercase; font-size: 8px; padding: 4px 8px; border-left: 3px solid #B94A36; margin-bottom: 6px; margin-top: 8px; letter-spacing: 0.05em; }
@@ -563,6 +557,7 @@ export default function GestorOperacionesPage() {
                      ========================================================================= */
                   <div className="bg-[#1a1c23] p-8 rounded-2xl shadow-inner flex justify-center border border-[#415364]/30 overflow-x-auto min-h-[600px]">
                     <div id="plantilla-pdf-arienzo" className="bg-white w-[210mm] flex flex-col text-[#222222] shadow-2xl scale-95 sm:scale-100 origin-top transform p-10 box-border border-b-4 border-[#B94A36]">
+                        
                         {/* HEADER */}
                         <div className="flex justify-between items-center mb-6 border-b border-[#333333]/20 pb-4">
                           <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" alt="Arienzo" className="h-7 max-w-[140px] object-contain" />
@@ -607,17 +602,18 @@ export default function GestorOperacionesPage() {
                           
                           {/* NEGOCIO Y TABLA (BLOQUES FLEXIBLES) */}
                           <div className="flex gap-5 mt-2">
+                            
                             {/* COLUMNA IZQ: CONDICIONES */}
                             <div className="w-1/2 flex flex-col h-auto">
                                 <div className="bg-[#F2EFEB] text-[#B94A36] font-bold text-[7pt] px-3 py-1.5 uppercase border-t border-l border-r border-[#333333] tracking-widest">Condiciones de Negocio</div>
-                                <div className="border border-[#333333] p-4 text-[8pt] uppercase space-y-3 h-full">
+                                <div className="border border-[#333333] p-4 text-[8pt] uppercase space-y-3 flex-1 flex flex-col">
                                     <div className="flex justify-between items-center"><span>Precio del Inmueble:</span> <strong className="font-mono text-[9pt]">${calcInforme.precioListaOriginal.toLocaleString('en-US', {minimumFractionDigits:2})}</strong></div>
                                     <div className="flex justify-between items-center"><span>Descuento Aplicado:</span> <strong className="font-mono text-[9pt] text-[#ea0029]">${calcInforme.montoDescuentoCalculado.toLocaleString('en-US', {minimumFractionDigits:2})}</strong></div>
                                     <div className="flex justify-between items-center text-[9pt] border-t border-[#333333]/30 pt-3 mt-3">
                                         <span className="font-bold text-[#B94A36]">PRECIO FINAL ACORDADO:</span> <strong className="font-mono text-[11pt] text-[#B94A36]">${calcInforme.precioTotal.toLocaleString('en-US', {minimumFractionDigits:2})}</strong>
                                     </div>
                                     
-                                    <div className="mt-8 pt-4 border-t border-[#333333]/20">
+                                    <div className="mt-8 pt-4 border-t border-[#333333]/20 flex-1">
                                         <p className="font-bold text-[7pt] text-[#B94A36] mb-1">Tipo de Financiamiento:</p>
                                         <p className="font-bold text-[8pt] mb-4 text-neutral-800">{formaFinanciamiento}</p>
                                         
@@ -647,7 +643,7 @@ export default function GestorOperacionesPage() {
                                         </thead>
                                         <tbody className="divide-y divide-[#333333]/20">
                                             <tr>
-                                              <td className="px-2 py-1.5 border-r border-[#333333]/30 font-bold text-neutral-800">Reserva</td>
+                                              <td className="px-2 py-1.5 border-r border-[#333333]/30 font-bold text-neutral-800 text-center">Reserva</td>
                                               <td className="px-2 py-1.5 border-r border-[#333333]/30 text-center font-mono text-neutral-700">{formatearFechaLegible(fechaReservaInf)}</td>
                                               <td className="px-2 py-1.5 text-right font-mono font-bold text-neutral-900">${infReservaValor.toLocaleString('en-US', {minimumFractionDigits:2})}</td>
                                             </tr>
@@ -664,7 +660,7 @@ export default function GestorOperacionesPage() {
                                             ))}
                                             
                                             <tr className="border-t-2 border-[#333333] bg-[#F2EFEB]/40">
-                                              <td className="px-2 py-2 border-r border-[#333333]/30 font-bold text-[#B94A36] uppercase tracking-wider">Contraentrega</td>
+                                              <td className="px-2 py-2 border-r border-[#333333]/30 font-bold text-[#B94A36] text-center uppercase tracking-wider">Contraentrega</td>
                                               <td className="px-2 py-2 border-r border-[#333333]/30 text-center font-mono font-bold text-[#B94A36]">PAGO FINAL</td>
                                               <td className="px-2 py-2 text-right font-mono font-bold text-[#B94A36] text-[8pt]">${calcInforme.contraEntrega.toLocaleString('en-US', {minimumFractionDigits:2})}</td>
                                             </tr>
@@ -675,7 +671,7 @@ export default function GestorOperacionesPage() {
                           </div>
                         </div>
                         
-                        {/* FIRMAS INFORME (Siempre empujadas al fondo con buen margen) */}
+                        {/* FIRMAS INFORME */}
                         <div className="mt-16 pt-8 grid grid-cols-2 gap-16 px-12">
                             <div className="text-center border-t border-[#333333] pt-3">
                                 <p className="text-[7pt] font-bold uppercase tracking-widest text-neutral-800">{clienteActivoInforme?.nombres || 'FIRMA DEL CLIENTE'} {clienteActivoInforme?.apellidos || ''}</p>
