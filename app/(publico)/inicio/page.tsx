@@ -12,16 +12,16 @@ const generateUUID = () => {
   });
 };
 
-// === BASE DE DATOS DE MODELOS ARIENZO ===
+// === BASE DE DATOS DE MODELOS ARIENZO (Optimizada con Lavandería y Terraza estándar) ===
 const modelosArienzo = [
-  { id: 'm1', area: '69.43m²', nombre: 'Modelo 1D', dorms: 1, banos: 1.5, extras: 'Balcón', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_%2069,43m2.png' },
-  { id: 'm2', area: '86.78m²', nombre: 'Modelo 1D Plus', dorms: 1, banos: 1.5, extras: 'Terraza Privada', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_86,78%20m2.png' },
-  { id: 'm3', area: '100.20m²', nombre: 'Modelo 2D Compacto', dorms: 2, banos: 2, extras: 'Área de Lavandería', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_100.2m2.png' },
-  { id: 'm4', area: '106.65m²', nombre: 'Modelo 2D Estándar', dorms: 2, banos: 2.5, extras: 'Balcón', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_106,65m2.png' },
-  { id: 'm5', area: '121.61m²', nombre: 'Modelo 2D Amplio', dorms: 2, banos: 2.5, extras: 'Terraza Frontal', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_121,61m2.png' },
-  { id: 'm6', area: '129.42m²', nombre: 'Modelo 2D Premium', dorms: 2, banos: 2.5, extras: 'Terraza Extendida', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2d_129,42m2.png' },
-  { id: 'm7', area: '150.14m²', nombre: 'Modelo 3D', dorms: 3, banos: 3.5, extras: 'Porche + Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/3D_150,14m2.png' },
-  { id: 'm8', area: '158.77m²', nombre: 'Modelo 3D Premium', dorms: 3, banos: 3.5, extras: 'Gran Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/3D_158,77m2.png' },
+  { id: 'm1', area: '69.43m²', nombre: 'Modelo 1D', dorms: 1, banos: 1.5, lavanderia: true, extras: 'Balcón', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_%2069,43m2.png' },
+  { id: 'm2', area: '86.78m²', nombre: 'Modelo 1D Plus', dorms: 1, banos: 1.5, lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_86,78%20m2.png' },
+  { id: 'm3', area: '100.20m²', nombre: 'Modelo 2D Compacto', dorms: 2, banos: 2, lavanderia: true, extras: 'Balcón', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_100.2m2.png' },
+  { id: 'm4', area: '106.65m²', nombre: 'Modelo 2D Estándar', dorms: 2, banos: 2.5, lavanderia: true, extras: 'Balcón', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_106,65m2.png' },
+  { id: 'm5', area: '121.61m²', nombre: 'Modelo 2D Amplio', dorms: 2, banos: 2.5, lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_121,61m2.png' },
+  { id: 'm6', area: '129.42m²', nombre: 'Modelo 2D Premium', dorms: 2, banos: 2.5, lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2d_129,42m2.png' },
+  { id: 'm7', area: '150.14m²', nombre: 'Modelo 3D', dorms: 3, banos: 3.5, lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/3D_150,14m2.png' },
+  { id: 'm8', area: '158.77m²', nombre: 'Modelo 3D Premium', dorms: 3, banos: 3.5, lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/3D_158,77m2.png' },
 ];
 
 export default function ArienzoLandingPremium() {
@@ -30,12 +30,13 @@ export default function ArienzoLandingPremium() {
   const [mostrarModalBrochure, setMostrarModalBrochure] = useState(false);
   
   const [imagenIndex, setImagenIndex] = useState<number | null>(null);
+  const [planoZoom, setPlanoZoom] = useState<string | null>(null); // Nuevo estado para hacer zoom en el plano
   const [cargando, setCargando] = useState(false);
   const [solicitudEnviada, setSolicitudEnviada] = useState(false);
   const [brochureDescargado, setBrochureDescargado] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  // Estado del modelo de distribución seleccionado (Por defecto mostramos 2 Dormitorios Estándar)
+  // Estado del modelo de distribución seleccionado (Por defecto 2D Estándar)
   const [modeloActivo, setModeloActivo] = useState(modelosArienzo[3]);
 
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
@@ -131,19 +132,6 @@ export default function ArienzoLandingPremium() {
         }).catch(() => {});
       }
 
-      if (typeof window !== 'undefined' && typeof (window as any).gtag !== 'undefined') {
-        const gtag = (window as any).gtag;
-        if (accion === 'REGISTRO_COMPLETADO' || accion === 'DESCARGA_BROCHURE') {
-          gtag('event', 'generate_lead', { event_category: 'engagement', event_label: accion });
-        } else if (accion === 'CLIC_WHATSAPP') {
-          gtag('event', 'click_whatsapp', { event_category: 'contact', event_label: 'Clic Botón WhatsApp' });
-        } else if (accion === 'ABRIO_CALENDLY') {
-          gtag('event', 'schedule_meeting', { event_category: 'engagement', event_label: 'Abrió Calendly' });
-        } else if (accion !== 'VISITA_LANDING') {
-          gtag('event', accion, { event_category: 'interaction', event_label: detalle });
-        }
-      }
-
     } catch (error) {
       console.error("Error general tracking:", error);
     }
@@ -210,6 +198,8 @@ export default function ArienzoLandingPremium() {
         if (e.key === 'ArrowRight') setImagenIndex((prev) => prev !== null ? (prev + 1) % imagenesGaleria.length : null);
         else if (e.key === 'ArrowLeft') setImagenIndex((prev) => prev !== null ? (prev - 1 + imagenesGaleria.length) % imagenesGaleria.length : null);
         else if (e.key === 'Escape') setImagenIndex(null);
+      } else if (planoZoom) {
+        if (e.key === 'Escape') setPlanoZoom(null);
       } else {
         const carousel = document.getElementById('carrusel-arquitectura');
         if (carousel && carousel.firstElementChild) {
@@ -226,7 +216,7 @@ export default function ArienzoLandingPremium() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [imagenIndex, imagenesGaleria.length]);
+  }, [imagenIndex, imagenesGaleria.length, planoZoom]);
 
   // ==========================================
   // FUNCIONES DE LA GALERÍA
@@ -259,8 +249,10 @@ export default function ArienzoLandingPremium() {
   const handleTouchEnd = () => {
     if (!touchStartX || !touchEndX) return;
     const distance = touchStartX - touchEndX;
-    if (distance > 50) nextImagen();
-    else if (distance < -50) prevImagen();
+    if (imagenIndex !== null) {
+      if (distance > 50) nextImagen();
+      else if (distance < -50) prevImagen();
+    }
   };
 
   // ⚡ HANDLERS ACTIVOS PARA LOS BOTONES
@@ -288,7 +280,6 @@ export default function ArienzoLandingPremium() {
     setCargando(true);
     const correoLimpio = formData.email.trim().toLowerCase();
     
-    // Armamos el origen dependiendo si viene del botón general o de la sección de cotización
     const origenDinamico = formData.modeloCotizado ? `Landing - Cotización de ${formData.modeloCotizado}` : 'Web Pública - Registro Landing';
 
     try {
@@ -583,92 +574,118 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* 4. TIPOLOGÍAS Y ACABADOS */}
-      <section className="py-16 md:py-24 px-6 bg-[#F9F7F5] border-b border-[#EAE3DC] text-center">
-        <div className="max-w-3xl mx-auto">
-          <span className="text-[11px] font-bold tracking-[0.25em] text-[#964B36] uppercase mb-4 block">Espacios de Autor</span>
-          <h3 className="text-3xl md:text-4xl font-medium text-neutral-900 tracking-tight mb-4">
-            Formatos exclusivos de 1, 2 y 3 dormitorios.
-          </h3>
-          <p className="text-sm md:text-base text-neutral-600 font-medium leading-relaxed mb-8">
-            Diseño optimizado con acabados de primera, ventanales de piso a techo y una distribución abierta donde la sala, el comedor y la terraza se integran de forma natural.
-          </p>
-        </div>
-      </section>
 
       {/* ========================================================================= */}
-      {/* 4.5. SECCIÓN NUEVA DE DISTRIBUCIONES INTERACTIVAS                       */}
+      {/* 4. ESPACIOS DE AUTOR Y DISTRIBUCIONES (UNIFICADO Y OPTIMIZADO)            */}
       {/* ========================================================================= */}
-      <section className="bg-[#FCFBFA] py-20 px-4 md:px-8 font-sans border-b border-[#EAE3DC]">
-        <div className="max-w-5xl mx-auto">
+      <section className="py-20 md:py-32 px-4 md:px-8 bg-[#F9F7F5] border-b border-[#EAE3DC] font-sans">
+        <div className="max-w-6xl mx-auto">
           
-          {/* TÍTULO DE LA SECCIÓN */}
-          <div className="text-center mb-12">
-            <h2 className="text-[#415364] text-sm md:text-base font-bold tracking-[0.2em] uppercase mb-3">Distribuciones</h2>
-            <p className="text-3xl md:text-4xl text-[#B94A36] font-light">Encuentra tu espacio ideal</p>
+          {/* CABECERA UNIFICADA */}
+          <div className="text-center mb-12 md:mb-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <span className="text-[11px] font-bold tracking-[0.25em] text-[#964B36] uppercase mb-4 block">Espacios de Autor</span>
+            <h3 className="text-3xl md:text-5xl font-medium text-neutral-900 tracking-tight mb-6">
+              Formatos exclusivos de 1, 2 y 3 dormitorios.
+            </h3>
+            <p className="max-w-3xl mx-auto text-sm md:text-lg text-neutral-600 font-medium leading-relaxed">
+              Diseño optimizado con acabados de primera, ventanales de piso a techo y una distribución abierta donde la sala, el comedor y la terraza se integran de forma natural. Encuentra tu espacio ideal a continuación.
+            </p>
           </div>
 
           {/* SELECTOR DE PESTAÑAS (Scroll horizontal en móviles) */}
-          <div className="flex overflow-x-auto snap-x gap-3 md:gap-4 justify-start md:justify-center mb-12 pb-4 scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="flex overflow-x-auto snap-x gap-3 md:gap-5 justify-start md:justify-center mb-12 pb-4 scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {modelosArienzo.map((mod) => {
               const activo = modeloActivo.id === mod.id;
               return (
                 <button
                   key={mod.id}
                   onClick={() => setModeloActivo(mod)}
-                  className={`snap-center shrink-0 flex items-center justify-center w-20 h-20 md:w-24 md:h-24 rounded-2xl transition-all duration-300 border-2 
+                  className={`snap-center shrink-0 flex items-center justify-center w-20 h-20 md:w-28 md:h-24 rounded-2xl transition-all duration-300 border-[1.5px] 
                     ${activo 
-                      ? 'bg-[#D1C292] border-[#D1C292] text-[#21242E] shadow-lg scale-105' 
-                      : 'bg-transparent border-dashed border-[#415364]/30 text-[#415364] hover:border-[#B94A36] hover:text-[#B94A36]'
+                      ? 'bg-[#D1C292] border-[#D1C292] text-[#21242E] shadow-xl scale-105' 
+                      : 'bg-transparent border-dashed border-[#415364]/30 text-neutral-500 hover:border-[#964B36] hover:text-[#964B36]'
                     }`}
                 >
-                  <span className="text-sm md:text-base font-medium">{mod.area}</span>
+                  <span className="text-sm md:text-lg font-medium">{mod.area}</span>
                 </button>
               );
             })}
           </div>
 
           {/* DETALLES DEL MODELO SELECCIONADO */}
-          <div className="animate-in fade-in duration-500" key={modeloActivo.id}>
+          <div className="animate-in fade-in duration-500 bg-transparent" key={modeloActivo.id}>
             
-            <div className="mb-8">
-              <h3 className="text-3xl font-bold text-[#415364] mb-4">{modeloActivo.area}</h3>
-              <div className="w-full border-b-[1.5px] border-dotted border-[#415364]/30"></div>
+            <div className="mb-8 text-center md:text-left">
+              <h3 className="text-3xl md:text-4xl font-bold text-neutral-800 mb-4">{modeloActivo.nombre} <span className="text-[#964B36] font-light">| {modeloActivo.area}</span></h3>
+              <div className="w-full border-b border-[#EAE3DC]"></div>
             </div>
 
-            {/* Iconos de características (Vectores limpios) */}
-            <div className="flex flex-wrap items-center gap-x-8 gap-y-4 mb-10 text-[#415364]">
+            {/* Íconos de características (Vectores Premium de Arquitectura) */}
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-10 gap-y-6 mb-10 text-neutral-600">
+              
+              {/* Dormitorios */}
               <div className="flex items-center gap-3">
-                <svg className="w-8 h-8 stroke-current" fill="none" viewBox="0 0 24 24" strokeWidth="1.2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18M3 16h18M5 12V8a2 2 0 012-2h10a2 2 0 012 2v4M7 16v2m10-2v2"></path></svg>
-                <span className="text-sm font-medium">{modeloActivo.dorms} Dormitorio{modeloActivo.dorms > 1 ? 's' : ''}</span>
+                <svg className="w-7 h-7 stroke-current text-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 11V7a2 2 0 012-2h12a2 2 0 012 2v4M4 11v6m0-6h16m0 0v6M6 14h.01M18 14h.01"></path>
+                </svg>
+                <span className="text-sm font-medium tracking-wide">{modeloActivo.dorms} Dormitorio{modeloActivo.dorms > 1 ? 's' : ''}</span>
               </div>
+              
+              {/* Baños */}
               <div className="flex items-center gap-3">
-                <svg className="w-8 h-8 stroke-current" fill="none" viewBox="0 0 24 24" strokeWidth="1.2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v10a2 2 0 01-2 2H10a2 2 0 01-2-2V5zM8 9h8m-8 4h8m-6-8h4"></path></svg>
-                <span className="text-sm font-medium">{modeloActivo.banos} Baños</span>
+                <svg className="w-7 h-7 stroke-current text-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M7 7a2 2 0 012-2h6a2 2 0 012 2v2H7V7zm-2 5a2 2 0 00-2 2v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 00-2-2H5zm4 7v2m6-2v2"></path>
+                </svg>
+                <span className="text-sm font-medium tracking-wide">{modeloActivo.banos} Baños</span>
               </div>
+              
+              {/* Lavandería */}
+              {modeloActivo.lavanderia && (
+                <div className="flex items-center gap-3">
+                  <svg className="w-7 h-7 stroke-current text-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.5">
+                    <rect x="5" y="3" width="14" height="18" rx="2"></rect>
+                    <circle cx="12" cy="14" r="4"></circle>
+                    <path strokeLinecap="round" d="M9 7h6"></path>
+                  </svg>
+                  <span className="text-sm font-medium tracking-wide">Lavandería</span>
+                </div>
+              )}
+
+              {/* Extras (Terraza/Balcón) */}
               <div className="flex items-center gap-3">
-                <svg className="w-8 h-8 stroke-current" fill="none" viewBox="0 0 24 24" strokeWidth="1.2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                <span className="text-sm font-medium">{modeloActivo.extras}</span>
+                <svg className="w-7 h-7 stroke-current text-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M5 21v-8a2 2 0 012-2h10a2 2 0 012 2v8M9 11v10m6-10v10"></path>
+                </svg>
+                <span className="text-sm font-medium tracking-wide">{modeloActivo.extras}</span>
               </div>
             </div>
 
-            {/* Imagen del Plano Optimizada con Next.js Image */}
-            <div className="w-full bg-white rounded-xl overflow-hidden shadow-sm border border-[#415364]/10 mb-12 relative flex justify-center items-center aspect-[4/3] md:aspect-[16/9] p-4 md:p-10">
+            {/* Imagen del Plano Optimizada (Cero saltos, fondo mezclado) */}
+            <div className="relative w-full h-[350px] md:h-[500px] mb-12 flex justify-center items-center group">
               <Image 
                 src={modeloActivo.imagen} 
                 alt={`Plano de ${modeloActivo.nombre}`} 
                 fill
-                quality={85}
-                sizes="(max-width: 768px) 95vw, 60vw"
-                className="object-contain opacity-90 hover:opacity-100 transition-opacity duration-300 p-4"
+                quality={75} // Optimizado
+                sizes="(max-width: 768px) 100vw, 80vw"
+                className="object-contain mix-blend-multiply opacity-90 transition-opacity duration-300"
               />
+              
+              {/* Botón Lupa Lujoso (Abre Zoom) */}
+              <button 
+                onClick={() => setPlanoZoom(modeloActivo.imagen)}
+                className="absolute bottom-4 right-4 md:bottom-8 md:right-8 bg-white/80 backdrop-blur-md border border-[#EAE3DC] text-neutral-800 px-4 py-2 rounded-full text-[10px] font-bold tracking-widest uppercase hover:bg-white transition-all shadow-lg flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
+                Ampliar Plano
+              </button>
             </div>
 
-            {/* BOTÓN CALL TO ACTION (Llama al modal general pero registra qué modelo es) */}
+            {/* BOTÓN CALL TO ACTION Específico */}
             <div className="flex justify-center">
               <button 
                 onClick={() => abrirModalVIP(`${modeloActivo.nombre} de ${modeloActivo.area}`)}
-                className="bg-transparent border border-[#415364] text-[#415364] px-12 py-4 rounded-full text-xs md:text-sm font-bold tracking-widest uppercase hover:bg-[#415364] hover:text-white transition-all duration-300 shadow-sm flex items-center justify-center gap-2"
+                className="bg-transparent border border-[#964B36] text-[#964B36] px-12 py-4 rounded-full text-[11px] font-bold tracking-[0.15em] uppercase hover:bg-[#964B36] hover:text-white transition-all duration-300 shadow-sm flex items-center justify-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                 Cotizar este Modelo
@@ -733,7 +750,7 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* LIGHTBOX MODAL */}
+      {/* LIGHTBOX MODAL (Para Galería) */}
       {imagenIndex !== null && (
         <div 
           className="fixed inset-0 bg-[#21242E]/98 z-[70] flex items-center justify-center p-4 md:p-8 backdrop-blur-md animate-in fade-in" 
@@ -753,6 +770,25 @@ export default function ArienzoLandingPremium() {
             />
           </div>
           <button onClick={nextImagen} className="absolute right-2 md:right-10 text-white/40 hover:text-white text-4xl md:text-7xl p-2 md:p-4 z-50 transition-all hover:scale-110 select-none">&#8250;</button>
+        </div>
+      )}
+
+      {/* LIGHTBOX MODAL (Zoom Específico para Planos) */}
+      {planoZoom && (
+        <div 
+          className="fixed inset-0 bg-white/95 z-[70] flex items-center justify-center p-4 md:p-8 backdrop-blur-md animate-in fade-in" 
+          onClick={() => setPlanoZoom(null)}
+        >
+          <button className="absolute top-6 right-6 text-neutral-400 hover:text-neutral-900 text-4xl font-light transition-colors z-50">&times;</button>
+          <div className="relative w-full max-w-5xl h-[85vh] flex items-center justify-center bg-white rounded-xl shadow-2xl p-4" onClick={(e) => e.stopPropagation()}>
+            <Image 
+              src={planoZoom} 
+              alt="Plano Ampliado" 
+              fill
+              quality={100} // Máxima calidad en zoom
+              className="object-contain animate-in zoom-in-95" 
+            />
+          </div>
         </div>
       )}
 
@@ -867,7 +903,7 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* MODAL REGISTRO (Antes Acceso VIP) */}
+      {/* MODAL REGISTRO VIP/COTIZADOR */}
       {mostrarModalVip && (
         <div className="fixed inset-0 bg-[#21242E]/95 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white w-full max-w-md p-10 rounded-2xl relative shadow-2xl animate-in zoom-in-95">
