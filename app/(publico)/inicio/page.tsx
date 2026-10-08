@@ -12,16 +12,16 @@ const generateUUID = () => {
   });
 };
 
-// === BASE DE DATOS DE MODELOS ARIENZO (Escala 1:1 alineada arriba) ===
+// === BASE DE DATOS DE MODELOS ARIENZO (Nuevos enlaces limpios y parámetro anti-caché v=8) ===
 const modelosArienzo = [
-  { id: 'm1', area: '69.43m²', dorms: 1, banos: '1.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_%2069,43m2.png?v=5' },
-  { id: 'm2', area: '86.78m²', dorms: 1, banos: '1.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_86,78m2.png?v=5' },
-  { id: 'm3', area: '100.02m²', dorms: 2, banos: '2 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_100,02m2.png?v=5' },
-  { id: 'm4', area: '106.65m²', dorms: 2, banos: '2.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_%20106,65m2.png?v=5' },
-  { id: 'm5', area: '121.61m²', dorms: 2, banos: '2.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_121,61m2.png?v=5' },
-  { id: 'm6', area: '129.42m²', dorms: 2, banos: '2.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_129,42m.png?v=5' },
-  { id: 'm7', area: '150.14m²', dorms: 3, banos: '3.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/3D_150,14m2.png?v=5' },
-  { id: 'm8', area: '158.77m²', dorms: 3, banos: '3.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/3D_158,77m.png?v=5' },
+  { id: 'm1', area: '69.43m²', dorms: 1, banos: '1.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_69,43m2.png?v=8' },
+  { id: 'm2', area: '86.78m²', dorms: 1, banos: '1.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_86,78m2.png?v=8' },
+  { id: 'm3', area: '100.02m²', dorms: 2, banos: '2 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_100,02m2.png?v=8' },
+  { id: 'm4', area: '106.65m²', dorms: 2, banos: '2.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_106,65m2.png?v=8' },
+  { id: 'm5', area: '121.61m²', dorms: 2, banos: '2.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_121,61m2.png?v=8' },
+  { id: 'm6', area: '129.42m²', dorms: 2, banos: '2.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_129,42m2.png?v=8' },
+  { id: 'm7', area: '150.14m²', dorms: 3, banos: '3.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/3D_150,14m2.png?v=8' },
+  { id: 'm8', area: '158.77m²', dorms: 3, banos: '3.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/3D_158,77m2.png?v=8' },
 ];
 
 export default function ArienzoLandingPremium() {
@@ -436,7 +436,7 @@ export default function ArienzoLandingPremium() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 4.5. DEPARTAMENTOS (4 Y 4 PESTAÑAS, ÍCONOS EN UNA SOLA LÍNEA)             */}
+      {/* 4.5. DEPARTAMENTOS (8 PESTAÑAS EN 1 FILA COMPACTA, MÁS AIRE Y ESCALA 1:1)  */}
       {/* ========================================================================= */}
       <section className="py-12 md:py-16 px-4 md:px-8 bg-[#F9F7F5] border-b border-[#EAE3DC] font-sans">
         <div className="max-w-4xl mx-auto">
@@ -447,15 +447,15 @@ export default function ArienzoLandingPremium() {
             <p className="text-xs md:text-sm text-neutral-500 font-medium uppercase tracking-widest">Formatos exclusivos de 1, 2 y 3 dormitorios</p>
           </div>
 
-          {/* BOTONES / PESTAÑAS (Grid exacto de 4 columnas: 4 arriba, 4 abajo) */}
-          <div className="grid grid-cols-4 gap-2.5 md:gap-3 max-w-lg mx-auto mb-8">
+          {/* BOTONES / PESTAÑAS (Móvil: Grid 4x2 | Desktop: Las 8 pestañas en una sola línea centrada) */}
+          <div className="grid grid-cols-4 md:flex md:flex-row gap-2 md:gap-2.5 justify-center mb-8">
             {modelosArienzo.map((mod) => {
               const activo = modeloActivo.id === mod.id;
               return (
                 <button
                   key={mod.id}
                   onClick={() => setModeloActivo(mod)}
-                  className={`flex items-center justify-center h-16 rounded-xl transition-all duration-300 border-2 
+                  className={`flex items-center justify-center h-14 md:w-24 md:h-16 rounded-xl transition-all duration-300 border-2 
                     ${activo 
                       ? 'bg-[#D1C292] border-[#D1C292] text-[#21242E] shadow-md scale-105 font-bold' 
                       : 'bg-transparent border-dashed border-[#415364]/30 text-[#415364] hover:border-[#964B36] hover:text-[#964B36] font-medium'
@@ -476,20 +476,20 @@ export default function ArienzoLandingPremium() {
               <div className="flex-1 border-b-[2px] border-dotted border-[#415364]/40 mt-1"></div>
             </div>
 
-            {/* FILA DE ÍCONOS HORIZONTALES (ESTRICTAMENTE EN UNA SOLA LÍNEA) */}
-            <div className="flex flex-row flex-nowrap items-center justify-center gap-x-6 md:gap-x-12 mb-8 text-[#415364] overflow-x-auto py-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            {/* FILA DE ÍCONOS HORIZONTALES (Centrados, en una línea, con un respiro extra antes del plano) */}
+            <div className="flex flex-row flex-nowrap items-center justify-center gap-x-8 md:gap-x-12 mb-12 text-[#415364] overflow-x-auto py-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               
               {/* Dormitorios */}
-              <div className="flex items-center gap-2 shrink-0">
-                <svg className="w-7 h-7 md:w-8 md:h-8 stroke-current" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
+              <div className="flex items-center gap-2.5 shrink-0">
+                <svg className="w-8 h-8 md:w-9 md:h-9 stroke-current text-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18M3 16h18M5 12V8a2 2 0 012-2h10a2 2 0 012 2v4M7 16v2m10-2v2"></path>
                 </svg>
                 <span className="text-xs md:text-sm font-medium">{modeloActivo.dorms} Dormitorio{modeloActivo.dorms > 1 ? 's' : ''}</span>
               </div>
               
               {/* Baños */}
-              <div className="flex items-center gap-2 shrink-0">
-                <svg className="w-7 h-7 md:w-8 md:h-8 stroke-current" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
+              <div className="flex items-center gap-2.5 shrink-0">
+                <svg className="w-8 h-8 md:w-9 md:h-9 stroke-current text-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v6m-4 0h8m-6 4v1m4-1v1m-2 2v1"></path>
                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 2a4 4 0 00-4 4"></path>
                 </svg>
@@ -497,8 +497,8 @@ export default function ArienzoLandingPremium() {
               </div>
 
               {/* Porche / Terraza */}
-              <div className="flex items-center gap-2 shrink-0">
-                <svg className="w-7 h-7 md:w-8 md:h-8 stroke-current" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
+              <div className="flex items-center gap-2.5 shrink-0">
+                <svg className="w-8 h-8 md:w-9 md:h-9 stroke-current text-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 21v-4a2 2 0 012-2h12a2 2 0 012 2v4M4 15V8a2 2 0 012-2h12a2 2 0 012 2v7M8 15v6M16 15v6"></path>
                 </svg>
                 <span className="text-xs md:text-sm font-medium">{modeloActivo.extras}</span>
@@ -506,8 +506,8 @@ export default function ArienzoLandingPremium() {
               
               {/* Lavandería */}
               {modeloActivo.lavanderia && (
-                <div className="flex items-center gap-2 shrink-0">
-                  <svg className="w-7 h-7 md:w-8 md:h-8 stroke-current" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
+                <div className="flex items-center gap-2.5 shrink-0">
+                  <svg className="w-8 h-8 md:w-9 md:h-9 stroke-current text-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
                     <rect x="5" y="3" width="14" height="18" rx="2" strokeLinecap="round" strokeLinejoin="round"></rect>
                     <circle cx="12" cy="13" r="4" strokeLinecap="round" strokeLinejoin="round"></circle>
                     <path d="M8 7h3" strokeLinecap="round" strokeLinejoin="round"></path>
@@ -517,9 +517,9 @@ export default function ArienzoLandingPremium() {
               )}
             </div>
 
-            {/* IMAGEN DEL PLANO CON ETIQUETA <img NATIVA (Carga garantizada 100% y escala real perfecta) */}
+            {/* IMAGEN DEL PLANO (Usa los nuevos enlaces limpios con ?v=8 para cargar al instante) */}
             <div 
-              className="relative w-full max-w-3xl mx-auto h-[360px] md:h-[480px] flex justify-center items-start group bg-transparent mb-6 cursor-zoom-in transition-transform duration-500 hover:scale-[1.01]"
+              className="relative w-full max-w-3xl mx-auto h-[320px] md:h-[420px] flex justify-center items-start group bg-transparent mb-6 cursor-zoom-in transition-transform duration-500 hover:scale-[1.01]"
               onClick={() => setPlanoZoom(modeloActivo.imagen)}
               title="Haz clic para ampliar el plano"
             >
