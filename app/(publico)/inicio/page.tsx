@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 
-// Generador de UUID matemático
+// Generador de UUID matemático (Para que no falle el radar)
 const generateUUID = () => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
     var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
@@ -12,16 +12,16 @@ const generateUUID = () => {
   });
 };
 
-// === BASE DE DATOS DE MODELOS ARIENZO (Titulares limpios, Baños detallados, WIC, Terraza) ===
+// === BASE DE DATOS DE MODELOS ARIENZO (Titulares eliminados, Baños detallados, WIC, Terraza) ===
 const modelosArienzo = [
-  { id: 'm1', area: '69.43m²', titulo: '1 Dormitorio', dorms: 1, banos: '1 Baño + Visitas', lavanderia: true, wic: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_%2069,43m2.png' },
-  { id: 'm2', area: '86.78m²', titulo: '1 Dormitorio', dorms: 1, banos: '1 Baño + Visitas', lavanderia: true, wic: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_86,78%20m2.png' },
-  { id: 'm3', area: '100.20m²', titulo: '2 Dormitorios', dorms: 2, banos: '2 Baños Completos', lavanderia: true, wic: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_100.2m2.png' },
-  { id: 'm4', area: '106.65m²', titulo: '2 Dormitorios', dorms: 2, banos: '2 Baños + Visitas', lavanderia: true, wic: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_106,65m2.png' },
-  { id: 'm5', area: '121.61m²', titulo: '2 Dormitorios', dorms: 2, banos: '2 Baños + Visitas', lavanderia: true, wic: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_121,61m2.png' },
-  { id: 'm6', area: '129.42m²', titulo: '2 Dormitorios', dorms: 2, banos: '2 Baños + Visitas', lavanderia: true, wic: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2d_129,42m2.png' },
-  { id: 'm7', area: '150.14m²', titulo: '3 Dormitorios', dorms: 3, banos: '3 Baños + Visitas', lavanderia: true, wic: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/3D_150,14m2.png' },
-  { id: 'm8', area: '158.77m²', titulo: '3 Dormitorios', dorms: 3, banos: '3 Baños + Visitas', lavanderia: true, wic: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/3D_158,77m2.png' },
+  { id: 'm1', area: '69.43m²', dorms: 1, banos: '1.5 Baños', lavanderia: true, wic: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_%2069,43m2.png' },
+  { id: 'm2', area: '86.78m²', dorms: 1, banos: '1.5 Baños', lavanderia: true, wic: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_86,78%20m2.png' },
+  { id: 'm3', area: '100.20m²', dorms: 2, banos: '2 Baños', lavanderia: true, wic: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_100.2m2.png' },
+  { id: 'm4', area: '106.65m²', dorms: 2, banos: '2.5 Baños', lavanderia: true, wic: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_106,65m2.png' },
+  { id: 'm5', area: '121.61m²', dorms: 2, banos: '2.5 Baños', lavanderia: true, wic: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_121,61m2.png' },
+  { id: 'm6', area: '129.42m²', dorms: 2, banos: '2.5 Baños', lavanderia: true, wic: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2d_129,42m2.png' },
+  { id: 'm7', area: '150.14m²', dorms: 3, banos: '3.5 Baños', lavanderia: true, wic: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/3D_150,14m2.png' },
+  { id: 'm8', area: '158.77m²', dorms: 3, banos: '3.5 Baños', lavanderia: true, wic: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/3D_158,77m2.png' },
 ];
 
 export default function ArienzoLandingPremium() {
@@ -575,7 +575,7 @@ export default function ArienzoLandingPremium() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 4.5. ESPACIOS DE AUTOR Y DISTRIBUCIONES (DISEÑO PREMIUM UNIFICADO)        */}
+      {/* 4.5. ESPACIOS DE AUTOR Y DISTRIBUCIONES (DISEÑO PREMIUM REFRENCIADO)      */}
       {/* ========================================================================= */}
       <section className="py-20 md:py-32 px-4 md:px-8 bg-[#F9F7F5] border-b border-[#EAE3DC] font-sans">
         <div className="max-w-6xl mx-auto">
@@ -591,7 +591,7 @@ export default function ArienzoLandingPremium() {
             </p>
           </div>
 
-          {/* SELECTOR DE PESTAÑAS */}
+          {/* SELECTOR DE PESTAÑAS (Estilo Terrazas del Golf) */}
           <div className="flex overflow-x-auto snap-x gap-3 md:gap-5 justify-start md:justify-center mb-12 pb-4 scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {modelosArienzo.map((mod) => {
               const activo = modeloActivo.id === mod.id;
@@ -614,79 +614,77 @@ export default function ArienzoLandingPremium() {
           {/* DETALLES DEL MODELO SELECCIONADO */}
           <div className="animate-in fade-in duration-500 bg-transparent" key={modeloActivo.id}>
             
-            <div className="mb-8 text-center">
-              <h3 className="text-4xl md:text-5xl font-bold text-neutral-800 mb-2">{modeloActivo.area}</h3>
-              <p className="text-xl md:text-2xl text-[#964B36] font-light mb-6">{modeloActivo.titulo}</p>
-              <div className="w-full max-w-2xl mx-auto border-b border-[#EAE3DC]"></div>
+            {/* CABECERA REFERENCIAL: Metraje a la Izquierda y Línea Punteada a la Derecha */}
+            <div className="flex items-center gap-4 mb-8 max-w-4xl mx-auto px-4 md:px-0">
+              <h3 className="text-2xl md:text-3xl font-bold text-[#415364] whitespace-nowrap">{modeloActivo.area}</h3>
+              <div className="flex-1 border-b-[2px] border-dotted border-[#415364]/40 mt-2"></div>
             </div>
 
-            {/* Íconos Centrados, Lujosos y Precisos */}
-            <div className="flex flex-wrap items-center justify-center gap-x-8 md:gap-x-12 gap-y-8 mb-10 text-neutral-600 max-w-4xl mx-auto">
+            {/* ÍCONOS HORIZONTALES (Vectores Elegantes y Minimalistas) */}
+            <div className="flex flex-wrap items-center justify-start md:justify-center gap-x-8 md:gap-x-12 gap-y-6 mb-12 text-[#415364] max-w-5xl mx-auto px-4 md:px-0">
               
-              {/* Dormitorios */}
-              <div className="flex flex-col items-center gap-2">
-                <svg className="w-9 h-9 md:w-10 md:h-10 stroke-current text-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
+              {/* Dormitorios (Cama Minimalista) */}
+              <div className="flex items-center gap-3">
+                <svg className="w-7 h-7 stroke-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18M3 16h18M5 12V8a2 2 0 012-2h10a2 2 0 012 2v4M7 16v2m10-2v2"></path>
                 </svg>
-                <span className="text-sm md:text-base font-medium tracking-wide">{modeloActivo.dorms} Dormitorio{modeloActivo.dorms > 1 ? 's' : ''}</span>
+                <span className="text-sm font-medium tracking-wide">{modeloActivo.dorms} Dormitorio{modeloActivo.dorms > 1 ? 's' : ''}</span>
               </div>
               
-              {/* Baños Completos */}
-              <div className="flex flex-col items-center gap-2">
-                <svg className="w-9 h-9 md:w-10 md:h-10 stroke-current text-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v10a2 2 0 01-2 2H10a2 2 0 01-2-2V5zM8 9h8m-8 4h8m-6-8h4"></path>
+              {/* Baños Completos (Ducha Estética) */}
+              <div className="flex items-center gap-3">
+                <svg className="w-7 h-7 stroke-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 3v4a4 4 0 008 0V3m-4 18V9M9 13l-1.5 1.5M15 13l1.5 1.5M9 17l-1.5 1.5M15 17l1.5 1.5M12 14v6"></path>
                 </svg>
-                <span className="text-sm md:text-base font-medium tracking-wide text-center">{modeloActivo.banos}</span>
+                <span className="text-sm font-medium tracking-wide">{modeloActivo.banos}</span>
               </div>
               
-              {/* Walk-in Closet (Percha) */}
+              {/* Walk-in Closet (Clóset Elegante) */}
               {modeloActivo.wic && (
-                <div className="flex flex-col items-center gap-2">
-                  <svg className="w-9 h-9 md:w-10 md:h-10 stroke-current text-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5a2.5 2.5 0 00-2.5 2.5c0 1.5 1.5 2 2 2.5.5.5.5 1 .5 1.5v1m0 0l-7.5 6.5a1 1 0 00.6 1.5h13.8a1 1 0 00.6-1.5L12 12z"></path>
+                <div className="flex items-center gap-3">
+                  <svg className="w-7 h-7 stroke-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4h16v16H4V4zm4 0v16m8-16v16m-6-8h4"></path>
                   </svg>
-                  <span className="text-sm md:text-base font-medium tracking-wide">Walk-in Closet</span>
+                  <span className="text-sm font-medium tracking-wide">Walk-in Closet</span>
                 </div>
               )}
 
-              {/* Lavandería */}
+              {/* Lavandería (Lavadora Limpia) */}
               {modeloActivo.lavanderia && (
-                <div className="flex flex-col items-center gap-2">
-                  <svg className="w-9 h-9 md:w-10 md:h-10 stroke-current text-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
-                    <rect x="5" y="3" width="14" height="18" rx="2"></rect>
-                    <circle cx="12" cy="14" r="4"></circle>
-                    <path strokeLinecap="round" d="M9 7h6"></path>
+                <div className="flex items-center gap-3">
+                  <svg className="w-7 h-7 stroke-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
+                    <rect x="5" y="3" width="14" height="18" rx="2" strokeLinecap="round" strokeLinejoin="round"></rect>
+                    <circle cx="12" cy="13" r="4" strokeLinecap="round" strokeLinejoin="round"></circle>
+                    <path d="M8 7h3" strokeLinecap="round" strokeLinejoin="round"></path>
                   </svg>
-                  <span className="text-sm md:text-base font-medium tracking-wide">Lavandería</span>
+                  <span className="text-sm font-medium tracking-wide">Lavandería</span>
                 </div>
               )}
 
-              {/* Extras (Terraza) */}
-              <div className="flex flex-col items-center gap-2">
-                <svg className="w-9 h-9 md:w-10 md:h-10 stroke-current text-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M5 21v-8a2 2 0 012-2h10a2 2 0 012 2v8M9 11v10m6-10v10"></path>
+              {/* Extras (Terraza / Porche) */}
+              <div className="flex items-center gap-3">
+                <svg className="w-7 h-7 stroke-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 21v-8a4 4 0 014-4h8a4 4 0 014 4v8M4 13h16M8 21v-4m8 4v-4"></path>
                 </svg>
-                <span className="text-sm md:text-base font-medium tracking-wide">{modeloActivo.extras}</span>
+                <span className="text-sm font-medium tracking-wide">{modeloActivo.extras}</span>
               </div>
             </div>
 
-            {/* Imagen del Plano (CAJA FIJA PARA EVITAR TAMAÑOS GROTESCOS Y BRINCOS) */}
-            <div className="relative w-full max-w-4xl mx-auto h-[350px] md:h-[450px] mb-12 flex justify-center items-center group bg-transparent">
-              <Image 
+            {/* IMAGEN DEL PLANO A ESCALA NATURAL 
+                (Uso img estándar sin 'fill' para no deformar/exagerar tamaños pequeños) */}
+            <div className="relative w-full max-w-5xl mx-auto min-h-[350px] flex justify-center items-center group bg-transparent mb-12 px-4 md:px-12 py-10">
+              <img 
                 src={modeloActivo.imagen} 
-                alt={`Plano de ${modeloActivo.titulo}`} 
-                fill
-                quality={75}
-                sizes="(max-width: 768px) 100vw, 800px"
-                className="object-contain p-4 md:p-8 mix-blend-multiply opacity-95 transition-opacity duration-300"
+                alt={`Plano de ${modeloActivo.area}`} 
+                className="max-w-full h-auto max-h-[400px] md:max-h-[550px] object-contain mix-blend-multiply opacity-95 transition-all duration-300"
               />
               
               {/* Botón Lupa Lujoso (Abre Zoom) */}
               <button 
                 onClick={() => setPlanoZoom(modeloActivo.imagen)}
-                className="absolute bottom-2 right-2 md:bottom-6 md:right-6 bg-white/90 backdrop-blur-md border border-[#EAE3DC] text-neutral-800 px-5 py-2.5 rounded-full text-[10px] font-bold tracking-widest uppercase hover:bg-white transition-all shadow-lg flex items-center gap-2"
+                className="absolute bottom-2 right-2 md:bottom-6 md:right-6 bg-white/90 backdrop-blur-md border border-[#EAE3DC] text-neutral-800 px-5 py-2.5 rounded-full text-[10px] font-bold tracking-widest uppercase hover:bg-[#964B36] hover:text-white hover:border-[#964B36] transition-all shadow-lg flex items-center gap-2"
               >
-                <svg className="w-4 h-4 text-[#964B36]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
                 Ampliar Plano
               </button>
             </div>
@@ -783,20 +781,19 @@ export default function ArienzoLandingPremium() {
         </div>
       )}
 
-      {/* LIGHTBOX MODAL (Zoom Específico para Planos) */}
+      {/* LIGHTBOX MODAL (Zoom Específico para Planos) CON MUCHO AIRE Y ESTILO */}
       {planoZoom && (
         <div 
-          className="fixed inset-0 bg-white/95 z-[70] flex items-center justify-center p-4 md:p-8 backdrop-blur-md animate-in fade-in" 
+          className="fixed inset-0 bg-white/95 z-[70] flex items-center justify-center p-8 md:p-24 backdrop-blur-md animate-in fade-in" 
           onClick={() => setPlanoZoom(null)}
         >
           <button className="absolute top-6 right-6 text-neutral-400 hover:text-neutral-900 text-4xl font-light transition-colors z-50">&times;</button>
-          <div className="relative w-full max-w-5xl h-[85vh] flex items-center justify-center bg-white rounded-xl shadow-2xl p-4 md:p-8" onClick={(e) => e.stopPropagation()}>
-            <Image 
+          <div className="relative w-full h-full max-w-6xl mx-auto flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            {/* Aquí también uso img estándar sin fill para que respire */}
+            <img 
               src={planoZoom} 
               alt="Plano Ampliado" 
-              fill
-              quality={100}
-              className="object-contain animate-in zoom-in-95" 
+              className="max-w-full max-h-full object-contain mix-blend-multiply drop-shadow-2xl animate-in zoom-in-95" 
             />
           </div>
         </div>
