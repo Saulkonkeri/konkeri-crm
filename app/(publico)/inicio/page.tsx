@@ -12,6 +12,18 @@ const generateUUID = () => {
   });
 };
 
+// === BASE DE DATOS DE MODELOS ARIENZO ===
+const modelosArienzo = [
+  { id: 'm1', area: '69.43m²', nombre: 'Modelo 1D', dorms: 1, banos: 1.5, extras: 'Balcón', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_%2069,43m2.png' },
+  { id: 'm2', area: '86.78m²', nombre: 'Modelo 1D Plus', dorms: 1, banos: 1.5, extras: 'Terraza Privada', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_86,78%20m2.png' },
+  { id: 'm3', area: '100.20m²', nombre: 'Modelo 2D Compacto', dorms: 2, banos: 2, extras: 'Área de Lavandería', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_100.2m2.png' },
+  { id: 'm4', area: '106.65m²', nombre: 'Modelo 2D Estándar', dorms: 2, banos: 2.5, extras: 'Balcón', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_106,65m2.png' },
+  { id: 'm5', area: '121.61m²', nombre: 'Modelo 2D Amplio', dorms: 2, banos: 2.5, extras: 'Terraza Frontal', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_121,61m2.png' },
+  { id: 'm6', area: '129.42m²', nombre: 'Modelo 2D Premium', dorms: 2, banos: 2.5, extras: 'Terraza Extendida', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2d_129,42m2.png' },
+  { id: 'm7', area: '150.14m²', nombre: 'Modelo 3D', dorms: 3, banos: 3.5, extras: 'Porche + Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/3D_150,14m2.png' },
+  { id: 'm8', area: '158.77m²', nombre: 'Modelo 3D Premium', dorms: 3, banos: 3.5, extras: 'Gran Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/3D_158,77m2.png' },
+];
+
 export default function ArienzoLandingPremium() {
   const [mostrarModalVip, setMostrarModalVip] = useState(false);
   const [mostrarModalCalendly, setMostrarModalCalendly] = useState(false);
@@ -23,10 +35,13 @@ export default function ArienzoLandingPremium() {
   const [brochureDescargado, setBrochureDescargado] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
+  // Estado del modelo de distribución seleccionado (Por defecto mostramos 2 Dormitorios Estándar)
+  const [modeloActivo, setModeloActivo] = useState(modelosArienzo[3]);
+
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchEndX, setTouchEndX] = useState<number | null>(null);
 
-  const [formData, setFormData] = useState({ nombres: '', telefono: '', email: '' });
+  const [formData, setFormData] = useState({ nombres: '', telefono: '', email: '', modeloCotizado: '' });
   const [formBrochure, setFormBrochure] = useState({ nombres: '', telefono: '', email: '' });
 
   const imagenesGaleria = useMemo(() => [
@@ -76,7 +91,7 @@ export default function ArienzoLandingPremium() {
         }
       }]);
 
-      if (error) console.error("❌ Error en Radar:", error);
+      if (error) console.error("Error en Radar:", error);
 
       if (typeof window !== 'undefined' && (window as any).fbq) {
         const fbq = (window as any).fbq;
@@ -249,8 +264,14 @@ export default function ArienzoLandingPremium() {
   };
 
   // ⚡ HANDLERS ACTIVOS PARA LOS BOTONES
-  const abrirModalVIP = () => { 
-    trackEvent('ABRIO_FORMULARIO', 'Hizo clic en botón Acceso Exclusivo'); 
+  const abrirModalVIP = (modeloOpcional?: string) => { 
+    if(modeloOpcional) {
+      setFormData({...formData, modeloCotizado: modeloOpcional});
+      trackEvent('INICIO_COTIZACION', `Clic en cotizar modelo: ${modeloOpcional}`);
+    } else {
+      setFormData({...formData, modeloCotizado: ''});
+      trackEvent('ABRIO_FORMULARIO', 'Hizo clic en botón de Registrarse / Acceso'); 
+    }
     setMostrarModalVip(true); 
   };
   
@@ -260,12 +281,15 @@ export default function ArienzoLandingPremium() {
   };
 
   // ==========================================
-  // FUNCIÓN PRINCIPAL DE CAPTURA VIP
+  // FUNCIÓN PRINCIPAL DE CAPTURA DE LEADS
   // ==========================================
   const procesarSolicitudVIP = async (e: React.FormEvent) => {
     e.preventDefault();
     setCargando(true);
     const correoLimpio = formData.email.trim().toLowerCase();
+    
+    // Armamos el origen dependiendo si viene del botón general o de la sección de cotización
+    const origenDinamico = formData.modeloCotizado ? `Landing - Cotización de ${formData.modeloCotizado}` : 'Web Pública - Registro Landing';
 
     try {
       const { data, error: errorUpsert } = await supabase.from('clientes').upsert([{
@@ -273,8 +297,8 @@ export default function ArienzoLandingPremium() {
         telefono: formData.telefono,
         email: correoLimpio,
         tipo: 'prospecto',
-        origen: 'Web Pública - Solicitud Acceso Exclusivo',
-        campana: 'Solicitud VIP Landing',
+        origen: origenDinamico,
+        campana: 'Lanzamiento Arienzo Web',
         estado: 'Interesado',
         temperatura: '☀️ Tibio',
         estado_acceso: 'pendiente',
@@ -282,11 +306,11 @@ export default function ArienzoLandingPremium() {
       }], { onConflict: 'email' }).select(); 
 
       if (errorUpsert) {
-        console.error("❌ ERROR UPSERT CLIENTES:", errorUpsert);
+        console.error("ERROR UPSERT CLIENTES:", errorUpsert);
       }
 
       localStorage.setItem('arienzo_lead_email', correoLimpio);
-      await trackEvent('REGISTRO_COMPLETADO', `Registró datos VIP. Correo: ${correoLimpio}`, { email: correoLimpio, telefono: formData.telefono });
+      await trackEvent('REGISTRO_COMPLETADO', `Se registró exitosamente. Correo: ${correoLimpio}`, { email: correoLimpio, telefono: formData.telefono });
 
       const visitorId = localStorage.getItem('arienzo_visitor_id');
       if (visitorId) {
@@ -295,7 +319,7 @@ export default function ArienzoLandingPremium() {
 
       setSolicitudEnviada(true);
     } catch (error) {
-      console.error("❌ ERROR CRÍTICO CAPTURA VIP:", error);
+      console.error("ERROR CRÍTICO CAPTURA LEAD:", error);
     } finally {
       setCargando(false);
     }
@@ -316,14 +340,14 @@ export default function ArienzoLandingPremium() {
         email: correoLimpio,
         tipo: 'prospecto',
         origen: 'Web Pública - Descarga Brochure',
-        campana: 'Descarga Brochure',
+        campana: 'Lanzamiento Arienzo Web',
         estado: 'Interesado',
         temperatura: '☀️ Tibio',
         created_at: new Date().toISOString()
       }], { onConflict: 'email' }).select();
 
       if (errorDescarga) {
-          console.error("❌ ERROR DESCARGA BROCHURE CLIENTES:", errorDescarga);
+          console.error("ERROR DESCARGA BROCHURE CLIENTES:", errorDescarga);
       }
 
       localStorage.setItem('arienzo_lead_email', correoLimpio);
@@ -339,7 +363,7 @@ export default function ArienzoLandingPremium() {
       }, 4000);
       
     } catch (error) {
-      console.error("❌ ERROR CRÍTICO DESCARGA:", error);
+      console.error("ERROR CRÍTICO DESCARGA:", error);
     } finally {
       setCargando(false);
     }
@@ -359,10 +383,10 @@ export default function ArienzoLandingPremium() {
             className="w-[120px] md:w-[160px] h-auto transition-all duration-500"
           />
           <button 
-            onClick={abrirModalVIP}
+            onClick={() => abrirModalVIP()}
             className={`text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-3 md:px-6 md:py-3.5 rounded-full transition-all duration-300 ${scrolled ? 'bg-[#964B36] text-white hover:bg-[#7d3e2c] shadow-md' : 'bg-white/20 backdrop-blur-md text-white border border-white/40 hover:bg-white hover:text-[#964B36]'}`}
           >
-            Acceso Exclusivo
+            Registrarse
           </button>
         </div>
       </header>
@@ -403,10 +427,10 @@ export default function ArienzoLandingPremium() {
               Agendar Presentación
             </button>
             <button 
-              onClick={abrirModalVIP}
+              onClick={() => abrirModalVIP()}
               className="w-full sm:w-auto bg-white/10 backdrop-blur-sm border border-white/40 text-white px-6 py-3.5 md:px-8 md:py-4 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-white hover:text-[#964B36] transition-all duration-300 hover:-translate-y-1"
             >
-              Solicitar Acceso
+              Solicitar Precios
             </button>
           </div>
         </div>
@@ -569,12 +593,89 @@ export default function ArienzoLandingPremium() {
           <p className="text-sm md:text-base text-neutral-600 font-medium leading-relaxed mb-8">
             Diseño optimizado con acabados de primera, ventanales de piso a techo y una distribución abierta donde la sala, el comedor y la terraza se integran de forma natural.
           </p>
-          <button 
-            onClick={() => { trackEvent('CLIC_DISPONIBILIDAD', 'Clic en botón de ver disponibilidad'); abrirModalVIP(); }}
-            className="inline-flex items-center justify-center gap-3 text-xs font-bold tracking-[0.1em] bg-[#21242E] text-white px-8 py-4 rounded-full hover:bg-[#964B36] transition-colors duration-300 w-full sm:w-auto shadow-md"
-          >
-            VER DISPONIBILIDAD Y PRECIOS <span className="text-lg">→</span>
-          </button>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 4.5. SECCIÓN NUEVA DE DISTRIBUCIONES INTERACTIVAS                       */}
+      {/* ========================================================================= */}
+      <section className="bg-[#FCFBFA] py-20 px-4 md:px-8 font-sans border-b border-[#EAE3DC]">
+        <div className="max-w-5xl mx-auto">
+          
+          {/* TÍTULO DE LA SECCIÓN */}
+          <div className="text-center mb-12">
+            <h2 className="text-[#415364] text-sm md:text-base font-bold tracking-[0.2em] uppercase mb-3">Distribuciones</h2>
+            <p className="text-3xl md:text-4xl text-[#B94A36] font-light">Encuentra tu espacio ideal</p>
+          </div>
+
+          {/* SELECTOR DE PESTAÑAS (Scroll horizontal en móviles) */}
+          <div className="flex overflow-x-auto snap-x gap-3 md:gap-4 justify-start md:justify-center mb-12 pb-4 scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            {modelosArienzo.map((mod) => {
+              const activo = modeloActivo.id === mod.id;
+              return (
+                <button
+                  key={mod.id}
+                  onClick={() => setModeloActivo(mod)}
+                  className={`snap-center shrink-0 flex items-center justify-center w-20 h-20 md:w-24 md:h-24 rounded-2xl transition-all duration-300 border-2 
+                    ${activo 
+                      ? 'bg-[#D1C292] border-[#D1C292] text-[#21242E] shadow-lg scale-105' 
+                      : 'bg-transparent border-dashed border-[#415364]/30 text-[#415364] hover:border-[#B94A36] hover:text-[#B94A36]'
+                    }`}
+                >
+                  <span className="text-sm md:text-base font-medium">{mod.area}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* DETALLES DEL MODELO SELECCIONADO */}
+          <div className="animate-in fade-in duration-500" key={modeloActivo.id}>
+            
+            <div className="mb-8">
+              <h3 className="text-3xl font-bold text-[#415364] mb-4">{modeloActivo.area}</h3>
+              <div className="w-full border-b-[1.5px] border-dotted border-[#415364]/30"></div>
+            </div>
+
+            {/* Iconos de características (Vectores limpios) */}
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-4 mb-10 text-[#415364]">
+              <div className="flex items-center gap-3">
+                <svg className="w-8 h-8 stroke-current" fill="none" viewBox="0 0 24 24" strokeWidth="1.2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18M3 16h18M5 12V8a2 2 0 012-2h10a2 2 0 012 2v4M7 16v2m10-2v2"></path></svg>
+                <span className="text-sm font-medium">{modeloActivo.dorms} Dormitorio{modeloActivo.dorms > 1 ? 's' : ''}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <svg className="w-8 h-8 stroke-current" fill="none" viewBox="0 0 24 24" strokeWidth="1.2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v10a2 2 0 01-2 2H10a2 2 0 01-2-2V5zM8 9h8m-8 4h8m-6-8h4"></path></svg>
+                <span className="text-sm font-medium">{modeloActivo.banos} Baños</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <svg className="w-8 h-8 stroke-current" fill="none" viewBox="0 0 24 24" strokeWidth="1.2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <span className="text-sm font-medium">{modeloActivo.extras}</span>
+              </div>
+            </div>
+
+            {/* Imagen del Plano Optimizada con Next.js Image */}
+            <div className="w-full bg-white rounded-xl overflow-hidden shadow-sm border border-[#415364]/10 mb-12 relative flex justify-center items-center aspect-[4/3] md:aspect-[16/9] p-4 md:p-10">
+              <Image 
+                src={modeloActivo.imagen} 
+                alt={`Plano de ${modeloActivo.nombre}`} 
+                fill
+                quality={85}
+                sizes="(max-width: 768px) 95vw, 60vw"
+                className="object-contain opacity-90 hover:opacity-100 transition-opacity duration-300 p-4"
+              />
+            </div>
+
+            {/* BOTÓN CALL TO ACTION (Llama al modal general pero registra qué modelo es) */}
+            <div className="flex justify-center">
+              <button 
+                onClick={() => abrirModalVIP(`${modeloActivo.nombre} de ${modeloActivo.area}`)}
+                className="bg-transparent border border-[#415364] text-[#415364] px-12 py-4 rounded-full text-xs md:text-sm font-bold tracking-widest uppercase hover:bg-[#415364] hover:text-white transition-all duration-300 shadow-sm flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                Cotizar este Modelo
+              </button>
+            </div>
+
+          </div>
         </div>
       </section>
 
@@ -671,7 +772,7 @@ export default function ArienzoLandingPremium() {
           </p>
 
           <button 
-            onClick={abrirModalVIP}
+            onClick={() => abrirModalVIP()}
             className="inline-flex items-center justify-center gap-3 text-[11px] font-bold tracking-[0.15em] bg-[#21242E] text-white px-8 py-3.5 rounded-full hover:bg-[#964B36] hover:-translate-y-1 transition-all duration-300 shadow-xl"
           >
             CONSULTAR PRECIOS EN PLANOS <span className="text-base">→</span>
@@ -727,7 +828,7 @@ export default function ArienzoLandingPremium() {
           <h2 className="text-[11px] font-bold tracking-[0.3em] text-[#964B36] uppercase mb-4">Colección Limitada</h2>
           <h3 className="text-3xl md:text-4xl font-medium tracking-tight text-neutral-900 mb-4">Sé uno de los 22 propietarios.</h3>
           <p className="text-sm md:text-base text-neutral-600 font-medium mb-10 leading-relaxed">
-            El privilegeo de pertenecer está limitado. Solicita tu acceso para descubrir precios, tipologías y disponibilidad en tiempo real.
+            El privilegio de pertenecer está limitado. Solicita tu registro para descubrir precios, tipologías y disponibilidad en tiempo real.
           </p>
           
           <div className="flex flex-col sm:flex-row justify-center gap-4 w-full sm:w-auto">
@@ -740,10 +841,10 @@ export default function ArienzoLandingPremium() {
             </button>
 
             <button 
-              onClick={abrirModalVIP}
+              onClick={() => abrirModalVIP()}
               className="w-full sm:w-auto bg-[#21242E] text-white px-6 py-3.5 md:px-8 md:py-4 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-black transition-all duration-300 hover:-translate-y-1 shadow-xl flex items-center justify-center"
             >
-              Solicitar Acceso
+              Registrarse
             </button>
           </div>
 
@@ -766,12 +867,12 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* MODAL CERRADURA VIP */}
+      {/* MODAL REGISTRO (Antes Acceso VIP) */}
       {mostrarModalVip && (
         <div className="fixed inset-0 bg-[#21242E]/95 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white w-full max-w-md p-10 rounded-2xl relative shadow-2xl animate-in zoom-in-95">
             <button 
-              onClick={() => { setMostrarModalVip(false); setSolicitudEnviada(false); }}
+              onClick={() => { setMostrarModalVip(false); setSolicitudEnviada(false); setFormData({...formData, modeloCotizado: ''}); }}
               className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-900 font-bold w-8 h-8 flex items-center justify-center bg-neutral-100 rounded-full transition-colors"
             >
               &times;
@@ -781,8 +882,15 @@ export default function ArienzoLandingPremium() {
               <>
                 <div className="text-center mb-8">
                   <div className="w-12 h-1 bg-[#964B36] mx-auto mb-6 rounded-full"></div>
-                  <h3 className="text-2xl font-medium text-neutral-900 mb-2 tracking-tight">Acceso al Inventario</h3>
-                  <p className="text-xs text-neutral-500 font-medium">Validaremos tu perfil para habilitar el acceso seguro a los <strong>planos arquitectónicos, disponibilidad en tiempo real y precios de lanzamiento.</strong></p>
+                  <h3 className="text-2xl font-medium text-neutral-900 mb-2 tracking-tight">
+                    {formData.modeloCotizado ? 'Solicitar Cotización' : 'Registro Arienzo'}
+                  </h3>
+                  <p className="text-xs text-neutral-500 font-medium">
+                    {formData.modeloCotizado 
+                      ? `Ingresa tus datos para recibir la información financiera y detalles del ${formData.modeloCotizado}.`
+                      : 'Ingresa tus datos para habilitar el acceso a los planos, disponibilidad en tiempo real y precios de lanzamiento.'
+                    }
+                  </p>
                 </div>
 
                 <form onSubmit={procesarSolicitudVIP} className="space-y-4">
@@ -793,7 +901,7 @@ export default function ArienzoLandingPremium() {
                       placeholder="Nombres Completos" 
                       autoComplete="name"
                       value={formData.nombres} 
-                      onChange={e => setFormData({...formData, nombres: e.target.value.replace(/[0-9!@#$%^&*()_+=\[\]{};':"\\|,.<>/?]/g, '')})} 
+                      onChange={e => setFormData({...formData, nombres: e.target.value.replace(/[0-9!@#\$%^&*()_+=\[\]{};':"\\|,.<>/?]/g, '')})} 
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#964B36] transition-colors" 
                     />
                   </div>
@@ -814,7 +922,7 @@ export default function ArienzoLandingPremium() {
                       type="email" 
                       placeholder="Correo Electrónico" 
                       autoComplete="email"
-                      pattern="^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"
+                      pattern="^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}\$"
                       title="Debe incluir @ y un dominio válido (ej. correo@gmail.com)"
                       value={formData.email} 
                       onChange={e => setFormData({...formData, email: e.target.value})} 
@@ -825,21 +933,23 @@ export default function ArienzoLandingPremium() {
                   <button 
                     type="submit" 
                     disabled={cargando}
-                    className="w-full bg-[#964B36] text-white py-4 rounded-xl text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-[#7d3e2c] transition-all mt-4 shadow-lg disabled:opacity-70"
+                    className="w-full bg-[#964B36] text-white py-4 rounded-xl text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-[#7d3e2c] transition-all mt-4 shadow-lg disabled:opacity-70 flex justify-center items-center"
                   >
-                    {cargando ? 'Procesando...' : 'Acceder al Inventario'}
+                    {cargando ? 'Enviando...' : (formData.modeloCotizado ? 'Enviar Solicitud' : 'Registrarse')}
                   </button>
                 </form>
               </>
             ) : (
               <div className="text-center py-8">
-                <div className="w-16 h-16 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl shadow-inner">✓</div>
+                <div className="w-16 h-16 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl shadow-inner">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                </div>
                 <h3 className="text-2xl font-medium text-neutral-900 mb-3 tracking-tight">Solicitud Recibida</h3>
                 <p className="text-sm text-neutral-500 font-medium leading-relaxed mb-8">
-                  Nuestro equipo comercial validará tu información y te contactará brevemente para entregarte tu pase de acceso exclusivo.
+                  Nuestro equipo comercial validará tu información y se comunicará brevemente a tu WhatsApp.
                 </p>
                 <button 
-                  onClick={() => { setMostrarModalVip(false); setSolicitudEnviada(false); }}
+                  onClick={() => { setMostrarModalVip(false); setSolicitudEnviada(false); setFormData({...formData, modeloCotizado: ''}); }}
                   className="bg-neutral-900 text-white rounded-xl px-8 py-4 text-[11px] font-bold uppercase tracking-widest hover:bg-neutral-800 transition-colors w-full"
                 >
                   Cerrar
@@ -877,7 +987,7 @@ export default function ArienzoLandingPremium() {
                       placeholder="Nombres Completos" 
                       autoComplete="name"
                       value={formBrochure.nombres} 
-                      onChange={e => setFormBrochure({...formBrochure, nombres: e.target.value.replace(/[0-9!@#$%^&*()_+=\[\]{};':"\\|,.<>/?]/g, '')})} 
+                      onChange={e => setFormBrochure({...formBrochure, nombres: e.target.value.replace(/[0-9!@#\$%^&*()_+=\[\]{};':"\\|,.<>/?]/g, '')})} 
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#D1C292] transition-colors" 
                     />
                   </div>
@@ -898,7 +1008,7 @@ export default function ArienzoLandingPremium() {
                       type="email" 
                       placeholder="Correo Electrónico" 
                       autoComplete="email"
-                      pattern="^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"
+                      pattern="^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}\$"
                       title="Debe incluir @ y un dominio válido (ej. correo@gmail.com)"
                       value={formBrochure.email} 
                       onChange={e => setFormBrochure({...formBrochure, email: e.target.value})} 
@@ -909,7 +1019,7 @@ export default function ArienzoLandingPremium() {
                   <button 
                     type="submit" 
                     disabled={cargando}
-                    className="w-full bg-[#21242E] text-white py-4 rounded-xl text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-black transition-all mt-4 shadow-lg disabled:opacity-70"
+                    className="w-full bg-[#21242E] text-white py-4 rounded-xl text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-black transition-all mt-4 shadow-lg disabled:opacity-70 flex justify-center items-center"
                   >
                     {cargando ? 'Procesando...' : 'Descargar PDF'}
                   </button>
@@ -917,7 +1027,9 @@ export default function ArienzoLandingPremium() {
               </>
             ) : (
               <div className="text-center py-8">
-                <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl shadow-inner">📥</div>
+                <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl shadow-inner">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                </div>
                 <h3 className="text-2xl font-medium text-neutral-900 mb-3 tracking-tight">¡Descarga en curso!</h3>
                 <p className="text-sm text-neutral-500 font-medium leading-relaxed mb-8">
                   El brochure de Arienzo se está abriendo en una nueva pestaña.
