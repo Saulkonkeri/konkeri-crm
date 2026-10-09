@@ -374,7 +374,8 @@ export default function ArienzoLandingPremium() {
                   <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors duration-500"></div>
 
                   {/* === MARCADOR ADAPTATIVO (MÓVIL vs DESKTOP) === */}
-                  <div className="absolute md:top-[86.1%] top-[86.6%] md:left-[43.4%] left-[41.4%] -translate-x-1/2 -translate-y-1/2 z-20 flex items-center drop-shadow-xl">
+                  {/* Móvil: top-[87.2%] (0.6% más abajo que antes), left-[41.4%] */}
+                  <div className="absolute md:top-[86.1%] top-[87.2%] md:left-[43.4%] left-[41.4%] -translate-x-1/2 -translate-y-1/2 z-20 flex items-center drop-shadow-xl">
                     
                     {/* Etiqueta Blanca delgada */}
                     <div className="bg-white/95 backdrop-blur-md px-3 py-1 rounded-sm shadow-md whitespace-nowrap z-10">
@@ -384,7 +385,7 @@ export default function ArienzoLandingPremium() {
                     {/* Línea blanca conectora */}
                     <div className="w-8 md:w-12 h-[2px] bg-white shadow-sm -ml-0.5 -mr-0.5 z-0"></div>
                     
-                    {/* Punto Verde Titilante (Mínimamente más pequeño y equilibrado) */}
+                    {/* Punto Verde Titilante */}
                     <div className="relative flex h-4 w-4 md:h-5 md:w-5 items-center justify-center shrink-0 z-10">
                       <span className="animate-ping absolute inline-flex h-8 w-8 md:h-10 md:w-10 rounded-full bg-[#25D366] opacity-75 duration-1000"></span>
                       <span className="relative inline-flex rounded-full h-full w-full bg-[#25D366] border-[1.5px] border-white shadow-md"></span>
