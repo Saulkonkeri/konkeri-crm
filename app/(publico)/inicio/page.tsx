@@ -374,9 +374,9 @@ export default function ArienzoLandingPremium() {
                   <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors duration-500"></div>
 
                   {/* === MARCADOR ADAPTATIVO (MÓVIL vs DESKTOP) === */}
-                  {/* Móvil: top-[88.7%], left-[39.9%] (0.5% más a la derecha) */}
-                  {/* Desktop: md:top-[86.1%], md:left-[42.9%] (0.5% más a la izquierda) */}
-                  <div className="absolute md:top-[86.1%] top-[88.7%] md:left-[42.9%] left-[39.9%] -translate-x-1/2 -translate-y-1/2 z-20 flex items-center drop-shadow-xl">
+                  {/* Móvil: top-[88.6%] (0.1% arriba), left-[40.1%] (0.2% derecha) */}
+                  {/* Desktop: md:top-[86.1%], md:left-[42.9%] */}
+                  <div className="absolute md:top-[86.1%] top-[88.6%] md:left-[42.9%] left-[40.1%] -translate-x-1/2 -translate-y-1/2 z-20 flex items-center drop-shadow-xl">
                     
                     {/* Etiqueta Blanca delgada */}
                     <div className="bg-white/95 backdrop-blur-md px-3 py-1 rounded-sm shadow-md whitespace-nowrap z-10">
