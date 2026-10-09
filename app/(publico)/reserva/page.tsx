@@ -282,7 +282,7 @@ export default function ReservaExpressPage() {
   const enviarNotificacionReservaWhatsApp = () => {
     registrarAccion('CLIC_WHATSAPP_NOTIFICAR_RESERVA', unidadSeleccionada?.id, 'Avisó a asesor por WhatsApp sobre el bloqueo');
     const telefonoDebbi = "593979469472"; 
-    const mensaje = `🚨 *¡NUEVA RESERVA EN LÍNEA (Soft Block)!* 🚨\n\nEl cliente *${formData.nombres}* acaba de realizar una solicitud de bloqueo web:\n\n🏢 *Unidad:* ${unidadSeleccionada?.id} (${unidadSeleccionada?.tipo})\n💵 *Precio:* $${unidadSeleccionada?.precio.toLocaleString('en-US')}\n🆔 *Cédula:* ${formData.cedula}\n📱 *WhatsApp:* ${formData.telefono}\n📧 *Email:* ${formData.email}\n\n¡Comunícate con el cliente y valida el pago de $2,500 para bloquear oficialmente la unidad en el CRM!`;
+    const mensaje = `🚨 *¡NUEVA RESERVA EN LÍNEA (Soft Block)!* 🚨\n\nEl cliente *${formData.nombres}* acaba de realizar una solicitud de bloqueo web:\n\n🏢 *Unidad:* ${unidadSeleccionada?.id} (${unidadSeleccionada?.tipo})\n💵 *Precio:* ` + '\$' + `${unidadSeleccionada?.precio.toLocaleString('en-US')}\n🆔 *Cédula:* ${formData.cedula}\n📱 *WhatsApp:* ${formData.telefono}\n📧 *Email:* ${formData.email}\n\n¡Comunícate con el cliente y valida el pago de ` + '\$' + `2,500 para bloquear oficialmente la unidad en el CRM!`;
     window.open(`https://wa.me/${telefonoDebbi}?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
 
@@ -539,7 +539,7 @@ export default function ReservaExpressPage() {
                       <span className="text-[8px] md:text-[9px] text-[#D1C292] uppercase tracking-widest font-bold mt-1">Pre-Lanzamiento</span>
                     </div>
                     <div className="text-right flex flex-col items-end">
-                      <span className="font-bold text-[#21242E] text-sm md:text-base font-mono">\${calcularM2Lanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                      <span className="font-bold text-[#21242E] text-sm md:text-base font-mono">&#36;{calcularM2Lanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                       <span className="text-[8px] md:text-[9px] text-[#415364]/40 uppercase tracking-widest font-bold mt-1">Sin anexos</span>
                     </div>
                   </div>
@@ -577,13 +577,13 @@ export default function ReservaExpressPage() {
                     </span>
                   </div>
                   <span className="text-xl md:text-2xl font-bold text-[#21242E] tracking-tight">
-                    \${unidadSeleccionada.precio?.toLocaleString('en-US') || 0}
+                    &#36;{unidadSeleccionada.precio?.toLocaleString('en-US') || 0}
                   </span>
                 </div>
 
                 <div className="space-y-2.5 md:space-y-3">
                   <button onClick={() => { setPaso('formulario'); registrarAccion('ABRIO_FORMULARIO_RESERVA', String(unidadSeleccionada.id), 'Dio clic en botón de bloqueo web'); }} className="w-full bg-[#964B36] text-white font-bold uppercase tracking-widest text-[10px] md:text-[11px] py-3.5 md:py-4 rounded-xl hover:bg-[#7d3e2c] transition-all shadow-md">
-                    Bloquear Unidad Web (\$2,500)
+                    Bloquear Unidad Web (&#36;2,500)
                   </button>
                   <button onClick={contactarAsesor} className="w-full bg-white border border-neutral-200 text-[#21242E] font-bold uppercase tracking-widest text-[10px] md:text-[11px] py-3 md:py-3.5 rounded-xl hover:bg-[#F9F7F5] hover:border-neutral-300 transition-all flex items-center justify-center gap-2">
                     <ChatIcon /> Cotizar con Asesor
