@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 
 // Generador de UUID matemático (Para que no falle el radar)
@@ -36,6 +36,9 @@ export default function ArienzoLandingPremium() {
   const [brochureDescargado, setBrochureDescargado] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
+  // Referencia para centrar el carrusel de renders
+  const carruselRef = useRef<HTMLDivElement>(null);
+
   // Estado del modelo seleccionado
   const [modeloActivo, setModeloActivo] = useState(modelosArienzo[0]);
 
@@ -53,7 +56,7 @@ export default function ArienzoLandingPremium() {
   ], []);
 
   const imagenesInfinitas = useMemo(() => {
-    return Array(20).fill(imagenesGaleria).flat();
+    return Array(15).fill(imagenesGaleria).flat();
   }, [imagenesGaleria]);
 
   const trackEvent = async (accion: string, detalle: string, datosUsuario?: { email?: string, telefono?: string }) => {
@@ -105,6 +108,18 @@ export default function ArienzoLandingPremium() {
 
     const handleScrollNav = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScrollNav);
+    
+    // Centrar el carrusel de renders al inicio para el efecto inmersivo
+    if (carruselRef.current) {
+      setTimeout(() => {
+        if (carruselRef.current && carruselRef.current.children.length > 5) {
+          const itemCentral = carruselRef.current.children[5] as HTMLElement;
+          const scrollPos = itemCentral.offsetLeft - (window.innerWidth / 2) + (itemCentral.clientWidth / 2);
+          carruselRef.current.scrollTo({ left: scrollPos, behavior: 'instant' });
+        }
+      }, 200);
+    }
+
     return () => window.removeEventListener('scroll', handleScrollNav);
   }, []);
 
@@ -507,8 +522,8 @@ export default function ArienzoLandingPremium() {
               {/* ZONA DE ÍCONOS Y BOTONES */}
               <div className="bg-white px-6 py-5 md:px-10 md:py-6 border-t border-[#EAE3DC] flex flex-col gap-6">
                 
-                {/* Fila de Íconos (Limpios, unificados y en UNA SOLA LÍNEA en móvil) */}
-                <div className="flex flex-row flex-nowrap items-center justify-start sm:justify-center gap-4 md:gap-10 text-[#415364] overflow-x-auto w-full pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                {/* Fila de Íconos (1 SOLA LÍNEA, SCROLLABLE EN MÓVIL) */}
+                <div className="flex flex-row flex-nowrap items-center justify-start sm:justify-center gap-5 md:gap-10 text-[#415364] overflow-x-auto w-full pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   
                   <div className="flex items-center gap-2 shrink-0 whitespace-nowrap">
                     <svg className="w-6 h-6 md:w-8 md:h-8 stroke-current text-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
@@ -545,8 +560,8 @@ export default function ArienzoLandingPremium() {
 
                 </div>
 
-                {/* Botones CTA */}
-                <div className="flex flex-col sm:flex-row justify-center items-center gap-3 md:gap-4 mt-2">
+                {/* Botones CTA (Mensajes inteligentes y nativos) */}
+                <div className="flex flex-col sm:flex-row justify-center items-center gap-3 md:gap-4 mt-1">
                   <button 
                     onClick={() => { setMostrarModalPlano(false); abrirModalVIP(`Distribución de ${modeloActivo.area}`); }}
                     className="w-full sm:w-auto bg-[#21242E] text-white px-8 py-3.5 md:px-10 md:py-4 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-[0.15em] hover:bg-black transition-all duration-300 shadow-xl flex items-center justify-center hover:-translate-y-0.5"
@@ -572,7 +587,7 @@ export default function ArienzoLandingPremium() {
         </div>
       )}
 
-      {/* 5. GALERÍA DEL PROYECTO (Centrada perfectamente y tamaño refinado) */}
+      {/* 5. GALERÍA DEL PROYECTO (CARRUSEL INMERSIVO "PEEKING" ALINEADO AL CENTRO) */}
       <section className="py-12 md:py-16 bg-[#21242E] relative overflow-hidden text-center">
         <div className="max-w-6xl mx-auto relative z-10 px-6 mb-6">
           <span className="text-[11px] font-bold tracking-[0.25em] text-[#D1C292] uppercase mb-3 block">Galería del Proyecto</span>
@@ -580,16 +595,16 @@ export default function ArienzoLandingPremium() {
         </div>
 
         <div className="relative w-full z-20 mb-8">
-          {/* Snap al centro desde la primera imagen, con proporciones elegantes */}
+          {/* El px-[50vw] crea un padding masivo a los lados para que CUALQUIER elemento pueda centrarse y asomarse simétricamente */}
           <div 
-            id="carrusel-arquitectura"
-            className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-8 px-[15vw] md:px-[30vw] py-8 items-center scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+            ref={carruselRef}
+            className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-8 px-[50vw] py-8 items-center scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
           >
             {imagenesInfinitas.map((img, index) => (
               <div 
                 key={index} 
                 onClick={() => clickImagen(index)} 
-                className="relative shrink-0 snap-center w-[70vw] md:w-[40vw] max-w-[600px] aspect-[4/3] md:aspect-[16/9] rounded-2xl overflow-hidden cursor-pointer shadow-[0_15px_35px_rgba(0,0,0,0.3)] transition-all duration-500 hover:scale-[1.03] bg-[#1a1d24] group"
+                className="relative shrink-0 snap-center w-[75vw] md:w-[60vw] max-w-[900px] aspect-[4/3] md:aspect-[16/9] rounded-2xl overflow-hidden cursor-pointer shadow-[0_15px_35px_rgba(0,0,0,0.3)] transition-all duration-500 hover:scale-[1.02] bg-[#1a1d24] group"
               >
                 <img 
                   src={img} 
