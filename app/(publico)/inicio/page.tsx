@@ -365,7 +365,7 @@ export default function ArienzoLandingPremium() {
                 
                 <div className="absolute -inset-4 bg-[#D1C292]/20 rounded-2xl transform translate-x-4 translate-y-4 hidden md:block z-0"></div>
                 
-                {/* ETIQUETA PREMIUM REDISEÑADA (Más estilizada, elegante y con luz titilante) */}
+                {/* ETIQUETA PREMIUM REDISEÑADA FUERA DEL MAPA */}
                 <div className="absolute -top-6 left-3 md:-top-7 md:left-5 z-20 bg-white/95 backdrop-blur-md px-5 py-3 md:px-6 md:py-3.5 rounded-2xl shadow-[0_15px_35px_rgba(0,0,0,0.12)] border border-[#D1C292]/50 flex items-center gap-3.5">
                   <div className="relative flex h-4 w-4 md:h-5 md:w-5 items-center justify-center shrink-0">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#25D366] opacity-75 duration-1000"></span>
