@@ -321,13 +321,15 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* 2. UBICACIÓN */}
+      {/* 2. UBICACIÓN (CORREGIDA: TAMAÑO EQUILIBRADO Y PIN TITILANTE RESTAURADO) */}
       <section className="py-20 md:py-32 px-6 bg-[#F9F7F5] relative overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:40px_40px]"></div>
 
         <div className="max-w-6xl mx-auto relative z-10">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-10 items-center">
-            <div className="md:col-span-5 md:pr-10 z-10 order-2 md:order-1">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-10 lg:gap-16 items-center">
+            
+            {/* Textos de ubicación */}
+            <div className="md:col-span-5 z-10 order-2 md:order-1">
               <div className="flex items-center gap-4 mb-6">
                 <div className="h-[2px] w-8 bg-[#964B36]"></div>
                 <span className="text-[13px] font-bold tracking-[0.25em] text-[#964B36] uppercase">Barbasquillo, Manta</span>
@@ -340,14 +342,46 @@ export default function ArienzoLandingPremium() {
               </p>
             </div>
 
-            <div className="md:col-span-7 relative order-1 md:order-2">
-              <div className="absolute -inset-4 bg-[#D1C292]/20 rounded-2xl transform translate-x-4 translate-y-4 hidden md:block z-0"></div>
-              <div className="relative aspect-[3/4] w-full rounded-xl overflow-hidden shadow-2xl group z-10">
-                <img 
-                  src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/ubicacion-arienzo3.jpg" 
-                  alt="Ubicación Manta" 
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
+            {/* Contenedor de la Imagen del Mapa */}
+            <div className="md:col-span-7 relative order-1 md:order-2 flex justify-center md:justify-end">
+              {/* Max-width para que no se vea groseramente grande, aspecto 4/5 para que no sea tan estirada */}
+              <div className="relative w-full max-w-[500px]">
+                
+                {/* Cuadro decorativo de fondo */}
+                <div className="absolute -inset-4 bg-[#D1C292]/20 rounded-2xl transform translate-x-4 translate-y-4 hidden md:block z-0"></div>
+                
+                <div className="relative w-full aspect-square md:aspect-[4/5] rounded-xl overflow-hidden shadow-2xl group z-10 bg-[#EAE3DC]">
+                  <img 
+                    src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/ubicacion-arienzo3.jpg" 
+                    alt="Ubicación Manta" 
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-[1.03]"
+                  />
+                  <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors duration-500"></div>
+
+                  {/* === PIN DE UBICACIÓN PREMIUM RESTAURADO === */}
+                  <div className="absolute top-[48%] left-[45%] -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center">
+                    
+                    {/* Cuadrito "Arienzo" */}
+                    <div className="bg-white/95 backdrop-blur-md px-3 py-1.5 md:px-4 md:py-2 rounded-lg shadow-xl border border-white mb-0 group-hover:-translate-y-1 transition-transform duration-500">
+                      <span className="text-[9px] md:text-[10px] font-bold tracking-[0.25em] text-[#21242E] uppercase flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#964B36]"></span>
+                        Arienzo
+                      </span>
+                    </div>
+                    
+                    {/* Raya que señala */}
+                    <div className="w-[1.5px] h-8 md:h-12 bg-gradient-to-b from-white via-white/80 to-[#25D366] opacity-90"></div>
+                    
+                    {/* Punto Verde Titilante */}
+                    <div className="relative flex h-6 w-6 items-center justify-center -mt-1">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#25D366] opacity-75 duration-1000"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-[#25D366] border-[1.5px] border-white shadow-md"></span>
+                    </div>
+                    
+                  </div>
+                  {/* === FIN PIN DE UBICACIÓN === */}
+
+                </div>
               </div>
             </div>
           </div>
@@ -428,7 +462,7 @@ export default function ArienzoLandingPremium() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 4.5. ESPACIOS DE AUTOR (DISEÑO PREMIUM EMOCIONAL, TARJETAS IDEALES)         */}
+      {/* 4.5. ESPACIOS DE AUTOR (DISEÑO PREMIUM EMOCIONAL)                         */}
       {/* ========================================================================= */}
       <section className="py-20 md:py-28 px-4 md:px-8 bg-[#F9F7F5] border-b border-[#EAE3DC] font-sans relative overflow-hidden">
         
@@ -438,7 +472,7 @@ export default function ArienzoLandingPremium() {
 
         <div className="max-w-4xl mx-auto relative z-10">
           
-          {/* TÍTULO DE LA SECCIÓN (Texto original, diseño premium) */}
+          {/* TÍTULO DE LA SECCIÓN */}
           <div className="text-center mb-12 md:mb-16">
             <span className="inline-block px-5 py-2 rounded-full border border-[#964B36]/20 bg-white shadow-sm text-[10px] md:text-[11px] font-bold tracking-[0.3em] text-[#964B36] uppercase mb-5">
               Espacios de Autor
@@ -519,7 +553,7 @@ export default function ArienzoLandingPremium() {
               {/* ZONA DE ÍCONOS Y BOTONES */}
               <div className="bg-white px-4 py-5 md:px-10 md:py-6 border-t border-[#EAE3DC] flex flex-col gap-6">
                 
-                {/* Fila de Íconos: Apilados verticalmente en móvil para encajar los 4 en una sola línea */}
+                {/* Fila de Íconos (1 SOLA LÍNEA en móvil apilando ícono y texto) */}
                 <div className="flex flex-row items-center justify-between sm:justify-center w-full gap-2 sm:gap-10 text-[#415364]">
                   
                   <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-center">
@@ -583,7 +617,7 @@ export default function ArienzoLandingPremium() {
         </div>
       )}
 
-      {/* 5. GALERÍA DEL PROYECTO (CARRUSEL INMERSIVO "PEEKING" ALINEADO AL CENTRO Y TAMAÑO SOFISTICADO) */}
+      {/* 5. GALERÍA DEL PROYECTO (CARRUSEL INMERSIVO CENTRADO Y TAMAÑO SOFISTICADO) */}
       <section className="py-12 md:py-16 bg-[#21242E] relative overflow-hidden text-center">
         <div className="max-w-6xl mx-auto relative z-10 px-6 mb-6">
           <span className="text-[11px] font-bold tracking-[0.25em] text-[#D1C292] uppercase mb-3 block">Galería del Proyecto</span>
@@ -591,7 +625,6 @@ export default function ArienzoLandingPremium() {
         </div>
 
         <div className="relative w-full z-20 mb-8">
-          {/* El px-[50vw] crea un padding masivo a los lados para que CUALQUIER elemento pueda centrarse y asomarse simétricamente */}
           <div 
             ref={carruselRef}
             className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-8 px-[50vw] py-8 items-center scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
@@ -633,7 +666,7 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* LIGHTBOX GALERÍA (Click para hacer ZOOM OUT cerrado) */}
+      {/* LIGHTBOX GALERÍA (Click en pantalla para ZOOM OUT) */}
       {imagenIndex !== null && (
         <div 
           className="fixed inset-0 bg-[#21242E]/98 z-[70] flex items-center justify-center p-4 md:p-8 backdrop-blur-md animate-in fade-in cursor-zoom-out" 
@@ -654,7 +687,7 @@ export default function ArienzoLandingPremium() {
         </div>
       )}
 
-      {/* LIGHTBOX ZOOM PLANOS (Click para hacer ZOOM OUT cerrado) */}
+      {/* LIGHTBOX ZOOM PLANOS (Click en pantalla para ZOOM OUT) */}
       {planoZoom && (
         <div 
           className="fixed inset-0 bg-white/95 z-[80] flex items-center justify-center p-8 md:p-24 backdrop-blur-md animate-in fade-in cursor-zoom-out" 
@@ -981,13 +1014,6 @@ export default function ArienzoLandingPremium() {
           </div>
         </div>
       </footer>
-
-      {/* PRELOAD OCULTO PARA QUE LOS PLANOS CARGUEN AL INSTANTE ANTES DEL CLIC */}
-      <div className="hidden" aria-hidden="true">
-        {modelosArienzo.map(mod => (
-          <img key={`preload-${mod.id}`} src={mod.imagen} alt="preload" />
-        ))}
-      </div>
 
     </div>
   );
