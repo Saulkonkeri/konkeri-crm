@@ -347,7 +347,6 @@ export default function ArienzoLandingPremium() {
                 
                 <div className="absolute -inset-4 bg-[#D1C292]/20 rounded-2xl transform translate-x-4 translate-y-4 hidden md:block z-0"></div>
                 
-                {/* Contenedor de imagen (CERO ZOOM al hacer hover) */}
                 <div className="relative w-full aspect-[4/5] md:aspect-[3/4] rounded-xl overflow-hidden shadow-2xl group z-10 bg-[#EAE3DC]">
                   <img 
                     src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/ubicacion-arienzo3.jpg" 
@@ -357,15 +356,15 @@ export default function ArienzoLandingPremium() {
                   <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors duration-500"></div>
 
                   {/* === MARCADOR HORIZONTAL EXACTO AL DISEÑO === */}
-                  {/* Coordenadas ajustadas: top-[86.1%] (0.4% más arriba de antes), left-[44%] (1% más a la izq) */}
-                  <div className="absolute top-[86.1%] left-[44%] -translate-x-1/2 -translate-y-1/2 z-20 flex items-center drop-shadow-xl">
+                  {/* Coordenadas ajustadas: top-[86.1%], left-[43%] */}
+                  <div className="absolute top-[86.1%] left-[43%] -translate-x-1/2 -translate-y-1/2 z-20 flex items-center drop-shadow-xl">
                     
-                    {/* Etiqueta Blanca "Ubicación Arienzo" forzada a 1 línea */}
+                    {/* Etiqueta Blanca "Ubicación Arienzo" */}
                     <div className="bg-white/95 backdrop-blur-md px-3 py-1.5 md:px-4 md:py-2 rounded-sm shadow-md whitespace-nowrap z-10">
                       <span className="text-[8px] md:text-[10px] font-bold tracking-[0.08em] text-[#21242E] uppercase">Ubicación Arienzo</span>
                     </div>
                     
-                    {/* Línea blanca conectora con margen negativo para que se "pegue" perfectamente a los bordes */}
+                    {/* Línea blanca conectora pasando por debajo */}
                     <div className="w-8 md:w-12 h-[2px] bg-white shadow-sm -ml-0.5 -mr-0.5 z-0"></div>
                     
                     {/* Punto Verde Titilante (Tamaño más grande) */}
@@ -468,7 +467,7 @@ export default function ArienzoLandingPremium() {
 
         <div className="max-w-4xl mx-auto relative z-10">
           
-          {/* TÍTULO DE LA SECCIÓN (Texto original, diseño premium) */}
+          {/* TÍTULO DE LA SECCIÓN */}
           <div className="text-center mb-12 md:mb-16">
             <span className="inline-block px-5 py-2 rounded-full border border-[#964B36]/20 bg-white shadow-sm text-[10px] md:text-[11px] font-bold tracking-[0.3em] text-[#964B36] uppercase mb-5">
               Espacios de Autor
@@ -481,7 +480,7 @@ export default function ArienzoLandingPremium() {
             </p>
           </div>
 
-          {/* GRID DE BOTONES CON LÍNEAS ARQUITECTÓNICAS (Tamaño perfecto h-20 md:h-24) */}
+          {/* GRID DE BOTONES CON LÍNEAS ARQUITECTÓNICAS */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 max-w-3xl mx-auto">
             {modelosArienzo.map((mod) => (
               <button
@@ -662,7 +661,7 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* LIGHTBOX GALERÍA (Click en pantalla para ZOOM OUT) */}
+      {/* LIGHTBOX GALERÍA */}
       {imagenIndex !== null && (
         <div 
           className="fixed inset-0 bg-[#21242E]/98 z-[70] flex items-center justify-center p-4 md:p-8 backdrop-blur-md animate-in fade-in cursor-zoom-out" 
@@ -683,7 +682,7 @@ export default function ArienzoLandingPremium() {
         </div>
       )}
 
-      {/* LIGHTBOX ZOOM PLANOS (Click en pantalla para ZOOM OUT) */}
+      {/* LIGHTBOX ZOOM PLANOS */}
       {planoZoom && (
         <div 
           className="fixed inset-0 bg-white/95 z-[80] flex items-center justify-center p-8 md:p-24 backdrop-blur-md animate-in fade-in cursor-zoom-out" 
