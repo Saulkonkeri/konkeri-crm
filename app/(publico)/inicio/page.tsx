@@ -12,16 +12,16 @@ const generateUUID = () => {
   });
 };
 
-// === BASE DE DATOS DE MODELOS ARIENZO ===
+// === BASE DE DATOS DE MODELOS ARIENZO (URLs intocables exactas a las tuyas) ===
 const modelosArienzo = [
-  { id: 'm1', area: '69.43m²', dorms: 1, banos: '1.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_69,43m2.png?v=15' },
-  { id: 'm2', area: '86.78m²', dorms: 1, banos: '1.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_86,78m2.png?v=15' },
-  { id: 'm3', area: '100.02m²', dorms: 2, banos: '2 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_100.2m2.png?v=15' },
-  { id: 'm4', area: '106.65m²', dorms: 2, banos: '2.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_106,65m2.png?v=15' },
-  { id: 'm5', area: '121.61m²', dorms: 2, banos: '2.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_121,61m2.png?v=15' },
-  { id: 'm6', area: '129.42m²', dorms: 2, banos: '2.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2d_129,42m2.png?v=15' },
-  { id: 'm7', area: '150.14m²', dorms: 3, banos: '3.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/3D_150,14m2.png?v=15' },
-  { id: 'm8', area: '158.77m²', dorms: 3, banos: '3.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/3D_158,77m2.png?v=15' },
+  { id: 'm1', area: '69.43m²', dorms: 1, banos: '1.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_69,43m2.png' },
+  { id: 'm2', area: '86.78m²', dorms: 1, banos: '1.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_86,78m2.png' },
+  { id: 'm3', area: '100.02m²', dorms: 2, banos: '2 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_100.2m2.png' },
+  { id: 'm4', area: '106.65m²', dorms: 2, banos: '2.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_106,65m2.png' },
+  { id: 'm5', area: '121.61m²', dorms: 2, banos: '2.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_121,61m2.png' },
+  { id: 'm6', area: '129.42m²', dorms: 2, banos: '2.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2d_129,42m2.png' },
+  { id: 'm7', area: '150.14m²', dorms: 3, banos: '3.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/3D_150,14m2.png' },
+  { id: 'm8', area: '158.77m²', dorms: 3, banos: '3.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/3D_158,77m2.png' },
 ];
 
 export default function ArienzoLandingPremium() {
@@ -46,9 +46,9 @@ export default function ArienzoLandingPremium() {
   const [formData, setFormData] = useState({ nombres: '', telefono: '', email: '', modeloCotizado: '' });
   const [formBrochure, setFormBrochure] = useState({ nombres: '', telefono: '', email: '' });
 
-  // Corregido "render-Exterior-Frontal.jpg"
+  // Nombre de la galería original corregido para que cargue
   const imagenesGaleria = useMemo(() => [
-    "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Frontal.jpg",
+    "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Fronta.jpg",
     "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Interior-Departamento-1.jpg",
     "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Piscina-1.jpg",
     "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Derecho-A4.jpg",
@@ -95,6 +95,23 @@ export default function ArienzoLandingPremium() {
       }]);
 
       if (error) console.error("Error en Radar:", error);
+
+      if (typeof window !== 'undefined' && (window as any).fbq) {
+        const fbq = (window as any).fbq;
+        if (accion === 'REGISTRO_COMPLETADO' || accion === 'DESCARGA_BROCHURE') {
+          fbq('track', 'Lead', { 
+            content_name: accion === 'DESCARGA_BROCHURE' ? 'Descarga Brochure' : 'Registro VIP Landing',
+            em: datosUsuario?.email?.toLowerCase().trim() || '',
+            ph: datosUsuario?.telefono?.replace(/\D/g, '') || ''
+          }, { eventID: eventId });
+        } else if (accion === 'CLIC_WHATSAPP') {
+          fbq('track', 'Contact', { content_name: 'Clic Botón WhatsApp' }, { eventID: eventId });
+        } else if (accion === 'ABRIO_CALENDLY') {
+          fbq('track', 'Schedule', { content_name: 'Abrió Calendly' }, { eventID: eventId });
+        } else if (accion !== 'VISITA_LANDING') { 
+          fbq('trackCustom', accion, { detalle }, { eventID: eventId });
+        }
+      }
 
     } catch (error) {
       console.error("Error general tracking:", error);
@@ -266,7 +283,7 @@ export default function ArienzoLandingPremium() {
       {/* 1. HERO INMERSIVO */}
       <section className="relative h-[100vh] min-h-[650px] flex flex-col items-center justify-center">
         <Image 
-          src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Frontal.jpg" 
+          src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Fronta.jpg" 
           alt="Arienzo Fachada"
           fill
           priority
@@ -429,29 +446,46 @@ export default function ArienzoLandingPremium() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 4.5. ESPACIOS DE AUTOR (DISEÑO CENTRADO CON GRID 4 ARRIBA / 4 ABAJO)        */}
+      {/* 4.5. ESPACIOS DE AUTOR (DISEÑO BAKAN - GRID CENTRADO MEJORADO)            */}
       {/* ========================================================================= */}
-      <section className="py-16 md:py-24 px-4 md:px-8 bg-[#F9F7F5] border-b border-[#EAE3DC] font-sans relative overflow-hidden">
+      <section className="py-20 md:py-28 px-4 md:px-8 bg-[#F9F7F5] border-b border-[#EAE3DC] font-sans relative overflow-hidden">
         
+        {/* Fondo decorativo arquitectónico sutil */}
+        <div className="absolute top-0 left-0 w-full h-full bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none"></div>
+
         <div className="max-w-4xl mx-auto relative z-10">
           
-          {/* TÍTULO DE LA SECCIÓN (Centrado, manteniendo tu diseño original) */}
-          <div className="text-center mb-10 md:mb-12">
+          {/* TÍTULO DE LA SECCIÓN */}
+          <div className="text-center mb-12 md:mb-16">
             <span className="text-[11px] font-bold tracking-[0.25em] text-[#964B36] uppercase mb-3 block">Espacios de Autor</span>
-            <h2 className="text-[#3A4A3F] text-2xl md:text-3xl font-bold tracking-[0.25em] uppercase mb-3">Departamentos</h2>
-            <p className="text-xs md:text-sm text-neutral-500 font-medium uppercase tracking-widest">Selecciona un formato para ver su distribución</p>
+            <h2 className="text-[#21242E] text-3xl md:text-4xl font-medium tracking-tight mb-4">Descubre tu formato ideal.</h2>
+            <p className="max-w-2xl mx-auto text-sm md:text-base text-neutral-500 font-medium leading-relaxed">
+              Haz clic en cualquier modelo para abrir su distribución interactiva. Residencias estructuradas para maximizar la luz y optimizar cada metro cuadrado.
+            </p>
           </div>
 
-          {/* GRID DE BOTONES (4 Arriba, 4 Abajo en Desktop | 2x4 en Móvil) */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-3xl mx-auto">
+          {/* GRID DE TARJETAS BOTÓN (4x2 estricto) */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5 max-w-3xl mx-auto">
             {modelosArienzo.map((mod) => (
               <button
                 key={mod.id}
                 onClick={() => abrirPlanoInteractivo(mod)}
-                className="group flex flex-col items-center justify-center py-4 px-2 w-full h-20 md:h-24 rounded-2xl transition-all duration-300 border-[1.5px] border-[#415364]/20 bg-white hover:border-[#964B36] hover:shadow-[0_10px_20px_rgba(150,75,54,0.1)] hover:-translate-y-1"
+                className="group relative bg-white border border-[#EAE3DC] rounded-2xl flex flex-col items-center justify-center p-6 cursor-pointer shadow-sm hover:shadow-[0_20px_40px_rgba(150,75,54,0.12)] hover:border-[#964B36]/50 transition-all duration-500 hover:-translate-y-2 overflow-hidden"
               >
-                <span className="text-[#415364] group-hover:text-[#964B36] text-base md:text-lg font-bold transition-colors mb-1.5">{mod.area}</span>
-                <span className="text-neutral-400 group-hover:text-[#964B36]/80 text-[10px] md:text-xs font-bold uppercase tracking-widest transition-colors">{mod.dorms} Dorm.</span>
+                {/* Acento inferior que aparece al hacer hover */}
+                <div className="absolute bottom-0 left-0 w-full h-1.5 bg-[#964B36] scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-500 ease-out"></div>
+                
+                <h4 className="text-2xl md:text-3xl font-medium text-[#21242E] group-hover:text-[#964B36] tracking-tighter transition-colors">
+                  {mod.area.replace('m²', '')}
+                  <span className="text-base text-neutral-400 font-light ml-0.5">m²</span>
+                </h4>
+                
+                <div className="mt-2 flex items-center gap-2">
+                  <svg className="w-3.5 h-3.5 text-neutral-400 group-hover:text-[#964B36]/80 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18M3 16h18M5 12V8a2 2 0 012-2h10a2 2 0 012 2v4M7 16v2m10-2v2"></path>
+                  </svg>
+                  <span className="text-[10px] md:text-xs text-neutral-400 group-hover:text-[#964B36] font-bold uppercase tracking-widest transition-colors">{mod.dorms} Dorm.</span>
+                </div>
               </button>
             ))}
           </div>
@@ -487,9 +521,6 @@ export default function ArienzoLandingPremium() {
                 <img 
                   src={modeloActivo.imagen} 
                   alt={`Plano Arienzo ${modeloActivo.area}`}
-                  fetchPriority="high"
-                  loading="eager"
-                  decoding="sync"
                   className="max-w-full max-h-full object-contain mix-blend-multiply transition-transform duration-500 cursor-zoom-in group-hover:scale-[1.02]"
                   onClick={(e) => { e.stopPropagation(); setPlanoZoom(modeloActivo.imagen); }}
                 />
