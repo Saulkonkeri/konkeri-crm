@@ -68,9 +68,10 @@ const PLANTILLAS_CORREO = [
   }
 ];
 
+// === URLs ACTUALIZADAS Y CORREGIDAS ===
 const IMAGENES_GALERIA = {
-  fachada: "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Fronta.jpg",
-  ubicacion: "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/ubicacion%20arienzo3.jpg",
+  fachada: "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Frontal.jpg",
+  ubicacion: "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/ubicacion-arienzo3.jpg",
   living: "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-living-arienzo.jpg",
   piscina: "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Piscina-1.jpg"
 };
@@ -95,6 +96,7 @@ export default function CRMPage() {
   };
 
   const [mostrarModalNuevo, setMostrarModalNuevo] = useState(false);
+  const [mostrarModalEditar, setMostrarModalEditar] = useState(false); // NUEVO MODAL EDITAR
   const [mostrarModalPlantilla, setMostrarModalPlantilla] = useState(false);
   const [mostrarModalHistorial, setMostrarModalHistorial] = useState(false);
   const [clienteSeleccionado, setClienteSeleccionado] = useState<Cliente | null>(null);
@@ -116,6 +118,7 @@ export default function CRMPage() {
   
   const [enviandoCorreoCRM, setEnviandoCorreoCRM] = useState(false);
 
+  // NUEVO PROSPECTO
   const [nuevoNombre, setNuevoNombre] = useState('');
   const [nuevoApellido, setNuevoApellido] = useState('');
   const [nuevoTelefono, setNuevoTelefono] = useState('');
@@ -127,6 +130,10 @@ export default function CRMPage() {
   const [nuevoInteres, setNuevoInteres] = useState('Suite');
   const [nuevoIngresadoPor, setNuevoIngresadoPor] = useState('Saúl Intriago / Debbi Mera'); 
   const [guardandoCliente, setGuardandoCliente] = useState(false);
+
+  // EDITAR PROSPECTO
+  const [editFormData, setEditFormData] = useState<Partial<Cliente>>({});
+  const [guardandoEdicion, setGuardandoEdicion] = useState(false);
 
   const [nuevaNotaTexto, setNuevaNotaTexto] = useState('');
   const [guardandoNota, setGuardandoNota] = useState(false);
@@ -364,6 +371,57 @@ export default function CRMPage() {
         setNuevoNombre(''); setNuevoApellido(''); setNuevoTelefono(''); setNuevoEmail(''); setNuevaCiudad(''); setNuevoCampana('');
       }
     } catch (e: any) { alert(`Error: ${e.message}`); } finally { setGuardandoCliente(false); }
+  };
+
+  // === GUARDAR EDICION DE CLIENTE ===
+  const abrirModalEditar = () => {
+    if(clienteSeleccionado) {
+      setEditFormData({
+        nombres: clienteSeleccionado.nombres || '',
+        apellidos: clienteSeleccionado.apellidos || '',
+        telefono: clienteSeleccionado.telefono || '',
+        email: clienteSeleccionado.email || '',
+        ciudad_residencia: clienteSeleccionado.ciudad_residencia || '',
+        origen_captacion: clienteSeleccionado.origen_captacion || '',
+        campana: clienteSeleccionado.campana || '',
+        motivo_compra: clienteSeleccionado.motivo_compra || '',
+        tipologia_interes: clienteSeleccionado.tipologia_interes || ''
+      });
+      setMostrarModalEditar(true);
+    }
+  };
+
+  const guardarEdicionCliente = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!clienteSeleccionado) return;
+    setGuardandoEdicion(true);
+    try {
+      const payload = {
+        nombres: (editFormData.nombres || '').trim(),
+        apellidos: (editFormData.apellidos || '').trim(),
+        telefono: (editFormData.telefono || '').trim(),
+        email: editFormData.email ? editFormData.email.trim().toLowerCase() : null,
+        ciudad_residencia: (editFormData.ciudad_residencia || '').trim() || null,
+        origen_captacion: editFormData.origen_captacion || '',
+        campana: (editFormData.campana || '').trim() || null,
+        motivo_compra: editFormData.motivo_compra || '',
+        tipologia_interes: editFormData.tipologia_interes || ''
+      };
+
+      const { error } = await supabase.from('clientes').update(payload).eq('id', clienteSeleccionado.id);
+      if (error) throw error;
+      
+      const clienteActualizado = { ...clienteSeleccionado, ...payload };
+      
+      setClientes(prev => prev.map(c => c.id === clienteSeleccionado.id ? clienteActualizado as Cliente : c));
+      setClienteSeleccionado(clienteActualizado as Cliente);
+      setMostrarModalEditar(false);
+      alert("Información actualizada correctamente");
+    } catch (err: any) {
+      alert(`Error al actualizar: ${err.message}`);
+    } finally {
+      setGuardandoEdicion(false);
+    }
   };
 
   const guardarPlantilla = () => {
@@ -909,10 +967,18 @@ export default function CRMPage() {
         {clienteSeleccionado && (
           <>
             <div className="p-6 bg-[#21242E] relative flex-shrink-0 shadow-md">
-              <button onClick={() => setClienteSeleccionado(null)} className="absolute top-4 right-4 text-white/50 hover:text-white bg-white/10 rounded-full w-8 h-8 flex items-center justify-center transition-colors">✕</button>
-              <h2 className="text-xl font-bold text-white pr-8 leading-tight flex items-center gap-2">{clienteSeleccionado.nombres} {clienteSeleccionado.apellidos}</h2>
+              <div className="flex justify-between items-start">
+                <h2 className="text-xl font-bold text-white pr-2 leading-tight flex items-center gap-2">{clienteSeleccionado.nombres} {clienteSeleccionado.apellidos}</h2>
+                <div className="flex gap-2">
+                  <button onClick={abrirModalEditar} className="text-white bg-white/20 hover:bg-white/30 rounded-full w-8 h-8 flex items-center justify-center transition-colors" title="Editar Información">
+                    <span className="text-sm">✏️</span>
+                  </button>
+                  <button onClick={() => setClienteSeleccionado(null)} className="text-white/50 hover:text-white bg-white/10 rounded-full w-8 h-8 flex items-center justify-center transition-colors">✕</button>
+                </div>
+              </div>
               <div className="flex flex-wrap items-center gap-2 mt-3">
                 <span className="bg-white/10 text-white border border-white/20 text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">{clienteSeleccionado.origen_captacion || 'Sin origen'}</span>
+                {clienteSeleccionado.campana && <span className="bg-[#ea0029]/20 text-[#ea0029] border border-[#ea0029]/30 text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">📢 {clienteSeleccionado.campana}</span>}
                 {clienteSeleccionado.ciudad_residencia && <span className="bg-[#ea0029]/20 text-[#ea0029] border border-[#ea0029]/30 text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">📍 {clienteSeleccionado.ciudad_residencia}</span>}
               </div>
             </div>
@@ -1067,6 +1133,68 @@ export default function CRMPage() {
         </div>
       )}
 
+      {/* MODAL EDITAR PROSPECTO */}
+      {mostrarModalEditar && clienteSeleccionado && (
+        <div className="fixed inset-0 bg-[#21242E]/80 z-[80] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-t-3xl md:rounded-2xl shadow-2xl w-full max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div className="flex justify-between items-center mb-6 border-b border-neutral-100 pb-4 sticky top-0 bg-white z-10 pt-2 -mt-2">
+              <h2 className="text-xl font-bold text-[#415364]">Editar Información del Lead</h2>
+              <button onClick={() => setMostrarModalEditar(false)} className="text-[#415364]/40 hover:text-[#ea0029] text-4xl font-light">&times;</button>
+            </div>
+            <form onSubmit={guardarEdicionCliente} className="space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Nombres <span className="text-[#ea0029]">*</span></label>
+                  <input required type="text" value={editFormData.nombres} onChange={e => setEditFormData({...editFormData, nombres: e.target.value})} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium outline-none focus:border-[#ea0029]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Apellidos</label>
+                  <input type="text" value={editFormData.apellidos} onChange={e => setEditFormData({...editFormData, apellidos: e.target.value})} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium outline-none focus:border-[#ea0029]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Teléfono <span className="text-[#ea0029]">*</span></label>
+                  <input required type="tel" value={editFormData.telefono} onChange={e => setEditFormData({...editFormData, telefono: e.target.value})} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium outline-none focus:border-[#ea0029]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Email</label>
+                  <input type="email" value={editFormData.email || ''} onChange={e => setEditFormData({...editFormData, email: e.target.value})} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium outline-none focus:border-[#ea0029]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Ciudad de Residencia</label>
+                  <input type="text" value={editFormData.ciudad_residencia || ''} onChange={e => setEditFormData({...editFormData, ciudad_residencia: e.target.value})} placeholder="Ej: Manta, Guayaquil..." className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium outline-none focus:border-[#ea0029]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Origen de Captación</label>
+                  <select value={editFormData.origen_captacion || ''} onChange={e => setEditFormData({...editFormData, origen_captacion: e.target.value})} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium outline-none focus:border-[#ea0029]">
+                    {origenes.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Campaña / Anuncio</label>
+                  <input type="text" value={editFormData.campana || ''} onChange={e => setEditFormData({...editFormData, campana: e.target.value})} placeholder="Ej: Meta Ads - Suite" className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium outline-none focus:border-[#ea0029]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Motivo de Compra</label>
+                  <select value={editFormData.motivo_compra || ''} onChange={e => setEditFormData({...editFormData, motivo_compra: e.target.value})} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium outline-none focus:border-[#ea0029]">
+                    {motivos.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Tipología de Interés</label>
+                  <select value={editFormData.tipologia_interes || ''} onChange={e => setEditFormData({...editFormData, tipologia_interes: e.target.value})} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] font-medium outline-none focus:border-[#ea0029]">
+                    {intereses.map(i => <option key={i} value={i}>{i}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="pt-6 pb-2 flex justify-end gap-4 border-t border-neutral-100">
+                <button type="button" onClick={() => setMostrarModalEditar(false)} className="px-6 py-3 text-xs font-bold text-[#415364] border border-[#415364]/20 rounded-xl">Cancelar</button>
+                <button type="submit" disabled={guardandoEdicion} className="px-8 py-3 bg-[#ea0029] text-white rounded-xl text-xs font-bold uppercase tracking-widest">{guardandoEdicion ? 'Guardando...' : 'Guardar Cambios'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* MODAL MENSAJES RÁPIDOS */}
       {mostrarModalPlantilla && (
         <div className="fixed inset-0 bg-[#21242E]/80 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
@@ -1112,7 +1240,7 @@ export default function CRMPage() {
                       <p className="text-[10px] text-neutral-500 font-medium mt-0.5">Fecha: {new Date(cot.created_at).toLocaleDateString('es-EC')}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-[#ea0029] text-sm">${Number(cot.precio_total).toLocaleString()}</p>
+                      <p className="font-bold text-[#ea0029] text-sm">\${Number(cot.precio_total).toLocaleString()}</p>
                       <span className="inline-block px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-green-50 text-green-700 mt-1">{cot.estado}</span>
                     </div>
                   </div>
