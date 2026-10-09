@@ -256,7 +256,7 @@ export default function ArienzoLandingPremium() {
       
       {/* NAVEGACIÓN */}
       <header className={`fixed top-0 w-full z-40 transition-all duration-500 ${scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm py-5 md:py-6' : 'bg-transparent py-6 md:py-8'}`}>
-        <div className="max-w-7xl mxauto px-5 md:px-12 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto px-5 md:px-12 flex justify-between items-center">
           <img 
             src={scrolled ? "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" : "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-blanco.svg"} 
             alt="Arienzo Logo"
@@ -343,7 +343,6 @@ export default function ArienzoLandingPremium() {
 
             {/* Contenedor de la Imagen del Mapa */}
             <div className="md:col-span-7 relative order-1 md:order-2 flex justify-center md:justify-end">
-              {/* Tamaño ideal, ni muy pequeño ni gigante */}
               <div className="relative w-full max-w-[700px]">
                 
                 <div className="absolute -inset-4 bg-[#D1C292]/20 rounded-2xl transform translate-x-4 translate-y-4 hidden md:block z-0"></div>
@@ -357,11 +356,11 @@ export default function ArienzoLandingPremium() {
                   <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors duration-500"></div>
 
                   {/* === MARCADOR HORIZONTAL EXACTO AL DISEÑO === */}
-                  {/* Para moverlo: Cambia el top-[75%] o el left-[60%] */}
-                  <div className="absolute top-[75%] left-[60%] -translate-x-1/2 -translate-y-1/2 z-20 flex items-center drop-shadow-xl">
+                  {/* Para moverlo: Cambia el top-[90%] (arriba/abajo) o el left-[55%] (izq/der) */}
+                  <div className="absolute top-[90%] left-[55%] -translate-x-1/2 -translate-y-1/2 z-20 flex items-center drop-shadow-xl">
                     
-                    {/* Etiqueta Blanca "Ubicación Arienzo" */}
-                    <div className="bg-white/95 backdrop-blur-md px-3 py-1.5 md:px-4 md:py-2 rounded-sm shadow-md">
+                    {/* Etiqueta Blanca "Ubicación Arienzo" forzada a 1 línea */}
+                    <div className="bg-white/95 backdrop-blur-md px-3 py-1.5 md:px-4 md:py-2 rounded-sm shadow-md whitespace-nowrap">
                       <span className="text-[8px] md:text-[10px] font-bold tracking-[0.08em] text-[#21242E] uppercase">Ubicación Arienzo</span>
                     </div>
                     
@@ -372,18 +371,6 @@ export default function ArienzoLandingPremium() {
                     <div className="relative flex h-4 w-4 md:h-5 md:w-5 items-center justify-center shrink-0">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#25D366] opacity-75 duration-1000"></span>
                       <span className="relative inline-flex rounded-full h-2.5 w-2.5 md:h-3 md:w-3 bg-[#25D366] border-[1.5px] border-white shadow-sm"></span>
-                    </div>
-                    
-                    {/* Línea blanca conectora 2 */}
-                    <div className="w-6 md:w-10 h-[1.5px] bg-white shadow-sm"></div>
-                    
-                    {/* Círculo Terracota "Arienzo Boutique Living" */}
-                    <div className="bg-[#964B36] w-12 h-12 md:w-16 md:h-16 rounded-full flex flex-col items-center justify-center border-[1.5px] border-white shadow-lg shrink-0">
-                      <span className="text-[7px] md:text-[9px] font-medium text-white/95 uppercase text-center tracking-widest leading-[1.1]">
-                        Arienzo
-                        <br/>
-                        <span className="text-[4px] md:text-[5px] text-[#D1C292] tracking-wider">Boutique Living</span>
-                      </span>
                     </div>
                     
                   </div>
@@ -470,7 +457,7 @@ export default function ArienzoLandingPremium() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 4.5. ESPACIOS DE AUTOR (DISEÑO PREMIUM EMOCIONAL)                         */}
+      {/* 4.5. ESPACIOS DE AUTOR                                                    */}
       {/* ========================================================================= */}
       <section className="py-20 md:py-28 px-4 md:px-8 bg-[#F9F7F5] border-b border-[#EAE3DC] font-sans relative overflow-hidden">
         
@@ -480,7 +467,7 @@ export default function ArienzoLandingPremium() {
 
         <div className="max-w-4xl mx-auto relative z-10">
           
-          {/* TÍTULO DE LA SECCIÓN */}
+          {/* TÍTULO DE LA SECCIÓN (Texto original, diseño premium) */}
           <div className="text-center mb-12 md:mb-16">
             <span className="inline-block px-5 py-2 rounded-full border border-[#964B36]/20 bg-white shadow-sm text-[10px] md:text-[11px] font-bold tracking-[0.3em] text-[#964B36] uppercase mb-5">
               Espacios de Autor
@@ -493,7 +480,7 @@ export default function ArienzoLandingPremium() {
             </p>
           </div>
 
-          {/* GRID DE BOTONES CON LÍNEAS ARQUITECTÓNICAS */}
+          {/* GRID DE BOTONES CON LÍNEAS ARQUITECTÓNICAS (Tamaño perfecto h-20 md:h-24) */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 max-w-3xl mx-auto">
             {modelosArienzo.map((mod) => (
               <button
