@@ -109,6 +109,7 @@ export default function ArienzoLandingPremium() {
     const handleScrollNav = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScrollNav);
     
+    // Centrar el carrusel de renders al inicio para el efecto inmersivo
     if (carruselRef.current) {
       setTimeout(() => {
         if (carruselRef.current && carruselRef.current.children.length > 5) {
@@ -343,21 +344,23 @@ export default function ArienzoLandingPremium() {
 
             {/* Contenedor de la Imagen del Mapa */}
             <div className="md:col-span-7 relative order-1 md:order-2 flex justify-center md:justify-end">
-              <div className="relative w-full max-w-[700px]">
+              {/* Imagen max-w reducida para no verse gigantesca */}
+              <div className="relative w-full max-w-[600px]">
                 
                 <div className="absolute -inset-4 bg-[#D1C292]/20 rounded-2xl transform translate-x-4 translate-y-4 hidden md:block z-0"></div>
                 
+                {/* Contenedor de imagen (CERO ZOOM al hacer hover) */}
                 <div className="relative w-full aspect-[4/5] md:aspect-[3/4] rounded-xl overflow-hidden shadow-2xl group z-10 bg-[#EAE3DC]">
                   <img 
                     src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/ubicacion-arienzo3.jpg" 
                     alt="Ubicación Manta" 
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-[1.03]"
+                    className="absolute inset-0 w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors duration-500"></div>
 
                   {/* === MARCADOR HORIZONTAL EXACTO AL DISEÑO === */}
-                  {/* Para moverlo: Cambia el top-[90%] (arriba/abajo) o el left-[55%] (izq/der) */}
-                  <div className="absolute top-[90%] left-[55%] -translate-x-1/2 -translate-y-1/2 z-20 flex items-center drop-shadow-xl">
+                  {/* Coordenadas ajustadas: top-[85%] (5% más arriba), left-[48%] (7% más a la izquierda) */}
+                  <div className="absolute top-[85%] left-[48%] -translate-x-1/2 -translate-y-1/2 z-20 flex items-center drop-shadow-xl">
                     
                     {/* Etiqueta Blanca "Ubicación Arienzo" forzada a 1 línea */}
                     <div className="bg-white/95 backdrop-blur-md px-3 py-1.5 md:px-4 md:py-2 rounded-sm shadow-md whitespace-nowrap">
@@ -467,7 +470,7 @@ export default function ArienzoLandingPremium() {
 
         <div className="max-w-4xl mx-auto relative z-10">
           
-          {/* TÍTULO DE LA SECCIÓN (Texto original, diseño premium) */}
+          {/* TÍTULO DE LA SECCIÓN */}
           <div className="text-center mb-12 md:mb-16">
             <span className="inline-block px-5 py-2 rounded-full border border-[#964B36]/20 bg-white shadow-sm text-[10px] md:text-[11px] font-bold tracking-[0.3em] text-[#964B36] uppercase mb-5">
               Espacios de Autor
@@ -480,7 +483,7 @@ export default function ArienzoLandingPremium() {
             </p>
           </div>
 
-          {/* GRID DE BOTONES CON LÍNEAS ARQUITECTÓNICAS (Tamaño perfecto h-20 md:h-24) */}
+          {/* GRID DE BOTONES CON LÍNEAS ARQUITECTÓNICAS */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 max-w-3xl mx-auto">
             {modelosArienzo.map((mod) => (
               <button
