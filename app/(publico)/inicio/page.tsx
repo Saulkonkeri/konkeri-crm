@@ -365,7 +365,7 @@ export default function ArienzoLandingPremium() {
                 
                 <div className="absolute -inset-4 bg-[#D1C292]/20 rounded-2xl transform translate-x-4 translate-y-4 hidden md:block z-0"></div>
                 
-                {/* Etiqueta Flotante Externa (Ubicación Privilegiada / Alta Plusvalía con Punto Titilante) */}
+                {/* ETIQUETA FLOTANTE EXTERNA */}
                 <div className="absolute -top-5 left-4 md:-top-6 md:left-6 z-20 bg-white/95 backdrop-blur-md px-4 py-2 md:px-5 md:py-2.5 rounded-xl shadow-xl border border-[#D1C292]/40 flex items-center gap-3">
                   <div className="relative flex h-3.5 w-3.5 md:h-4 md:w-4 items-center justify-center shrink-0">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#25D366] opacity-75 duration-1000"></span>
@@ -377,7 +377,7 @@ export default function ArienzoLandingPremium() {
                   </div>
                 </div>
 
-                {/* Imagen del Mapa Limpia */}
+                {/* IMAGEN DEL MAPA LIMPIA Y SIN PINES ADENTRO */}
                 <div className="relative w-full aspect-[4/5] md:aspect-[3/4] rounded-xl overflow-hidden shadow-2xl group z-10 bg-[#EAE3DC]">
                   <img 
                     src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/ubicacion-arienzo3.jpg" 
