@@ -359,12 +359,25 @@ export default function ArienzoLandingPremium() {
               </p>
             </div>
 
-            {/* Contenedor de la Imagen del Mapa */}
+            {/* Contenedor de la Imagen del Mapa con Etiqueta Flotante Externa ("Ubicación Privilegiada / Alta Plusvalía") */}
             <div className="md:col-span-7 relative order-1 md:order-2 flex justify-center md:justify-end">
               <div className="relative w-full max-w-[600px]">
                 
                 <div className="absolute -inset-4 bg-[#D1C292]/20 rounded-2xl transform translate-x-4 translate-y-4 hidden md:block z-0"></div>
                 
+                {/* Etiqueta Flotante Externa (Ubicación Privilegiada / Alta Plusvalía con Punto Titilante) */}
+                <div className="absolute -top-5 left-4 md:-top-6 md:left-6 z-20 bg-white/95 backdrop-blur-md px-4 py-2 md:px-5 md:py-2.5 rounded-xl shadow-xl border border-[#D1C292]/40 flex items-center gap-3">
+                  <div className="relative flex h-3.5 w-3.5 md:h-4 md:w-4 items-center justify-center shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#25D366] opacity-75 duration-1000"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 md:h-3 md:w-3 bg-[#25D366]"></span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[9px] md:text-[10px] font-bold tracking-[0.2em] text-[#964B36] uppercase">Ubicación Privilegiada</span>
+                    <span className="text-[11px] md:text-xs font-medium text-neutral-800 tracking-tight">Alta Plusvalía Garantizada</span>
+                  </div>
+                </div>
+
+                {/* Imagen del Mapa Limpia */}
                 <div className="relative w-full aspect-[4/5] md:aspect-[3/4] rounded-xl overflow-hidden shadow-2xl group z-10 bg-[#EAE3DC]">
                   <img 
                     src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/ubicacion-arienzo3.jpg" 
@@ -372,31 +385,8 @@ export default function ArienzoLandingPremium() {
                     className="absolute inset-0 w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors duration-500"></div>
-
-                  {/* === MARCADOR ADAPTATIVO INDEPENDIENTE (MÓVIL vs TABLET vs DESKTOP) === */}
-                  {/* Móvil: top-[88.6%], left-[40.1%] */}
-                  {/* Tablet / iPad (sm:): top-[87%], left-[41.5%] */}
-                  {/* Desktop (md:): top-[86.1%], left-[42.9%] */}
-                  <div className="absolute top-[88.6%] sm:top-[87%] md:top-[86.1%] left-[40.1%] sm:left-[41.5%] md:left-[42.9%] -translate-x-1/2 -translate-y-1/2 z-20 flex items-center drop-shadow-xl transition-all duration-300">
-                    
-                    {/* Etiqueta Blanca delgada */}
-                    <div className="bg-white/95 backdrop-blur-md px-3 py-1 rounded-sm shadow-md whitespace-nowrap z-10">
-                      <span className="text-[8px] md:text-[10px] font-bold tracking-[0.08em] text-[#21242E] uppercase">Ubicación Arienzo</span>
-                    </div>
-                    
-                    {/* Línea blanca conectora */}
-                    <div className="w-8 md:w-12 h-[2px] bg-white shadow-sm -ml-0.5 -mr-0.5 z-0"></div>
-                    
-                    {/* Punto Verde Titilante */}
-                    <div className="relative flex h-4 w-4 md:h-5 md:w-5 items-center justify-center shrink-0 z-10">
-                      <span className="animate-ping absolute inline-flex h-8 w-8 md:h-10 md:w-10 rounded-full bg-[#25D366] opacity-75 duration-1000"></span>
-                      <span className="relative inline-flex rounded-full h-full w-full bg-[#25D366] border-[1.5px] border-white shadow-md"></span>
-                    </div>
-                    
-                  </div>
-                  {/* === FIN MARCADOR === */}
-
                 </div>
+
               </div>
             </div>
           </div>
