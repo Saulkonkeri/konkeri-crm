@@ -42,7 +42,7 @@ export default function ArienzoLandingPremium() {
   const [formData, setFormData] = useState({ nombres: '', telefono: '', email: '', modeloCotizado: '' });
   const [formBrochure, setFormBrochure] = useState({ nombres: '', telefono: '', email: '' });
 
-  // Galería de renders exactos SIN duplicados
+  // Galería exacta y sin duplicados
   const imagenesGaleria = useMemo(() => [
     "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Frontal.jpg",
     "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-PISCINA-PARA-PAGINA.jpg",
@@ -52,7 +52,6 @@ export default function ArienzoLandingPremium() {
     "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Plaza-Comercial-1-1.jpg"
   ], []);
 
-  // Simular loop infinito repitiendo las imágenes únicas
   const imagenesInfinitas = useMemo(() => {
     return Array(20).fill(imagenesGaleria).flat();
   }, [imagenesGaleria]);
@@ -414,7 +413,7 @@ export default function ArienzoLandingPremium() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 4.5. ESPACIOS DE AUTOR (DISEÑO PREMIUM EMOCIONAL, TARJETAS MÁS PEQUEÑAS)  */}
+      {/* 4.5. ESPACIOS DE AUTOR (DISEÑO PREMIUM EMOCIONAL, TARJETAS IDEALES)         */}
       {/* ========================================================================= */}
       <section className="py-20 md:py-28 px-4 md:px-8 bg-[#F9F7F5] border-b border-[#EAE3DC] font-sans relative overflow-hidden">
         
@@ -437,7 +436,7 @@ export default function ArienzoLandingPremium() {
             </p>
           </div>
 
-          {/* GRID DE BOTONES CON LÍNEAS ARQUITECTÓNICAS (Tamaño ideal 4x2) */}
+          {/* GRID DE BOTONES CON LÍNEAS ARQUITECTÓNICAS (Tamaño perfecto h-20 md:h-24) */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 max-w-3xl mx-auto">
             {modelosArienzo.map((mod) => (
               <button
@@ -508,17 +507,17 @@ export default function ArienzoLandingPremium() {
               {/* ZONA DE ÍCONOS Y BOTONES */}
               <div className="bg-white px-6 py-5 md:px-10 md:py-6 border-t border-[#EAE3DC] flex flex-col gap-6">
                 
-                {/* Fila de Íconos (Limpios y unificados) */}
-                <div className="flex flex-row flex-wrap justify-center gap-x-6 gap-y-3 md:gap-10 text-[#415364]">
+                {/* Fila de Íconos (Limpios, unificados y en UNA SOLA LÍNEA en móvil) */}
+                <div className="flex flex-row flex-nowrap items-center justify-start sm:justify-center gap-4 md:gap-10 text-[#415364] overflow-x-auto w-full pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0 whitespace-nowrap">
                     <svg className="w-6 h-6 md:w-8 md:h-8 stroke-current text-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18M3 16h18M5 12V8a2 2 0 012-2h10a2 2 0 012 2v4M7 16v2m10-2v2"></path>
                     </svg>
                     <span className="text-xs md:text-sm font-medium">{modeloActivo.dorms} Dormitorio{modeloActivo.dorms > 1 ? 's' : ''}</span>
                   </div>
                   
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0 whitespace-nowrap">
                     <svg className="w-6 h-6 md:w-8 md:h-8 stroke-current text-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v6m-4 0h8m-6 4v1m4-1v1m-2 2v1"></path>
                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 2a4 4 0 00-4 4"></path>
@@ -526,7 +525,7 @@ export default function ArienzoLandingPremium() {
                     <span className="text-xs md:text-sm font-medium">{modeloActivo.banos}</span>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0 whitespace-nowrap">
                     <svg className="w-6 h-6 md:w-8 md:h-8 stroke-current text-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4 21v-4a2 2 0 012-2h12a2 2 0 012 2v4M4 15V8a2 2 0 012-2h12a2 2 0 012 2v7M8 15v6M16 15v6"></path>
                     </svg>
@@ -534,7 +533,7 @@ export default function ArienzoLandingPremium() {
                   </div>
                   
                   {modeloActivo.lavanderia && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0 whitespace-nowrap">
                       <svg className="w-6 h-6 md:w-8 md:h-8 stroke-current text-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
                         <rect x="5" y="3" width="14" height="18" rx="2" strokeLinecap="round" strokeLinejoin="round"></rect>
                         <circle cx="12" cy="13" r="4" strokeLinecap="round" strokeLinejoin="round"></circle>
@@ -554,8 +553,9 @@ export default function ArienzoLandingPremium() {
                   >
                     Cotizar este Depto.
                   </button>
+                  {/* WHATSAPP INTELIGENTE: Mensaje dinámico según el modelo */}
                   <a 
-                    href="https://wa.me/593979469472?text=Hola,%20me%20gustaría%20recibir%20más%20información%20sobre%20el%20modelo%20de%20departamento%20de%20Arienzo."
+                    href={`https://wa.me/593979469472?text=${encodeURIComponent(`Hola, quiero cotizar el modelo de ${modeloActivo.area} de${modeloActivo.dorms} dormitorio(s) en el proyecto Arienzo.`)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => trackEvent('CLIC_WHATSAPP', 'Hizo clic en WhatsApp desde Modal Plano')}
@@ -572,24 +572,24 @@ export default function ArienzoLandingPremium() {
         </div>
       )}
 
-      {/* 5. GALERÍA DEL PROYECTO (Alineada a la izquierda) */}
-      <section className="py-12 md:py-16 bg-[#21242E] relative overflow-hidden">
-        <div className="max-w-6xl mx-auto relative z-10 px-6 mb-6 text-center">
+      {/* 5. GALERÍA DEL PROYECTO (Centrada perfectamente y tamaño refinado) */}
+      <section className="py-12 md:py-16 bg-[#21242E] relative overflow-hidden text-center">
+        <div className="max-w-6xl mx-auto relative z-10 px-6 mb-6">
           <span className="text-[11px] font-bold tracking-[0.25em] text-[#D1C292] uppercase mb-3 block">Galería del Proyecto</span>
           <h3 className="text-2xl md:text-3xl font-medium text-white tracking-tight">Imágenes que hablan por sí solas.</h3>
         </div>
 
         <div className="relative w-full z-20 mb-8">
-          {/* El contenedor ahora arranca desde la izquierda con pl-6 o pl-12 */}
+          {/* Snap al centro desde la primera imagen, con proporciones elegantes */}
           <div 
             id="carrusel-arquitectura"
-            className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-6 pl-6 md:pl-12 pr-[15vw] py-4 items-center scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+            className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-8 px-[15vw] md:px-[30vw] py-8 items-center scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
           >
             {imagenesInfinitas.map((img, index) => (
               <div 
                 key={index} 
                 onClick={() => clickImagen(index)} 
-                className="relative shrink-0 snap-start w-[75vw] md:w-[45vw] max-w-[650px] aspect-[4/3] md:aspect-[16/9] rounded-xl overflow-hidden cursor-pointer shadow-[0_15px_40px_rgba(0,0,0,0.4)] transition-all duration-500 hover:scale-[1.02] bg-[#1a1d24] group"
+                className="relative shrink-0 snap-center w-[70vw] md:w-[40vw] max-w-[600px] aspect-[4/3] md:aspect-[16/9] rounded-2xl overflow-hidden cursor-pointer shadow-[0_15px_35px_rgba(0,0,0,0.3)] transition-all duration-500 hover:scale-[1.03] bg-[#1a1d24] group"
               >
                 <img 
                   src={img} 
@@ -605,9 +605,9 @@ export default function ArienzoLandingPremium() {
             ))}
           </div>
           
-          <div className="max-w-6xl mx-auto px-6 mt-4 relative z-10 flex justify-center">
+          <div className="max-w-6xl mx-auto px-6 mt-2 relative z-10 flex justify-center">
             <span className="flex items-center justify-center gap-2 text-[9px] font-bold tracking-[0.2em] text-white/40 uppercase">
-              Desliza para explorar
+              Usa las flechas para explorar
             </span>
           </div>
         </div>
@@ -767,7 +767,7 @@ export default function ArienzoLandingPremium() {
                   <p className="text-xs text-neutral-500 font-medium">
                     {formData.modeloCotizado 
                       ? `Ingresa tus datos para recibir la información financiera y detalles del ${formData.modeloCotizado}.`
-                      : 'Ingresa tus datos para habilitar el acceso a los planos, disponibilidad en tiempo real y precios de lanzamiento.'
+                      : 'Regístrate en el proyecto y te enviaremos la información financiera, disponibilidad en tiempo real y precios de lanzamiento.'
                     }
                   </p>
                 </div>
@@ -971,7 +971,7 @@ export default function ArienzoLandingPremium() {
       {/* PRELOAD OCULTO PARA QUE LOS PLANOS CARGUEN AL INSTANTE ANTES DEL CLIC */}
       <div className="hidden" aria-hidden="true">
         {modelosArienzo.map(mod => (
-          <img key={`preload-${mod.id}`} src={mod.imagen} alt="preload" />
+          <img key={`preload-${mod.id}`} src={mod.imagen} alt="preload" fetchPriority="high" loading="eager" decoding="sync" />
         ))}
       </div>
 
