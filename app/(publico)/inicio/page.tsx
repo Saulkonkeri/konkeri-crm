@@ -343,7 +343,6 @@ export default function ArienzoLandingPremium() {
 
             {/* Contenedor de la Imagen del Mapa */}
             <div className="md:col-span-7 relative order-1 md:order-2 flex justify-center md:justify-end">
-              {/* Imagen max-w reducida para no verse gigantesca */}
               <div className="relative w-full max-w-[600px]">
                 
                 <div className="absolute -inset-4 bg-[#D1C292]/20 rounded-2xl transform translate-x-4 translate-y-4 hidden md:block z-0"></div>
@@ -358,21 +357,21 @@ export default function ArienzoLandingPremium() {
                   <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors duration-500"></div>
 
                   {/* === MARCADOR HORIZONTAL EXACTO AL DISEÑO === */}
-                  {/* Coordenadas ajustadas: top-[86.5%] (1.5% más abajo de antes), left-[45%] (3% más a la izq de antes) */}
-                  <div className="absolute top-[86.5%] left-[45%] -translate-x-1/2 -translate-y-1/2 z-20 flex items-center drop-shadow-xl">
+                  {/* Coordenadas ajustadas: top-[86.1%] (0.4% más arriba de antes), left-[44%] (1% más a la izq) */}
+                  <div className="absolute top-[86.1%] left-[44%] -translate-x-1/2 -translate-y-1/2 z-20 flex items-center drop-shadow-xl">
                     
                     {/* Etiqueta Blanca "Ubicación Arienzo" forzada a 1 línea */}
-                    <div className="bg-white/95 backdrop-blur-md px-3 py-1.5 md:px-4 md:py-2 rounded-sm shadow-md whitespace-nowrap">
+                    <div className="bg-white/95 backdrop-blur-md px-3 py-1.5 md:px-4 md:py-2 rounded-sm shadow-md whitespace-nowrap z-10">
                       <span className="text-[8px] md:text-[10px] font-bold tracking-[0.08em] text-[#21242E] uppercase">Ubicación Arienzo</span>
                     </div>
                     
-                    {/* Línea blanca conectora */}
-                    <div className="w-6 md:w-10 h-[1.5px] bg-white shadow-sm"></div>
+                    {/* Línea blanca conectora con margen negativo para que se "pegue" perfectamente a los bordes */}
+                    <div className="w-8 md:w-12 h-[2px] bg-white shadow-sm -ml-0.5 -mr-0.5 z-0"></div>
                     
-                    {/* Punto Verde Titilante (Tamaño aumentado ligeramente) */}
-                    <div className="relative flex h-5 w-5 md:h-6 md:w-6 items-center justify-center shrink-0">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#25D366] opacity-75 duration-1000"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 md:h-3.5 md:w-3.5 bg-[#25D366] border-[1.5px] border-white shadow-sm"></span>
+                    {/* Punto Verde Titilante (Tamaño más grande) */}
+                    <div className="relative flex h-5 w-5 md:h-6 md:w-6 items-center justify-center shrink-0 z-10">
+                      <span className="animate-ping absolute inline-flex h-10 w-10 md:h-12 md:w-12 rounded-full bg-[#25D366] opacity-75 duration-1000"></span>
+                      <span className="relative inline-flex rounded-full h-full w-full bg-[#25D366] border-[2px] border-white shadow-md"></span>
                     </div>
                     
                   </div>
@@ -951,7 +950,7 @@ export default function ArienzoLandingPremium() {
             ) : (
               <div className="text-center py-8">
                 <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl shadow-inner">
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                 </div>
                 <h3 className="text-2xl font-medium text-neutral-900 mb-3 tracking-tight">¡Descarga en curso!</h3>
                 <p className="text-sm text-neutral-500 font-medium leading-relaxed mb-8">
