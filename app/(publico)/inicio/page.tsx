@@ -109,7 +109,6 @@ export default function ArienzoLandingPremium() {
     const handleScrollNav = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScrollNav);
     
-    // Centrar el carrusel de renders al inicio para el efecto inmersivo
     if (carruselRef.current) {
       setTimeout(() => {
         if (carruselRef.current && carruselRef.current.children.length > 5) {
@@ -359,8 +358,8 @@ export default function ArienzoLandingPremium() {
                   <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors duration-500"></div>
 
                   {/* === MARCADOR HORIZONTAL EXACTO AL DISEÑO === */}
-                  {/* Coordenadas ajustadas: top-[85%] (5% más arriba), left-[48%] (7% más a la izquierda) */}
-                  <div className="absolute top-[85%] left-[48%] -translate-x-1/2 -translate-y-1/2 z-20 flex items-center drop-shadow-xl">
+                  {/* Coordenadas ajustadas: top-[86.5%] (1.5% más abajo de antes), left-[45%] (3% más a la izq de antes) */}
+                  <div className="absolute top-[86.5%] left-[45%] -translate-x-1/2 -translate-y-1/2 z-20 flex items-center drop-shadow-xl">
                     
                     {/* Etiqueta Blanca "Ubicación Arienzo" forzada a 1 línea */}
                     <div className="bg-white/95 backdrop-blur-md px-3 py-1.5 md:px-4 md:py-2 rounded-sm shadow-md whitespace-nowrap">
@@ -370,10 +369,10 @@ export default function ArienzoLandingPremium() {
                     {/* Línea blanca conectora */}
                     <div className="w-6 md:w-10 h-[1.5px] bg-white shadow-sm"></div>
                     
-                    {/* Punto Verde Titilante */}
-                    <div className="relative flex h-4 w-4 md:h-5 md:w-5 items-center justify-center shrink-0">
+                    {/* Punto Verde Titilante (Tamaño aumentado ligeramente) */}
+                    <div className="relative flex h-5 w-5 md:h-6 md:w-6 items-center justify-center shrink-0">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#25D366] opacity-75 duration-1000"></span>
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 md:h-3 md:w-3 bg-[#25D366] border-[1.5px] border-white shadow-sm"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 md:h-3.5 md:w-3.5 bg-[#25D366] border-[1.5px] border-white shadow-sm"></span>
                     </div>
                     
                   </div>
@@ -470,7 +469,7 @@ export default function ArienzoLandingPremium() {
 
         <div className="max-w-4xl mx-auto relative z-10">
           
-          {/* TÍTULO DE LA SECCIÓN */}
+          {/* TÍTULO DE LA SECCIÓN (Texto original, diseño premium) */}
           <div className="text-center mb-12 md:mb-16">
             <span className="inline-block px-5 py-2 rounded-full border border-[#964B36]/20 bg-white shadow-sm text-[10px] md:text-[11px] font-bold tracking-[0.3em] text-[#964B36] uppercase mb-5">
               Espacios de Autor
@@ -483,7 +482,7 @@ export default function ArienzoLandingPremium() {
             </p>
           </div>
 
-          {/* GRID DE BOTONES CON LÍNEAS ARQUITECTÓNICAS */}
+          {/* GRID DE BOTONES CON LÍNEAS ARQUITECTÓNICAS (Tamaño perfecto h-20 md:h-24) */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 max-w-3xl mx-auto">
             {modelosArienzo.map((mod) => (
               <button
@@ -952,7 +951,7 @@ export default function ArienzoLandingPremium() {
             ) : (
               <div className="text-center py-8">
                 <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl shadow-inner">
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
                 </div>
                 <h3 className="text-2xl font-medium text-neutral-900 mb-3 tracking-tight">¡Descarga en curso!</h3>
                 <p className="text-sm text-neutral-500 font-medium leading-relaxed mb-8">
