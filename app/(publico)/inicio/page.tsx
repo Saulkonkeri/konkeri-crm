@@ -36,16 +36,12 @@ export default function ArienzoLandingPremium() {
   const [brochureDescargado, setBrochureDescargado] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  // Referencia para centrar el carrusel de renders
   const carruselRef = useRef<HTMLDivElement>(null);
-
-  // Estado del modelo seleccionado
   const [modeloActivo, setModeloActivo] = useState(modelosArienzo[0]);
 
   const [formData, setFormData] = useState({ nombres: '', telefono: '', email: '', modeloCotizado: '' });
   const [formBrochure, setFormBrochure] = useState({ nombres: '', telefono: '', email: '' });
 
-  // Galería exacta y sin duplicados
   const imagenesGaleria = useMemo(() => [
     "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Frontal.jpg",
     "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-PISCINA-PARA-PAGINA.jpg",
@@ -75,7 +71,6 @@ export default function ArienzoLandingPremium() {
 
       const eventId = generateUUID();
       const urlParams = new URLSearchParams(window.location.search);
-      
       const emailConocido = localStorage.getItem('arienzo_lead_email') || datosUsuario?.email || formData.email || formBrochure.email;
 
       const { error } = await supabase.from('tracking_inventario').insert([{
@@ -94,7 +89,6 @@ export default function ArienzoLandingPremium() {
       }]);
 
       if (error) console.error("Error en Radar:", error);
-
     } catch (error) {
       console.error("Error general tracking:", error);
     }
@@ -183,10 +177,17 @@ export default function ArienzoLandingPremium() {
     setCargando(true);
     const correoLimpio = formData.email.trim().toLowerCase();
     
+    // Validación básica en JS sin estorbar al teclado nativo
+    if (!correoLimpio.includes('@') || !correoLimpio.includes('.')) {
+      alert("Por favor ingresa un correo electrónico válido.");
+      setCargando(false);
+      return;
+    }
+
     const origenDinamico = formData.modeloCotizado ? `Landing - Cotización de ${formData.modeloCotizado}` : 'Web Pública - Registro Landing';
 
     try {
-      const { data, error: errorUpsert } = await supabase.from('clientes').upsert([{
+      const { error: errorUpsert } = await supabase.from('clientes').upsert([{
         nombres: formData.nombres,
         telefono: formData.telefono,
         email: correoLimpio,
@@ -197,9 +198,14 @@ export default function ArienzoLandingPremium() {
         temperatura: '☀️ Tibio',
         estado_acceso: 'pendiente',
         created_at: new Date().toISOString()
-      }], { onConflict: 'email' }).select(); 
+      }], { onConflict: 'email' }); 
 
-      if (errorUpsert) console.error("ERROR UPSERT CLIENTES:", errorUpsert);
+      if (errorUpsert) {
+        console.error("ERROR UPSERT CLIENTES:", errorUpsert);
+        alert("Hubo un problema al registrar tus datos en la base. Inténtalo de nuevo.");
+        setCargando(false);
+        return;
+      }
 
       localStorage.setItem('arienzo_lead_email', correoLimpio);
       await trackEvent('REGISTRO_COMPLETADO', `Se registró exitosamente. Correo: ${correoLimpio}`, { email: correoLimpio, telefono: formData.telefono });
@@ -207,6 +213,7 @@ export default function ArienzoLandingPremium() {
       setSolicitudEnviada(true);
     } catch (error) {
       console.error("ERROR CRÍTICO CAPTURA LEAD:", error);
+      alert("Ocurrió un error inesperado.");
     } finally {
       setCargando(false);
     }
@@ -217,8 +224,14 @@ export default function ArienzoLandingPremium() {
     setCargando(true);
     const correoLimpio = formBrochure.email.trim().toLowerCase();
 
+    if (!correoLimpio.includes('@') || !correoLimpio.includes('.')) {
+      alert("Por favor ingresa un correo electrónico válido.");
+      setCargando(false);
+      return;
+    }
+
     try {
-      const { data, error: errorDescarga } = await supabase.from('clientes').upsert([{
+      const { error: errorDescarga } = await supabase.from('clientes').upsert([{
         nombres: formBrochure.nombres,
         telefono: formBrochure.telefono,
         email: correoLimpio,
@@ -228,9 +241,14 @@ export default function ArienzoLandingPremium() {
         estado: 'Interesado',
         temperatura: '☀️ Tibio',
         created_at: new Date().toISOString()
-      }], { onConflict: 'email' }).select();
+      }], { onConflict: 'email' });
 
-      if (errorDescarga) console.error("ERROR DESCARGA BROCHURE CLIENTES:", errorDescarga);
+      if (errorDescarga) {
+        console.error("ERROR DESCARGA BROCHURE CLIENTES:", errorDescarga);
+        alert("Hubo un problema al procesar tu descarga. Inténtalo de nuevo.");
+        setCargando(false);
+        return;
+      }
 
       localStorage.setItem('arienzo_lead_email', correoLimpio);
       await trackEvent('DESCARGA_BROCHURE', `Descargó el brochure. Correo: ${correoLimpio}`, { email: correoLimpio, telefono: formBrochure.telefono });
@@ -246,6 +264,7 @@ export default function ArienzoLandingPremium() {
       
     } catch (error) {
       console.error("ERROR CRÍTICO DESCARGA:", error);
+      alert("Ocurrió un error inesperado.");
     } finally {
       setCargando(false);
     }
@@ -355,12 +374,11 @@ export default function ArienzoLandingPremium() {
                   />
                   <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors duration-500"></div>
 
-                  {/* === MARCADOR HORIZONTAL REFINADO === */}
-                  {/* Coordenadas ajustadas: top-[86.1%], left-[43%] */}
-                  <div className="absolute top-[86.1%] left-[43%] -translate-x-1/2 -translate-y-1/2 z-20 flex items-center drop-shadow-xl">
+                  {/* === MARCADOR REFINADO (left-[43.4%] y etiqueta delgada) === */}
+                  <div className="absolute top-[86.1%] left-[43.4%] -translate-x-1/2 -translate-y-1/2 z-20 flex items-center drop-shadow-xl">
                     
-                    {/* Etiqueta Blanca con padding vertical reducido (más delgada/fina) */}
-                    <div className="bg-white/95 backdrop-blur-md px-3 py-1 md:px-4 md:py-1.5 rounded-sm shadow-md whitespace-nowrap z-10">
+                    {/* Etiqueta Blanca delgada */}
+                    <div className="bg-white/95 backdrop-blur-md px-3 py-1 rounded-sm shadow-md whitespace-nowrap z-10">
                       <span className="text-[8px] md:text-[10px] font-bold tracking-[0.08em] text-[#21242E] uppercase">Ubicación Arienzo</span>
                     </div>
                     
@@ -751,7 +769,7 @@ export default function ArienzoLandingPremium() {
               <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#D1C292] block mb-3">Desarrollo y Ventas</span>
               <h4 className="text-lg md:text-xl font-medium text-white mb-4">KONKERI</h4>
               <p className="text-sm text-neutral-400 font-medium leading-relaxed">
-                Promotora enfocada en el desarrollo integral de proyectos con visión a largo plazo y tecnología inmobiliaria avanzada.
+                Promotora enfocada en el desarrollo integral de proyectos con visión a largo plazo y tecnología avanzada.
               </p>
             </div>
           </div>
@@ -843,11 +861,9 @@ export default function ArienzoLandingPremium() {
                       type="email" 
                       placeholder="Correo Electrónico" 
                       autoComplete="email"
-                      pattern="^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}\$"
-                      title="Debe incluir @ y un dominio válido (ej. correo@gmail.com)"
                       value={formData.email} 
                       onChange={e => setFormData({...formData, email: e.target.value})} 
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#964B36] transition-colors invalid:focus:border-red-400" 
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#964B36] transition-colors" 
                     />
                   </div>
                   
@@ -929,11 +945,9 @@ export default function ArienzoLandingPremium() {
                       type="email" 
                       placeholder="Correo Electrónico" 
                       autoComplete="email"
-                      pattern="^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}\$"
-                      title="Debe incluir @ y un dominio válido (ej. correo@gmail.com)"
                       value={formBrochure.email} 
                       onChange={e => setFormBrochure({...formBrochure, email: e.target.value})} 
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#D1C292] transition-colors invalid:focus:border-red-400" 
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#D1C292] transition-colors" 
                     />
                   </div>
                   
