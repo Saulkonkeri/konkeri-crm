@@ -61,14 +61,17 @@ const obtenerKeyVista = (unidad: any) => {
   return 'panoramica';
 };
 
+// === ACTUALIZACIÓN DE PLANOS CON MEDIDAS EXACTAS ===
 const obtenerUrlPlano = (area: number) => {
-  if (area < 75) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/Suite%2070,25m2.png?v=2'; 
-  if (area >= 75 && area < 82) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/Suite%2078,87m2.png?v=2'; 
-  if (area >= 82 && area < 100) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/Suite%2086,60m2.png?v=2'; 
-  if (area >= 100 && area < 115) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/2%20dormitorios%20106,65.png?v=2'; 
-  if (area >= 115 && area < 135) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/2%20dormitorios%20121,61m2.png?v=2'; 
-  if (area >= 135 && area < 155) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/3%20dormitorios%20152,72m2.png?v=2'; 
-  if (area >= 155) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/Planos%20departamentos/3%20dormitorios%20158,54m2.png?v=2'; 
+  // Lógica inteligente con rangos para atrapar tanto las medidas viejas (fallback) como las nuevas (Supabase)
+  if (area < 78) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_%2069,43m2.png'; 
+  if (area >= 78 && area < 95) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_86,78m2.png'; 
+  if (area >= 95 && area < 103) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_100.2m2.png'; 
+  if (area >= 103 && area < 115) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_106,65m2.png'; 
+  if (area >= 115 && area < 125) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_121,61m2.png'; 
+  if (area >= 125 && area < 140) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2d_129,42m2.png'; 
+  if (area >= 140 && area < 155) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/3D_150,14m2.png'; 
+  if (area >= 155) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/3D_158,77m2.png'; 
   return null;
 };
 
@@ -117,7 +120,6 @@ export default function ReservaExpressPage() {
     registrarAccionInicial('VISITA_LANDING', 'Ingresó al Inventario VIP');
   }, []);
 
-  // AQUÍ ESTÁN LAS CORRECCIONES PARA MOSTRAR ERRORES DEL RADAR EN CONSOLA
   const registrarAccionInicial = async (accion: string, detalleAdicional?: string) => {
     try {
       const { error } = await supabase.from('tracking_inventario').insert([{
@@ -496,7 +498,8 @@ export default function ReservaExpressPage() {
             <div className="relative w-full max-w-3xl bg-white p-2 md:p-4 rounded-2xl shadow-2xl flex flex-col items-center animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
               <button onClick={() => setPlanoUrlActivo(null)} className="absolute top-4 right-4 bg-white/90 text-[#21242E] w-8 h-8 rounded-full flex items-center justify-center font-bold hover:bg-neutral-100 z-10 shadow-sm transition-colors">&times;</button>
               <div className="w-full rounded-xl overflow-hidden bg-[#F9F7F5] flex items-center justify-center min-h-[400px]">
-                <img src={planoUrlActivo} alt="Plano de Distribución" className="w-full max-h-[75vh] object-contain" />
+                {/* EFECTO DE ALTA GAMA: mix-blend-multiply elimina el fondo blanco del PNG y lo fusiona con el fondo crema del modal */}
+                <img src={planoUrlActivo} alt="Plano de Distribución" className="w-full max-h-[75vh] object-contain mix-blend-multiply drop-shadow-md" />
               </div>
               <div className="mt-4 text-center pb-2 w-full">
                 <h3 className="text-base font-bold text-[#21242E] uppercase tracking-widest">Plano Arquitectónico</h3>
@@ -538,7 +541,7 @@ export default function ReservaExpressPage() {
                       <span className="text-[8px] md:text-[9px] text-[#D1C292] uppercase tracking-widest font-bold mt-1">Pre-Lanzamiento</span>
                     </div>
                     <div className="text-right flex flex-col items-end">
-                      <span className="font-bold text-[#21242E] text-sm md:text-base font-mono">${calcularM2Lanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                      <span className="font-bold text-[#21242E] text-sm md:text-base font-mono">\${calcularM2Lanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                       <span className="text-[8px] md:text-[9px] text-[#415364]/40 uppercase tracking-widest font-bold mt-1">Sin anexos</span>
                     </div>
                   </div>
@@ -576,13 +579,13 @@ export default function ReservaExpressPage() {
                     </span>
                   </div>
                   <span className="text-xl md:text-2xl font-bold text-[#21242E] tracking-tight">
-                    ${unidadSeleccionada.precio?.toLocaleString('en-US') || 0}
+                    \${unidadSeleccionada.precio?.toLocaleString('en-US') || 0}
                   </span>
                 </div>
 
                 <div className="space-y-2.5 md:space-y-3">
                   <button onClick={() => { setPaso('formulario'); registrarAccion('ABRIO_FORMULARIO_RESERVA', String(unidadSeleccionada.id), 'Dio clic en botón de bloqueo web'); }} className="w-full bg-[#964B36] text-white font-bold uppercase tracking-widest text-[10px] md:text-[11px] py-3.5 md:py-4 rounded-xl hover:bg-[#7d3e2c] transition-all shadow-md">
-                    Bloquear Unidad Web ($2,500)
+                    Bloquear Unidad Web (\$2,500)
                   </button>
                   <button onClick={contactarAsesor} className="w-full bg-white border border-neutral-200 text-[#21242E] font-bold uppercase tracking-widest text-[10px] md:text-[11px] py-3 md:py-3.5 rounded-xl hover:bg-[#F9F7F5] hover:border-neutral-300 transition-all flex items-center justify-center gap-2">
                     <ChatIcon /> Cotizar con Asesor
