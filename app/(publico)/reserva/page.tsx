@@ -61,9 +61,7 @@ const obtenerKeyVista = (unidad: any) => {
   return 'panoramica';
 };
 
-// === ACTUALIZACIÓN DE PLANOS CON MEDIDAS EXACTAS ===
 const obtenerUrlPlano = (area: number) => {
-  // Lógica inteligente con rangos para atrapar tanto las medidas viejas (fallback) como las nuevas (Supabase)
   if (area < 78) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_%2069,43m2.png'; 
   if (area >= 78 && area < 95) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_86,78m2.png'; 
   if (area >= 95 && area < 103) return 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_100.2m2.png'; 
