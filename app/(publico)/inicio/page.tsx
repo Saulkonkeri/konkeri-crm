@@ -11,7 +11,7 @@ const generateUUID = () => {
   });
 };
 
-// === BASE DE DATOS DE MODELOS ARIENZO (URLs exactas pasadas por el usuario) ===
+// === BASE DE DATOS DE MODELOS ARIENZO ===
 const modelosArienzo = [
   { id: 'm1', area: '69.43m²', dorms: 1, banos: '1.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_%2069,43m2.png' },
   { id: 'm2', area: '86.78m²', dorms: 1, banos: '1.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_86,78m2.png' },
@@ -42,18 +42,17 @@ export default function ArienzoLandingPremium() {
   const [formData, setFormData] = useState({ nombres: '', telefono: '', email: '', modeloCotizado: '' });
   const [formBrochure, setFormBrochure] = useState({ nombres: '', telefono: '', email: '' });
 
-  // Galería enriquecida con los nuevos renders
+  // Galería de renders exactos SIN duplicados
   const imagenesGaleria = useMemo(() => [
     "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Frontal.jpg",
-    "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Derecho-A4.jpg",
+    "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-PISCINA-PARA-PAGINA.jpg",
     "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Interior-Departamento-1.jpg",
     "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-living2.jpg",
-    "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-living-arienzo.jpg",
-    "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-PISCINA-PARA-PAGINA.jpg",
-    "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Piscina-1.jpg",
+    "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Derecho-A4.jpg",
     "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Plaza-Comercial-1-1.jpg"
   ], []);
 
+  // Simular loop infinito repitiendo las imágenes únicas
   const imagenesInfinitas = useMemo(() => {
     return Array(20).fill(imagenesGaleria).flat();
   }, [imagenesGaleria]);
@@ -415,7 +414,7 @@ export default function ArienzoLandingPremium() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 4.5. ESPACIOS DE AUTOR (DISEÑO PREMIUM EMOCIONAL, TEXTO ORIGINAL)         */}
+      {/* 4.5. ESPACIOS DE AUTOR (DISEÑO PREMIUM EMOCIONAL, TARJETAS MÁS PEQUEÑAS)  */}
       {/* ========================================================================= */}
       <section className="py-20 md:py-28 px-4 md:px-8 bg-[#F9F7F5] border-b border-[#EAE3DC] font-sans relative overflow-hidden">
         
@@ -438,27 +437,27 @@ export default function ArienzoLandingPremium() {
             </p>
           </div>
 
-          {/* GRID DE BOTONES CON LÍNEAS ARQUITECTÓNICAS Y FONDO QUE RESALTA */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 max-w-3xl mx-auto">
+          {/* GRID DE BOTONES CON LÍNEAS ARQUITECTÓNICAS (Tamaño ideal 4x2) */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 max-w-3xl mx-auto">
             {modelosArienzo.map((mod) => (
               <button
                 key={mod.id}
                 onClick={() => abrirPlanoInteractivo(mod)}
-                className="group relative flex flex-col items-center justify-center py-5 px-2 w-full h-28 md:h-32 rounded-2xl transition-all duration-500 border-[2px] border-dashed border-[#D1C292]/70 bg-white/90 backdrop-blur-sm shadow-[0_8px_20px_rgba(0,0,0,0.03)] hover:bg-white hover:border-solid hover:border-[#964B36]/70 hover:shadow-[0_20px_40px_rgba(150,75,54,0.15)] hover:-translate-y-2 overflow-hidden"
+                className="group relative flex flex-col items-center justify-center py-4 px-2 w-full h-20 md:h-24 rounded-2xl transition-all duration-500 border-[2px] border-dashed border-[#D1C292]/70 bg-white/90 backdrop-blur-sm shadow-[0_8px_20px_rgba(0,0,0,0.03)] hover:bg-white hover:border-solid hover:border-[#964B36]/70 hover:shadow-[0_20px_40px_rgba(150,75,54,0.15)] hover:-translate-y-2 overflow-hidden"
               >
                 {/* Acento estético que se desliza al hover */}
                 <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[#D1C292] to-[#964B36] scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-500 ease-out"></div>
                 
-                <span className="text-[#415364] group-hover:text-[#964B36] text-2xl md:text-3xl font-bold tracking-tight transition-colors mb-2">
+                <span className="text-[#415364] group-hover:text-[#964B36] text-xl md:text-2xl font-bold tracking-tight transition-colors mb-1.5">
                   {mod.area.replace('m²', '')}
-                  <span className="text-sm font-normal text-neutral-400 ml-0.5 group-hover:text-[#964B36]/70">m²</span>
+                  <span className="text-xs font-normal text-neutral-400 ml-0.5 group-hover:text-[#964B36]/70">m²</span>
                 </span>
                 
                 <div className="flex items-center gap-1.5">
                   <svg className="w-3.5 h-3.5 text-[#D1C292] group-hover:text-[#964B36] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18M3 16h18M5 12V8a2 2 0 012-2h10a2 2 0 012 2v4M7 16v2m10-2v2"></path>
                   </svg>
-                  <span className="text-neutral-500 group-hover:text-[#964B36] text-[10px] md:text-xs font-bold uppercase tracking-[0.2em] transition-colors">{mod.dorms} Dorm.</span>
+                  <span className="text-neutral-500 group-hover:text-[#964B36] text-[10px] font-bold uppercase tracking-[0.2em] transition-colors">{mod.dorms} Dorm.</span>
                 </div>
               </button>
             ))}
@@ -509,7 +508,7 @@ export default function ArienzoLandingPremium() {
               {/* ZONA DE ÍCONOS Y BOTONES */}
               <div className="bg-white px-6 py-5 md:px-10 md:py-6 border-t border-[#EAE3DC] flex flex-col gap-6">
                 
-                {/* Fila de Íconos */}
+                {/* Fila de Íconos (Limpios y unificados) */}
                 <div className="flex flex-row flex-wrap justify-center gap-x-6 gap-y-3 md:gap-10 text-[#415364]">
                   
                   <div className="flex items-center gap-2">
@@ -573,23 +572,24 @@ export default function ArienzoLandingPremium() {
         </div>
       )}
 
-      {/* 5. GALERÍA DEL PROYECTO */}
-      <section className="py-12 md:py-16 bg-[#21242E] relative text-center">
-        <div className="max-w-6xl mx-auto relative z-10 px-6 mb-6">
+      {/* 5. GALERÍA DEL PROYECTO (Alineada a la izquierda) */}
+      <section className="py-12 md:py-16 bg-[#21242E] relative overflow-hidden">
+        <div className="max-w-6xl mx-auto relative z-10 px-6 mb-6 text-center">
           <span className="text-[11px] font-bold tracking-[0.25em] text-[#D1C292] uppercase mb-3 block">Galería del Proyecto</span>
           <h3 className="text-2xl md:text-3xl font-medium text-white tracking-tight">Imágenes que hablan por sí solas.</h3>
         </div>
 
         <div className="relative w-full z-20 mb-8">
+          {/* El contenedor ahora arranca desde la izquierda con pl-6 o pl-12 */}
           <div 
             id="carrusel-arquitectura"
-            className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-6 px-[15vw] md:px-[30vw] py-4 items-center scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+            className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-6 pl-6 md:pl-12 pr-[15vw] py-4 items-center scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
           >
             {imagenesInfinitas.map((img, index) => (
               <div 
                 key={index} 
                 onClick={() => clickImagen(index)} 
-                className="relative shrink-0 snap-center w-[70vw] md:w-[40vw] max-w-[650px] aspect-[4/3] md:aspect-[16/9] rounded-xl overflow-hidden cursor-pointer shadow-[0_15px_40px_rgba(0,0,0,0.4)] transition-all duration-500 hover:scale-[1.02] bg-[#1a1d24] group"
+                className="relative shrink-0 snap-start w-[75vw] md:w-[45vw] max-w-[650px] aspect-[4/3] md:aspect-[16/9] rounded-xl overflow-hidden cursor-pointer shadow-[0_15px_40px_rgba(0,0,0,0.4)] transition-all duration-500 hover:scale-[1.02] bg-[#1a1d24] group"
               >
                 <img 
                   src={img} 
@@ -607,7 +607,7 @@ export default function ArienzoLandingPremium() {
           
           <div className="max-w-6xl mx-auto px-6 mt-4 relative z-10 flex justify-center">
             <span className="flex items-center justify-center gap-2 text-[9px] font-bold tracking-[0.2em] text-white/40 uppercase">
-              Usa las flechas para explorar
+              Desliza para explorar
             </span>
           </div>
         </div>
@@ -971,7 +971,7 @@ export default function ArienzoLandingPremium() {
       {/* PRELOAD OCULTO PARA QUE LOS PLANOS CARGUEN AL INSTANTE ANTES DEL CLIC */}
       <div className="hidden" aria-hidden="true">
         {modelosArienzo.map(mod => (
-          <img key={`preload-${mod.id}`} src={mod.imagen} alt="preload" fetchPriority="high" loading="eager" decoding="sync" />
+          <img key={`preload-${mod.id}`} src={mod.imagen} alt="preload" />
         ))}
       </div>
 
