@@ -504,57 +504,54 @@ export default function ArienzoLandingPremium() {
               </div>
 
               {/* ZONA DEL PLANO */}
-              <div className="w-full h-[280px] sm:h-[350px] md:h-[420px] bg-[#FDFCFB] flex items-center justify-center p-4 md:p-8 relative group">
+              <div className="w-full h-[280px] sm:h-[350px] md:h-[420px] bg-[#FDFCFB] flex items-center justify-center p-4 md:p-8 relative group cursor-zoom-in" onClick={(e) => { e.stopPropagation(); setPlanoZoom(modeloActivo.imagen); }}>
                 <img 
                   src={modeloActivo.imagen} 
                   alt={`Plano Arienzo ${modeloActivo.area}`}
-                  className="max-w-full max-h-full object-contain mix-blend-multiply transition-transform duration-500 cursor-zoom-in group-hover:scale-[1.02]"
-                  onClick={(e) => { e.stopPropagation(); setPlanoZoom(modeloActivo.imagen); }}
+                  className="max-w-full max-h-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-[1.02]"
                 />
-                <div 
-                  className="absolute bottom-3 right-3 bg-white/80 backdrop-blur-sm rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm cursor-zoom-in text-[#964B36]"
-                  onClick={(e) => { e.stopPropagation(); setPlanoZoom(modeloActivo.imagen); }}
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
+                {/* Lupita siempre visible en móvil para invitar al zoom */}
+                <div className="absolute bottom-3 right-3 sm:bottom-5 sm:right-5 bg-white/90 backdrop-blur-md rounded-full p-2.5 sm:p-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shadow-md text-[#964B36] animate-pulse md:animate-none">
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
                 </div>
               </div>
 
               {/* ZONA DE ÍCONOS Y BOTONES */}
-              <div className="bg-white px-6 py-5 md:px-10 md:py-6 border-t border-[#EAE3DC] flex flex-col gap-6">
+              <div className="bg-white px-4 py-5 md:px-10 md:py-6 border-t border-[#EAE3DC] flex flex-col gap-6">
                 
-                {/* Fila de Íconos (1 SOLA LÍNEA, SCROLLABLE EN MÓVIL) */}
-                <div className="flex flex-row flex-nowrap items-center justify-start sm:justify-center gap-5 md:gap-10 text-[#415364] overflow-x-auto w-full pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                {/* Fila de Íconos: Apilados verticalmente en móvil para encajar los 4 en una sola línea */}
+                <div className="flex flex-row items-center justify-between sm:justify-center w-full gap-2 sm:gap-10 text-[#415364]">
                   
-                  <div className="flex items-center gap-2 shrink-0 whitespace-nowrap">
-                    <svg className="w-6 h-6 md:w-8 md:h-8 stroke-current text-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
+                  <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-center">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 stroke-current text-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18M3 16h18M5 12V8a2 2 0 012-2h10a2 2 0 012 2v4M7 16v2m10-2v2"></path>
                     </svg>
-                    <span className="text-xs md:text-sm font-medium">{modeloActivo.dorms} Dormitorio{modeloActivo.dorms > 1 ? 's' : ''}</span>
+                    <span className="text-[10px] sm:text-xs md:text-sm font-medium leading-tight">{modeloActivo.dorms} Dorm.</span>
                   </div>
                   
-                  <div className="flex items-center gap-2 shrink-0 whitespace-nowrap">
-                    <svg className="w-6 h-6 md:w-8 md:h-8 stroke-current text-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
+                  <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-center">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 stroke-current text-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v6m-4 0h8m-6 4v1m4-1v1m-2 2v1"></path>
                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 2a4 4 0 00-4 4"></path>
                     </svg>
-                    <span className="text-xs md:text-sm font-medium">{modeloActivo.banos}</span>
+                    <span className="text-[10px] sm:text-xs md:text-sm font-medium leading-tight">{modeloActivo.banos}</span>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0 whitespace-nowrap">
-                    <svg className="w-6 h-6 md:w-8 md:h-8 stroke-current text-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
+                  <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-center">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 stroke-current text-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4 21v-4a2 2 0 012-2h12a2 2 0 012 2v4M4 15V8a2 2 0 012-2h12a2 2 0 012 2v7M8 15v6M16 15v6"></path>
                     </svg>
-                    <span className="text-xs md:text-sm font-medium">{modeloActivo.extras}</span>
+                    <span className="text-[10px] sm:text-xs md:text-sm font-medium leading-tight">{modeloActivo.extras}</span>
                   </div>
                   
                   {modeloActivo.lavanderia && (
-                    <div className="flex items-center gap-2 shrink-0 whitespace-nowrap">
-                      <svg className="w-6 h-6 md:w-8 md:h-8 stroke-current text-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
+                    <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-center">
+                      <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 stroke-current text-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
                         <rect x="5" y="3" width="14" height="18" rx="2" strokeLinecap="round" strokeLinejoin="round"></rect>
                         <circle cx="12" cy="13" r="4" strokeLinecap="round" strokeLinejoin="round"></circle>
                         <path d="M8 7h3" strokeLinecap="round" strokeLinejoin="round"></path>
                       </svg>
-                      <span className="text-xs md:text-sm font-medium">Lavandería</span>
+                      <span className="text-[10px] sm:text-xs md:text-sm font-medium leading-tight">Lavandería</span>
                     </div>
                   )}
 
@@ -568,7 +565,6 @@ export default function ArienzoLandingPremium() {
                   >
                     Cotizar este Depto.
                   </button>
-                  {/* WHATSAPP INTELIGENTE: Mensaje dinámico según el modelo */}
                   <a 
                     href={`https://wa.me/593979469472?text=${encodeURIComponent(`Hola, quiero cotizar el modelo de ${modeloActivo.area} de${modeloActivo.dorms} dormitorio(s) en el proyecto Arienzo.`)}`}
                     target="_blank"
@@ -587,7 +583,7 @@ export default function ArienzoLandingPremium() {
         </div>
       )}
 
-      {/* 5. GALERÍA DEL PROYECTO (CARRUSEL INMERSIVO "PEEKING" ALINEADO AL CENTRO) */}
+      {/* 5. GALERÍA DEL PROYECTO (CARRUSEL INMERSIVO "PEEKING" ALINEADO AL CENTRO Y TAMAÑO SOFISTICADO) */}
       <section className="py-12 md:py-16 bg-[#21242E] relative overflow-hidden text-center">
         <div className="max-w-6xl mx-auto relative z-10 px-6 mb-6">
           <span className="text-[11px] font-bold tracking-[0.25em] text-[#D1C292] uppercase mb-3 block">Galería del Proyecto</span>
@@ -604,7 +600,7 @@ export default function ArienzoLandingPremium() {
               <div 
                 key={index} 
                 onClick={() => clickImagen(index)} 
-                className="relative shrink-0 snap-center w-[75vw] md:w-[60vw] max-w-[900px] aspect-[4/3] md:aspect-[16/9] rounded-2xl overflow-hidden cursor-pointer shadow-[0_15px_35px_rgba(0,0,0,0.3)] transition-all duration-500 hover:scale-[1.02] bg-[#1a1d24] group"
+                className="relative shrink-0 snap-center w-[75vw] md:w-[40vw] max-w-[600px] aspect-[4/3] md:aspect-[16/9] rounded-2xl overflow-hidden cursor-pointer shadow-[0_15px_35px_rgba(0,0,0,0.3)] transition-all duration-500 hover:scale-[1.02] bg-[#1a1d24] group"
               >
                 <img 
                   src={img} 
@@ -622,7 +618,7 @@ export default function ArienzoLandingPremium() {
           
           <div className="max-w-6xl mx-auto px-6 mt-2 relative z-10 flex justify-center">
             <span className="flex items-center justify-center gap-2 text-[9px] font-bold tracking-[0.2em] text-white/40 uppercase">
-              Usa las flechas para explorar
+              Desliza para explorar
             </span>
           </div>
         </div>
@@ -637,37 +633,40 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* LIGHTBOX GALERÍA */}
+      {/* LIGHTBOX GALERÍA (Click para hacer ZOOM OUT cerrado) */}
       {imagenIndex !== null && (
         <div 
-          className="fixed inset-0 bg-[#21242E]/98 z-[70] flex items-center justify-center p-4 md:p-8 backdrop-blur-md animate-in fade-in" 
+          className="fixed inset-0 bg-[#21242E]/98 z-[70] flex items-center justify-center p-4 md:p-8 backdrop-blur-md animate-in fade-in cursor-zoom-out" 
           onClick={() => setImagenIndex(null)}
         >
-          <button className="absolute top-6 right-6 text-white/50 hover:text-white text-4xl font-light transition-colors z-50">&times;</button>
-          <button onClick={prevImagen} className="absolute left-2 md:left-10 text-white/40 hover:text-white text-4xl md:text-7xl p-2 md:p-4 z-50 transition-all hover:scale-110">&#8249;</button>
-          <div className="relative w-full max-w-5xl h-[80vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+          <button className="absolute top-6 right-6 text-white/50 hover:text-white text-4xl font-light transition-colors z-50 cursor-pointer" onClick={(e) => { e.stopPropagation(); setImagenIndex(null); }}>&times;</button>
+          <button onClick={(e) => { e.stopPropagation(); prevImagen(e); }} className="absolute left-2 md:left-10 text-white/40 hover:text-white text-4xl md:text-7xl p-2 md:p-4 z-50 transition-all hover:scale-110 cursor-pointer">&#8249;</button>
+          
+          <div className="relative w-full max-w-5xl h-[80vh] flex items-center justify-center">
             <img 
               src={imagenesGaleria[imagenIndex]} 
               alt="Vista Ampliada" 
               className="max-w-full max-h-[80vh] object-contain rounded-md shadow-2xl pointer-events-none" 
             />
           </div>
-          <button onClick={nextImagen} className="absolute right-2 md:right-10 text-white/40 hover:text-white text-4xl md:text-7xl p-2 md:p-4 z-50 transition-all hover:scale-110">&#8250;</button>
+          
+          <button onClick={(e) => { e.stopPropagation(); nextImagen(e); }} className="absolute right-2 md:right-10 text-white/40 hover:text-white text-4xl md:text-7xl p-2 md:p-4 z-50 transition-all hover:scale-110 cursor-pointer">&#8250;</button>
         </div>
       )}
 
-      {/* LIGHTBOX ZOOM PLANOS (Se activa desde el Modal Interactivo) */}
+      {/* LIGHTBOX ZOOM PLANOS (Click para hacer ZOOM OUT cerrado) */}
       {planoZoom && (
         <div 
-          className="fixed inset-0 bg-white/95 z-[80] flex items-center justify-center p-8 md:p-24 backdrop-blur-md animate-in fade-in" 
+          className="fixed inset-0 bg-white/95 z-[80] flex items-center justify-center p-8 md:p-24 backdrop-blur-md animate-in fade-in cursor-zoom-out" 
           onClick={() => setPlanoZoom(null)}
         >
-          <button className="absolute top-6 right-6 text-neutral-400 hover:text-neutral-900 text-4xl font-light transition-colors z-50">&times;</button>
-          <div className="relative w-full h-full max-w-6xl mx-auto flex items-center justify-center cursor-zoom-out" onClick={(e) => e.stopPropagation()}>
+          <button className="absolute top-6 right-6 text-neutral-400 hover:text-neutral-900 text-4xl font-light transition-colors z-50 cursor-pointer" onClick={(e) => { e.stopPropagation(); setPlanoZoom(null); }}>&times;</button>
+          
+          <div className="relative w-full h-full max-w-6xl mx-auto flex items-center justify-center">
             <img 
               src={planoZoom} 
               alt="Plano Ampliado" 
-              className="max-w-full max-h-full object-contain mix-blend-multiply drop-shadow-2xl animate-in zoom-in-95" 
+              className="max-w-full max-h-full object-contain mix-blend-multiply drop-shadow-2xl animate-in zoom-in-95 pointer-events-none" 
             />
           </div>
         </div>
@@ -986,7 +985,7 @@ export default function ArienzoLandingPremium() {
       {/* PRELOAD OCULTO PARA QUE LOS PLANOS CARGUEN AL INSTANTE ANTES DEL CLIC */}
       <div className="hidden" aria-hidden="true">
         {modelosArienzo.map(mod => (
-          <img key={`preload-${mod.id}`} src={mod.imagen} alt="preload" fetchPriority="high" loading="eager" decoding="sync" />
+          <img key={`preload-${mod.id}`} src={mod.imagen} alt="preload" />
         ))}
       </div>
 
