@@ -113,8 +113,25 @@ export default function ArienzoLandingPremium() {
       }, 200);
     }
 
+    // === OPTIMIZACIÓN DE VELOCIDAD EXTREMA: PRELOAD ===
+    // Descargamos los planos y galería en segundo plano mientras el cliente lee el Hero.
+    const preloadImages = () => {
+      const imagesToPreload = [
+        ...modelosArienzo.map(m => m.imagen),
+        ...imagenesGaleria
+      ];
+      imagesToPreload.forEach((src) => {
+        const img = new window.Image();
+        img.src = src;
+      });
+    };
+    
+    // Ejecutamos la precarga 1 segundo después de que la página haya cargado,
+    // para no robarle velocidad al Hero principal.
+    setTimeout(preloadImages, 1000);
+
     return () => window.removeEventListener('scroll', handleScrollNav);
-  }, []);
+  }, [imagenesGaleria]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -295,6 +312,8 @@ export default function ArienzoLandingPremium() {
           src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Frontal.jpg" 
           alt="Arienzo Fachada"
           className="absolute inset-0 w-full h-full object-cover z-0"
+          fetchPriority="high"
+          decoding="sync"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/10 to-black/60 z-0"></div>
 
@@ -383,6 +402,7 @@ export default function ArienzoLandingPremium() {
                     src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/ubicacion-arienzo3.jpg" 
                     alt="Ubicación Manta" 
                     className="absolute inset-0 w-full h-full object-cover"
+                    loading="lazy"
                   />
                   <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors duration-500"></div>
                 </div>
@@ -399,6 +419,7 @@ export default function ArienzoLandingPremium() {
           src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/familia-en-sala-banco-imagenes-ia.jpg" 
           alt="Familia en Arienzo" 
           className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-30"
+          loading="lazy"
         />
         <div className="absolute inset-0 bg-[#964B36]/70"></div>
         <div className="relative z-10 w-[200px] md:w-[300px] h-[60px] md:h-[90px] hover:scale-105 transition-transform duration-700">
@@ -406,6 +427,7 @@ export default function ArienzoLandingPremium() {
             src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/logo-dorado-arienzo.svg" 
             alt="Arienzo Boutique Living" 
             className="w-full h-full object-contain drop-shadow-2xl" 
+            loading="lazy"
           />
         </div>
       </div>
@@ -426,7 +448,7 @@ export default function ArienzoLandingPremium() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="group bg-white rounded-2xl overflow-hidden border border-[#EAE3DC] shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-2">
               <div className="aspect-[4/3] overflow-hidden relative">
-                <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-PISCINA-PARA-PAGINA.jpg" alt="Piscina" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-PISCINA-PARA-PAGINA.jpg" alt="Piscina" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
               </div>
               <div className="p-8">
                 <div className="w-8 h-[2px] bg-[#D1C292] mb-4 transition-all duration-300 group-hover:w-16"></div>
@@ -439,7 +461,7 @@ export default function ArienzoLandingPremium() {
 
              <div className="group bg-white rounded-2xl overflow-hidden border border-[#EAE3DC] shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-2">
               <div className="aspect-[4/3] overflow-hidden relative">
-                <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-living-arienzo.jpg" alt="Living" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-living-arienzo.jpg" alt="Living" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
               </div>
               <div className="p-8">
                 <div className="w-8 h-[2px] bg-[#D1C292] mb-4 transition-all duration-300 group-hover:w-16"></div>
@@ -452,7 +474,7 @@ export default function ArienzoLandingPremium() {
 
              <div className="group bg-white rounded-2xl overflow-hidden border border-[#EAE3DC] shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-2">
               <div className="aspect-[4/3] overflow-hidden relative">
-                <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Plaza-Comercial-1-1.jpg" alt="Comercial" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Plaza-Comercial-1-1.jpg" alt="Comercial" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
               </div>
               <div className="p-8">
                 <div className="w-8 h-[2px] bg-[#D1C292] mb-4 transition-all duration-300 group-hover:w-16"></div>
@@ -644,6 +666,7 @@ export default function ArienzoLandingPremium() {
                   src={img} 
                   alt={`Render ${(index % imagenesGaleria.length) + 1}`} 
                   className="absolute inset-0 w-full h-full object-cover opacity-85 group-hover:opacity-100 transition-opacity duration-500" 
+                  loading="lazy"
                 />
                 <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-300"></div>
                 
