@@ -11,6 +11,23 @@ const generateUUID = () => {
   });
 };
 
+// COMPONENTE INTELIGENTE PARA CARGA SUAVE DE IMÁGENES
+const ImagenElegante = ({ src, alt, wrapperClassName, imgClassName, priority = false }: { src: string, alt: string, wrapperClassName?: string, imgClassName?: string, priority?: boolean }) => {
+  const [cargada, setCargada] = useState(false);
+  return (
+    <div className={`relative overflow-hidden bg-[#EAE3DC]/40 ${wrapperClassName || ''}`}>
+      <img
+        src={src}
+        alt={alt}
+        loading={priority ? undefined : "lazy"}
+        fetchPriority={priority ? "high" : "auto"}
+        onLoad={() => setCargada(true)}
+        className={`absolute inset-0 w-full h-full object-cover transition-all duration-[1500ms] ease-out ${cargada ? 'opacity-100 blur-none' : 'opacity-0 blur-sm'} ${imgClassName || ''}`}
+      />
+    </div>
+  );
+};
+
 // === BASE DE DATOS DE MODELOS ARIENZO ===
 const modelosArienzo = [
   { id: 'm1', area: '69.43m²', dorms: 1, banos: '1.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_%2069,43m2.png' },
@@ -55,7 +72,77 @@ export default function ArienzoLandingPremium() {
     return Array(15).fill(imagenesGaleria).flat();
   }, [imagenesGaleria]);
 
+  useEffect(() => {
+    // 1. INICIALIZACIÓN DEL PÍXEL DE META
+    if (typeof window !== 'undefined') {
+      !function(f:any,b:any,e:any,v:any,n:any,t:any,s:any){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+      
+      (window as any).fbq('init', '1698482924903057'); // <-- TU PIXEL ID REAL
+      (window as any).fbq('track', 'PageView');
+    }
+
+    if (!sessionStorage.getItem('visita_registrada_landing')) {
+      let visitorId = localStorage.getItem('arienzo_visitor_id');
+      if (!visitorId) { visitorId = generateUUID(); localStorage.setItem('arienzo_visitor_id', visitorId); }
+      let sessionId = sessionStorage.getItem('arienzo_session_id');
+      if (!sessionId || sessionId.startsWith('sess-')) { sessionId = generateUUID(); sessionStorage.setItem('arienzo_session_id', sessionId); }
+
+      supabase.from('tracking_inventario').insert([{
+        visitor_id: visitorId,
+        session_id: sessionId,
+        email_cliente: 'Anónimo',
+        accion: 'VISITA_LANDING',
+        detalle: 'Ingresó a la página principal de Arienzo',
+        metadata: { referrer: document.referrer || 'Directo' }
+      }]).then(() => sessionStorage.setItem('visita_registrada_landing', 'true')).catch(err => console.log(err));
+    }
+
+    // Scroll Tracking para Facebook Pixel
+    const handleScrollNav = () => {
+      setScrolled(window.scrollY > 50);
+      
+      const scrolledPercentage = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
+      if (scrolledPercentage >= 50 && !sessionStorage.getItem('scroll_50')) {
+        if (typeof window !== 'undefined' && (window as any).fbq) (window as any).fbq('trackCustom', 'SCROLL_50');
+        sessionStorage.setItem('scroll_50', 'true');
+      }
+      if (scrolledPercentage >= 90 && !sessionStorage.getItem('scroll_90')) {
+        if (typeof window !== 'undefined' && (window as any).fbq) (window as any).fbq('trackCustom', 'SCROLL_90');
+        sessionStorage.setItem('scroll_90', 'true');
+      }
+    };
+    
+    window.addEventListener('scroll', handleScrollNav);
+    
+    if (carruselRef.current) {
+      setTimeout(() => {
+        if (carruselRef.current && carruselRef.current.children.length > 5) {
+          const itemCentral = carruselRef.current.children[5] as HTMLElement;
+          const scrollPos = itemCentral.offsetLeft - (window.innerWidth / 2) + (itemCentral.clientWidth / 2);
+          carruselRef.current.scrollTo({ left: scrollPos, behavior: 'instant' });
+        }
+      }, 200);
+    }
+
+    const preloadImages = () => {
+      const imagesToPreload = [...modelosArienzo.map(m => m.imagen)];
+      imagesToPreload.forEach((src) => {
+        const img = new window.Image();
+        img.src = src;
+      });
+    };
+    setTimeout(preloadImages, 1000);
+
+    return () => window.removeEventListener('scroll', handleScrollNav);
+  }, []);
+
   const trackEvent = async (accion: string, detalle: string, datosUsuario?: { email?: string, telefono?: string }) => {
+    // 1. ENVIAR EVENTO A FACEBOOK PÍXEL DIRECTAMENTE
+    if (typeof window !== 'undefined' && (window as any).fbq) {
+      (window as any).fbq('trackCustom', accion);
+    }
+
+    // 2. ENVIAR EVENTO AL RADAR DE SUPABASE
     try {
       let visitorId = localStorage.getItem('arienzo_visitor_id');
       if (!visitorId) {
@@ -73,7 +160,7 @@ export default function ArienzoLandingPremium() {
       const urlParams = new URLSearchParams(window.location.search);
       const emailConocido = localStorage.getItem('arienzo_lead_email') || datosUsuario?.email || formData.email || formBrochure.email;
 
-      const { error } = await supabase.from('tracking_inventario').insert([{
+      await supabase.from('tracking_inventario').insert([{
         visitor_id: visitorId,
         session_id: sessionId,
         email_cliente: emailConocido || 'Anónimo',
@@ -88,46 +175,8 @@ export default function ArienzoLandingPremium() {
         }
       }]);
 
-      if (error) console.error("Error en Radar:", error);
-    } catch (error) {
-      console.error("Error general tracking:", error);
-    }
+    } catch (error) {}
   };
-
-  useEffect(() => {
-    if (!sessionStorage.getItem('visita_registrada_landing')) {
-      trackEvent('VISITA_LANDING', 'Ingresó a la página principal de Arienzo');
-      sessionStorage.setItem('visita_registrada_landing', 'true');
-    }
-
-    const handleScrollNav = () => setScrolled(window.scrollY > 50);
-    window.addEventListener('scroll', handleScrollNav);
-    
-    if (carruselRef.current) {
-      setTimeout(() => {
-        if (carruselRef.current && carruselRef.current.children.length > 5) {
-          const itemCentral = carruselRef.current.children[5] as HTMLElement;
-          const scrollPos = itemCentral.offsetLeft - (window.innerWidth / 2) + (itemCentral.clientWidth / 2);
-          carruselRef.current.scrollTo({ left: scrollPos, behavior: 'instant' });
-        }
-      }, 200);
-    }
-
-    // Precarga silenciosa de planos (invisible y no bloquea el inicio)
-    const preloadImages = () => {
-      const imagesToPreload = [...modelosArienzo.map(m => m.imagen)];
-      imagesToPreload.forEach((src) => {
-        const img = new window.Image();
-        img.src = src;
-      });
-    };
-    // Esperamos 1 segundo para no competir con el Hero
-    setTimeout(preloadImages, 1000);
-
-    return () => {
-      window.removeEventListener('scroll', handleScrollNav);
-    };
-  }, [imagenesGaleria]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -166,6 +215,7 @@ export default function ArienzoLandingPremium() {
   const abrirPlanoInteractivo = (mod: any) => {
     setModeloActivo(mod);
     setMostrarModalPlano(true);
+    trackEvent('CLIC_DISPONIBILIDAD', `Abrió disponibilidad del modelo ${mod.area}`);
     trackEvent('VIO_PLANO', `Abrió modal inmersivo del modelo ${mod.area}`);
   };
 
@@ -175,8 +225,8 @@ export default function ArienzoLandingPremium() {
       trackEvent('INICIO_COTIZACION', `Clic en cotizar modelo: ${modeloOpcional}`);
     } else {
       setFormData({...formData, modeloCotizado: ''});
-      trackEvent('ABRIO_FORMULARIO', 'Hizo clic en botón de Registrarse'); 
     }
+    trackEvent('ABRIO_FORMULARIO', 'Hizo clic en botón de Registrarse'); 
     setMostrarModalVip(true); 
   };
   
@@ -213,7 +263,6 @@ export default function ArienzoLandingPremium() {
       }], { onConflict: 'email' }); 
 
       if (errorUpsert) {
-        console.error("ERROR UPSERT CLIENTES:", errorUpsert);
         alert("Hubo un problema al registrar tus datos en la base. Inténtalo de nuevo.");
         setCargando(false);
         return;
@@ -222,9 +271,13 @@ export default function ArienzoLandingPremium() {
       localStorage.setItem('arienzo_lead_email', correoLimpio);
       await trackEvent('REGISTRO_COMPLETADO', `Se registró exitosamente. Correo: ${correoLimpio}`, { email: correoLimpio, telefono: formData.telefono });
 
+      // === DISPARO DEL PÍXEL DE META PARA CONVERSIONES (LEAD) ===
+      if (typeof window !== 'undefined' && (window as any).fbq) {
+        (window as any).fbq('track', 'Lead');
+      }
+
       setSolicitudEnviada(true);
     } catch (error) {
-      console.error("ERROR CRÍTICO CAPTURA LEAD:", error);
       alert("Ocurrió un error inesperado.");
     } finally {
       setCargando(false);
@@ -256,7 +309,6 @@ export default function ArienzoLandingPremium() {
       }], { onConflict: 'email' });
 
       if (errorDescarga) {
-        console.error("ERROR DESCARGA BROCHURE CLIENTES:", errorDescarga);
         alert("Hubo un problema al procesar tu descarga. Inténtalo de nuevo.");
         setCargando(false);
         return;
@@ -264,6 +316,11 @@ export default function ArienzoLandingPremium() {
 
       localStorage.setItem('arienzo_lead_email', correoLimpio);
       await trackEvent('DESCARGA_BROCHURE', `Descargó el brochure. Correo: ${correoLimpio}`, { email: correoLimpio, telefono: formBrochure.telefono });
+
+      // === DISPARO DEL PÍXEL DE META PARA CONVERSIONES (LEAD) ===
+      if (typeof window !== 'undefined' && (window as any).fbq) {
+        (window as any).fbq('track', 'Lead');
+      }
 
       window.open('https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/documentos-publicos/Brochure_Arienzo%20.pdf', '_blank');
       setBrochureDescargado(true);
@@ -275,7 +332,6 @@ export default function ArienzoLandingPremium() {
       }, 4000);
       
     } catch (error) {
-      console.error("ERROR CRÍTICO DESCARGA:", error);
       alert("Ocurrió un error inesperado.");
     } finally {
       setCargando(false);
@@ -302,14 +358,13 @@ export default function ArienzoLandingPremium() {
         </div>
       </header>
 
-      {/* 1. HERO INMERSIVO: IMAGEN NATIVA INSTANTÁNEA */}
+      {/* 1. HERO INMERSIVO CON IMAGEN ELEGANTE */}
       <section className="relative h-[100vh] min-h-[650px] flex flex-col items-center justify-center">
-        <img 
+        <ImagenElegante 
           src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Frontal.jpg" 
           alt="Arienzo Fachada"
-          className="absolute inset-0 w-full h-full object-cover z-0"
-          fetchPriority="high"
-          decoding="sync"
+          wrapperClassName="absolute inset-0 w-full h-full z-0"
+          priority={true}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/10 to-black/60 z-0"></div>
 
@@ -392,11 +447,10 @@ export default function ArienzoLandingPremium() {
                 </div>
 
                 <div className="relative w-full aspect-[4/5] md:aspect-[3/4] rounded-xl overflow-hidden shadow-2xl group z-10 bg-[#EAE3DC]">
-                  <img 
+                  <ImagenElegante 
                     src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/ubicacion-arienzo3.jpg" 
                     alt="Ubicación Manta" 
-                    className="absolute inset-0 w-full h-full object-cover"
-                    loading="lazy"
+                    wrapperClassName="absolute inset-0 w-full h-full"
                   />
                   <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors duration-500"></div>
                 </div>
@@ -409,11 +463,11 @@ export default function ArienzoLandingPremium() {
 
       {/* LA FRANJA TERRACOTA */}
       <div className="relative h-[200px] md:h-[280px] flex justify-center items-center shadow-inner z-20 bg-[#964B36] overflow-hidden">
-        <img 
+        <ImagenElegante 
           src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/familia-en-sala-banco-imagenes-ia.jpg" 
           alt="Familia en Arienzo" 
-          className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-30"
-          loading="lazy"
+          wrapperClassName="absolute inset-0 w-full h-full"
+          imgClassName="mix-blend-overlay opacity-30"
         />
         <div className="absolute inset-0 bg-[#964B36]/70"></div>
         <div className="relative z-10 w-[200px] md:w-[300px] h-[60px] md:h-[90px] hover:scale-105 transition-transform duration-700">
@@ -421,7 +475,6 @@ export default function ArienzoLandingPremium() {
             src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/logo-dorado-arienzo.svg" 
             alt="Arienzo Boutique Living" 
             className="w-full h-full object-contain drop-shadow-2xl" 
-            loading="lazy"
           />
         </div>
       </div>
@@ -442,11 +495,11 @@ export default function ArienzoLandingPremium() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="group bg-white rounded-2xl overflow-hidden border border-[#EAE3DC] shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-2">
               <div className="aspect-[4/3] overflow-hidden relative">
-                <img 
+                <ImagenElegante 
                   src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-PISCINA-PARA-PAGINA.jpg" 
                   alt="Piscina" 
-                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
-                  loading="lazy" 
+                  wrapperClassName="absolute inset-0 w-full h-full"
+                  imgClassName="transition-transform duration-700 group-hover:scale-105"
                 />
               </div>
               <div className="p-8">
@@ -460,11 +513,11 @@ export default function ArienzoLandingPremium() {
 
              <div className="group bg-white rounded-2xl overflow-hidden border border-[#EAE3DC] shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-2">
               <div className="aspect-[4/3] overflow-hidden relative">
-                <img 
+                <ImagenElegante 
                   src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-living-arienzo.jpg" 
                   alt="Living" 
-                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
-                  loading="lazy" 
+                  wrapperClassName="absolute inset-0 w-full h-full"
+                  imgClassName="transition-transform duration-700 group-hover:scale-105"
                 />
               </div>
               <div className="p-8">
@@ -478,11 +531,11 @@ export default function ArienzoLandingPremium() {
 
              <div className="group bg-white rounded-2xl overflow-hidden border border-[#EAE3DC] shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-2">
               <div className="aspect-[4/3] overflow-hidden relative">
-                <img 
+                <ImagenElegante 
                   src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Plaza-Comercial-1-1.jpg" 
                   alt="Comercial" 
-                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
-                  loading="lazy" 
+                  wrapperClassName="absolute inset-0 w-full h-full"
+                  imgClassName="transition-transform duration-700 group-hover:scale-105"
                 />
               </div>
               <div className="p-8">
@@ -671,11 +724,11 @@ export default function ArienzoLandingPremium() {
                 onClick={() => clickImagen(index)} 
                 className="relative shrink-0 snap-center w-[75vw] md:w-[40vw] max-w-[600px] aspect-[4/3] md:aspect-[16/9] rounded-2xl overflow-hidden cursor-pointer shadow-[0_15px_35px_rgba(0,0,0,0.3)] transition-all duration-500 hover:scale-[1.02] bg-[#1a1d24] group"
               >
-                <img 
+                <ImagenElegante 
                   src={img} 
                   alt={`Render ${(index % imagenesGaleria.length) + 1}`} 
-                  className="absolute inset-0 w-full h-full object-cover opacity-85 group-hover:opacity-100 transition-opacity duration-500" 
-                  loading="lazy"
+                  wrapperClassName="absolute inset-0 w-full h-full"
+                  imgClassName="opacity-85 group-hover:opacity-100 transition-opacity duration-500"
                 />
                 <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-300"></div>
                 
