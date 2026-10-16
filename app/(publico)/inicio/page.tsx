@@ -75,9 +75,10 @@ export default function ArienzoLandingPremium() {
   useEffect(() => {
     // 1. INICIALIZACIÓN DEL PÍXEL DE META
     if (typeof window !== 'undefined') {
-      !function(f:any,b:any,e:any,v:any,n:any,t:any,s:any){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+      // AQUÍ ESTÁ LA CORRECCIÓN: n?:any, t?:any, s?:any le dice a TypeScript que esas variables son opcionales
+      !function(f:any,b:any,e:any,v:any,n?:any,t?:any,s?:any){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
       
-      (window as any).fbq('init', '1698482924903057'); // <-- TU PIXEL ID REAL
+      (window as any).fbq('init', '1698482924903057'); 
       (window as any).fbq('track', 'PageView');
     }
 
@@ -136,7 +137,7 @@ export default function ArienzoLandingPremium() {
     return () => window.removeEventListener('scroll', handleScrollNav);
   }, []);
 
-  const trackEvent = async (accion: string, detalle: string, datosUsuario?: { email?: string, telefono?: string }) => {
+  const trackEventRadar = async (accion: string, detalle: string) => {
     // 1. ENVIAR EVENTO A FACEBOOK PÍXEL DIRECTAMENTE
     if (typeof window !== 'undefined' && (window as any).fbq) {
       (window as any).fbq('trackCustom', accion);
@@ -144,37 +145,13 @@ export default function ArienzoLandingPremium() {
 
     // 2. ENVIAR EVENTO AL RADAR DE SUPABASE
     try {
-      let visitorId = localStorage.getItem('arienzo_visitor_id');
-      if (!visitorId) {
-        visitorId = generateUUID();
-        localStorage.setItem('arienzo_visitor_id', visitorId);
-      }
-
-      let sessionId = sessionStorage.getItem('arienzo_session_id');
-      if (!sessionId || sessionId.startsWith('sess-')) {
-        sessionId = generateUUID();
-        sessionStorage.setItem('arienzo_session_id', sessionId);
-      }
-
-      const eventId = generateUUID();
-      const urlParams = new URLSearchParams(window.location.search);
-      const emailConocido = localStorage.getItem('arienzo_lead_email') || datosUsuario?.email || formData.email || formBrochure.email;
-
+      const emailConocido = localStorage.getItem('arienzo_lead_email') || formData.email || formBrochure.email;
       await supabase.from('tracking_inventario').insert([{
-        visitor_id: visitorId,
-        session_id: sessionId,
+        session_id: sessionStorage.getItem('arienzo_session_id') || generateUUID(),
         email_cliente: emailConocido || 'Anónimo',
         accion,
-        detalle,
-        metadata: {
-          utm_source: urlParams.get('utm_source'),
-          utm_campaign: urlParams.get('utm_campaign'),
-          referrer: document.referrer || 'Directo',
-          dispositivo: /Mobile|Android|iP(hone|od|ad)/i.test(navigator.userAgent) ? 'Móvil' : 'Desktop',
-          meta_event_id: eventId
-        }
+        detalle
       }]);
-
     } catch (error) {}
   };
 
@@ -198,7 +175,7 @@ export default function ArienzoLandingPremium() {
 
   const clickImagen = (index: number) => { 
     const realIndex = index % imagenesGaleria.length;
-    trackEvent('VIO_ARQUITECTURA', `Abrió render ${realIndex + 1} de la galería`); 
+    trackEventRadar('VIO_ARQUITECTURA', `Abrió render ${realIndex + 1} de la galería`); 
     setImagenIndex(realIndex); 
   };
   
@@ -215,23 +192,23 @@ export default function ArienzoLandingPremium() {
   const abrirPlanoInteractivo = (mod: any) => {
     setModeloActivo(mod);
     setMostrarModalPlano(true);
-    trackEvent('CLIC_DISPONIBILIDAD', `Abrió disponibilidad del modelo ${mod.area}`);
-    trackEvent('VIO_PLANO', `Abrió modal inmersivo del modelo ${mod.area}`);
+    trackEventRadar('CLIC_DISPONIBILIDAD', `Abrió disponibilidad del modelo ${mod.area}`);
+    trackEventRadar('VIO_PLANO', `Abrió modal inmersivo del modelo ${mod.area}`);
   };
 
   const abrirModalVIP = (modeloOpcional?: string) => { 
     if(modeloOpcional) {
       setFormData({...formData, modeloCotizado: modeloOpcional});
-      trackEvent('INICIO_COTIZACION', `Clic en cotizar modelo: ${modeloOpcional}`);
+      trackEventRadar('INICIO_COTIZACION', `Clic en cotizar modelo: ${modeloOpcional}`);
     } else {
       setFormData({...formData, modeloCotizado: ''});
     }
-    trackEvent('ABRIO_FORMULARIO', 'Hizo clic en botón de Registrarse'); 
+    trackEventRadar('ABRIO_FORMULARIO', 'Hizo clic en botón de Registrarse'); 
     setMostrarModalVip(true); 
   };
   
   const abrirCalendly = () => { 
-    trackEvent('ABRIO_CALENDLY', 'Abrió modal de agendamiento'); 
+    trackEventRadar('ABRIO_CALENDLY', 'Abrió modal de agendamiento'); 
     setMostrarModalCalendly(true); 
   };
 
@@ -269,7 +246,7 @@ export default function ArienzoLandingPremium() {
       }
 
       localStorage.setItem('arienzo_lead_email', correoLimpio);
-      await trackEvent('REGISTRO_COMPLETADO', `Se registró exitosamente. Correo: ${correoLimpio}`, { email: correoLimpio, telefono: formData.telefono });
+      await trackEventRadar('REGISTRO_COMPLETADO', `Se registró exitosamente. Correo: ${correoLimpio}`);
 
       // === DISPARO DEL PÍXEL DE META PARA CONVERSIONES (LEAD) ===
       if (typeof window !== 'undefined' && (window as any).fbq) {
@@ -315,7 +292,7 @@ export default function ArienzoLandingPremium() {
       }
 
       localStorage.setItem('arienzo_lead_email', correoLimpio);
-      await trackEvent('DESCARGA_BROCHURE', `Descargó el brochure. Correo: ${correoLimpio}`, { email: correoLimpio, telefono: formBrochure.telefono });
+      await trackEventRadar('DESCARGA_BROCHURE', `Descargó el brochure. Correo: ${correoLimpio}`);
 
       // === DISPARO DEL PÍXEL DE META PARA CONVERSIONES (LEAD) ===
       if (typeof window !== 'undefined' && (window as any).fbq) {
