@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import Script from 'next/script'; // Importamos Script de Next.js
 
 // Generador de UUID matemático (Para que no falle el radar)
 const generateUUID = () => {
@@ -74,21 +73,39 @@ export default function ArienzoLandingPremium() {
   }, [imagenesGaleria]);
 
   useEffect(() => {
-    // TRACKING INTERNO EN SUPABASE
+    // 1. INICIALIZACIÓN DEL PÍXEL DE META
+    if (typeof window !== 'undefined') {
+      // @ts-ignore
+      !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+      
+      (window as any).fbq('init', '1698482924903057'); 
+      (window as any).fbq('track', 'PageView');
+    }
+
     if (!sessionStorage.getItem('visita_registrada_landing')) {
       let visitorId = localStorage.getItem('arienzo_visitor_id');
       if (!visitorId) { visitorId = generateUUID(); localStorage.setItem('arienzo_visitor_id', visitorId); }
       let sessionId = sessionStorage.getItem('arienzo_session_id');
       if (!sessionId || sessionId.startsWith('sess-')) { sessionId = generateUUID(); sessionStorage.setItem('arienzo_session_id', sessionId); }
 
-      supabase.from('tracking_inventario').insert([{
-        visitor_id: visitorId,
-        session_id: sessionId,
-        email_cliente: 'Anónimo',
-        accion: 'VISITA_LANDING',
-        detalle: 'Ingresó a la página principal de Arienzo',
-        metadata: { referrer: document.referrer || 'Directo' }
-      }]).then(() => sessionStorage.setItem('visita_registrada_landing', 'true')).catch(err => console.log(err));
+      // CORRECCIÓN PARA TYPESCRIPT (USANDO ASYNC/AWAIT)
+      const registrarVisitaInicial = async () => {
+        try {
+          await supabase.from('tracking_inventario').insert([{
+            visitor_id: visitorId,
+            session_id: sessionId,
+            email_cliente: 'Anónimo',
+            accion: 'VISITA_LANDING',
+            detalle: 'Ingresó a la página principal de Arienzo',
+            metadata: { referrer: document.referrer || 'Directo' }
+          }]);
+          sessionStorage.setItem('visita_registrada_landing', 'true');
+        } catch (err) {
+          console.error(err);
+        }
+      };
+      
+      registrarVisitaInicial();
     }
 
     // Scroll Tracking para Facebook Pixel
@@ -311,22 +328,6 @@ export default function ArienzoLandingPremium() {
   return (
     <div className="min-h-screen bg-[#F9F7F5] text-neutral-800 selection:bg-[#964B36] selection:text-white overflow-x-hidden" style={{ fontFamily: 'Montserrat, sans-serif' }}>
       
-      {/* Script de Facebook Pixel nativo de Next.js */}
-      <Script id="facebook-pixel" strategy="afterInteractive">
-        {`
-          !function(f,b,e,v,n,t,s)
-          {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-          n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-          if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-          n.queue=[];t=b.createElement(e);t.async=!0;
-          t.src=v;s=b.getElementsByTagName(e)[0];
-          s.parentNode.insertBefore(t,s)}(window, document,'script',
-          'https://connect.facebook.net/en_US/fbevents.js');
-          fbq('init', '1698482924903057');
-          fbq('track', 'PageView');
-        `}
-      </Script>
-
       {/* NAVEGACIÓN */}
       <header className={`fixed top-0 w-full z-40 transition-all duration-500 ${scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm py-5 md:py-6' : 'bg-transparent py-6 md:py-8'}`}>
         <div className="max-w-7xl mx-auto px-5 md:px-12 flex justify-between items-center">
