@@ -68,7 +68,6 @@ const PLANTILLAS_CORREO = [
   }
 ];
 
-// === URLs ACTUALIZADAS Y CORREGIDAS ===
 const IMAGENES_GALERIA = {
   fachada: "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Frontal.jpg",
   ubicacion: "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/ubicacion-arienzo3.jpg",
@@ -96,12 +95,11 @@ export default function CRMPage() {
   };
 
   const [mostrarModalNuevo, setMostrarModalNuevo] = useState(false);
-  const [mostrarModalEditar, setMostrarModalEditar] = useState(false); // NUEVO MODAL EDITAR
+  const [mostrarModalEditar, setMostrarModalEditar] = useState(false);
   const [mostrarModalPlantilla, setMostrarModalPlantilla] = useState(false);
   const [mostrarModalHistorial, setMostrarModalHistorial] = useState(false);
   const [clienteSeleccionado, setClienteSeleccionado] = useState<Cliente | null>(null);
 
-  // ESTADOS DEL ESTUDIO DE DISEÑO DE CORREO
   const [mostrarModalPreviewCorreo, setMostrarModalPreviewCorreo] = useState(false);
   const [plantillaActivaId, setPlantillaActivaId] = useState('seguimiento_premium');
   const [imagenPortada, setImagenPortada] = useState<'fachada'|'ubicacion'|'living'|'piscina'>('fachada');
@@ -118,7 +116,6 @@ export default function CRMPage() {
   
   const [enviandoCorreoCRM, setEnviandoCorreoCRM] = useState(false);
 
-  // NUEVO PROSPECTO
   const [nuevoNombre, setNuevoNombre] = useState('');
   const [nuevoApellido, setNuevoApellido] = useState('');
   const [nuevoTelefono, setNuevoTelefono] = useState('');
@@ -131,7 +128,6 @@ export default function CRMPage() {
   const [nuevoIngresadoPor, setNuevoIngresadoPor] = useState('Saúl Intriago / Debbi Mera'); 
   const [guardandoCliente, setGuardandoCliente] = useState(false);
 
-  // EDITAR PROSPECTO
   const [editFormData, setEditFormData] = useState<Partial<Cliente>>({});
   const [guardandoEdicion, setGuardandoEdicion] = useState(false);
 
@@ -302,10 +298,18 @@ export default function CRMPage() {
   const clientesFiltrados = useMemo(() => {
     return clientes.filter(c => {
       const b = busqueda.toLowerCase();
-      const coincideBusqueda = !b || `${c.nombres || ''} ${c.apellidos || ''}`.toLowerCase().includes(b) || (c.telefono && c.telefono.includes(b));
+      // Búsqueda robusta por si escribes el teléfono con o sin código de país
+      const busquedaNum = b.replace(/\D/g, '');
+      const coincidenciaBusqueda = !b || 
+        `${c.nombres || ''} ${c.apellidos || ''}`.toLowerCase().includes(b) || 
+        (c.email && c.email.toLowerCase().includes(b)) ||
+        (c.telefono && c.telefono.includes(b)) ||
+        (c.telefono && busquedaNum.length > 4 && c.telefono.replace(/\D/g, '').includes(busquedaNum));
+        
       const coincideCiudad = filtroCiudad === 'Todas' || (c.ciudad_residencia && c.ciudad_residencia.toLowerCase().trim() === filtroCiudad.toLowerCase().trim());
       const coincideTipologia = filtroTipologia === 'Todas' || (c.tipologia_interes && c.tipologia_interes.toLowerCase().trim() === filtroTipologia.toLowerCase().trim());
       const coincideOrigen = filtroOrigen === 'Todos' || (c.origen_captacion && c.origen_captacion.toLowerCase().trim() === filtroOrigen.toLowerCase().trim());
+      
       let coincidePendiente = true;
       if (filtroPendientes) {
         if (!c.proximo_contacto) coincidePendiente = false;
@@ -314,23 +318,24 @@ export default function CRMPage() {
           coincidePendiente = new Date(c.proximo_contacto + 'T00:00:00') <= hoy;
         }
       }
-      return coincideBusqueda && coincideCiudad && coincideTipologia && coincideOrigen && coincidePendiente;
+      return coincidenciaBusqueda && coincideCiudad && coincideTipologia && coincideOrigen && coincidePendiente;
     });
   }, [clientes, busqueda, filtroCiudad, filtroTipologia, filtroOrigen, filtroPendientes]);
 
   const prospectosFiltradosParaLlamada = useMemo(() => {
     if (!busquedaLlamada) return clientes.slice(0, 50);
     const b = busquedaLlamada.toLowerCase();
-    return clientes.filter(c => `${c.nombres} ${c.apellidos}`.toLowerCase().includes(b) || (c.telefono && c.telefono.includes(b))).slice(0, 50);
+    const busquedaNum = b.replace(/\D/g, '');
+    return clientes.filter(c => 
+      `${c.nombres} ${c.apellidos}`.toLowerCase().includes(b) || 
+      (c.email && c.email.toLowerCase().includes(b)) ||
+      (c.telefono && c.telefono.includes(b)) ||
+      (c.telefono && busquedaNum.length > 4 && c.telefono.replace(/\D/g, '').includes(busquedaNum))
+    ).slice(0, 50);
   }, [clientes, busquedaLlamada]);
 
   const ciudadesDisponibles = useMemo(() => {
     const s = new Set<string>(); clientes.forEach(c => { if (c.ciudad_residencia) s.add(c.ciudad_residencia.trim()); });
-    return Array.from(s).sort();
-  }, [clientes]);
-
-  const campanasDisponibles = useMemo(() => {
-    const s = new Set<string>(); clientes.forEach(c => { if (c.campana) s.add(c.campana.trim()); });
     return Array.from(s).sort();
   }, [clientes]);
 
@@ -363,17 +368,37 @@ export default function CRMPage() {
         motivo_compra: nuevoMotivo, tipologia_interes: nuevoInteres, origen_captacion: nuevoOrigen, campana: nuevoCampana.trim() || null,
         notas: notaInicial, estado: 'Interesado', tipo: 'prospecto', temperatura: '❄️ Frío', ingresado_por: nuevoIngresadoPor.trim()
       };
+      
       const { data, error } = await supabase.from('clientes').insert([payload]).select();
       if (error) throw error;
+      
       if (data && data.length > 0) {
         setClientes([data[0], ...clientes]);
         setMostrarModalNuevo(false);
         setNuevoNombre(''); setNuevoApellido(''); setNuevoTelefono(''); setNuevoEmail(''); setNuevaCiudad(''); setNuevoCampana('');
       }
-    } catch (e: any) { alert(`Error: ${e.message}`); } finally { setGuardandoCliente(false); }
+    } catch (e: any) {
+      if (e.message?.includes('duplicate key') || e.message?.includes('unique constraint')) {
+        // RADAR DE DUPLICADOS: Busca a quién pertenece exactamente este correo
+        const { data: clienteDuplicado } = await supabase
+          .from('clientes')
+          .select('nombres, apellidos, telefono')
+          .eq('email', nuevoEmail.trim().toLowerCase())
+          .maybeSingle();
+
+        if (clienteDuplicado) {
+          alert(`🚨 ALERTA DE DUPLICADO\n\nEl sistema bloqueó el guardado porque el correo "${nuevoEmail}" ya le pertenece a este prospecto en tu base:\n\n👤 Nombre: ${clienteDuplicado.nombres} ${clienteDuplicado.apellidos || ''}\n📱 Teléfono: ${clienteDuplicado.telefono}\n\n👉 El prospecto se registró en la web usando esos datos. Cierra esta ventana y búscalo en el CRM escribiendo ese nombre exacto o el teléfono en la barra superior para actualizar su ficha.`);
+        } else {
+          alert("🚨 Este correo electrónico ya está registrado en el sistema. Búscalo en la barra superior.");
+        }
+      } else {
+        alert(`Error al guardar: ${e.message}`);
+      }
+    } finally { 
+      setGuardandoCliente(false); 
+    }
   };
 
-  // === GUARDAR EDICION DE CLIENTE ===
   const abrirModalEditar = () => {
     if(clienteSeleccionado) {
       setEditFormData({
@@ -418,7 +443,21 @@ export default function CRMPage() {
       setMostrarModalEditar(false);
       alert("Información actualizada correctamente");
     } catch (err: any) {
-      alert(`Error al actualizar: ${err.message}`);
+      if (err.message?.includes('duplicate key')) {
+        const { data: clienteDuplicado } = await supabase
+          .from('clientes')
+          .select('nombres, apellidos, telefono')
+          .eq('email', editFormData.email?.trim().toLowerCase())
+          .maybeSingle();
+          
+        if (clienteDuplicado) {
+          alert(`🚨 ALERTA DE DUPLICADO\n\nNo puedes asignarle este correo porque ya le pertenece a otro cliente:\n\n👤 ${clienteDuplicado.nombres} ${clienteDuplicado.apellidos || ''}\n📱 ${clienteDuplicado.telefono}`);
+        } else {
+          alert("🚨 Ya existe OTRO cliente registrado con este mismo correo.");
+        }
+      } else {
+        alert(`Error al actualizar: ${err.message}`);
+      }
     } finally {
       setGuardandoEdicion(false);
     }
@@ -496,9 +535,6 @@ export default function CRMPage() {
     } catch (e) { console.error(e); } finally { setCargandoHistorial(false); }
   };
 
-  // ==========================================
-  // GENERADOR HTML COMPLETO Y SEGURO (CON CABECERA DORADA ARREGLADA)
-  // ==========================================
   const generarCodigoHTMLCorreo = () => {
     const plantillaConfig = PLANTILLAS_CORREO.find(p => p.id === plantillaActivaId) || PLANTILLAS_CORREO[0];
     const nombreCliente = clienteSeleccionado?.nombres || 'Cliente';
@@ -520,11 +556,11 @@ export default function CRMPage() {
       colorBoton = '#21242E'; 
     } 
     else if (temaColor === 'dorado') { 
-      colorFondoCabecera = '#D1C292'; // CABECERA DORADA CORREGIDA
+      colorFondoCabecera = '#D1C292';
       colorAcento = '#D1C292'; 
       colorBoton = '#21242E'; 
       colorTextoBoton = '#ffffff';
-      logoCabecera = 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg'; // LOGO OSCURO PARA CONTRASTE
+      logoCabecera = 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg';
     } 
     else if (temaColor === 'navy') { 
       colorFondoCabecera = '#21242E'; 
@@ -646,7 +682,6 @@ export default function CRMPage() {
   return (
     <div className="min-h-screen bg-[#dce3eb] p-4 md:p-6 font-sans text-[#415364] flex flex-col h-screen overflow-hidden">
       
-      {/* 1. HEADER PRINCIPAL Y VISTAS */}
       <div className="w-full flex-shrink-0 mb-4 space-y-3">
         <div className="bg-white rounded-2xl border border-neutral-200/60 p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -681,7 +716,6 @@ export default function CRMPage() {
           </div>
         </div>
 
-        {/* 2. BARRA DE FILTROS */}
         <div className="bg-white p-4 rounded-2xl border border-neutral-200/60 shadow-sm flex flex-wrap items-center gap-4">
           <div className="relative flex-1 min-w-[220px]">
             <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-[#415364]/40">
@@ -689,7 +723,7 @@ export default function CRMPage() {
             </span>
             <input 
               type="text" 
-              placeholder="Buscar prospecto por nombre, ciudad o teléfono..." 
+              placeholder="Buscar prospecto por nombre, email o teléfono..." 
               value={busqueda} 
               onChange={(e) => setBusqueda(e.target.value)} 
               className="w-full bg-[#dce3eb]/30 border border-[#415364]/10 rounded-xl py-2.5 pl-10 pr-4 text-xs font-medium focus:outline-none focus:border-[#ea0029] focus:ring-1 focus:ring-[#ea0029]/20 transition-all text-[#415364]" 
@@ -716,7 +750,6 @@ export default function CRMPage() {
         </div>
       </div>
 
-      {/* ÁREA DE TRABAJO DINÁMICA */}
       <div className="w-full flex-1 min-h-0 overflow-hidden relative">
         
         {vista === 'kanban' && (
@@ -762,7 +795,6 @@ export default function CRMPage() {
                             <span className="inline-block bg-[#415364]/5 text-[#415364] border border-[#415364]/10 text-[9px] font-bold px-2 py-0.5 rounded-md mr-1 uppercase tracking-wider">{cliente.tipologia_interes}</span>
                           )}
 
-                          {/* 📅 TAREA AGENDADA */}
                           {cliente.proximo_contacto && (
                             <div className={`mt-2 text-[9px] font-bold px-2.5 py-1 flex items-center gap-1.5 rounded-md border ${agendadoVencido ? 'bg-[#ea0029]/10 text-[#ea0029] border-[#ea0029]/20' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
@@ -770,7 +802,6 @@ export default function CRMPage() {
                             </div>
                           )}
 
-                          {/* ✉️ INSIGNIA DE CORREO (REALCE ELEGANTE) */}
                           {infoCorreo && (
                             <div className="mt-2 text-[9px] font-bold px-2 py-1.5 flex items-center justify-between rounded-md bg-[#FFF5F2] border border-[#964B36]/40 shadow-sm">
                               <div className="flex items-center gap-1 text-[#964B36]">
