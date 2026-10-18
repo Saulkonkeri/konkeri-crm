@@ -14,25 +14,29 @@ export default function ReportesPage() {
     propiedades: [] as any[],
     clientes: [] as any[],
     cotizaciones: [] as any[],
-    pasesVip: [] as any[]
+    pasesVip: [] as any[],
+    trackingWeb: [] as any[] // Añadido para métricas de visitas
   });
 
   useEffect(() => {
     async function extraerTodaLaData() {
       setCargando(true);
       try {
-        const [propsRes, clientesRes, cotizacionesRes, pasesRes] = await Promise.all([
+        const [propsRes, clientesRes, cotizacionesRes, pasesRes, trackingRes] = await Promise.all([
           supabase.from('propiedades').select('*'),
           supabase.from('clientes').select('id, created_at, origen_captacion, campana, estado, tipo, ciudad_residencia, tipologia_interes'),
           supabase.from('cotizaciones').select('id, created_at, unidad_numero'),
-          supabase.from('accesos_inventario').select('id, created_at')
+          supabase.from('accesos_inventario').select('id, email, expira_en, created_at'),
+          // Traemos un resumen del tracking para visitas
+          supabase.from('tracking_inventario').select('visitor_id, session_id, accion, created_at')
         ]);
 
         setRawData({
           propiedades: propsRes.data || [],
           clientes: clientesRes.data || [],
           cotizaciones: cotizacionesRes.data || [],
-          pasesVip: pasesRes.data || []
+          pasesVip: pasesRes.data || [],
+          trackingWeb: trackingRes.data || []
         });
       } catch (error) {
         console.error("Error al extraer data:", error);
@@ -61,9 +65,15 @@ export default function ReportesPage() {
     const clientes = rawData.clientes.filter(c => c.created_at >= isoLimite);
     const cotizaciones = rawData.cotizaciones.filter(c => c.created_at >= isoLimite);
     const pasesVip = rawData.pasesVip.filter(p => p.created_at >= isoLimite);
+    const trackingWeb = rawData.trackingWeb.filter(t => t.created_at >= isoLimite);
+    
     // Propiedades no se filtran por fecha de creación, siempre muestran el estado actual del inventario
     const propiedades = rawData.propiedades;
 
+    // --- CÁLCULO DE MÉTRICAS WEB ---
+    const visitasLanding = trackingWeb.filter(t => t.accion === 'VISITA_LANDING');
+    const visitantesUnicos = new Set(visitasLanding.map(t => t.visitor_id)).size;
+    
     // 1. KPIs Principales
     const inventarioTotal = propiedades.reduce((acc, p) => acc + (Number(p.precio || p.precio_lista) || 0), 0);
     const colocadas = propiedades.filter(p => p.estado === 'Reservado' || p.estado === 'Vendido');
@@ -73,6 +83,7 @@ export default function ReportesPage() {
     const ventasCount = propiedades.filter(p => p.estado === 'Vendido').length;
 
     const metricas = {
+      totalVisitas: visitantesUnicos,
       totalLeads: clientes.length,
       totalCotizaciones: cotizaciones.length,
       totalPasesVip: pasesVip.length,
@@ -212,9 +223,9 @@ export default function ReportesPage() {
           </div>
           
           <div className="bg-white p-5 rounded-2xl border border-neutral-200/60 shadow-sm hover:shadow-md transition-shadow group">
-            <p className="text-[10px] font-bold text-[#D1C292] uppercase tracking-widest">Accesos VIP Web</p>
+            <p className="text-[10px] font-bold text-[#D1C292] uppercase tracking-widest">Pases VIP Emitidos</p>
             <h3 className="text-3xl font-light text-[#21242E] mt-2 group-hover:scale-105 transition-transform origin-left">{metricas.totalPasesVip}</h3>
-            <span className="text-[10px] text-[#415364]/60 font-bold mt-2 block">Interacción autónoma</span>
+            <span className="text-[10px] text-[#415364]/60 font-bold mt-2 block">Accesos al inventario</span>
           </div>
 
           <div className="bg-white p-5 rounded-2xl border border-neutral-200/60 shadow-sm hover:shadow-md transition-shadow group">
@@ -224,7 +235,7 @@ export default function ReportesPage() {
           </div>
 
           <div className="bg-[#21242E] p-5 rounded-2xl border border-neutral-800 shadow-md group">
-            <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest flex justify-between">
+            <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest flex justify-between items-center">
               Ventas Firmadas
               <span className="bg-emerald-400/20 text-emerald-400 px-1.5 py-0.5 rounded text-[8px]">Tasa: {metricas.tasaCierre}%</span>
             </p>
@@ -235,35 +246,55 @@ export default function ReportesPage() {
           <div className="bg-white p-5 rounded-2xl border-l-4 border-[#ea0029] shadow-md group">
             <p className="text-[10px] font-bold text-[#ea0029] uppercase tracking-widest">Volumen Colocado</p>
             <h3 className="text-2xl font-bold text-[#415364] mt-2 font-mono group-hover:scale-105 transition-transform origin-left">
-              ${(metricas.montoColocado / 1000000).toFixed(2)}M
+              \${(metricas.montoColocado / 1000000).toFixed(2)}M
             </h3>
             <span className="text-[10px] text-[#415364]/70 font-bold mt-2 block">
-              {metricas.montoInventario > 0 ? ((metricas.montoColocado / metricas.montoInventario) * 100).toFixed(1) : 0}% de ${(metricas.montoInventario / 1000000).toFixed(2)}M
+              {metricas.montoInventario > 0 ? ((metricas.montoColocado / metricas.montoInventario) * 100).toFixed(1) : 0}% de \${(metricas.montoInventario / 1000000).toFixed(2)}M
             </span>
           </div>
         </div>
 
-        {/* SELECTOR DE PESTAÑAS TIPO PÍLDORA */}
+        {/* SELECTOR DE PESTAÑAS TIPO PÍLDORA CON ICONOS SVG */}
         <div className="flex flex-wrap gap-3 bg-white w-fit p-1.5 rounded-xl shadow-sm border border-neutral-200/60">
-          {[
-            { id: 'marketing', label: 'Marketing y Perfil', icon: '📢' },
-            { id: 'conversion', label: 'Embudo de Ventas', icon: '🎯' },
-            { id: 'ventas', label: 'Absorción de Inventario', icon: '🏢' },
-            { id: 'cotizaciones', label: 'Demanda Simulada', icon: '📄' }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setTabActiva(tab.id as any)}
-              className={`px-5 py-2.5 text-xs font-bold tracking-wider uppercase rounded-lg transition-all flex items-center gap-2 ${
-                tabActiva === tab.id 
-                  ? 'bg-[#ea0029] text-white shadow-md' 
-                  : 'bg-transparent text-[#415364]/60 hover:text-[#415364] hover:bg-[#dce3eb]/30'
-              }`}
-            >
-              <span className="text-sm">{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
+          <button
+            onClick={() => setTabActiva('marketing')}
+            className={`px-5 py-2.5 text-xs font-bold tracking-wider uppercase rounded-lg transition-all flex items-center gap-2 ${
+              tabActiva === 'marketing' ? 'bg-[#ea0029] text-white shadow-md' : 'bg-transparent text-[#415364]/60 hover:text-[#415364] hover:bg-[#dce3eb]/30'
+            }`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
+            Marketing y Perfil
+          </button>
+          
+          <button
+            onClick={() => setTabActiva('conversion')}
+            className={`px-5 py-2.5 text-xs font-bold tracking-wider uppercase rounded-lg transition-all flex items-center gap-2 ${
+              tabActiva === 'conversion' ? 'bg-[#ea0029] text-white shadow-md' : 'bg-transparent text-[#415364]/60 hover:text-[#415364] hover:bg-[#dce3eb]/30'
+            }`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+            Embudo de Ventas
+          </button>
+
+          <button
+            onClick={() => setTabActiva('ventas')}
+            className={`px-5 py-2.5 text-xs font-bold tracking-wider uppercase rounded-lg transition-all flex items-center gap-2 ${
+              tabActiva === 'ventas' ? 'bg-[#ea0029] text-white shadow-md' : 'bg-transparent text-[#415364]/60 hover:text-[#415364] hover:bg-[#dce3eb]/30'
+            }`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+            Absorción de Inventario
+          </button>
+
+          <button
+            onClick={() => setTabActiva('cotizaciones')}
+            className={`px-5 py-2.5 text-xs font-bold tracking-wider uppercase rounded-lg transition-all flex items-center gap-2 ${
+              tabActiva === 'cotizaciones' ? 'bg-[#ea0029] text-white shadow-md' : 'bg-transparent text-[#415364]/60 hover:text-[#415364] hover:bg-[#dce3eb]/30'
+            }`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            Demanda Simulada
+          </button>
         </div>
 
         {/* CONTENIDO DINÁMICO */}
@@ -354,32 +385,71 @@ export default function ReportesPage() {
             </div>
           )}
 
-          {/* TAB 2: EFICIENCIA DE CONVERSIÓN */}
+          {/* TAB 2: EFICIENCIA DE CONVERSIÓN (EMBUDO CONECTADO Y PULIDO) */}
           {tabActiva === 'conversion' && (
             <div className="space-y-8 animate-in fade-in duration-300">
               <div className="border-b border-neutral-100 pb-4">
                 <h2 className="text-sm font-bold text-[#415364] uppercase tracking-widest flex items-center gap-2">
                   <svg className="w-5 h-5 text-[#ea0029]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
-                  Embudo Transaccional
+                  Embudo Transaccional Integral
                 </h2>
-                <p className="text-xs text-[#415364]/60 mt-1 font-medium">Visualiza la caída de prospectos desde la captación hasta la firma (Tasa de conversión real: <strong className="text-[#ea0029]">{metricas.tasaCierre}%</strong>).</p>
+                <p className="text-xs text-[#415364]/60 mt-1 font-medium">Visualiza el viaje completo del cliente, desde el tráfico anónimo hasta la firma.</p>
               </div>
               
-              <div className="space-y-6 max-w-3xl mx-auto mt-8 bg-[#F9F7F5] p-8 rounded-2xl border border-neutral-200/50 shadow-inner">
+              <div className="space-y-6 max-w-4xl mx-auto mt-8 bg-[#F9F7F5] p-8 rounded-2xl border border-neutral-200/50 shadow-inner">
                 {[
-                  { etapa: '1. Leads Captados', valor: metricas.totalLeads, ratio: '100% de la base', color: 'bg-[#21242E]', text:'text-white' },
-                  { etapa: '2. Accesos VIP Creados', valor: metricas.totalPasesVip, ratio: metricas.totalLeads > 0 ? `${((metricas.totalPasesVip/metricas.totalLeads)*100).toFixed(1)}% auto-gestion` : '0%', color: 'bg-[#D1C292]', text:'text-[#21242E]' },
-                  { etapa: '3. Cotizaciones Emitidas', valor: metricas.totalCotizaciones, ratio: metricas.totalLeads > 0 ? `${((metricas.totalCotizaciones/metricas.totalLeads)*100).toFixed(1)}% del tráfico` : '0%', color: 'bg-[#415364]', text:'text-white' },
-                  { etapa: '4. Reservas Formales', valor: metricas.totalReservas, ratio: metricas.totalCotizaciones > 0 ? `${((metricas.totalReservas/metricas.totalCotizaciones)*100).toFixed(1)}% cotizadas` : '0%', color: 'bg-amber-500', text:'text-white' },
-                  { etapa: '5. Ventas / Promesas', valor: metricas.totalVentas, ratio: metricas.totalCotizaciones > 0 ? `${((metricas.totalVentas/metricas.totalCotizaciones)*100).toFixed(1)}% cierre (Cot vs Venta)` : '0%', color: 'bg-[#ea0029]', text:'text-white' },
+                  { 
+                    etapa: '1. Tráfico Web', 
+                    valor: metricas.totalVisitas, 
+                    ratio: '100% (Visitantes Únicos)', 
+                    color: 'bg-neutral-300', 
+                    text:'text-[#415364]',
+                    desc: 'Personas que aterrizaron en la Landing Page.'
+                  },
+                  { 
+                    etapa: '2. Leads Captados', 
+                    valor: metricas.totalLeads, 
+                    ratio: metricas.totalVisitas > 0 ? `${((metricas.totalLeads/metricas.totalVisitas)*100).toFixed(1)}% Conv. Web` : '0%', 
+                    color: 'bg-[#415364]', 
+                    text:'text-white',
+                    desc: 'Dejaron sus datos de contacto en el CRM.'
+                  },
+                  { 
+                    etapa: '3. Accesos VIP Creados', 
+                    valor: metricas.totalPasesVip, 
+                    ratio: metricas.totalLeads > 0 ? `${((metricas.totalPasesVip/metricas.totalLeads)*100).toFixed(1)}% de Leads` : '0%', 
+                    color: 'bg-[#D1C292]', 
+                    text:'text-[#21242E]',
+                    desc: 'Prospectos a los que les generaste un pase.'
+                  },
+                  { 
+                    etapa: '4. Cotizaciones Emitidas', 
+                    valor: metricas.totalCotizaciones, 
+                    ratio: metricas.totalPasesVip > 0 ? `${((metricas.totalCotizaciones/metricas.totalPasesVip)*100).toFixed(1)}% de VIPs` : '0%', 
+                    color: 'bg-[#21242E]', 
+                    text:'text-white',
+                    desc: 'Unidades cotizadas formalmente por los asesores.'
+                  },
+                  { 
+                    etapa: '5. Cierres Finales', 
+                    valor: metricas.totalVentas + metricas.totalReservas, 
+                    ratio: metricas.totalCotizaciones > 0 ? `${(((metricas.totalVentas + metricas.totalReservas)/metricas.totalCotizaciones)*100).toFixed(1)}% Tasa Cierre Global` : '0%', 
+                    color: 'bg-[#ea0029]', 
+                    text:'text-white',
+                    desc: 'Reservas activas y Ventas firmadas.'
+                  },
                 ].map((f, i) => (
-                  <div key={i} className="flex flex-col sm:flex-row sm:items-center gap-3 text-xs group">
-                    <div className="w-48 font-bold text-[#415364] uppercase tracking-wider text-[10px]">{f.etapa}</div>
+                  <div key={i} className="flex flex-col sm:flex-row sm:items-center gap-3 text-xs group relative">
+                    <div className="w-56">
+                      <div className="font-bold text-[#415364] uppercase tracking-wider text-[10px]">{f.etapa}</div>
+                      <div className="text-[9px] text-[#415364]/50 mt-1 hidden md:block">{f.desc}</div>
+                    </div>
                     <div className="flex-1 bg-white h-10 rounded-xl overflow-hidden flex items-center relative border border-neutral-200 shadow-sm">
-                      <div className={`h-full ${f.color} transition-all duration-1000 ease-out`} style={{ width: metricas.totalLeads > 0 ? `${Math.max(8, (f.valor / metricas.totalLeads) * 100)}%` : '0%' }}></div>
+                      {/* Lógica visual del embudo: Tráfico Web es siempre el 100% visual de la barra máxima (si hay visitas) */}
+                      <div className={`h-full ${f.color} transition-all duration-1000 ease-out`} style={{ width: metricas.totalVisitas > 0 ? `${Math.max(5, (f.valor / Math.max(metricas.totalVisitas, 1)) * 100)}%` : '0%' }}></div>
                       <span className={`absolute left-4 font-bold font-mono text-sm ${f.text}`}>{f.valor}</span>
                     </div>
-                    <div className="w-40 sm:text-right font-bold text-[#415364]/50">{f.ratio}</div>
+                    <div className="w-40 sm:text-right font-bold text-[#415364]/60 bg-white sm:bg-transparent p-2 sm:p-0 rounded border sm:border-none border-neutral-200 sm:text-xs text-[10px]">{f.ratio}</div>
                   </div>
                 ))}
               </div>
@@ -394,7 +464,7 @@ export default function ReportesPage() {
                   <svg className="w-5 h-5 text-[#ea0029]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
                   Velocidad de Absorción y Disponibilidad
                 </h2>
-                <p className="text-xs text-[#415364]/60 mt-1 font-medium">Desglose del inventario real, agrupado por tipología de unidades. (No se ve afectado por el filtro de tiempo).</p>
+                <p className="text-xs text-[#415364]/60 mt-1 font-medium">Desglose del inventario real, agrupado por tipología de unidades. (No se ve afectado por el filtro de tiempo, muestra estado actual).</p>
               </div>
               
               <div className="overflow-x-auto border border-neutral-200/60 rounded-2xl shadow-sm custom-scrollbar">
@@ -406,7 +476,7 @@ export default function ReportesPage() {
                       <th className="px-5 py-4 font-bold text-center text-emerald-400">Libres</th>
                       <th className="px-5 py-4 font-bold text-center text-amber-400">Reservas</th>
                       <th className="px-5 py-4 font-bold text-center text-[#ea0029]">Ventas Firmes</th>
-                      <th className="px-5 py-4 font-bold text-right">Volumen Captado ($)</th>
+                      <th className="px-5 py-4 font-bold text-right">Volumen Captado (\$)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100 text-[#415364]">
@@ -417,7 +487,7 @@ export default function ReportesPage() {
                         <td className="px-5 py-4 text-center font-bold text-emerald-600 bg-emerald-50/50">{row.d}</td>
                         <td className="px-5 py-4 text-center font-bold text-amber-600 bg-amber-50/50">{row.r}</td>
                         <td className="px-5 py-4 text-center font-bold text-[#ea0029] bg-[#ea0029]/10">{row.v}</td>
-                        <td className="px-5 py-4 text-right font-bold text-[#415364] font-mono text-[13px]">${row.monto.toLocaleString('en-US')}</td>
+                        <td className="px-5 py-4 text-right font-bold text-[#415364] font-mono text-[13px]">\${row.monto.toLocaleString('en-US')}</td>
                       </tr>
                     )) : (
                       <tr><td colSpan={6} className="text-center py-10 text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">No hay inventario registrado.</td></tr>
