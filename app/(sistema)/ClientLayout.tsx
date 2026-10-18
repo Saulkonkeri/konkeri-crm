@@ -3,11 +3,11 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import React, { useState } from 'react';
-import { supabase } from '@/lib/supabase'; // Aseguramos traer Supabase para matar la sesión
+import { supabase } from '@/lib/supabase';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter(); // Lo necesitamos para redirigir al login al salir
+  const router = useRouter(); 
   const [menuAbierto, setMenuAbierto] = useState(false);
 
   const menuItems = [
@@ -65,7 +65,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
     try {
       await supabase.auth.signOut();
-      router.push('/login'); // Expulsión directa a la pantalla de contraseña
+      router.push('/login'); 
     } catch (error) {
       console.error('Error cerrando sesión:', error);
       alert('Hubo un problema cerrando la sesión.');
@@ -141,16 +141,6 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           </div>
           
           <div className="flex flex-col gap-1.5">
-            <Link 
-              href="/" // 🔥 Corregido: Ahora lleva a la raíz real de la Landing Page
-              target="_blank" // Opcional: Para que se abra en otra pestaña y no cierres el sistema por error
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-neutral-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors text-[11px] font-bold uppercase tracking-wider"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-              Ver Landing Page
-            </Link>
-
-            {/* 🔥 NUEVO: Botón de Cerrar Sesión (Visible siempre en PC y Móvil) */}
             <button 
               onClick={handleCerrarSesion}
               className="w-full flex items-center gap-3 px-4 py-2.5 text-neutral-400 hover:text-[#ea0029] hover:bg-white/5 rounded-lg transition-colors text-[11px] font-bold uppercase tracking-wider"
@@ -176,7 +166,6 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           </button>
         </header>
         
-        {/* ELIMINAMOS RELATIVE Z-10 DE AQUÍ PARA SOLTAR LOS PANELES */}
         <div className="flex-1 overflow-y-auto w-full">
           {children}
         </div>
