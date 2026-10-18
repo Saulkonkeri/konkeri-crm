@@ -22,7 +22,6 @@ export default function ReportesPage() {
       try {
         const [propsRes, clientesRes, cotizacionesRes, trackingRes] = await Promise.all([
           supabase.from('propiedades').select('*'),
-          // 🔥 Solución VIP: Traemos el estado_acceso para saber quién ha recibido un pase históricamente
           supabase.from('clientes').select('id, created_at, origen_captacion, campana, estado, tipo, ciudad_residencia, tipologia_interes, estado_acceso'),
           supabase.from('cotizaciones').select('id, created_at, unidad_numero'),
           supabase.from('tracking_inventario').select('visitor_id, session_id, accion, created_at')
@@ -245,13 +244,14 @@ export default function ReportesPage() {
             <span className="text-[10px] text-white/50 font-medium mt-2 block">Promesas / Escrituras</span>
           </div>
 
+          {/* 🔥 SE ELIMINAN LAS BARRAS INVERTIDAS EN LOS SÍMBOLOS DE DÓLARES */}
           <div className="bg-white p-5 rounded-2xl border-l-4 border-[#ea0029] shadow-md group">
             <p className="text-[10px] font-bold text-[#ea0029] uppercase tracking-widest">Volumen Colocado</p>
             <h3 className="text-2xl font-bold text-[#415364] mt-2 font-mono group-hover:scale-105 transition-transform origin-left">
-              \${(metricas.montoColocado / 1000000).toFixed(2)}M
+              {"\$"}{(metricas.montoColocado / 1000000).toFixed(2)}M
             </h3>
             <span className="text-[10px] text-[#415364]/70 font-bold mt-2 block">
-              {metricas.montoInventario > 0 ? ((metricas.montoColocado / metricas.montoInventario) * 100).toFixed(1) : 0}% de \${(metricas.montoInventario / 1000000).toFixed(2)}M
+              {metricas.montoInventario > 0 ? ((metricas.montoColocado / metricas.montoInventario) * 100).toFixed(1) : 0}% de {"\$"}{(metricas.montoInventario / 1000000).toFixed(2)}M
             </span>
           </div>
         </div>
@@ -488,8 +488,8 @@ export default function ReportesPage() {
                         <td className="px-5 py-4 text-center font-bold text-emerald-600 bg-emerald-50/50">{row.d}</td>
                         <td className="px-5 py-4 text-center font-bold text-amber-600 bg-amber-50/50">{row.r}</td>
                         <td className="px-5 py-4 text-center font-bold text-[#ea0029] bg-[#ea0029]/10">{row.v}</td>
-                        {/* 🔥 Solución del Slash: Removida la barra diagonal invertida */}
-                        <td className="px-5 py-4 text-right font-bold text-[#415364] font-mono text-[13px]">\${row.monto.toLocaleString('en-US')}</td>
+                        {/* 🔥 Solución del Slash: Implementación infalible con {"\$"} */}
+                        <td className="px-5 py-4 text-right font-bold text-[#415364] font-mono text-[13px]">{"\$"}{row.monto.toLocaleString('en-US')}</td>
                       </tr>
                     )) : (
                       <tr><td colSpan={6} className="text-center py-10 text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">No hay inventario registrado.</td></tr>
