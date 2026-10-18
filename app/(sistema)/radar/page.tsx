@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
+import Link from 'next/link';
 
 // ==========================================
 // 1. DEFINICIÓN DE TIPOS
@@ -49,10 +50,36 @@ type ItemFeed = {
   detalle: string;
   nombre: string;
   email: string | null;
+  telefono?: string | null;
+  origen?: string | null;
+  campana?: string | null;
+  cliente_id?: string | null;
 };
 
 // ==========================================
-// 2. FUNCIONES AUXILIARES PURAS (TIEMPO INTELIGENTE)
+// 2. DICCIONARIO DE SEPARACIÓN WEB VS VIP
+// ==========================================
+const ACCIONES_LANDING_PUBLICA = [
+  'VISITA_LANDING', 
+  'SCROLL_50', 
+  'SCROLL_90', 
+  'VIO_ARQUITECTURA',
+  'CLIC_DISPONIBILIDAD', 
+  'VIO_PLANO', 
+  'INICIO_COTIZACION', 
+  'ABRIO_FORMULARIO', 
+  'ABRIO_CALENDLY', 
+  'ABRIO_MODAL_BROCHURE',
+  'REGISTRO_COMPLETADO', 
+  'DESCARGA_BROCHURE', 
+  'CLIC_WHATSAPP', 
+  'CLIC_WHATSAPP_PLANO', 
+  'SOLICITUD_ACCESO_VIP', 
+  'VISITA_CAPTURA'
+];
+
+// ==========================================
+// 3. FUNCIONES AUXILIARES PURAS
 // ==========================================
 const formatTiempoAtras = (fecha: Date) => {
   const ahora = new Date().getTime();
@@ -96,6 +123,7 @@ export default function RadarCentral() {
   // ESTADOS FEED EN VIVO
   const [feedEnVivo, setFeedEnVivo] = useState<ItemFeed[]>([]);
   const [cargandoFeed, setCargandoFeed] = useState(true);
+  const [feedExpandido, setFeedExpandido] = useState<string | null>(null);
 
   // ESTADOS ACCESOS VIP
   const [accesosVip, setAccesosVip] = useState<any[]>([]);
@@ -116,7 +144,7 @@ export default function RadarCentral() {
 
   useEffect(() => {
     cargarDatos();
-    const intervalo = setInterval(() => setTicker(t => t + 1), 60000); // Actualiza la hora cada minuto
+    const intervalo = setInterval(() => setTicker(t => t + 1), 60000); 
     return () => clearInterval(intervalo);
   }, [filtroTiempo]);
 
@@ -127,62 +155,84 @@ export default function RadarCentral() {
     cargarActividadWeb();
   };
 
+  const abrirWhatsApp = (telefono: string, nombres: string) => {
+    if (!telefono || telefono === 'N/A') { alert("Este cliente no tiene teléfono registrado."); return; }
+    let numLimpio = telefono.split('').filter(char => char >= '0' && char <= '9').join('');
+    if (numLimpio.startsWith('0') && numLimpio.length === 10) numLimpio = '593' + numLimpio.substring(1);
+    else if (numLimpio.length === 9) numLimpio = '593' + numLimpio;
+    const mensaje = `Hola ${nombres}, soy Saúl de Konkeri. Acabo de ver tu interés en el proyecto Arienzo Boutique Living...`;
+    window.open(`https://wa.me/${numLimpio}?text=${encodeURIComponent(mensaje)}`, '_blank');
+  };
+
   // ==========================================
   // LÓGICA PESTAÑA 1: FEED EN VIVO (PULSO DEL NEGOCIO)
   // ==========================================
   const cargarFeedEnVivo = async () => {
     setCargandoFeed(true);
     try {
-      // 1. Traer interacciones valiosas (ignoramos scrolls y visitas silenciosas para no ensuciar)
       const { data: trackData } = await supabase.from('tracking_inventario')
         .select('*')
         .not('accion', 'in', '("SCROLL_50", "SCROLL_90", "VISITA_LANDING")')
         .order('created_at', { ascending: false })
         .limit(100);
 
-      // 2. Traer leads recién registrados
+      // 🔥 AHORA TRAEMOS TODOS LOS DATOS VALIOSOS DEL CLIENTE
       const { data: clientData } = await supabase.from('clientes')
-        .select('id, nombres, apellidos, email, origen, created_at')
+        .select('id, nombres, apellidos, telefono, email, origen_captacion, origen, campana, created_at')
         .order('created_at', { ascending: false })
         .limit(50);
 
-      // 3. Mapear correos a nombres (Cruzar data para que salga el nombre de la persona)
+      // Cruzamos los correos del tracking web para ponerles nombre y teléfono
       const emails = Array.from(new Set(trackData?.map(t => t.email_cliente).filter(e => e && e.includes('@'))));
-      let lookup: Record<string, string> = {};
+      let lookup: Record<string, { nombre: string, telefono: string, id: string }> = {};
+      
       if (emails.length > 0) {
-        const { data: cData } = await supabase.from('clientes').select('email, nombres, apellidos').in('email', emails);
-        cData?.forEach(c => lookup[c.email.toLowerCase()] = `${c.nombres} ${c.apellidos || ''}`.trim());
+        const { data: cData } = await supabase.from('clientes').select('id, email, nombres, apellidos, telefono').in('email', emails);
+        cData?.forEach(c => {
+          lookup[c.email.toLowerCase()] = {
+            nombre: `${c.nombres} ${c.apellidos || ''}`.trim(),
+            telefono: c.telefono || '',
+            id: c.id
+          };
+        });
       }
 
       const feedUnificado: ItemFeed[] = [];
       
       trackData?.forEach(t => {
+        const info = t.email_cliente ? lookup[t.email_cliente.toLowerCase()] : null;
         const isAnon = !t.email_cliente || t.email_cliente === 'Anónimo';
+        
         feedUnificado.push({
           id: `trk-${t.id}`,
           fecha: new Date(t.created_at),
           accion: t.accion,
           detalle: t.detalle,
-          nombre: lookup[t.email_cliente?.toLowerCase()] || (isAnon ? 'Visitante Anónimo' : t.email_cliente),
-          email: t.email_cliente
+          nombre: info ? info.nombre : (isAnon ? 'Visitante Anónimo' : t.email_cliente),
+          email: t.email_cliente,
+          telefono: info?.telefono,
+          cliente_id: info?.id
         });
       });
 
       clientData?.forEach(c => {
+        const origenReal = c.origen_captacion || c.origen || 'Web';
         feedUnificado.push({
           id: `cli-${c.id}`,
           fecha: new Date(c.created_at),
           accion: 'NUEVO_LEAD',
-          detalle: `Se registró en la plataforma vía ${c.origen || 'Web'}`,
+          detalle: `Se registró en la plataforma. Origen: ${origenReal}`,
           nombre: `${c.nombres} ${c.apellidos || ''}`.trim(),
-          email: c.email
+          email: c.email,
+          telefono: c.telefono,
+          origen: origenReal,
+          campana: c.campana,
+          cliente_id: c.id
         });
       });
 
-      // Ordenar cronológicamente
       feedUnificado.sort((a,b) => b.fecha.getTime() - a.fecha.getTime());
       
-      // Limpiar duplicados sutiles (si el webhook de FB y el tracking web se disparan al mismo tiempo)
       const feedFiltrado = feedUnificado.filter((v,i,a) => 
         a.findIndex(t => (t.nombre === v.nombre && Math.abs(t.fecha.getTime() - v.fecha.getTime()) < 60000 && (t.accion.includes('LEAD') || t.accion.includes('REGISTRO')))) === i
       );
@@ -201,7 +251,6 @@ export default function RadarCentral() {
   const cargarAccesos = async () => {
     setCargandoAccesos(true);
     try {
-      // Traemos todos los accesos generados
       const { data: accesos } = await supabase.from('accesos_inventario').select('*').order('expira_en', { ascending: false });
       
       if (!accesos || accesos.length === 0) {
@@ -209,7 +258,6 @@ export default function RadarCentral() {
         return;
       }
 
-      // Traemos la data de los clientes a los que les pertenecen esos accesos
       const emails = accesos.map(a => a.email);
       const { data: clientes } = await supabase.from('clientes').select('id, nombres, apellidos, telefono, email').in('email', emails);
 
@@ -275,7 +323,7 @@ export default function RadarCentral() {
       await supabase.from('accesos_inventario').upsert({ email: cliente.email.toLowerCase().trim(), expira_en: fechaExpiracion.toISOString() });
       await supabase.from('clientes').update({ estado_acceso: 'aprobado' }).eq('email', cliente.email.toLowerCase().trim());
 
-      cargarAccesos(); // Refrescar vista
+      cargarAccesos(); 
       alert(`Acceso activado correctamente para ${cliente.nombres}.`);
       
     } catch (error) {
@@ -307,15 +355,6 @@ export default function RadarCentral() {
     } catch (error) { alert("Error al intentar enviar el correo."); }
   };
 
-  const abrirWhatsApp = (telefono: string, nombres: string) => {
-    if (!telefono || telefono === 'N/A') { alert("Este cliente no tiene teléfono."); return; }
-    let numLimpio = telefono.split('').filter(char => char >= '0' && char <= '9').join('');
-    if (numLimpio.startsWith('0') && numLimpio.length === 10) numLimpio = '593' + numLimpio.substring(1);
-    else if (numLimpio.length === 9) numLimpio = '593' + numLimpio;
-    const mensaje = `Hola ${nombres}, soy Saúl de Konkeri. He validado tu perfil y tu acceso VIP al inventario de Arienzo está listo. Puedes ingresar aquí: https://reserva.arienzoliving.com con tu correo.`;
-    window.open(`https://wa.me/${numLimpio}?text=${encodeURIComponent(mensaje)}`, '_blank');
-  };
-
   // ==========================================
   // LÓGICA PESTAÑA 2: RADAR INVENTARIO
   // ==========================================
@@ -342,17 +381,7 @@ export default function RadarCentral() {
     try {
       const { data } = await supabase.from('tracking_inventario').select('*').order('created_at', { ascending: false }).limit(2000); 
       if (data) {
-        // Ignoramos eventos de landing page para solo monitorear comportamiento del inventario VIP
-        const accionesIgnoradas = ['SOLICITUD_ACCESO_VIP','ABRIO_CALENDLY','VISITA_LANDING','ABRIO_FORMULARIO','CLIC_WHATSAPP','REGISTRO_COMPLETADO','CLIC_DISPONIBILIDAD','DESCARGA_BROCHURE', 'VISITA_CAPTURA'];
-        const dataFiltrada = data.filter(row => {
-          const esAccionValida = !accionesIgnoradas.includes(row.accion);
-          const noEsScroll = !row.accion.startsWith('SCROLL_');
-          const noEsVista = !row.accion.startsWith('VIO_');
-          const detalleMayus = (row.detalle || '').toUpperCase();
-          const noEsLanding = !detalleMayus.includes('LANDING');
-          const noEsCaptura = !detalleMayus.includes('CAPTURA') && !detalleMayus.includes('LINK DIRECTO'); 
-          return esAccionValida && noEsScroll && noEsVista && noEsLanding && noEsCaptura;
-        });
+        const dataFiltrada = data.filter(row => !ACCIONES_LANDING_PUBLICA.includes(row.accion));
 
         const datosCronologicos = [...dataFiltrada].reverse();
         const sesionesList: SesionCliente[] = [];
@@ -407,8 +436,9 @@ export default function RadarCentral() {
   // LÓGICA PESTAÑA 3: ACTIVIDAD WEB
   // ==========================================
   const PESOS_EVENTOS: Record<string, number> = {
-    'VISITA_LANDING': 1, 'SCROLL_50': 2, 'SCROLL_90': 3, 'VIO_ARQUITECTURA': 2,
-    'ABRIO_FORMULARIO': 6, 'ABRIO_CALENDLY': 8, 'CLIC_WHATSAPP': 10, 'DESCARGA_BROCHURE': 12, 'REGISTRO_COMPLETADO': 15,
+    'VISITA_LANDING': 1, 'SCROLL_50': 2, 'SCROLL_90': 3, 'VIO_ARQUITECTURA': 2, 'VIO_PLANO': 3,
+    'ABRIO_FORMULARIO': 6, 'ABRIO_CALENDLY': 8, 'CLIC_WHATSAPP': 10, 'CLIC_WHATSAPP_PLANO': 10, 
+    'DESCARGA_BROCHURE': 12, 'REGISTRO_COMPLETADO': 15, 'INICIO_COTIZACION': 10
   };
 
   const cargarActividadWeb = async () => {
@@ -422,7 +452,9 @@ export default function RadarCentral() {
       const { data } = await supabase.from('tracking_inventario').select('*').gte('created_at', fechaLimite.toISOString()).order('created_at', { ascending: false }).limit(3000); 
 
       if (data) {
-        const datosCronologicos = [...data].reverse();
+        const dataFiltrada = data.filter(row => ACCIONES_LANDING_PUBLICA.includes(row.accion));
+        
+        const datosCronologicos = [...dataFiltrada].reverse();
         setEventosWeb(datosCronologicos);
         procesarVisitantes(datosCronologicos);
       }
@@ -500,7 +532,7 @@ export default function RadarCentral() {
     const funnel = {
       visitas: eventosWeb.filter(e => e.accion === 'VISITA_LANDING').length,
       scroll50: eventosWeb.filter(e => e.accion === 'SCROLL_50').length,
-      intentosContacto: eventosWeb.filter(e => ['ABRIO_FORMULARIO', 'ABRIO_CALENDLY', 'CLIC_WHATSAPP'].includes(e.accion)).length,
+      intentosContacto: eventosWeb.filter(e => ['ABRIO_FORMULARIO', 'ABRIO_CALENDLY', 'CLIC_WHATSAPP', 'INICIO_COTIZACION'].includes(e.accion)).length,
       registros: conversiones
     };
 
@@ -541,6 +573,9 @@ export default function RadarCentral() {
         </button>
       </div>
 
+      {/* ============================================================== */}
+      {/* PESTAÑA FEED EN VIVO CON TARJETAS EXPANDIBLES Y PUENTE AL CRM */}
+      {/* ============================================================== */}
       {pestañaActiva === 'feed' && (
         <div className="bg-white rounded-2xl shadow-sm border border-neutral-200/60 overflow-hidden animate-in fade-in slide-in-from-bottom-2 w-full max-w-4xl mx-auto">
           <div className="px-6 py-5 border-b border-neutral-100 flex justify-between items-center bg-[#21242E]">
@@ -558,26 +593,81 @@ export default function RadarCentral() {
               <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-[#ea0029]/30 before:via-[#415364]/10 before:to-transparent">
                 {feedEnVivo.map((item, idx) => {
                   const style = obtenerIconoFeed(item.accion);
+                  const isExpanded = feedExpandido === item.id;
+                  const isLeadInfo = item.email && item.email !== 'Anónimo';
+
                   return (
-                    <div key={idx} className="relative flex items-center group transition-transform hover:-translate-y-0.5">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-full border-[3px] border-[#F9F7F5] z-10 ml-[2px] mr-4 shrink-0 shadow-sm bg-white">
+                    <div key={idx} className="relative flex items-start group">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full border-[3px] border-[#F9F7F5] z-10 ml-[2px] mr-4 shrink-0 shadow-sm bg-white mt-2">
                         <span className="text-xs">{style.icon}</span>
                       </div>
-                      <div className={`w-full bg-white p-4 rounded-xl border shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-2 hover:shadow-md transition-shadow ${style.color.split(' ')[0]} ${style.color.split(' ')[2]}`}>
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[13px] font-bold text-[#415364]">{item.nombre}</span>
-                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider border ${style.color}`}>
-                              {formatAccionTexto(item.accion)}
-                            </span>
+                      
+                      {/* CONTENEDOR DE LA TARJETA (HACER CLIC PARA EXPANDIR) */}
+                      <div 
+                        onClick={() => isLeadInfo && setFeedExpandido(isExpanded ? null : item.id)}
+                        className={`w-full bg-white p-4 rounded-xl border shadow-sm flex flex-col transition-all ${style.color.split(' ')[0]} ${style.color.split(' ')[2]} ${isLeadInfo ? 'cursor-pointer hover:shadow-md' : ''}`}
+                      >
+                        {/* VISTA RESUMIDA */}
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-[13px] font-bold text-[#415364]">{item.nombre}</span>
+                              <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider border ${style.color}`}>
+                                {formatAccionTexto(item.accion)}
+                              </span>
+                            </div>
+                            <span className="text-[11px] text-[#415364]/80 font-medium leading-relaxed">{item.detalle}</span>
                           </div>
-                          <span className="text-[11px] text-[#415364]/80 font-medium leading-relaxed">{item.detalle}</span>
+                          <div className="text-right shrink-0 mt-2 md:mt-0 flex flex-col items-end gap-1">
+                            <span className="text-[10px] font-bold text-[#ea0029] bg-white border border-[#ea0029]/20 px-3 py-1.5 rounded-lg shadow-sm whitespace-nowrap block">
+                              {formatTiempoAtras(item.fecha)}
+                            </span>
+                            {isLeadInfo && !isExpanded && (
+                              <span className="text-[8px] uppercase tracking-widest text-[#415364]/40 font-bold hidden md:block">Clic para ver datos 👇</span>
+                            )}
+                          </div>
                         </div>
-                        <div className="text-right shrink-0 mt-2 md:mt-0">
-                          <span className="text-[10px] font-bold text-[#ea0029] bg-white border border-[#ea0029]/20 px-3 py-1.5 rounded-lg shadow-sm whitespace-nowrap block">
-                            {formatTiempoAtras(item.fecha)}
-                          </span>
-                        </div>
+
+                        {/* VISTA EXPANDIDA CON DATOS Y BOTONES (PUENTE AL CRM) */}
+                        {isExpanded && (
+                          <div className="mt-4 pt-4 border-t border-neutral-100 grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in duration-200">
+                            <div>
+                              <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest mb-1">Información de Contacto</p>
+                              <p className="text-[11px] font-mono font-medium text-neutral-700">{item.email || 'Sin correo registrado'}</p>
+                              <p className="text-[11px] font-mono font-medium text-neutral-700 mt-0.5">{item.telefono || 'Sin teléfono registrado'}</p>
+                            </div>
+                            
+                            {(item.origen || item.campana) && (
+                              <div>
+                                <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest mb-1">Procedencia</p>
+                                <p className="text-[11px] font-medium text-neutral-700">{item.origen || 'Web'}</p>
+                                {item.campana && <p className="text-[10px] text-neutral-500 mt-0.5">Camp: {item.campana}</p>}
+                              </div>
+                            )}
+
+                            <div className="sm:col-span-2 flex flex-wrap gap-2 mt-2">
+                              {item.telefono && (
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); abrirWhatsApp(item.telefono!, item.nombre); }}
+                                  className="bg-[#25D366] text-white hover:bg-[#128C7E] px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm flex items-center gap-1.5"
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+                                  Responder Inmediato
+                                </button>
+                              )}
+                              
+                              <Link href="/crm" passHref>
+                                <button 
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="bg-[#21242E] text-white hover:bg-black px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm flex items-center gap-1.5"
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                  Gestionar en CRM
+                                </button>
+                              </Link>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -676,7 +766,7 @@ export default function RadarCentral() {
       {pestañaActiva === 'inventario' && (
         <div className="bg-white border border-neutral-200/60 rounded-2xl shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2 w-full">
           {cargandoRadar && sesiones.length === 0 && (
-            <div className="p-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px] animate-pulse">Cargando lecturas del inventario...</div>
+            <div className="p-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px] animate-pulse">Cargando lecturas del inventario VIP...</div>
           )}
           {!(cargandoRadar && sesiones.length === 0) && (
             <div className="overflow-x-auto custom-scrollbar w-full">
