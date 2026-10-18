@@ -42,17 +42,32 @@ type VisitanteAgrupado = {
   nivelInteraccion: 'ALTO' | 'MEDIO' | 'BAJO';
 };
 
+type ItemFeed = {
+  id: string;
+  fecha: Date;
+  accion: string;
+  detalle: string;
+  nombre: string;
+  email: string | null;
+};
+
 // ==========================================
-// 2. FUNCIONES AUXILIARES PURAS
+// 2. FUNCIONES AUXILIARES PURAS (TIEMPO INTELIGENTE)
 // ==========================================
 const formatTiempoAtras = (fecha: Date) => {
   const ahora = new Date().getTime();
   const diffMs = ahora - fecha.getTime();
-  if (diffMs > 86400000) {
-    return new Date(fecha).toLocaleDateString('es-EC', { day: '2-digit', month: 'short' });
-  }
-  const minutos = Math.round(diffMs / 60000);
-  return `Hace ${minutos} min`;
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHrs = Math.floor(diffMin / 60);
+  const diffDias = Math.floor(diffHrs / 24);
+
+  if (diffMin < 1) return 'Hace un momento';
+  if (diffMin < 60) return `Hace ${diffMin} ${diffMin === 1 ? 'minuto' : 'minutos'}`;
+  if (diffHrs < 24) return `Hace ${diffHrs} ${diffHrs === 1 ? 'hora' : 'horas'}`;
+  if (diffDias === 1) return 'Ayer';
+  if (diffDias < 7) return `Hace ${diffDias} días`;
+  
+  return new Date(fecha).toLocaleDateString('es-EC', { day: '2-digit', month: 'short' });
 };
 
 const formatMinutos = (mins: number) => {
@@ -65,21 +80,34 @@ const formatAccionTexto = (str: string) => {
   return str.split('_').join(' ');
 };
 
-export default function RadarCentral() {
-  const [pestañaActiva, setPestañaActiva] = useState('solicitudes'); 
-  
-  // ESTADOS PESTAÑA 1
-  const [solicitudes, setSolicitudes] = useState<any[]>([]);
-  const [cargandoSolicitudes, setCargandoSolicitudes] = useState(true);
-  const [tiemposSeleccionados, setTiemposSeleccionados] = useState<Record<string, string>>({});
-  const [ticker, setTicker] = useState(0); 
+const obtenerIconoFeed = (accion: string) => {
+  if (accion.includes('LEAD') || accion.includes('REGISTRO')) return { icon: '🟢', color: 'bg-green-50 text-green-700 border-green-200' };
+  if (accion.includes('BROCHURE')) return { icon: '📄', color: 'bg-blue-50 text-blue-700 border-blue-200' };
+  if (accion.includes('WHATSAPP')) return { icon: '📱', color: 'bg-[#25D366]/10 text-[#1DA851] border-[#25D366]/30' };
+  if (accion.includes('CALENDLY') || accion.includes('CITA')) return { icon: '🗓️', color: 'bg-purple-50 text-purple-700 border-purple-200' };
+  if (accion.includes('VIP') || accion.includes('INVENTARIO') || accion.includes('DISPONIBILIDAD')) return { icon: '🎯', color: 'bg-amber-50 text-amber-700 border-amber-200' };
+  return { icon: '👁️', color: 'bg-neutral-100 text-neutral-600 border-neutral-200' };
+};
 
-  // ESTADOS PESTAÑA 2
+export default function RadarCentral() {
+  const [pestañaActiva, setPestañaActiva] = useState('feed'); 
+  const [ticker, setTicker] = useState(0); 
+  
+  // ESTADOS FEED EN VIVO
+  const [feedEnVivo, setFeedEnVivo] = useState<ItemFeed[]>([]);
+  const [cargandoFeed, setCargandoFeed] = useState(true);
+
+  // ESTADOS ACCESOS VIP
+  const [accesosVip, setAccesosVip] = useState<any[]>([]);
+  const [cargandoAccesos, setCargandoAccesos] = useState(true);
+  const [tiemposSeleccionados, setTiemposSeleccionados] = useState<Record<string, string>>({});
+
+  // ESTADOS RADAR INVENTARIO
   const [sesiones, setSesiones] = useState<SesionCliente[]>([]);
   const [cargandoRadar, setCargandoRadar] = useState(true);
   const [sesionExpandida, setSesionExpandida] = useState<string | null>(null);
 
-  // ESTADOS PESTAÑA 3
+  // ESTADOS ACTIVIDAD WEB
   const [eventosWeb, setEventosWeb] = useState<EventoWeb[]>([]);
   const [visitantesAgrupados, setVisitantesAgrupados] = useState<VisitanteAgrupado[]>([]);
   const [cargandoWeb, setCargandoWeb] = useState(true);
@@ -88,69 +116,129 @@ export default function RadarCentral() {
 
   useEffect(() => {
     cargarDatos();
-    const intervalo = setInterval(() => setTicker(t => t + 1), 60000);
+    const intervalo = setInterval(() => setTicker(t => t + 1), 60000); // Actualiza la hora cada minuto
     return () => clearInterval(intervalo);
   }, [filtroTiempo]);
 
   const cargarDatos = () => {
-    cargarSolicitudes();
+    cargarFeedEnVivo();
+    cargarAccesos();
     cargarRadar();
     cargarActividadWeb();
   };
 
   // ==========================================
-  // LÓGICA PESTAÑA 1: SOLICITUDES VIP
+  // LÓGICA PESTAÑA 1: FEED EN VIVO (PULSO DEL NEGOCIO)
   // ==========================================
-  const cargarSolicitudes = async () => {
-    setCargandoSolicitudes(true);
+  const cargarFeedEnVivo = async () => {
+    setCargandoFeed(true);
     try {
-      const { data: clientesData, error: errClientes } = await supabase
-        .from('clientes')
+      // 1. Traer interacciones valiosas (ignoramos scrolls y visitas silenciosas para no ensuciar)
+      const { data: trackData } = await supabase.from('tracking_inventario')
         .select('*')
-        .eq('origen', 'Web Pública - Solicitud Acceso Exclusivo')
+        .not('accion', 'in', '("SCROLL_50", "SCROLL_90", "VISITA_LANDING")')
         .order('created_at', { ascending: false })
         .limit(100);
 
-      if (errClientes) throw errClientes;
+      // 2. Traer leads recién registrados
+      const { data: clientData } = await supabase.from('clientes')
+        .select('id, nombres, apellidos, email, origen, created_at')
+        .order('created_at', { ascending: false })
+        .limit(50);
 
-      if (clientesData && clientesData.length > 0) {
-        const emails = clientesData.map(c => c.email?.toLowerCase().trim()).filter(Boolean);
-        let mapaAccesos: Record<string, string> = {};
-
-        if (emails.length > 0) {
-          const { data: accesosData } = await supabase
-            .from('accesos_inventario')
-            .select('email, expira_en')
-            .in('email', emails);
-
-          if (accesosData) {
-            accesosData.forEach(acc => {
-              mapaAccesos[acc.email] = acc.expira_en;
-            });
-          }
-        }
-
-        const solicitudesCompletas = clientesData.map(c => ({
-          ...c,
-          expira_en: c.email ? mapaAccesos[c.email.toLowerCase().trim()] : null
-        }));
-
-        setSolicitudes(solicitudesCompletas);
-        const tiemposInit: Record<string, string> = {};
-        solicitudesCompletas.forEach(c => { tiemposInit[c.id] = '24'; });
-        setTiemposSeleccionados(tiemposInit);
-      } else {
-        setSolicitudes([]);
+      // 3. Mapear correos a nombres (Cruzar data para que salga el nombre de la persona)
+      const emails = Array.from(new Set(trackData?.map(t => t.email_cliente).filter(e => e && e.includes('@'))));
+      let lookup: Record<string, string> = {};
+      if (emails.length > 0) {
+        const { data: cData } = await supabase.from('clientes').select('email, nombres, apellidos').in('email', emails);
+        cData?.forEach(c => lookup[c.email.toLowerCase()] = `${c.nombres} ${c.apellidos || ''}`.trim());
       }
-    } catch (error) {
-      console.error("Error al cargar solicitudes:", error);
+
+      const feedUnificado: ItemFeed[] = [];
+      
+      trackData?.forEach(t => {
+        const isAnon = !t.email_cliente || t.email_cliente === 'Anónimo';
+        feedUnificado.push({
+          id: `trk-${t.id}`,
+          fecha: new Date(t.created_at),
+          accion: t.accion,
+          detalle: t.detalle,
+          nombre: lookup[t.email_cliente?.toLowerCase()] || (isAnon ? 'Visitante Anónimo' : t.email_cliente),
+          email: t.email_cliente
+        });
+      });
+
+      clientData?.forEach(c => {
+        feedUnificado.push({
+          id: `cli-${c.id}`,
+          fecha: new Date(c.created_at),
+          accion: 'NUEVO_LEAD',
+          detalle: `Se registró en la plataforma vía ${c.origen || 'Web'}`,
+          nombre: `${c.nombres} ${c.apellidos || ''}`.trim(),
+          email: c.email
+        });
+      });
+
+      // Ordenar cronológicamente
+      feedUnificado.sort((a,b) => b.fecha.getTime() - a.fecha.getTime());
+      
+      // Limpiar duplicados sutiles (si el webhook de FB y el tracking web se disparan al mismo tiempo)
+      const feedFiltrado = feedUnificado.filter((v,i,a) => 
+        a.findIndex(t => (t.nombre === v.nombre && Math.abs(t.fecha.getTime() - v.fecha.getTime()) < 60000 && (t.accion.includes('LEAD') || t.accion.includes('REGISTRO')))) === i
+      );
+
+      setFeedEnVivo(feedFiltrado.slice(0, 100));
+    } catch (e) {
+      console.error(e);
     } finally {
-      setCargandoSolicitudes(false);
+      setCargandoFeed(false);
+    }
+  };
+
+  // ==========================================
+  // LÓGICA PESTAÑA 4: CONTROL DE ACCESOS VIP
+  // ==========================================
+  const cargarAccesos = async () => {
+    setCargandoAccesos(true);
+    try {
+      // Traemos todos los accesos generados
+      const { data: accesos } = await supabase.from('accesos_inventario').select('*').order('expira_en', { ascending: false });
+      
+      if (!accesos || accesos.length === 0) {
+        setAccesosVip([]);
+        return;
+      }
+
+      // Traemos la data de los clientes a los que les pertenecen esos accesos
+      const emails = accesos.map(a => a.email);
+      const { data: clientes } = await supabase.from('clientes').select('id, nombres, apellidos, telefono, email').in('email', emails);
+
+      const combinados = accesos.map(acc => {
+        const cli = clientes?.find(c => c.email?.toLowerCase() === acc.email.toLowerCase());
+        return {
+          id: cli?.id || acc.email,
+          email: acc.email,
+          nombres: cli ? `${cli.nombres} ${cli.apellidos || ''}` : 'Cliente Web',
+          telefono: cli?.telefono || 'N/A',
+          expira_en: acc.expira_en
+        };
+      });
+
+      setAccesosVip(combinados);
+      
+      const tiemposInit: Record<string, string> = {};
+      combinados.forEach(c => { tiemposInit[c.id] = '24'; });
+      setTiemposSeleccionados(tiemposInit);
+
+    } catch (error) {
+      console.error("Error al cargar accesos:", error);
+    } finally {
+      setCargandoAccesos(false);
     }
   };
 
   const calcularTiempoRestante = (expiraEn?: string | null) => {
-    if (!expiraEn) return { estado: 'sin_pase', texto: 'Sin pase generado' };
+    if (!expiraEn) return { estado: 'sin_pase', texto: 'Sin pase' };
     const diff = new Date(expiraEn).getTime() - new Date().getTime();
     if (diff <= 0) return { estado: 'caducado', texto: 'Caducado' };
     
@@ -172,10 +260,10 @@ export default function RadarCentral() {
     const esRenovacion = statusTiempo.estado === 'caducado' || statusTiempo.estado === 'activo';
     
     const mensaje = horasStr === '999' 
-      ? `¿Estás seguro de darle acceso ILIMITADO a ${cliente.nombres}?`
+      ? `¿Darle acceso ILIMITADO a ${cliente.nombres}?`
       : esRenovacion 
         ? `¿Renovar el acceso de ${cliente.nombres} por ${horasStr} horas?`
-        : `¿Estás seguro de aprobar el acceso a ${cliente.nombres} por ${horasStr} horas?`;
+        : `¿Aprobar el acceso a ${cliente.nombres} por ${horasStr} horas?`;
 
     const confirmar = window.confirm(mensaje);
     if (!confirmar) return; 
@@ -184,98 +272,59 @@ export default function RadarCentral() {
       const fechaExpiracion = new Date();
       fechaExpiracion.setHours(fechaExpiracion.getHours() + horasNum);
 
-      const { data: dataPase, error: errorPase } = await supabase
-        .from('accesos_inventario')
-        .upsert({ 
-          email: cliente.email.toLowerCase().trim(), 
-          expira_en: fechaExpiracion.toISOString() 
-        })
-        .select();
+      await supabase.from('accesos_inventario').upsert({ email: cliente.email.toLowerCase().trim(), expira_en: fechaExpiracion.toISOString() });
+      await supabase.from('clientes').update({ estado_acceso: 'aprobado' }).eq('email', cliente.email.toLowerCase().trim());
 
-      if (errorPase) throw errorPase;
-
-      const { error: errorCliente } = await supabase
-        .from('clientes')
-        .update({ estado_acceso: 'aprobado' }) 
-        .eq('id', cliente.id)
-        .select();
-
-      if (errorCliente) throw errorCliente;
-
-      setSolicitudes((prev) => 
-        prev.map((c) => c.id === cliente.id ? { ...c, estado_acceso: 'aprobado', expira_en: fechaExpiracion.toISOString() } : c)
-      );
-      
+      cargarAccesos(); // Refrescar vista
       alert(`Acceso activado correctamente para ${cliente.nombres}.`);
       
     } catch (error) {
-      console.error("Error al generar pase:", error);
-      alert("Hubo un error de conexión con la base de datos.");
+      alert("Hubo un error de conexión.");
+    }
+  };
+
+  const revocarAcceso = async (cliente: any) => {
+    const confirmar = window.confirm(`🚨 ¿Estás seguro que deseas revocar y eliminar el pase VIP de ${cliente.nombres}? Ya no podrá ver los precios.`);
+    if (!confirmar) return;
+    
+    try {
+      await supabase.from('accesos_inventario').delete().eq('email', cliente.email.toLowerCase().trim());
+      await supabase.from('clientes').update({ estado_acceso: 'revocado' }).eq('email', cliente.email.toLowerCase().trim());
+      cargarAccesos();
+      alert("Acceso revocado exitosamente.");
+    } catch (e) {
+      alert("Hubo un error al revocar el acceso.");
     }
   };
 
   const enviarCorreo = async (cliente: any) => {
     const horas = tiemposSeleccionados[cliente.id] || '24';
-    alert(`Iniciando envío a ${cliente.email}... Por favor espera un momento.`);
+    alert(`Enviando pase VIP al correo ${cliente.email}...`);
     try {
-      const response = await fetch('/api/enviar-acceso', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: cliente.email, nombres: cliente.nombres, horas: horas }),
-      });
-      if (response.ok) {
-        alert("Correo corporativo enviado con éxito.");
-      } else {
-        alert("Hubo un problema de conexión con el servidor de correos.");
-      }
-    } catch (error) {
-      alert("Error en el sistema al intentar enviar el correo.");
-    }
-  };
-
-  const solicitarTelefonoCorrecto = async (cliente: any) => {
-    if (!cliente.email) {
-      alert("Este cliente no tiene correo electrónico registrado.");
-      return;
-    }
-    
-    alert(`Enviando solicitud de actualización a ${cliente.email}...`);
-    
-    try {
-      const response = await fetch('/api/solicitar-telefono', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: cliente.email, nombres: cliente.nombres }),
-      });
-      
-      if (response.ok) {
-        alert("Correo de actualización enviado con éxito al prospecto.");
-      } else {
-        alert("Hubo un problema de conexión con el servidor de correos de Hostinger.");
-      }
-    } catch (error) {
-      alert("Error en el sistema al intentar enviar el correo.");
-    }
+      const response = await fetch('/api/enviar-acceso', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: cliente.email, nombres: cliente.nombres, horas: horas }) });
+      if (response.ok) alert("Correo enviado con éxito.");
+      else alert("Problema de conexión con servidor de correos.");
+    } catch (error) { alert("Error al intentar enviar el correo."); }
   };
 
   const abrirWhatsApp = (telefono: string, nombres: string) => {
-    if (!telefono) { alert("Este cliente no tiene un teléfono registrado."); return; }
+    if (!telefono || telefono === 'N/A') { alert("Este cliente no tiene teléfono."); return; }
     let numLimpio = telefono.split('').filter(char => char >= '0' && char <= '9').join('');
     if (numLimpio.startsWith('0') && numLimpio.length === 10) numLimpio = '593' + numLimpio.substring(1);
     else if (numLimpio.length === 9) numLimpio = '593' + numLimpio;
-    const mensaje = `Hola ${nombres}, soy Saúl de Konkeri. Hemos validado tu perfil y tu acceso exclusivo al inventario de Arienzo Boutique Living está listo. Puedes ingresar aquí: https://reserva.arienzoliving.com con tu correo.`;
+    const mensaje = `Hola ${nombres}, soy Saúl de Konkeri. He validado tu perfil y tu acceso VIP al inventario de Arienzo está listo. Puedes ingresar aquí: https://reserva.arienzoliving.com con tu correo.`;
     window.open(`https://wa.me/${numLimpio}?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
 
   // ==========================================
-  // LÓGICA PESTAÑA 2: RADAR INVENTARIO (CON FILTROS CORREGIDOS)
+  // LÓGICA PESTAÑA 2: RADAR INVENTARIO
   // ==========================================
   const generarAnalisisComercial = (sesion: SesionCliente) => {
-    if (sesion.eventos.length === 0) return "Sin datos suficientes para analizar.";
+    if (sesion.eventos.length === 0) return "Sin datos suficientes.";
     let analisis = "";
     if (sesion.minutos < 2) analisis += "Vistazo rápido. Exploró superficialmente. ";
-    else if (sesion.minutos < 10) analisis += "Exploración moderada. Navegó por el inventario de manera fluida. ";
-    else analisis += "Alto nivel de interés. Analizó el proyecto detalladamente y revisó varias opciones. ";
+    else if (sesion.minutos < 10) analisis += "Exploración moderada. Navegó por el inventario fluidamente. ";
+    else analisis += "Alto nivel de interés. Analizó detalladamente varias opciones. ";
 
     const filtros = sesion.eventos.filter(e => e.accion === 'USO_FILTRO');
     if (filtros.length > 0) {
@@ -284,35 +333,24 @@ export default function RadarCentral() {
     }
 
     if (sesion.unidadesVistas.length === 1) analisis += `Se enfocó exclusivamente en la unidad ${sesion.unidadesVistas[0]}. `;
-    else if (sesion.unidadesVistas.length > 1) analisis += `Comparó ${sesion.unidadesVistas.length} units (${sesion.unidadesVistas.join(', ')}). `;
-
-    const reserva = sesion.eventos.some(e => e.accion === 'RESERVA_COMPLETADA');
-    if (reserva) analisis += "Alerta de Cierre: Completó un bloqueo web de forma autónoma. ";
-
+    else if (sesion.unidadesVistas.length > 1) analisis += `Comparó ${sesion.unidadesVistas.length} unidades (${sesion.unidadesVistas.join(', ')}). `;
     return analisis;
   };
 
   const cargarRadar = async () => {
     setCargandoRadar(true);
     try {
-      const { data } = await supabase
-        .from('tracking_inventario')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(2000); 
-
+      const { data } = await supabase.from('tracking_inventario').select('*').order('created_at', { ascending: false }).limit(2000); 
       if (data) {
-        // 🔥 FILTRO MEJORADO: Ignorar eventos de landing y links de captura
+        // Ignoramos eventos de landing page para solo monitorear comportamiento del inventario VIP
         const accionesIgnoradas = ['SOLICITUD_ACCESO_VIP','ABRIO_CALENDLY','VISITA_LANDING','ABRIO_FORMULARIO','CLIC_WHATSAPP','REGISTRO_COMPLETADO','CLIC_DISPONIBILIDAD','DESCARGA_BROCHURE', 'VISITA_CAPTURA'];
-        
         const dataFiltrada = data.filter(row => {
           const esAccionValida = !accionesIgnoradas.includes(row.accion);
           const noEsScroll = !row.accion.startsWith('SCROLL_');
           const noEsVista = !row.accion.startsWith('VIO_');
           const detalleMayus = (row.detalle || '').toUpperCase();
           const noEsLanding = !detalleMayus.includes('LANDING');
-          const noEsCaptura = !detalleMayus.includes('CAPTURA') && !detalleMayus.includes('LINK DIRECTO'); // <-- Filtro clave
-          
+          const noEsCaptura = !detalleMayus.includes('CAPTURA') && !detalleMayus.includes('LINK DIRECTO'); 
           return esAccionValida && noEsScroll && noEsVista && noEsLanding && noEsCaptura;
         });
 
@@ -381,12 +419,7 @@ export default function RadarCentral() {
       if (filtroTiempo === '30d') fechaLimite.setDate(fechaLimite.getDate() - 30);
       if (filtroTiempo === 'hoy') fechaLimite.setHours(0,0,0,0);
 
-      const { data } = await supabase
-        .from('tracking_inventario')
-        .select('*')
-        .gte('created_at', fechaLimite.toISOString())
-        .order('created_at', { ascending: false }) 
-        .limit(3000); 
+      const { data } = await supabase.from('tracking_inventario').select('*').gte('created_at', fechaLimite.toISOString()).order('created_at', { ascending: false }).limit(3000); 
 
       if (data) {
         const datosCronologicos = [...data].reverse();
@@ -474,16 +507,14 @@ export default function RadarCentral() {
     return { unicos, totalSesiones, recurrentes, altoInteres, conversiones, funnel };
   }, [visitantesAgrupados, eventosWeb]);
 
-  const solicitudesPendientesCount = solicitudes.filter(s => calcularTiempoRestante(s.expira_en).estado !== 'activo').length;
-
   return (
     <div className="p-4 md:p-8 w-full max-w-7xl mx-auto bg-[#dce3eb] min-h-screen font-sans text-[#415364]">
       
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4 border-b border-[#415364]/10 pb-6">
         <div>
           <span className="text-[10px] font-bold tracking-widest text-[#ea0029] uppercase">Analítica y Accesos</span>
-          <h1 className="text-3xl md:text-4xl font-bold text-[#415364] tracking-tight mt-1">Radar Digital</h1>
-          <p className="text-sm text-[#415364]/70 mt-1">Monitoreo de actividad web y gestión de accesos exclusivos al inventario.</p>
+          <h1 className="text-3xl md:text-4xl font-bold text-[#415364] tracking-tight mt-1">Radar Central</h1>
+          <p className="text-sm text-[#415364]/70 mt-1">Centro de inteligencia comercial, comportamiento de leads y pases de seguridad.</p>
         </div>
         <button onClick={cargarDatos} className="bg-white border border-[#415364]/20 text-[#415364] px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-[#415364]/5 transition-colors shadow-sm flex items-center gap-2">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
@@ -491,31 +522,77 @@ export default function RadarCentral() {
         </button>
       </div>
 
-      <div className="flex overflow-x-auto bg-[#dce3eb]/50 p-1.5 rounded-xl shadow-inner border border-[#415364]/10 mb-8 w-full md:w-fit custom-scrollbar">
-        <button onClick={() => setPestañaActiva('solicitudes')} className={`flex-1 md:flex-auto whitespace-nowrap px-6 py-2.5 rounded-lg text-xs font-bold transition-all flex justify-center items-center gap-2 ${pestañaActiva === 'solicitudes' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
-          Pases VIP
-          {solicitudesPendientesCount > 0 && (
-            <span className="bg-[#ea0029] text-white text-[9px] px-2 py-0.5 rounded-md ml-1">
-              {solicitudesPendientesCount}
-            </span>
-          )}
-        </button>
-        <button onClick={() => setPestañaActiva('inventario')} className={`flex-1 md:flex-auto whitespace-nowrap px-6 py-2.5 rounded-lg text-xs font-bold transition-all flex justify-center items-center gap-2 ${pestañaActiva === 'inventario' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          Radar Unidades
+      <div className="flex overflow-x-auto bg-[#dce3eb]/50 p-1.5 rounded-xl shadow-inner border border-[#415364]/10 mb-8 w-full custom-scrollbar">
+        <button onClick={() => setPestañaActiva('feed')} className={`flex-1 md:flex-auto whitespace-nowrap px-6 py-2.5 rounded-lg text-xs font-bold transition-all flex justify-center items-center gap-2 ${pestañaActiva === 'feed' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+          Feed en Vivo
         </button>
         <button onClick={() => setPestañaActiva('web')} className={`flex-1 md:flex-auto whitespace-nowrap px-6 py-2.5 rounded-lg text-xs font-bold transition-all flex justify-center items-center gap-2 ${pestañaActiva === 'web' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
           Trazabilidad Web
         </button>
+        <button onClick={() => setPestañaActiva('inventario')} className={`flex-1 md:flex-auto whitespace-nowrap px-6 py-2.5 rounded-lg text-xs font-bold transition-all flex justify-center items-center gap-2 ${pestañaActiva === 'inventario' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          Radar Inventario
+        </button>
+        <button onClick={() => setPestañaActiva('accesos')} className={`flex-1 md:flex-auto whitespace-nowrap px-6 py-2.5 rounded-lg text-xs font-bold transition-all flex justify-center items-center gap-2 ${pestañaActiva === 'accesos' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+          Accesos VIP
+        </button>
       </div>
 
-      {pestañaActiva === 'solicitudes' && (
+      {pestañaActiva === 'feed' && (
+        <div className="bg-white rounded-2xl shadow-sm border border-neutral-200/60 overflow-hidden animate-in fade-in slide-in-from-bottom-2 w-full max-w-4xl mx-auto">
+          <div className="px-6 py-5 border-b border-neutral-100 flex justify-between items-center bg-[#21242E]">
+            <h3 className="text-sm font-bold text-white tracking-widest uppercase flex items-center gap-2">
+              🚨 Pulso del Negocio en Vivo
+            </h3>
+          </div>
+          
+          <div className="p-6 md:p-8 overflow-y-auto max-h-[70vh] custom-scrollbar bg-[#F9F7F5]">
+            {cargandoFeed ? (
+              <div className="text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px] py-10 animate-pulse">Sincronizando feed en vivo...</div>
+            ) : feedEnVivo.length === 0 ? (
+              <div className="text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px] py-10">No hay actividad reciente.</div>
+            ) : (
+              <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-[#ea0029]/30 before:via-[#415364]/10 before:to-transparent">
+                {feedEnVivo.map((item, idx) => {
+                  const style = obtenerIconoFeed(item.accion);
+                  return (
+                    <div key={idx} className="relative flex items-center group transition-transform hover:-translate-y-0.5">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full border-[3px] border-[#F9F7F5] z-10 ml-[2px] mr-4 shrink-0 shadow-sm bg-white">
+                        <span className="text-xs">{style.icon}</span>
+                      </div>
+                      <div className={`w-full bg-white p-4 rounded-xl border shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-2 hover:shadow-md transition-shadow ${style.color.split(' ')[0]} ${style.color.split(' ')[2]}`}>
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-[13px] font-bold text-[#415364]">{item.nombre}</span>
+                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider border ${style.color}`}>
+                              {formatAccionTexto(item.accion)}
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-[#415364]/80 font-medium leading-relaxed">{item.detalle}</span>
+                        </div>
+                        <div className="text-right shrink-0 mt-2 md:mt-0">
+                          <span className="text-[10px] font-bold text-[#ea0029] bg-white border border-[#ea0029]/20 px-3 py-1.5 rounded-lg shadow-sm whitespace-nowrap block">
+                            {formatTiempoAtras(item.fecha)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {pestañaActiva === 'accesos' && (
         <div className="bg-white rounded-2xl shadow-sm border border-neutral-200/60 overflow-hidden animate-in fade-in slide-in-from-bottom-2 w-full">
           <div className="px-6 py-5 border-b border-neutral-100 flex justify-between items-center bg-[#21242E]">
             <h3 className="text-sm font-bold text-white tracking-widest uppercase flex items-center gap-2">
-              Gestión de Accesos al Inventario
+              🔑 Control de Seguridad y Accesos VIP
             </h3>
           </div>
           
@@ -526,65 +603,70 @@ export default function RadarCentral() {
                   <th className="px-6 py-4 font-bold">Inversionista</th>
                   <th className="px-6 py-4 font-bold">Estado del Pase</th>
                   <th className="px-6 py-4 font-bold">Contacto</th>
-                  <th className="px-6 py-4 font-bold text-right">Gestión Rápida</th>
+                  <th className="px-6 py-4 font-bold text-right">Gestión de Seguridad</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
-                {cargandoSolicitudes && (
-                  <tr><td colSpan={4} className="px-6 py-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">Cargando datos en vivo...</td></tr>
-                )}
-                {!cargandoSolicitudes && solicitudes.length === 0 && (
-                  <tr><td colSpan={4} className="px-6 py-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">No hay solicitudes pendientes.</td></tr>
-                )}
-                {!cargandoSolicitudes && solicitudes.length > 0 && solicitudes.map((cliente) => {
-                  const statusTiempo = calcularTiempoRestante(cliente.expira_en);
-                  const activo = statusTiempo.estado === 'activo';
-                  const caducado = statusTiempo.estado === 'caducado';
+                {cargandoAccesos ? (
+                  <tr><td colSpan={4} className="px-6 py-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">Cargando llaves de seguridad...</td></tr>
+                ) : accesosVip.length === 0 ? (
+                  <tr><td colSpan={4} className="px-6 py-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">No hay pases VIP generados actualmente.</td></tr>
+                ) : (
+                  accesosVip.map((cliente) => {
+                    const statusTiempo = calcularTiempoRestante(cliente.expira_en);
+                    const activo = statusTiempo.estado === 'activo';
 
-                  return (
-                    <tr key={cliente.id} className={`transition-colors ${activo ? 'bg-green-50/10' : caducado ? 'bg-[#ea0029]/5' : 'hover:bg-[#dce3eb]/30'}`}>
-                      <td className="px-6 py-4">
-                        <div className="font-bold text-[#415364] whitespace-nowrap">{cliente.nombres}</div>
-                        {/* 🔥 MOSTRAR FECHA Y HORA DE SOLICITUD AQUÍ */}
-                        <div className="text-[10px] text-[#415364]/50 mt-0.5">
-                          Solicitó: {new Date(cliente.created_at).toLocaleDateString('es-EC')} a las {new Date(cliente.created_at).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className={`inline-flex items-center text-[9px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider border whitespace-nowrap ${activo ? 'bg-green-50 text-green-700 border-green-200' : caducado ? 'bg-[#ea0029]/10 text-[#ea0029] border-[#ea0029]/20' : 'bg-[#dce3eb]/50 text-[#415364]/60 border-[#415364]/10'}`}>
-                          {statusTiempo.texto}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-[#415364] font-mono text-[11px] font-medium">{cliente.email}</div>
-                        <div className="text-[#415364]/60 font-mono text-[10px]">{cliente.telefono}</div>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <select className="bg-white border border-[#415364]/20 text-[#415364] rounded-lg text-[10px] p-2 focus:outline-none focus:border-[#ea0029] font-bold outline-none cursor-pointer" value={tiemposSeleccionados[cliente.id] || '24'} onChange={(e) => handleTiempoChange(cliente.id, e.target.value)}>
-                            <option value="2">2 hrs</option>
-                            <option value="12">12 hrs</option>
-                            <option value="24">24 hrs</option>
-                            <option value="48">48 hrs</option>
-                            <option value="999">Ilimitado</option>
-                          </select>
-                          <button onClick={() => aprobarAcceso(cliente)} className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm text-white whitespace-nowrap ${activo ? 'bg-[#415364] hover:bg-[#21242E]' : 'bg-[#ea0029] hover:bg-[#c90022]'}`}>
-                            {activo ? 'Renovar' : 'Aprobar'}
-                          </button>
-                          <button onClick={() => enviarCorreo(cliente)} className="bg-[#dce3eb]/50 text-[#415364] hover:bg-[#415364]/10 border border-[#415364]/10 px-3 py-2 rounded-lg transition-colors shadow-sm flex items-center justify-center" title="Enviar Email Pase">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                          </button>
-                          <button onClick={() => solicitarTelefonoCorrecto(cliente)} className="bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 px-3 py-2 rounded-lg transition-colors shadow-sm flex items-center justify-center" title="Solicitar Teléfono Correcto">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                          </button>
-                          <button onClick={() => abrirWhatsApp(cliente.telefono, cliente.nombres)} className="bg-[#25D366]/10 border border-[#25D366]/30 text-[#1DA851] hover:bg-[#25D366]/20 px-3 py-2 rounded-lg transition-colors flex items-center justify-center" title="Escribir por WhatsApp">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                    return (
+                      <tr key={cliente.id} className={`transition-colors ${activo ? 'bg-green-50/10' : 'bg-[#ea0029]/5'}`}>
+                        <td className="px-6 py-4">
+                          <div className="font-bold text-[#415364] whitespace-nowrap">{cliente.nombres}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className={`inline-flex items-center text-[9px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider border whitespace-nowrap ${activo ? 'bg-green-50 text-green-700 border-green-200' : 'bg-[#ea0029]/10 text-[#ea0029] border-[#ea0029]/20'}`}>
+                            {statusTiempo.texto}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-[#415364] font-mono text-[11px] font-medium">{cliente.email}</div>
+                          <div className="text-[#415364]/60 font-mono text-[10px]">{cliente.telefono}</div>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <select className="bg-white border border-[#415364]/20 text-[#415364] rounded-lg text-[10px] p-2 focus:outline-none focus:border-[#ea0029] font-bold outline-none cursor-pointer" value={tiemposSeleccionados[cliente.id] || '24'} onChange={(e) => handleTiempoChange(cliente.id, e.target.value)}>
+                              <option value="2">2 hrs</option>
+                              <option value="12">12 hrs</option>
+                              <option value="24">24 hrs</option>
+                              <option value="48">48 hrs</option>
+                              <option value="999">Ilimitado</option>
+                            </select>
+                            
+                            {activo ? (
+                              <>
+                                <button onClick={() => aprobarAcceso(cliente)} className="px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm text-white whitespace-nowrap bg-[#415364] hover:bg-[#21242E]">
+                                  Renovar
+                                </button>
+                                <button onClick={() => revocarAcceso(cliente)} className="px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm text-white whitespace-nowrap bg-[#ea0029] hover:bg-[#c90022]" title="Quitar Acceso">
+                                  Revocar
+                                </button>
+                              </>
+                            ) : (
+                              <button onClick={() => aprobarAcceso(cliente)} className="px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm text-white whitespace-nowrap bg-[#1DA851] hover:bg-green-700">
+                                Reactivar
+                              </button>
+                            )}
+
+                            <button onClick={() => enviarCorreo(cliente)} className="bg-[#dce3eb]/50 text-[#415364] hover:bg-[#415364]/10 border border-[#415364]/10 px-3 py-2 rounded-lg transition-colors shadow-sm flex items-center justify-center" title="Reenviar Email Pase">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                            </button>
+                            <button onClick={() => abrirWhatsApp(cliente.telefono, cliente.nombres)} className="bg-[#25D366]/10 border border-[#25D366]/30 text-[#1DA851] hover:bg-[#25D366]/20 px-3 py-2 rounded-lg transition-colors flex items-center justify-center" title="Escribir por WhatsApp">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
@@ -594,18 +676,18 @@ export default function RadarCentral() {
       {pestañaActiva === 'inventario' && (
         <div className="bg-white border border-neutral-200/60 rounded-2xl shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2 w-full">
           {cargandoRadar && sesiones.length === 0 && (
-            <div className="p-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">Cargando lecturas del radar...</div>
+            <div className="p-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px] animate-pulse">Cargando lecturas del inventario...</div>
           )}
           {!(cargandoRadar && sesiones.length === 0) && (
             <div className="overflow-x-auto custom-scrollbar w-full">
               <table className="w-full min-w-[1000px] text-left border-collapse">
                 <thead>
                   <tr className="bg-[#21242E] text-white">
-                    <th className="p-5 text-[10px] uppercase tracking-widest font-bold">Prospecto Monitorizado</th>
+                    <th className="p-5 text-[10px] uppercase tracking-widest font-bold">Inversionista en Inventario</th>
                     <th className="p-5 text-[10px] uppercase tracking-widest font-bold">Estadía</th>
-                    <th className="p-5 text-[10px] uppercase tracking-widest font-bold">Inventario Visto</th>
+                    <th className="p-5 text-[10px] uppercase tracking-widest font-bold">Opciones Vistas</th>
                     <th className="p-5 text-[10px] uppercase tracking-widest font-bold">Última Acción</th>
-                    <th className="p-5 text-[10px] uppercase tracking-widest font-bold text-center">Trazabilidad</th>
+                    <th className="p-5 text-[10px] uppercase tracking-widest font-bold text-center">Trazabilidad VIP</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
@@ -624,7 +706,7 @@ export default function RadarCentral() {
                             </span>
                           )}
                           <span className="text-[10px] text-[#415364]/60 font-mono block mt-1">{sesion.email}</span>
-                          <span className="text-[9px] text-[#415364]/40 mt-1.5 block font-bold uppercase tracking-wider">
+                          <span className="text-[9px] text-[#ea0029] mt-1.5 block font-bold uppercase tracking-wider bg-[#ea0029]/10 px-2 py-0.5 rounded-md w-fit">
                             {formatTiempoAtras(sesion.fin)}
                           </span>
                         </td>
@@ -647,8 +729,8 @@ export default function RadarCentral() {
                           <span className="text-xs font-medium text-[#415364]/80 whitespace-nowrap">{sesion.ultimaAccion}</span>
                         </td>
                         <td className="p-5 text-center">
-                          <button onClick={() => setSesionExpandida(sesionExpandida === sesion.idSesion ? null : sesion.idSesion)} className="text-[10px] font-bold text-[#ea0029] hover:text-[#c90022] bg-[#ea0029]/10 px-3 py-1.5 rounded-lg uppercase tracking-widest transition-colors whitespace-nowrap">
-                            {sesionExpandida === sesion.idSesion ? 'Ocultar' : 'Detalles'}
+                          <button onClick={() => setSesionExpandida(sesionExpandida === sesion.idSesion ? null : sesion.idSesion)} className="text-[10px] font-bold text-[#ea0029] hover:text-[#c90022] bg-[#ea0029]/10 hover:bg-[#ea0029]/20 px-3 py-1.5 rounded-lg uppercase tracking-widest transition-colors whitespace-nowrap">
+                            {sesionExpandida === sesion.idSesion ? 'Ocultar' : 'Ver Recorrido'}
                           </button>
                         </td>
                       </tr>
@@ -665,7 +747,7 @@ export default function RadarCentral() {
                                 <p className="text-sm text-[#415364] leading-relaxed font-medium">{generarAnalisisComercial(sesion)}</p>
                               </div>
                             </div>
-                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#415364]/40 mb-5 pl-2">Línea de tiempo de navegación</h4>
+                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#415364]/40 mb-5 pl-2">Línea de tiempo de navegación VIP</h4>
                             <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-[#415364]/20 before:to-transparent">
                               {sesion.eventos.map((evento, i) => (
                                 <div key={i} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
@@ -689,7 +771,7 @@ export default function RadarCentral() {
                     </React.Fragment>
                   ))}
                   {sesiones.length === 0 && !cargandoRadar && (
-                    <tr><td colSpan={5} className="p-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">Aún no hay actividad registrada en el inventario.</td></tr>
+                    <tr><td colSpan={5} className="p-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">Aún no hay actividad de clientes en el inventario.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -752,7 +834,7 @@ export default function RadarCentral() {
             <div className="flex-1">
               <div className="text-3xl font-bold text-[#415364]">{metricas.funnel.intentosContacto}</div>
               <div className="text-[10px] font-bold uppercase text-[#415364]/70 tracking-widest mt-1">Intento Contacto</div>
-              <div className="text-[8px] text-[#415364]/40 mt-1 font-medium">(WhatsApp o Accesos)</div>
+              <div className="text-[8px] text-[#415364]/40 mt-1 font-medium">(WhatsApp o Registros)</div>
             </div>
             <div className="hidden md:block text-[#ea0029]/30">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
@@ -777,7 +859,7 @@ export default function RadarCentral() {
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
                   {cargandoWeb && (
-                    <tr><td colSpan={5} className="p-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">Analizando huellas digitales...</td></tr>
+                    <tr><td colSpan={5} className="p-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px] animate-pulse">Analizando huellas digitales...</td></tr>
                   )}
                   {!cargandoWeb && visitantesAgrupados.map((v) => (
                     <React.Fragment key={v.visitor_id}>
@@ -826,8 +908,8 @@ export default function RadarCentral() {
                                       <span className="text-xs font-bold text-[#415364]">{formatAccionTexto(evento.accion)}</span>
                                       <span className="text-[10px] text-[#415364]/60 block mt-1 font-medium">{evento.detalle}</span>
                                     </div>
-                                    <span className="text-[10px] font-bold text-[#415364]/40 whitespace-nowrap bg-[#dce3eb]/30 px-2 py-1 rounded-md shrink-0">
-                                      {new Date(evento.created_at).toLocaleTimeString('es-EC', {hour: '2-digit', minute:'2-digit'})}
+                                    <span className="text-[10px] font-bold text-[#ea0029] whitespace-nowrap bg-[#ea0029]/10 border border-[#ea0029]/20 px-2 py-1 rounded-md shrink-0">
+                                      {formatTiempoAtras(new Date(evento.created_at))}
                                     </span>
                                   </div>
                                 </div>
