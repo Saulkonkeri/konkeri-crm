@@ -1,4 +1,3 @@
-// Actualizacion forzada para Vercel - Reportes BI Premium con Filtros y Tasas de Conversión
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -9,25 +8,23 @@ export default function ReportesPage() {
   const [filtroTiempo, setFiltroTiempo] = useState<'mes' | 'trimestre' | 'ano' | 'todo'>('todo');
   const [cargando, setCargando] = useState(true);
 
-  // Estados de datos crudos para poder filtrar localmente sin tantas peticiones
+  // Estados de datos crudos
   const [rawData, setRawData] = useState({
     propiedades: [] as any[],
     clientes: [] as any[],
     cotizaciones: [] as any[],
-    pasesVip: [] as any[],
-    trackingWeb: [] as any[] // Añadido para métricas de visitas
+    trackingWeb: [] as any[]
   });
 
   useEffect(() => {
     async function extraerTodaLaData() {
       setCargando(true);
       try {
-        const [propsRes, clientesRes, cotizacionesRes, pasesRes, trackingRes] = await Promise.all([
+        const [propsRes, clientesRes, cotizacionesRes, trackingRes] = await Promise.all([
           supabase.from('propiedades').select('*'),
-          supabase.from('clientes').select('id, created_at, origen_captacion, campana, estado, tipo, ciudad_residencia, tipologia_interes'),
+          // 🔥 Solución VIP: Traemos el estado_acceso para saber quién ha recibido un pase históricamente
+          supabase.from('clientes').select('id, created_at, origen_captacion, campana, estado, tipo, ciudad_residencia, tipologia_interes, estado_acceso'),
           supabase.from('cotizaciones').select('id, created_at, unidad_numero'),
-          supabase.from('accesos_inventario').select('id, email, expira_en, created_at'),
-          // Traemos un resumen del tracking para visitas
           supabase.from('tracking_inventario').select('visitor_id, session_id, accion, created_at')
         ]);
 
@@ -35,7 +32,6 @@ export default function ReportesPage() {
           propiedades: propsRes.data || [],
           clientes: clientesRes.data || [],
           cotizaciones: cotizacionesRes.data || [],
-          pasesVip: pasesRes.data || [],
           trackingWeb: trackingRes.data || []
         });
       } catch (error) {
@@ -47,10 +43,10 @@ export default function ReportesPage() {
     extraerTodaLaData();
   }, []);
 
-  // FILTRADO DE DATOS POR TIEMPO Y CÁLCULO DE MÉTRICAS (MEMOIZADO)
+  // FILTRADO DE DATOS POR TIEMPO Y CÁLCULO DE MÉTRICAS
   const dataFiltrada = useMemo(() => {
     const ahora = new Date();
-    let fechaLimite = new Date(0); // Por defecto 'todo' (desde 1970)
+    let fechaLimite = new Date(0); 
 
     if (filtroTiempo === 'mes') {
       fechaLimite = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
@@ -64,15 +60,21 @@ export default function ReportesPage() {
 
     const clientes = rawData.clientes.filter(c => c.created_at >= isoLimite);
     const cotizaciones = rawData.cotizaciones.filter(c => c.created_at >= isoLimite);
-    const pasesVip = rawData.pasesVip.filter(p => p.created_at >= isoLimite);
     const trackingWeb = rawData.trackingWeb.filter(t => t.created_at >= isoLimite);
-    
-    // Propiedades no se filtran por fecha de creación, siempre muestran el estado actual del inventario
     const propiedades = rawData.propiedades;
 
-    // --- CÁLCULO DE MÉTRICAS WEB ---
-    const visitasLanding = trackingWeb.filter(t => t.accion === 'VISITA_LANDING');
-    const visitantesUnicos = new Set(visitasLanding.map(t => t.visitor_id)).size;
+    // --- CÁLCULO DE MÉTRICAS WEB (SOLUCIÓN TRÁFICO REAL) ---
+    // Contamos cualquier ID único (sesión o visitante) para no perder visitas por AdBlockers
+    const visitantesSet = new Set();
+    trackingWeb.forEach(t => {
+      if (t.visitor_id) visitantesSet.add(t.visitor_id);
+      else if (t.session_id) visitantesSet.add(t.session_id);
+    });
+    const visitantesUnicos = visitantesSet.size;
+    
+    // --- HISTORIAL DE PASES VIP ---
+    // Contamos a todos los clientes que alguna vez tuvieron acceso (aprobado o revocado)
+    const pasesHistoricosEmitidos = clientes.filter(c => c.estado_acceso === 'aprobado' || c.estado_acceso === 'revocado').length;
     
     // 1. KPIs Principales
     const inventarioTotal = propiedades.reduce((acc, p) => acc + (Number(p.precio || p.precio_lista) || 0), 0);
@@ -86,7 +88,7 @@ export default function ReportesPage() {
       totalVisitas: visitantesUnicos,
       totalLeads: clientes.length,
       totalCotizaciones: cotizaciones.length,
-      totalPasesVip: pasesVip.length,
+      totalPasesVip: pasesHistoricosEmitidos,
       totalReservas: reservasCount,
       totalVentas: ventasCount,
       montoColocado: montoColocado,
@@ -225,7 +227,7 @@ export default function ReportesPage() {
           <div className="bg-white p-5 rounded-2xl border border-neutral-200/60 shadow-sm hover:shadow-md transition-shadow group">
             <p className="text-[10px] font-bold text-[#D1C292] uppercase tracking-widest">Pases VIP Emitidos</p>
             <h3 className="text-3xl font-light text-[#21242E] mt-2 group-hover:scale-105 transition-transform origin-left">{metricas.totalPasesVip}</h3>
-            <span className="text-[10px] text-[#415364]/60 font-bold mt-2 block">Accesos al inventario</span>
+            <span className="text-[10px] text-[#415364]/60 font-bold mt-2 block">Accesos dados históricamente</span>
           </div>
 
           <div className="bg-white p-5 rounded-2xl border border-neutral-200/60 shadow-sm hover:shadow-md transition-shadow group">
@@ -445,7 +447,6 @@ export default function ReportesPage() {
                       <div className="text-[9px] text-[#415364]/50 mt-1 hidden md:block">{f.desc}</div>
                     </div>
                     <div className="flex-1 bg-white h-10 rounded-xl overflow-hidden flex items-center relative border border-neutral-200 shadow-sm">
-                      {/* Lógica visual del embudo: Tráfico Web es siempre el 100% visual de la barra máxima (si hay visitas) */}
                       <div className={`h-full ${f.color} transition-all duration-1000 ease-out`} style={{ width: metricas.totalVisitas > 0 ? `${Math.max(5, (f.valor / Math.max(metricas.totalVisitas, 1)) * 100)}%` : '0%' }}></div>
                       <span className={`absolute left-4 font-bold font-mono text-sm ${f.text}`}>{f.valor}</span>
                     </div>
@@ -487,6 +488,7 @@ export default function ReportesPage() {
                         <td className="px-5 py-4 text-center font-bold text-emerald-600 bg-emerald-50/50">{row.d}</td>
                         <td className="px-5 py-4 text-center font-bold text-amber-600 bg-amber-50/50">{row.r}</td>
                         <td className="px-5 py-4 text-center font-bold text-[#ea0029] bg-[#ea0029]/10">{row.v}</td>
+                        {/* 🔥 Solución del Slash: Removida la barra diagonal invertida */}
                         <td className="px-5 py-4 text-right font-bold text-[#415364] font-mono text-[13px]">\${row.monto.toLocaleString('en-US')}</td>
                       </tr>
                     )) : (
@@ -522,7 +524,8 @@ export default function ReportesPage() {
                             <p className="text-[10px] text-[#415364]/50 uppercase tracking-wider font-bold mt-0.5">{c.tipo} — {c.vistas}</p>
                           </div>
                         </div>
-                        <span className="bg-[#ea0029] text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow-sm">
+                        <span className="bg-[#ea0029] text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow-sm flex items-center gap-1">
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                           {c.total} simulaciones
                         </span>
                       </div>
@@ -532,15 +535,18 @@ export default function ReportesPage() {
                   </div>
                 </div>
                 
-                <div className="bg-[#21242E] p-8 rounded-2xl shadow-xl flex flex-col justify-center text-sm space-y-4">
-                  <p className="font-bold text-[#D1C292] uppercase tracking-widest text-[11px] flex items-center gap-2 border-b border-white/10 pb-3">
+                <div className="bg-[#21242E] p-8 rounded-2xl shadow-xl flex flex-col justify-center text-sm space-y-4 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-4 opacity-10">
+                    <svg className="w-32 h-32 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  </div>
+                  <p className="font-bold text-[#D1C292] uppercase tracking-widest text-[11px] flex items-center gap-2 border-b border-white/10 pb-3 relative z-10">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     Auditoría de Precio Base
                   </p>
-                  <p className="font-medium text-white/80 leading-relaxed text-xs">
+                  <p className="font-medium text-white/80 leading-relaxed text-xs relative z-10">
                     Este panel permite auditar el apetito real del mercado de forma quirúrgica. 
                   </p>
-                  <p className="font-medium text-white/80 leading-relaxed text-xs">
+                  <p className="font-medium text-white/80 leading-relaxed text-xs relative z-10">
                     Si una unidad lidera sistemáticamente las cotizaciones pero no se traduce en reservas formales, indica que el cliente percibe el valor del inmueble, pero <strong className="text-white">su precio requiere un ajuste estratégico</strong> o una oferta promocional de cierre.
                   </p>
                 </div>
