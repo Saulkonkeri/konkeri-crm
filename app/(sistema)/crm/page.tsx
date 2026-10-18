@@ -22,6 +22,7 @@ interface Cliente {
   tipo_accion?: string;
   detalle_accion?: string | null;
   tipo?: string; 
+  created_at?: string;
 }
 
 interface Cotizacion {
@@ -84,6 +85,7 @@ export default function CRMPage() {
   const [filtroTipologia, setFiltroTipologia] = useState('Todas');
   const [filtroOrigen, setFiltroOrigen] = useState('Todos');
   const [filtroPendientes, setFiltroPendientes] = useState(false);
+  const [filtroCalientes, setFiltroCalientes] = useState(false); // NUEVO FILTRO CALIENTES
 
   const [vista, setVista] = useState<'lista' | 'kanban' | 'actividad'>('kanban');
   const [columnasExpandidas, setColumnasExpandidas] = useState<Record<string, boolean>>({
@@ -298,7 +300,6 @@ export default function CRMPage() {
   const clientesFiltrados = useMemo(() => {
     return clientes.filter(c => {
       const b = busqueda.toLowerCase();
-      // Búsqueda robusta por si escribes el teléfono con o sin código de país
       const busquedaNum = b.replace(/\D/g, '');
       const coincidenciaBusqueda = !b || 
         `${c.nombres || ''} ${c.apellidos || ''}`.toLowerCase().includes(b) || 
@@ -318,9 +319,15 @@ export default function CRMPage() {
           coincidePendiente = new Date(c.proximo_contacto + 'T00:00:00') <= hoy;
         }
       }
-      return coincidenciaBusqueda && coincideCiudad && coincideTipologia && coincideOrigen && coincidePendiente;
+
+      let coincideCaliente = true;
+      if (filtroCalientes) {
+        coincideCaliente = c.temperatura?.includes('Caliente') || false;
+      }
+
+      return coincidenciaBusqueda && coincideCiudad && coincideTipologia && coincideOrigen && coincidePendiente && coincideCaliente;
     });
-  }, [clientes, busqueda, filtroCiudad, filtroTipologia, filtroOrigen, filtroPendientes]);
+  }, [clientes, busqueda, filtroCiudad, filtroTipologia, filtroOrigen, filtroPendientes, filtroCalientes]);
 
   const prospectosFiltradosParaLlamada = useMemo(() => {
     if (!busquedaLlamada) return clientes.slice(0, 50);
@@ -379,7 +386,6 @@ export default function CRMPage() {
       }
     } catch (e: any) {
       if (e.message?.includes('duplicate key') || e.message?.includes('unique constraint')) {
-        // RADAR DE DUPLICADOS: Busca a quién pertenece exactamente este correo
         const { data: clienteDuplicado } = await supabase
           .from('clientes')
           .select('nombres, apellidos, telefono')
@@ -506,14 +512,46 @@ export default function CRMPage() {
     } catch (e: any) { alert(`Error: ${e.message}`); } finally { setGuardandoNota(false); }
   };
 
-  const abrirWhatsApp = (cliente: Cliente, tipoMensaje: 'bienvenida' | 'campana' | 'libre') => {
+  // 🔥 ACTUALIZACIÓN: Registro Automático de WhatsApp
+  const abrirWhatsApp = async (cliente: Cliente, tipoMensaje: 'bienvenida' | 'campana' | 'libre') => {
     if (!cliente.telefono) { alert("Sin número."); return; }
     let num = cliente.telefono.replace(/\D/g, '');
     if (num.startsWith('09') && num.length === 10) num = '593' + num.substring(1);
     let txt = '';
+    
     if (tipoMensaje === 'bienvenida') txt = `?text=${encodeURIComponent(plantillaMensaje.replace('{nombre}', cliente.nombres))}`;
     else if (tipoMensaje === 'campana') txt = `?text=${encodeURIComponent(plantillaCampana.replace('{nombre}', cliente.nombres))}`;
+    
     window.open(`https://wa.me/${num}${txt}`, '_blank');
+
+    // Registrar en Actividad Global y Notas
+    try {
+      const ahora = new Date();
+      const dia = String(ahora.getDate()).padStart(2, '0');
+      const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+      const anio = ahora.getFullYear();
+      const hora = ahora.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
+      const fechaFormateada = `${dia}/${mes}/${anio} ${hora}`;
+
+      const textoAccion = tipoMensaje === 'libre' ? 'Mensaje Libre' : tipoMensaje === 'bienvenida' ? 'Mensaje de Bienvenida' : 'Mensaje de Campaña';
+      const notaFinal = `[${fechaFormateada}] 💬 WhatsApp Iniciado: ${textoAccion}\n\n${cliente.notas || ''}`;
+
+      await supabase.from('clientes').update({ notas: notaFinal }).eq('id', cliente.id);
+      setClientes(prev => prev.map(c => c.id === cliente.id ? { ...c, notas: notaFinal } : c));
+      if (clienteSeleccionado?.id === cliente.id) setClienteSeleccionado(prev => prev ? { ...prev, notas: notaFinal } : prev);
+
+      await supabase.from('registro_llamadas').insert([{
+        cliente_id: cliente.id,
+        agente: nombreRemitente,
+        tipo_contacto: 'WhatsApp',
+        resultado: 'Enviado',
+        notas: `Se inició contacto por WhatsApp (${textoAccion}).`
+      }]);
+      
+      cargarBitacoraRango(); // Actualiza la pestaña de actividad en vivo
+    } catch (e) {
+      console.error("Error al registrar actividad WA:", e);
+    }
   };
 
   const abrirCorreo = (cliente: Cliente) => {
@@ -630,6 +668,7 @@ export default function CRMPage() {
     return htmlCompleto;
   };
 
+  // 🔥 ACTUALIZACIÓN: Registro Automático de Correo
   const enviarCorreoFinal = async () => {
     if (!clienteSeleccionado) return;
     
@@ -662,9 +701,21 @@ export default function CRMPage() {
         const detalleTipo = incluirFirma ? `De: ${nombreRemitente} (${cargoRemitente})` : 'Envío Masivo';
         const notaFinal = `[${fechaFormateada}] 📧 Correo Enviado: "${plantillaConfig.nombre}" [${detalleTipo}]\n\n${clienteSeleccionado.notas || ''}`;
         
+        // 1. Guardar en Notas del Cliente
         await supabase.from('clientes').update({ notas: notaFinal }).eq('id', clienteSeleccionado.id);
         setClientes(prev => prev.map(c => c.id === clienteSeleccionado.id ? { ...c, notas: notaFinal } : c));
         setClienteSeleccionado(prev => prev ? { ...prev, notas: notaFinal } : prev);
+
+        // 2. Guardar en Tabla de Actividades (Productividad)
+        await supabase.from('registro_llamadas').insert([{
+          cliente_id: clienteSeleccionado.id,
+          agente: nombreRemitente,
+          tipo_contacto: 'Email',
+          resultado: 'Enviado',
+          notas: `Se envió campaña/correo: ${plantillaConfig.nombre}`
+        }]);
+
+        cargarBitacoraRango(); // Actualiza la pestaña de actividad
       } else {
         alert("Error al enviar desde el servidor.");
       }
@@ -738,13 +789,20 @@ export default function CRMPage() {
             </select>
           </div>
 
-          <div className="flex items-center border-l border-[#415364]/10 pl-4">
+          <div className="flex items-center border-l border-[#415364]/10 pl-4 gap-2">
+            <button 
+              onClick={() => setFiltroCalientes(!filtroCalientes)}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all border ${filtroCalientes ? 'bg-amber-50 text-amber-600 border-amber-300 shadow-sm' : 'bg-white text-[#415364]/60 border-[#415364]/20 hover:bg-amber-50/50'}`}
+              title="Mostrar solo leads en temperatura caliente"
+            >
+              🔥 Calientes
+            </button>
             <button 
               onClick={() => setFiltroPendientes(!filtroPendientes)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${filtroPendientes ? 'bg-[#ea0029]/10 text-[#ea0029] border-[#ea0029]/30 shadow-sm' : 'bg-white text-[#415364]/60 border-[#415364]/20 hover:bg-[#415364]/5'}`}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all border ${filtroPendientes ? 'bg-[#ea0029]/10 text-[#ea0029] border-[#ea0029]/30 shadow-sm' : 'bg-white text-[#415364]/60 border-[#415364]/20 hover:bg-[#415364]/5'}`}
             >
               <svg className={`w-4 h-4 ${filtroPendientes ? 'animate-pulse' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-              {filtroPendientes ? 'Filtrando Tareas de Hoy' : 'Modo Cacería (Off)'}
+              Cacería (Tareas Hoy)
             </button>
           </div>
         </div>
@@ -890,7 +948,7 @@ export default function CRMPage() {
               </div>
               <div className="bg-white p-5 rounded-2xl border border-neutral-200/60 shadow-sm text-center transition-all hover:border-green-300 group">
                 <p className="text-[10px] font-bold text-green-600 uppercase tracking-widest">Éxito / Efectivas</p>
-                <p className="text-4xl font-light text-green-600 mt-2 group-hover:scale-105 transition-transform">{actividadesDia.filter(a => a.resultado === 'Contestó' || a.resultado === 'Respondio' || a.resultado === 'Efectivo').length}</p>
+                <p className="text-4xl font-light text-green-600 mt-2 group-hover:scale-105 transition-transform">{actividadesDia.filter(a => a.resultado === 'Contestó' || a.resultado === 'Respondio' || a.resultado === 'Efectivo' || a.resultado === 'Enviado').length}</p>
               </div>
               <div className="bg-[#21242E] p-5 rounded-2xl border border-neutral-800 shadow-sm flex flex-col justify-center space-y-2 text-white">
                 <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest text-center border-b border-white/10 pb-1.5 mb-1.5">Impacto Por Canal</p>
@@ -942,7 +1000,7 @@ export default function CRMPage() {
                   <div>
                     <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Resultado</label>
                     <select value={llamadaResultado} onChange={(e) => setLlamadaResultado(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-2.5 text-xs font-bold text-[#415364] focus:outline-none focus:border-[#ea0029]">
-                      {tipoContacto === 'Llamada' || tipoContacto === 'Zoom' ? (<><option value="Contestó">✅ Contestó / Asistió</option><option value="No contestó">❌ No contestó / Faltó</option><option value="Equivocado">🚫 Número Erróneo</option></>) : tipoContacto === 'WhatsApp' ? (<><option value="Respondio">✅ Respondió el chat</option><option value="Enviado">✔️ Enviado (Sin resp)</option><option value="Leido">👀 Leído (Visto)</option></>) : (<><option value="Efectivo">✅ Efectivo / Realizado</option><option value="Fallido">❌ Cancelado</option></>)}
+                      {tipoContacto === 'Llamada' || tipoContacto === 'Zoom' ? (<><option value="Contestó">✅ Contestó / Asistió</option><option value="No contestó">❌ No contestó / Faltó</option><option value="Equivocado">🚫 Número Erróneo</option></>) : tipoContacto === 'WhatsApp' || tipoContacto === 'Email' ? (<><option value="Respondio">✅ Respondió el chat</option><option value="Enviado">✔️ Enviado</option><option value="Leido">👀 Leído (Visto)</option></>) : (<><option value="Efectivo">✅ Efectivo / Realizado</option><option value="Fallido">❌ Cancelado</option></>)}
                     </select>
                   </div>
                   <div>
@@ -976,7 +1034,7 @@ export default function CRMPage() {
                           </div>
                           <div className="flex-1 border-l border-[#415364]/10 pl-4">
                             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                              <span className="text-sm font-bold text-[#415364]">{act.clientes?.nombres} {act.clientes?.apellidos}</span><span className="text-[12px] opacity-70 group-hover:opacity-100 transition-opacity">{act.tipo_contacto === 'WhatsApp' ? '💬' : act.tipo_contacto === 'Email' ? '📧' : act.tipo_contacto === 'Zoom' ? '📹' : act.tipo_contacto === 'Reunión' ? '🤝' : '📞'}</span><span className={`text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider border ${act.resultado.includes('Contestó') || act.resultado.includes('Respondio') || act.resultado.includes('Efectivo') ? 'bg-green-50 text-green-700 border-green-200' : 'bg-neutral-100 text-neutral-600 border-neutral-200'}`}>{act.resultado}</span>
+                              <span className="text-sm font-bold text-[#415364]">{act.clientes?.nombres} {act.clientes?.apellidos}</span><span className="text-[12px] opacity-70 group-hover:opacity-100 transition-opacity">{act.tipo_contacto === 'WhatsApp' ? '💬' : act.tipo_contacto === 'Email' ? '📧' : act.tipo_contacto === 'Zoom' ? '📹' : act.tipo_contacto === 'Reunión' ? '🤝' : '📞'}</span><span className={`text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider border ${act.resultado.includes('Contestó') || act.resultado.includes('Respondio') || act.resultado.includes('Efectivo') || act.resultado === 'Enviado' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-neutral-100 text-neutral-600 border-neutral-200'}`}>{act.resultado}</span>
                             </div>
                             <p className="text-[12px] text-[#415364]/80 leading-relaxed font-medium">{act.notas || 'Sin notas adicionales'}</p>
                             <p className="text-[9px] font-bold text-[#415364]/40 mt-2 uppercase tracking-widest">Agente: {act.agente}</p>
@@ -1001,10 +1059,10 @@ export default function CRMPage() {
               <div className="flex justify-between items-start">
                 <h2 className="text-xl font-bold text-white pr-2 leading-tight flex items-center gap-2">{clienteSeleccionado.nombres} {clienteSeleccionado.apellidos}</h2>
                 <div className="flex gap-2">
-                  <button onClick={abrirModalEditar} className="text-white bg-white/20 hover:bg-white/30 rounded-full w-8 h-8 flex items-center justify-center transition-colors" title="Editar Información">
-                    <span className="text-sm">✏️</span>
+                  <button onClick={abrirModalEditar} className="text-white bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl w-8 h-8 flex items-center justify-center transition-all shadow-sm" title="Editar Información">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                   </button>
-                  <button onClick={() => setClienteSeleccionado(null)} className="text-white/50 hover:text-white bg-white/10 rounded-full w-8 h-8 flex items-center justify-center transition-colors">✕</button>
+                  <button onClick={() => setClienteSeleccionado(null)} className="text-white/50 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl w-8 h-8 flex items-center justify-center transition-all">✕</button>
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2 mt-3">
@@ -1015,24 +1073,52 @@ export default function CRMPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+              
+              {/* NUEVA TARJETA: PROCEDENCIA E INTELIGENCIA DEL LEAD */}
+              <div className="bg-white p-4 rounded-xl border border-neutral-200/60 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1.5 h-full bg-[#415364]"></div>
+                <p className="text-[10px] font-bold text-[#415364] uppercase tracking-widest border-b border-neutral-100 pb-2 mb-3 flex items-center gap-1.5">
+                  <svg className="w-3.5 h-3.5 text-[#415364]/60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
+                  🕵️ Inteligencia de Origen
+                </p>
+                <div className="grid grid-cols-2 gap-y-3 gap-x-2">
+                  <div>
+                    <span className="text-[9px] font-bold text-[#415364]/50 uppercase tracking-wider">Canal Captación</span>
+                    <p className="text-xs font-bold text-[#415364] mt-0.5">{clienteSeleccionado.origen_captacion || 'Desconocido'}</p>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-bold text-[#415364]/50 uppercase tracking-wider">Campaña / Origen</span>
+                    <p className="text-[11px] font-bold text-[#415364] mt-0.5 bg-[#dce3eb]/50 w-fit px-1.5 py-0.5 rounded">{clienteSeleccionado.campana || 'Web Directa / Orgánico'}</p>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-bold text-[#415364]/50 uppercase tracking-wider">Fecha Registro</span>
+                    <p className="text-[11px] font-medium text-[#415364] mt-0.5">{clienteSeleccionado.created_at ? new Date(clienteSeleccionado.created_at).toLocaleString('es-EC', { dateStyle: 'short', timeStyle: 'short' }) : 'No disponible'}</p>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-bold text-[#415364]/50 uppercase tracking-wider">Asignado a / Creado por</span>
+                    <p className="text-[11px] font-medium text-[#415364] mt-0.5">{clienteSeleccionado.ingresado_por || 'Sistema Web'}</p>
+                  </div>
+                </div>
+              </div>
+
               <div className="bg-white p-4 rounded-xl border border-neutral-200/60 shadow-sm space-y-3">
-                <p className="text-[10px] font-bold text-[#415364]/60 uppercase tracking-widest border-b border-neutral-100 pb-2">Acciones de Contacto</p>
+                <p className="text-[10px] font-bold text-[#415364]/60 uppercase tracking-widest border-b border-neutral-100 pb-2">Acciones de Contacto Rápidas</p>
                 <div className="grid grid-cols-2 gap-2">
-                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'bienvenida')} className="flex flex-col items-center justify-center gap-1 bg-[#25D366] text-white py-2.5 rounded-xl shadow-sm"><span className="text-[11px] font-bold uppercase tracking-wider">Welcome</span></button>
-                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'campana')} className="flex flex-col items-center justify-center gap-1 bg-[#128C7E] text-white py-2.5 rounded-xl shadow-sm"><span className="text-[11px] font-bold uppercase tracking-wider">Campaña</span></button>
-                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'libre')} className="flex flex-col items-center justify-center gap-1 bg-white text-[#415364] border border-[#415364]/20 py-2.5 rounded-xl shadow-sm"><span className="text-[11px] font-bold uppercase tracking-wider">Chat Libre</span></button>
-                  <button onClick={() => abrirCorreo(clienteSeleccionado)} className="flex flex-col items-center justify-center gap-1 bg-[#415364] text-white py-2.5 rounded-xl shadow-sm"><span className="text-[11px] font-bold uppercase tracking-wider">Diseñar Correo</span></button>
+                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'bienvenida')} className="flex flex-col items-center justify-center gap-1 bg-[#25D366] text-white py-2.5 rounded-xl shadow-sm hover:-translate-y-0.5 transition-transform"><span className="text-[11px] font-bold uppercase tracking-wider">Welcome</span></button>
+                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'campana')} className="flex flex-col items-center justify-center gap-1 bg-[#128C7E] text-white py-2.5 rounded-xl shadow-sm hover:-translate-y-0.5 transition-transform"><span className="text-[11px] font-bold uppercase tracking-wider">Campaña</span></button>
+                  <button onClick={() => abrirWhatsApp(clienteSeleccionado, 'libre')} className="flex flex-col items-center justify-center gap-1 bg-white text-[#415364] border border-[#415364]/20 py-2.5 rounded-xl shadow-sm hover:bg-[#dce3eb]/30 transition-colors"><span className="text-[11px] font-bold uppercase tracking-wider">Chat Libre</span></button>
+                  <button onClick={() => abrirCorreo(clienteSeleccionado)} className="flex flex-col items-center justify-center gap-1 bg-[#415364] text-white py-2.5 rounded-xl shadow-sm hover:-translate-y-0.5 transition-transform"><span className="text-[11px] font-bold uppercase tracking-wider">Diseñar Correo</span></button>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white p-4 rounded-xl border border-neutral-200/60 shadow-sm">
                   <label className="block text-[9px] font-bold text-[#415364]/60 uppercase tracking-widest mb-1.5">Fase Embudo</label>
-                  <select value={clienteSeleccionado.estado} onChange={(e) => actualizarCampoRapido(clienteSeleccionado.id, 'estado', e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/10 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]">{estados.map(est => <option key={est} value={est}>{est}</option>)}</select>
+                  <select value={clienteSeleccionado.estado} onChange={(e) => actualizarCampoRapido(clienteSeleccionado.id, 'estado', e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/10 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029] cursor-pointer">{estados.map(est => <option key={est} value={est}>{est}</option>)}</select>
                 </div>
                 <div className="bg-white p-4 rounded-xl border border-neutral-200/60 shadow-sm">
                   <label className="block text-[9px] font-bold text-[#415364]/60 uppercase tracking-widest mb-1.5">Termómetro</label>
-                  <select value={clienteSeleccionado.temperatura || '❄️ Frío'} onChange={(e) => actualizarCampoRapido(clienteSeleccionado.id, 'temperatura', e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/10 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]"><option value="🔥 Caliente">🔥 Caliente</option><option value="☀️ Tibio">☀️ Tibio</option><option value="❄️ Frío">❄️ Frío</option></select>
+                  <select value={clienteSeleccionado.temperatura || '❄️ Frío'} onChange={(e) => actualizarCampoRapido(clienteSeleccionado.id, 'temperatura', e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/10 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029] cursor-pointer"><option value="🔥 Caliente">🔥 Caliente</option><option value="☀️ Tibio">☀️ Tibio</option><option value="❄️ Frío">❄️ Frío</option></select>
                 </div>
               </div>
 
@@ -1042,10 +1128,10 @@ export default function CRMPage() {
                 <h3 className="text-[11px] font-bold text-[#21242E] flex items-center gap-2 uppercase tracking-widest mb-1">Pase VIP: Inventario</h3>
                 <p className="text-[10px] text-[#415364]/70 leading-relaxed mb-3">Autoriza el email del prospecto para ver precios y planos en la web.</p>
                 <div className="flex gap-2">
-                  <select value={tiempoVIP} onChange={(e) => setTiempoVIP(Number(e.target.value))} className="w-[35%] bg-[#dce3eb]/30 border border-[#415364]/20 text-[#415364] rounded-xl p-2 text-[11px] font-bold outline-none">
+                  <select value={tiempoVIP} onChange={(e) => setTiempoVIP(Number(e.target.value))} className="w-[35%] bg-[#dce3eb]/30 border border-[#415364]/20 text-[#415364] rounded-xl p-2 text-[11px] font-bold outline-none cursor-pointer">
                     <option value={1}>1 Hora</option><option value={2}>2 Horas</option><option value={12}>12 Horas</option><option value={24}>24 Horas</option><option value={48}>48 Horas</option>
                   </select>
-                  <button onClick={() => otorgarAccesoVIP(clienteSeleccionado.email)} disabled={activandoVIP || !clienteSeleccionado.email} className="w-[65%] py-2.5 bg-[#21242E] text-white rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-black">
+                  <button onClick={() => otorgarAccesoVIP(clienteSeleccionado.email)} disabled={activandoVIP || !clienteSeleccionado.email} className="w-[65%] py-2.5 bg-[#21242E] text-white rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-black transition-colors">
                     {activandoVIP ? 'Generando...' : 'Generar Pase'}
                   </button>
                 </div>
@@ -1057,21 +1143,21 @@ export default function CRMPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Fecha</label>
-                    <input type="date" value={fechaAccion} onChange={(e) => setFechaAccion(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg p-2 text-[11px] font-bold text-[#415364]" />
+                    <input type="date" value={fechaAccion} onChange={(e) => setFechaAccion(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]" />
                   </div>
                   <div>
                     <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Acción</label>
-                    <select value={tipoAccion} onChange={(e) => setTipoAccion(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg p-2 text-[11px] font-bold text-[#415364]">
+                    <select value={tipoAccion} onChange={(e) => setTipoAccion(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029] cursor-pointer">
                       {tiposAccion.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
                   </div>
                 </div>
                 <div>
                   <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Objetivo</label>
-                  <input type="text" value={detalleAccion} onChange={(e) => setDetalleAccion(e.target.value)} placeholder="Ej: Llamar para confirmar cita..." className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg p-2 text-[11px] text-[#415364]" />
+                  <input type="text" value={detalleAccion} onChange={(e) => setDetalleAccion(e.target.value)} placeholder="Ej: Llamar para confirmar cita..." className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg p-2 text-[11px] text-[#415364] outline-none focus:border-[#ea0029]" />
                 </div>
                 <div className="flex justify-end pt-1">
-                  <button onClick={guardarProximaTarea} className="px-4 py-2 bg-[#415364] text-white text-[10px] font-bold uppercase tracking-widest rounded-lg">Guardar Tarea</button>
+                  <button onClick={guardarProximaTarea} className="px-4 py-2 bg-[#415364] text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-[#21242E] transition-colors">Guardar Tarea</button>
                 </div>
               </div>
 
@@ -1079,11 +1165,11 @@ export default function CRMPage() {
               <div className="bg-white border border-neutral-200/60 p-5 rounded-2xl shadow-sm">
                 <label className="block text-[11px] font-bold text-[#415364] tracking-widest mb-3 uppercase border-b border-neutral-100 pb-2">Log de Seguimiento</label>
                 <div className="flex flex-col gap-3 mb-4">
-                  <textarea rows={2} value={nuevaNotaTexto} onChange={(e) => setNuevaNotaTexto(e.target.value)} placeholder="Escribe el resumen..." className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] resize-none" />
-                  <button onClick={agregarNotaBitacora} disabled={!nuevaNotaTexto.trim() || guardandoNota} className="self-end px-4 py-2 bg-[#ea0029] text-white text-[10px] font-bold uppercase tracking-widest rounded-lg">Agregar</button>
+                  <textarea rows={2} value={nuevaNotaTexto} onChange={(e) => setNuevaNotaTexto(e.target.value)} placeholder="Escribe tu nota aquí..." className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs text-[#415364] resize-none outline-none focus:border-[#ea0029]" />
+                  <button onClick={agregarNotaBitacora} disabled={!nuevaNotaTexto.trim() || guardandoNota} className="self-end px-4 py-2 bg-[#ea0029] text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-[#c90022] transition-colors disabled:opacity-50">Agregar Nota</button>
                 </div>
                 <div className="bg-[#F9F7F5] p-4 rounded-xl border border-[#415364]/10 h-[150px] overflow-y-auto custom-scrollbar shadow-inner">
-                  {clienteSeleccionado.notas ? <div className="text-[11px] text-[#415364] whitespace-pre-wrap">{clienteSeleccionado.notas}</div> : <p className="text-[11px] text-[#415364]/40 text-center italic mt-10">Sin actividad aún.</p>}
+                  {clienteSeleccionado.notas ? <div className="text-[11px] text-[#415364] whitespace-pre-wrap leading-relaxed">{clienteSeleccionado.notas}</div> : <p className="text-[11px] text-[#415364]/40 text-center italic mt-10">Sin actividad aún.</p>}
                 </div>
               </div>
 
