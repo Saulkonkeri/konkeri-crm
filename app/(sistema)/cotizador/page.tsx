@@ -23,7 +23,7 @@ const MAPA_PLANOS = [
 ];
 
 const RENDER_FACHADA = 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Frontal.jpg';
-const LOGO_ARIENZO = 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg';
+const LOGO_BLANCO = 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-blanco.svg';
 
 export default function CotizadorPage() {
   const [propiedades, setPropiedades] = useState<any[]>([]);
@@ -52,7 +52,7 @@ export default function CotizadorPage() {
   // --- COMPLEMENTOS ESTÉTICOS Y PLANO ---
   const [incluirClima, setIncluirClima] = useState<boolean>(false);
   const [incluirBbq, setIncluirBbq] = useState<boolean>(false);
-  const [incluirPlano, setIncluirPlano] = useState<boolean>(true); // 🔥 NUEVO: Control del Plano
+  const [incluirPlano, setIncluirPlano] = useState<boolean>(true);
 
   // --- PARÁMETROS FINANCIEROS Y DE FECHA ---
   const hoyStr = new Date().toISOString().split('T')[0];
@@ -141,16 +141,17 @@ export default function CotizadorPage() {
     precioListaOriginal, montoDescuentoCalculado, precioDeptoPreLanzamiento, valAnexosPreLanzamiento, precioTotal, 
     cuotaInicialTotal, saldoFirmaPromesa, cuotaInicialMensual, entradaDiferirTotal, contraEntrega,
     pctInicialReal, pctFirmaReal, pctEntradaReal, pctContraEntregaReal, areaTotal, valorM2Lanzamiento,
-    tipologia, parqueaderoTexto, bodegaAsignada, esLocal, cantidadParqueos, urlPlanoAsignado
+    tipologia, parqueaderoTexto, bodegaAsignada, esLocal, cantidadParqueos, urlPlanoAsignado,
+    numHabitaciones, numBanos // 🔥 NUEVOS VALORES PARA ÍCONOS
   } = useMemo(() => {
     const listaOriginal = propiedadSeleccionada ? Number(propiedadSeleccionada.precio) : 0;
-    
     const asignadoText = propiedadSeleccionada?.parqueadero_asignado || '';
     const bodegaText = propiedadSeleccionada?.bodega_asignada || 'Ninguna';
+    const tipologiaReal = propiedadSeleccionada?.tipologia || '---';
     
     const isLocalComercial = 
       (propiedadSeleccionada?.categoria || '').toLowerCase().includes('local') || 
-      (propiedadSeleccionada?.tipologia || '').toLowerCase().includes('local');
+      tipologiaReal.toLowerCase().includes('local');
 
     let cant = propiedadSeleccionada ? Number(propiedadSeleccionada.parqueadero_cantidad || 0) : 0;
     if (cant === 0 && asignadoText) {
@@ -204,22 +205,29 @@ export default function CotizadorPage() {
     const area = propiedadSeleccionada ? Number(propiedadSeleccionada.area_total || 0) : 0;
     const m2Lanzamiento = area > 0 ? precioDeptoDescontado / area : 0;
     
-    // 🔥 ENCONTRAR EL PLANO CORRECTO
+    // ENCONTRAR EL PLANO CORRECTO
     let urlPlano = '';
     if (area > 0 && !isLocalComercial) {
-      // Buscar el plano que más se acerque al área total (margen de 2m2)
       const planoCercano = MAPA_PLANOS.find(p => Math.abs(p.area - area) <= 2.5);
       if (planoCercano) urlPlano = planoCercano.url;
     }
+
+    // 🔥 INTELIGENCIA DE ÍCONOS (Inferir baños y camas)
+    let camas = "1";
+    let banos = "1.5";
+    const tipoLower = tipologiaReal.toLowerCase();
+    if (tipoLower.includes('suite')) { camas = "1"; banos = "1.5"; }
+    else if (tipoLower.includes('2') || tipoLower.includes('dos')) { camas = "2"; banos = "2.5"; }
+    else if (tipoLower.includes('3') || tipoLower.includes('tres')) { camas = "3"; banos = "3.5"; }
 
     return {
       precioListaOriginal: listaOriginal, montoDescuentoCalculado: descuentoMonto, precioDeptoPreLanzamiento: precioDeptoDescontado,
       valAnexosPreLanzamiento: valAnexosDescontados, precioTotal: precioFin, cuotaInicialTotal: reservaValor + saldoPromesa,
       saldoFirmaPromesa: saldoPromesa, cuotaInicialMensual: mensualInicial, entradaDiferirTotal: entradaDiferir, contraEntrega: entrega,
       pctInicialReal: pInicialTotal, pctFirmaReal: pFirma, pctEntradaReal: pEntrada, pctContraEntregaReal: pEntrega,
-      areaTotal: area, valorM2Lanzamiento: m2Lanzamiento, tipologia: propiedadSeleccionada?.tipologia || '---',
+      areaTotal: area, valorM2Lanzamiento: m2Lanzamiento, tipologia: tipologiaReal,
       parqueaderoTexto: textoParqueo, bodegaAsignada: bodegaText, esLocal: isLocalComercial, cantidadParqueos: cant > 0 ? cant : 1,
-      urlPlanoAsignado: urlPlano
+      urlPlanoAsignado: urlPlano, numHabitaciones: camas, numBanos: banos
     };
   }, [propiedadSeleccionada, tipoInicial, valorInicial, tipoEntrada, valorEntrada, tipoDescuento, valorDescuento, reservaValor, mesesInicial]);
 
@@ -333,13 +341,22 @@ export default function CotizadorPage() {
               <script src="https://cdn.tailwindcss.com"></script>
               <style>
                 @page { size: A4 portrait; margin: 0mm; }
-                body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; font-family: ui-sans-serif, system-ui, sans-serif; background: white;}
-                .contenedor-a4 { width: 210mm; min-height: 297mm; page-break-after: always; box-sizing: border-box; background: white; position: relative;}
+                body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; font-family: ui-sans-serif, system-ui, sans-serif; background: #e5e5e5;}
+                .contenedor-a4 { width: 210mm; height: 297mm; max-height: 297mm; page-break-after: always; box-sizing: border-box; background: white; position: relative; overflow: hidden; }
                 .page-break { page-break-before: always; }
+                
+                /* Esconder sombras y bordes de la previsualización al imprimir */
+                @media print {
+                  body { background: white; }
+                  #wrapper { gap: 0 !important; padding: 0 !important; }
+                  .contenedor-a4 { box-shadow: none !important; border: none !important; margin: 0 !important; }
+                }
               </style>
             </head>
-            <body class="bg-white text-neutral-900 p-0 m-0">
-              ${elemento.innerHTML}
+            <body>
+              <div id="wrapper" class="flex flex-col gap-0 p-0 m-0">
+                ${elemento.innerHTML}
+              </div>
               <script>setTimeout(() => { window.print(); window.close(); }, 800);</script>
             </body>
           </html>
@@ -357,14 +374,13 @@ export default function CotizadorPage() {
     }
     
     setEnviandoCorreo(true);
-    setPestañaActiva('previsualizar'); // Aseguramos que el DOM del PDF esté renderizado
+    setPestañaActiva('previsualizar'); 
     
     setTimeout(async () => {
       try {
         const elemento = document.getElementById('plantilla-pdf-arienzo');
         if (!elemento) throw new Error("No se encontró el diseño de la cotización");
 
-        // Construimos el HTML puro que el backend convertirá o enviará
         const htmlContent = `
           <!DOCTYPE html>
           <html>
@@ -373,12 +389,14 @@ export default function CotizadorPage() {
               <style>
                 @page { size: A4 portrait; margin: 0mm; }
                 body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; font-family: sans-serif; background: white;}
-                .contenedor-a4 { width: 210mm; min-height: 297mm; page-break-after: always; box-sizing: border-box; background: white; padding: 40px; margin: 0 auto;}
+                .contenedor-a4 { width: 210mm; height: 297mm; page-break-after: always; box-sizing: border-box; background: white; margin: 0 auto; overflow: hidden; position: relative;}
                 .page-break { page-break-before: always; }
               </style>
             </head>
             <body>
-              ${elemento.innerHTML}
+              <div class="flex flex-col">
+                ${elemento.innerHTML}
+              </div>
             </body>
           </html>
         `;
@@ -407,7 +425,7 @@ export default function CotizadorPage() {
       } finally {
         setEnviandoCorreo(false);
       }
-    }, 500); // Pequeño delay para asegurar que React haya renderizado la previsualización
+    }, 500); 
   };
 
   if (cargando) {
@@ -550,15 +568,16 @@ export default function CotizadorPage() {
               <p className="text-sm font-bold uppercase tracking-widest">Selecciona una unidad para habilitar el cotizador.</p>
             </div>
           ) : pestañaActiva === 'previsualizar' ? (
-            <div className="bg-[#1a1c23] p-6 rounded-2xl shadow-inner flex flex-col items-center border border-[#415364]/30 overflow-x-auto gap-8">
+            <div className="bg-[#1a1c23] p-6 rounded-2xl shadow-inner flex flex-col items-center border border-[#415364]/30 overflow-x-auto">
               
-              {/* --- INICIO DEL CONTENEDOR PDF (INTOCABLE PARA QUE LA ESTRUCTURA SE MANTENGA AL IMPRIMIR/ENVIAR) --- */}
-              <div id="plantilla-pdf-arienzo" className="flex flex-col gap-0 scale-95 sm:scale-100 origin-top transform">
+              {/* --- INICIO DEL CONTENEDOR PDF --- */}
+              {/* 🔥 SOLUCIÓN PREVISUALIZACIÓN: gap-8 separa visualmente las hojas en la web, print:gap-0 las une para el PDF */}
+              <div id="plantilla-pdf-arienzo" className="flex flex-col gap-8 print:gap-0 scale-95 sm:scale-100 origin-top transform">
                 
                 {/* --- PÁGINA 1: COTIZACIÓN FINANCIERA --- */}
-                <div className="contenedor-a4 bg-white p-10 flex flex-col justify-between text-neutral-900 rounded-sm shadow-2xl relative">
-                  <div>
-                    <div className="bg-[#B94A36] px-8 py-5 flex justify-between items-center rounded-t-sm">
+                <div className="contenedor-a4 bg-white flex flex-col justify-between text-neutral-900 rounded-lg shadow-2xl print:shadow-none border border-neutral-200 print:border-none relative overflow-hidden">
+                  <div className="p-10 flex flex-col flex-1">
+                    <div className="bg-[#B94A36] px-8 py-5 flex justify-between items-center rounded-t-sm -mx-10 -mt-10 mb-6">
                       <div className="flex items-center gap-3">
                         <img 
                           src="/logo-arienzo.png" 
@@ -717,7 +736,7 @@ export default function CotizadorPage() {
                       </div>
                     )}
 
-                    <div className="mb-4 bg-[#F9F7F5] border border-[#EAE3DC] rounded-md p-3">
+                    <div className="mb-4 bg-[#F9F7F5] border border-[#EAE3DC] rounded-md p-3 mt-auto">
                       <h4 className="text-[8px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Valores Agregados a la Unidad</h4>
                       <ul className="text-[9px] text-neutral-700 space-y-1 pl-3 list-disc marker:text-[#DEB886]">
                         {esLocal ? (
@@ -742,7 +761,7 @@ export default function CotizadorPage() {
 
                   </div>
 
-                  <div className="mt-2">
+                  <div className="p-10 pt-2 bg-white">
                     <div className="grid grid-cols-2 gap-8 text-center text-[9px]">
                       <div className="border-t border-neutral-300 pt-1.5">
                         <p className="font-bold text-[#B94A36] uppercase tracking-wider">Arienzo Boutique Living</p>
@@ -756,46 +775,71 @@ export default function CotizadorPage() {
                   </div>
                 </div>
 
-                {/* --- PÁGINA 2: PLANO ARQUITECTÓNICO (OPCIONAL) --- */}
+                {/* --- PÁGINA 2: PLANO ARQUITECTÓNICO (DISEÑO GLAMOUR) --- */}
                 {incluirPlano && !esLocal && urlPlanoAsignado && (
-                  <div className="contenedor-a4 page-break bg-[#F9F7F5] flex flex-col relative text-neutral-900 shadow-2xl">
-                    {/* Header P2 */}
-                    <div className="bg-[#B94A36] px-10 py-5 flex justify-between items-center z-10 shadow-sm relative">
-                      <img src="/logo-arienzo.png" alt="Arienzo" className="h-8 w-auto object-contain" />
-                      <div className="text-right text-white">
-                        <h3 className="text-[10px] font-semibold tracking-wider uppercase opacity-90">Diseño Arquitectónico</h3>
-                        <p className="text-[10px] mt-0.5 font-bold text-white">Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero}</p>
+                  <div className="contenedor-a4 page-break bg-white flex flex-col relative text-neutral-900 shadow-2xl print:shadow-none border border-neutral-200 print:border-none overflow-hidden">
+                    
+                    {/* Header P2: Oscuro elegante */}
+                    <div className="bg-[#21242E] px-10 py-6 flex justify-between items-center z-10 border-b-[3px] border-[#D1C292]">
+                      <img src={LOGO_BLANCO} alt="Arienzo" className="h-8 w-auto object-contain" />
+                      <div className="text-right">
+                        <h3 className="text-[12px] font-bold tracking-widest uppercase text-[#D1C292]">Diseño Arquitectónico</h3>
+                        <p className="text-[10px] mt-1 font-medium tracking-wider text-white">Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero} | {tipologia}</p>
                       </div>
                     </div>
 
-                    {/* Bar Specs */}
-                    <div className="bg-white border-b border-[#EAE3DC] px-10 py-3 flex justify-center gap-12 z-10 shadow-sm relative">
-                      <div className="text-center">
-                        <span className="text-[8px] uppercase tracking-wider text-neutral-400 block mb-0.5">Distribución</span>
-                        <span className="text-[12px] font-bold text-neutral-800">{tipologia}</span>
+                    {/* Especificaciones / Íconos Premium */}
+                    <div className="bg-[#F9F7F5] border-b border-neutral-200 px-10 py-5 flex justify-center gap-10 items-center z-10">
+                      
+                      <div className="flex flex-col items-center gap-1.5">
+                        <svg className="w-6 h-6 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                        <span className="text-[8px] font-bold text-neutral-500 uppercase tracking-widest">Área Total</span>
+                        <span className="text-[12px] font-black text-[#B94A36]">{areaTotal} m²</span>
                       </div>
-                      <div className="text-center border-l border-[#EAE3DC] pl-12">
-                        <span className="text-[8px] uppercase tracking-wider text-neutral-400 block mb-0.5">Área de la Unidad</span>
-                        <span className="text-[12px] font-bold text-[#B94A36]">{areaTotal} m²</span>
+
+                      <div className="w-px h-10 bg-neutral-300"></div>
+
+                      <div className="flex flex-col items-center gap-1.5">
+                        <svg className="w-6 h-6 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+                        <span className="text-[8px] font-bold text-neutral-500 uppercase tracking-widest">Dormitorios</span>
+                        <span className="text-[12px] font-bold text-[#21242E]">{numHabitaciones}</span>
+                      </div>
+
+                      <div className="w-px h-10 bg-neutral-300"></div>
+
+                      <div className="flex flex-col items-center gap-1.5">
+                        <svg className="w-6 h-6 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                        <span className="text-[8px] font-bold text-neutral-500 uppercase tracking-widest">Baños</span>
+                        <span className="text-[12px] font-bold text-[#21242E]">{numBanos}</span>
+                      </div>
+
+                      <div className="w-px h-10 bg-neutral-300"></div>
+
+                      <div className="flex flex-col items-center gap-1.5">
+                        <svg className="w-6 h-6 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                        <span className="text-[8px] font-bold text-neutral-500 uppercase tracking-widest">Parqueos</span>
+                        <span className="text-[12px] font-bold text-[#21242E]">{cantidadParqueos}</span>
                       </div>
                     </div>
 
-                    {/* Plano Image */}
-                    <div className="flex-1 flex items-center justify-center p-12 bg-white relative z-10">
-                       <img src={urlPlanoAsignado} alt="Plano Arienzo" className="w-full h-full max-h-[190mm] object-contain" />
+                    {/* Marco del Plano */}
+                    <div className="flex-1 flex items-center justify-center p-10 bg-white relative z-10">
+                       <div className="w-full h-full border-2 border-dashed border-[#EAE3DC] rounded-2xl flex items-center justify-center p-6 bg-[#Fdfcfb]">
+                          <img src={urlPlanoAsignado} alt="Plano Arienzo" className="w-full h-full max-h-[160mm] object-contain mix-blend-multiply" />
+                       </div>
                     </div>
 
-                    {/* Footer Info */}
-                    <div className="bg-[#21242E] text-white flex items-stretch h-[120px] z-10 relative">
-                      <div className="w-[180px] h-full">
-                        <img src={RENDER_FACHADA} alt="Fachada Arienzo" className="w-full h-full object-cover opacity-90" />
+                    {/* Footer: Render y Concepto */}
+                    <div className="bg-[#21242E] text-white flex items-stretch h-[140px] z-10 relative mt-auto">
+                      <div className="w-[220px] h-full relative">
+                        <img src={RENDER_FACHADA} alt="Fachada Arienzo" className="w-full h-full object-cover" />
+                        {/* Gradiente sutil para fundir la imagen con el fondo oscuro */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#21242E]"></div>
                       </div>
                       <div className="flex-1 p-6 flex flex-col justify-center">
-                        <div className="flex items-center gap-3 mb-2">
-                           <img src={LOGO_ARIENZO} alt="Arienzo" className="h-6 w-auto opacity-80" />
-                        </div>
-                        <p className="text-[9px] text-white/70 leading-relaxed max-w-sm">
-                          Diseño eficiente enfocado en confort e iluminación natural, concebido por el prestigioso estudio Diez+Muller. Un estilo de vida superior en el corazón de Barbasquillo.
+                        <h4 className="text-[10px] font-bold text-[#D1C292] uppercase tracking-widest mb-1.5">Un Estilo de Vida Superior</h4>
+                        <p className="text-[9px] text-white/70 leading-relaxed font-light">
+                          Diseño eficiente enfocado en confort e iluminación natural, concebido por el prestigioso estudio Diez+Muller. Acabados premium, ventanales de piso a techo y una distribución que maximiza cada espacio en el corazón de Barbasquillo.
                         </p>
                       </div>
                     </div>
