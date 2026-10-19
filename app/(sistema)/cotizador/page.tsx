@@ -553,7 +553,7 @@ export default function CotizadorPage() {
               <div id="plantilla-pdf-arienzo" className="flex flex-col gap-10 print:gap-0 items-center mx-auto" style={{ width: '210mm' }}>
                 
                 {/* --- PÁGINA 1: COTIZACIÓN FINANCIERA (DISEÑO ORIGINAL CON SOMBRAS) --- */}
-                <div className="hoja-a4 shrink-0 bg-white text-neutral-900 shadow-2xl print:shadow-none relative flex flex-col rounded-md print:rounded-none">
+                <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm', overflow: 'hidden' }} className="hoja-a4 shrink-0 bg-white text-neutral-900 shadow-2xl print:shadow-none relative flex flex-col rounded-md print:rounded-none">
                   
                   <div className="px-10 pt-10 pb-6 flex flex-col h-full">
                     
@@ -635,20 +635,20 @@ export default function CotizadorPage() {
                               <td className="py-1 pl-2 italic"><span className="text-red-700 mr-1 font-mono">(-)</span> Descuento Adicional {motivoDescuento && `(${motivoDescuento})`}</td>
                               <td className="py-1 text-center text-red-700">—</td>
                               <td className="py-1 text-center font-medium">{tipoDescuento === 'porcentaje' ? `${valorDescuento}%` : 'Fijo'}</td>
-                              <td className="py-1 text-right font-mono font-bold">-{"$"}{montoDescuentoCalculado.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                              <td className="py-1 text-right font-mono font-bold">-{"\$"}{montoDescuentoCalculado.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                             </tr>
                           )}
                           <tr className="font-bold border-t border-neutral-300 text-neutral-950">
                             <td className="py-1.5"><span className="text-neutral-600 mr-1 font-mono">(=)</span> Valor Total de Venta</td>
                             <td className="py-1.5 text-center text-neutral-400">—</td>
                             <td className="py-1.5 text-center text-neutral-400">—</td>
-                            <td className="py-1.5 text-right font-mono text-[13px]">{"$"}{precioTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                            <td className="py-1.5 text-right font-mono text-[13px]">{"\$"}{precioTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                           </tr>
                           <tr>
                             <td className="py-1 pl-3 text-neutral-600">↳ Reserva para Bloqueo</td>
                             <td className="py-1 text-center text-neutral-700 text-[10px]">{incluirFechas ? formatearFechaLegible(fechaReserva) : 'Inmediato'}</td>
                             <td className="py-1 text-center text-neutral-400">—</td>
-                            <td className="py-1 text-right font-medium font-mono">{"$"}{reservaValor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                            <td className="py-1 text-right font-medium font-mono">{"\$"}{reservaValor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                           </tr>
                           <tr>
                             <td className="py-1 pl-3 text-neutral-600">↳ Abono Inicial Promesa {mesesInicial > 1 ? `(Diferido en ${mesesInicial} meses)` : ''}</td>
@@ -673,7 +673,7 @@ export default function CotizadorPage() {
                       <p className="text-[7px] text-neutral-400 italic text-center mt-2">* Nota: El Valor Total de Venta detallado ya considera un beneficio especial del 5% de descuento por etapa de pre-lanzamiento respecto al precio de lista estándar.</p>
                     </div>
 
-                    {/* Cronograma de Pagos - Resuelto el desborde */}
+                    {/* Cronograma de Pagos */}
                     {entradaDiferirTotal > 0 && (
                       <div className="flex-1 flex flex-col mb-4 min-h-0">
                         <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#B94A36] mb-1">Cronograma de Pagos ({mesesConstruccion} Dividendos)</h4>
@@ -733,10 +733,10 @@ export default function CotizadorPage() {
                   </div>
                 </div>
 
-                {/* --- PÁGINA 2: PLANO ARQUITECTÓNICO (DISEÑO ABSOLUTO Y REFINADO) --- */}
-                <div className="hoja-a4 shrink-0 bg-white flex flex-col justify-between text-neutral-900 shadow-2xl print:shadow-none border border-neutral-300 print:border-none rounded-md print:rounded-none mx-auto">
+                {/* --- PÁGINA 2: PLANO ARQUITECTÓNICO --- */}
+                <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm', overflow: 'hidden' }} className="hoja-a4 shrink-0 bg-white flex flex-col justify-between text-neutral-900 shadow-2xl print:shadow-none border border-neutral-300 print:border-none rounded-md print:rounded-none mx-auto">
                   
-                  {/* Header P2: Gorra Negra Superior (Sin Diez Muller) */}
+                  {/* Header P2: Gorra Negra con Diez+Muller */}
                   <div className="flex items-stretch h-[170px] z-10 shrink-0 w-full bg-[#181A20] text-white">
                     <div className="w-[210px] h-full relative">
                       <img src={RENDER_FACHADA} alt="Fachada Arienzo" className="w-full h-full object-cover" />
@@ -745,7 +745,7 @@ export default function CotizadorPage() {
                       <h3 className="text-[16px] font-bold tracking-widest uppercase text-[#D1C292]">Diseño Arquitectónico</h3>
                       <p className="text-[11px] mt-1 font-bold tracking-wider text-white">Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero} | {tipologia}</p>
                       <p className="text-[11.5px] text-white/90 leading-[1.8] font-light mt-3 pr-6 tracking-wide">
-                        Un diseño arquitectónico exclusivo y minuciosamente pensado por el arquitecto Siegfried Müller, uno de los más reconocidos del país. Cada espacio ha sido concebido para ofrecer un estilo de vida superior, destacando una distribución inteligente y una selección de acabados de excelente calidad.
+                        Un diseño arquitectónico exclusivo y minuciosamente pensado por el prestigioso estudio Diez+Muller, uno de los más reconocidos del país. Cada espacio ha sido concebido para ofrecer un estilo de vida superior, destacando una distribución inteligente y una selección de acabados de excelente calidad.
                       </p>
                     </div>
                   </div>
