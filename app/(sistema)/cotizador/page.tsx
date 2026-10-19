@@ -142,7 +142,7 @@ export default function CotizadorPage() {
     cuotaInicialTotal, saldoFirmaPromesa, cuotaInicialMensual, entradaDiferirTotal, contraEntrega,
     pctInicialReal, pctFirmaReal, pctEntradaReal, pctContraEntregaReal, areaTotal, valorM2Lanzamiento,
     tipologia, parqueaderoTexto, bodegaAsignada, esLocal, cantidadParqueos, urlPlanoAsignado,
-    numHabitaciones, numBanos // 🔥 NUEVOS VALORES PARA ÍCONOS
+    numHabitaciones, numBanos
   } = useMemo(() => {
     const listaOriginal = propiedadSeleccionada ? Number(propiedadSeleccionada.precio) : 0;
     const asignadoText = propiedadSeleccionada?.parqueadero_asignado || '';
@@ -212,7 +212,7 @@ export default function CotizadorPage() {
       if (planoCercano) urlPlano = planoCercano.url;
     }
 
-    // 🔥 INTELIGENCIA DE ÍCONOS (Inferir baños y camas)
+    // INTELIGENCIA DE ÍCONOS (Inferir baños y camas)
     let camas = "1";
     let banos = "1.5";
     const tipoLower = tipologiaReal.toLowerCase();
@@ -341,11 +341,24 @@ export default function CotizadorPage() {
               <script src="https://cdn.tailwindcss.com"></script>
               <style>
                 @page { size: A4 portrait; margin: 0mm; }
-                body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; font-family: ui-sans-serif, system-ui, sans-serif; background: #e5e5e5;}
-                .contenedor-a4 { width: 210mm; height: 297mm; max-height: 297mm; page-break-after: always; box-sizing: border-box; background: white; position: relative; overflow: hidden; }
+                body { 
+                  -webkit-print-color-adjust: exact !important; 
+                  print-color-adjust: exact !important; 
+                  font-family: ui-sans-serif, system-ui, sans-serif; 
+                  background: #e5e5e5;
+                }
+                .contenedor-a4 { 
+                  width: 210mm; 
+                  height: 297mm; 
+                  max-height: 297mm; 
+                  page-break-after: always; 
+                  box-sizing: border-box; 
+                  background: white; 
+                  position: relative; 
+                  overflow: hidden; 
+                }
                 .page-break { page-break-before: always; }
                 
-                /* Esconder sombras y bordes de la previsualización al imprimir */
                 @media print {
                   body { background: white; }
                   #wrapper { gap: 0 !important; padding: 0 !important; }
@@ -354,7 +367,7 @@ export default function CotizadorPage() {
               </style>
             </head>
             <body>
-              <div id="wrapper" class="flex flex-col gap-0 p-0 m-0">
+              <div id="wrapper" class="flex flex-col gap-0 p-0 m-0 items-center">
                 ${elemento.innerHTML}
               </div>
               <script>setTimeout(() => { window.print(); window.close(); }, 800);</script>
@@ -366,7 +379,6 @@ export default function CotizadorPage() {
     }, 500);
   };
 
-  // 🔥 NUEVA FUNCIÓN: ENVIAR POR CORREO
   const enviarCotizacionPorCorreo = async () => {
     if (!clienteDataCompleta?.email) {
       alert("⚠️ El cliente seleccionado no tiene un correo electrónico registrado en el CRM.");
@@ -394,7 +406,7 @@ export default function CotizadorPage() {
               </style>
             </head>
             <body>
-              <div class="flex flex-col">
+              <div class="flex flex-col items-center">
                 ${elemento.innerHTML}
               </div>
             </body>
@@ -568,15 +580,14 @@ export default function CotizadorPage() {
               <p className="text-sm font-bold uppercase tracking-widest">Selecciona una unidad para habilitar el cotizador.</p>
             </div>
           ) : pestañaActiva === 'previsualizar' ? (
-            <div className="bg-[#1a1c23] p-6 rounded-2xl shadow-inner flex flex-col items-center border border-[#415364]/30 overflow-x-auto">
+            <div className="bg-[#1a1c23] py-8 px-4 sm:px-8 rounded-2xl shadow-inner flex flex-col items-center border border-[#415364]/30 overflow-x-auto">
               
               {/* --- INICIO DEL CONTENEDOR PDF --- */}
-              {/* 🔥 SOLUCIÓN PREVISUALIZACIÓN: gap-8 separa visualmente las hojas en la web, print:gap-0 las une para el PDF */}
-              <div id="plantilla-pdf-arienzo" className="flex flex-col gap-8 print:gap-0 scale-95 sm:scale-100 origin-top transform">
+              <div id="plantilla-pdf-arienzo" className="flex flex-col gap-10 print:gap-0 items-center transform origin-top">
                 
                 {/* --- PÁGINA 1: COTIZACIÓN FINANCIERA --- */}
-                <div className="contenedor-a4 bg-white flex flex-col justify-between text-neutral-900 rounded-lg shadow-2xl print:shadow-none border border-neutral-200 print:border-none relative overflow-hidden">
-                  <div className="p-10 flex flex-col flex-1">
+                <div className="contenedor-a4 w-[210mm] h-[297mm] shrink-0 bg-white flex flex-col justify-between text-neutral-900 shadow-2xl print:shadow-none border border-neutral-200 print:border-none relative overflow-hidden">
+                  <div className="p-10 flex flex-col h-full">
                     <div className="bg-[#B94A36] px-8 py-5 flex justify-between items-center rounded-t-sm -mx-10 -mt-10 mb-6">
                       <div className="flex items-center gap-3">
                         <img 
@@ -761,7 +772,7 @@ export default function CotizadorPage() {
 
                   </div>
 
-                  <div className="p-10 pt-2 bg-white">
+                  <div className="p-10 pt-0 bg-white">
                     <div className="grid grid-cols-2 gap-8 text-center text-[9px]">
                       <div className="border-t border-neutral-300 pt-1.5">
                         <p className="font-bold text-[#B94A36] uppercase tracking-wider">Arienzo Boutique Living</p>
@@ -777,68 +788,76 @@ export default function CotizadorPage() {
 
                 {/* --- PÁGINA 2: PLANO ARQUITECTÓNICO (DISEÑO GLAMOUR) --- */}
                 {incluirPlano && !esLocal && urlPlanoAsignado && (
-                  <div className="contenedor-a4 page-break bg-white flex flex-col relative text-neutral-900 shadow-2xl print:shadow-none border border-neutral-200 print:border-none overflow-hidden">
+                  <div className="contenedor-a4 page-break w-[210mm] h-[297mm] shrink-0 bg-white flex flex-col relative text-neutral-900 shadow-2xl print:shadow-none border border-neutral-200 print:border-none overflow-hidden">
                     
-                    {/* Header P2: Oscuro elegante */}
-                    <div className="bg-[#21242E] px-10 py-6 flex justify-between items-center z-10 border-b-[3px] border-[#D1C292]">
+                    {/* Header P2: Terracota elegante */}
+                    <div className="bg-[#B94A36] px-10 py-6 flex justify-between items-center z-10 border-b-[4px] border-[#D1C292]">
                       <img src={LOGO_BLANCO} alt="Arienzo" className="h-8 w-auto object-contain" />
                       <div className="text-right">
                         <h3 className="text-[12px] font-bold tracking-widest uppercase text-[#D1C292]">Diseño Arquitectónico</h3>
-                        <p className="text-[10px] mt-1 font-medium tracking-wider text-white">Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero} | {tipologia}</p>
+                        <p className="text-[10px] mt-1 font-bold tracking-wider text-white">Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero} | {tipologia}</p>
                       </div>
                     </div>
 
                     {/* Especificaciones / Íconos Premium */}
-                    <div className="bg-[#F9F7F5] border-b border-neutral-200 px-10 py-5 flex justify-center gap-10 items-center z-10">
+                    <div className="bg-[#F9F7F5] border-b border-neutral-200 px-8 py-4 grid grid-cols-5 gap-2 items-center z-10">
                       
-                      <div className="flex flex-col items-center gap-1.5">
-                        <svg className="w-6 h-6 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
-                        <span className="text-[8px] font-bold text-neutral-500 uppercase tracking-widest">Área Total</span>
-                        <span className="text-[12px] font-black text-[#B94A36]">{areaTotal} m²</span>
+                      {/* Área */}
+                      <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
+                        <svg className="w-5 h-5 text-[#B94A36]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                        <span className="text-[7px] font-bold text-neutral-500 uppercase tracking-widest">Área Total</span>
+                        <span className="text-[11px] font-black text-[#B94A36]">{areaTotal} m²</span>
                       </div>
 
-                      <div className="w-px h-10 bg-neutral-300"></div>
-
-                      <div className="flex flex-col items-center gap-1.5">
-                        <svg className="w-6 h-6 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
-                        <span className="text-[8px] font-bold text-neutral-500 uppercase tracking-widest">Dormitorios</span>
-                        <span className="text-[12px] font-bold text-[#21242E]">{numHabitaciones}</span>
+                      {/* Dormitorios */}
+                      <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
+                        <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M5 3v4M3 11V9a2 2 0 012-2h14a2 2 0 012 2v2M3 11h18M3 11v8m18-8v8M5 19v2m14-2v2M8 11v-4m8 4v-4" /></svg>
+                        <span className="text-[7px] font-bold text-neutral-500 uppercase tracking-widest">Dormitorios</span>
+                        <span className="text-[11px] font-bold text-[#21242E]">{numHabitaciones}</span>
                       </div>
 
-                      <div className="w-px h-10 bg-neutral-300"></div>
-
-                      <div className="flex flex-col items-center gap-1.5">
-                        <svg className="w-6 h-6 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                        <span className="text-[8px] font-bold text-neutral-500 uppercase tracking-widest">Baños</span>
-                        <span className="text-[12px] font-bold text-[#21242E]">{numBanos}</span>
+                      {/* Baños */}
+                      <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
+                        <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 2.25c-2.404 3.738-6 7.643-6 11.25a6 6 0 1012 0c0-3.607-3.596-7.512-6-11.25z" /></svg>
+                        <span className="text-[7px] font-bold text-neutral-500 uppercase tracking-widest">Baños</span>
+                        <span className="text-[11px] font-bold text-[#21242E]">{numBanos}</span>
                       </div>
 
-                      <div className="w-px h-10 bg-neutral-300"></div>
+                      {/* Parqueos */}
+                      <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
+                        <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 7h8a2 2 0 012 2v2M4 14h16M4 14l-1.5 4.5A2 2 0 004.382 21h15.236a2 2 0 001.882-2.5L20 14M4 14v-2a2 2 0 012-2h12a2 2 0 012 2v2m-10 3h4" /></svg>
+                        <span className="text-[7px] font-bold text-neutral-500 uppercase tracking-widest">Parqueos</span>
+                        <span className="text-[11px] font-bold text-[#21242E]">{cantidadParqueos}</span>
+                      </div>
 
+                      {/* Bodega */}
                       <div className="flex flex-col items-center gap-1.5">
-                        <svg className="w-6 h-6 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-                        <span className="text-[8px] font-bold text-neutral-500 uppercase tracking-widest">Parqueos</span>
-                        <span className="text-[12px] font-bold text-[#21242E]">{cantidadParqueos}</span>
+                        <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                        <span className="text-[7px] font-bold text-neutral-500 uppercase tracking-widest">Bodega</span>
+                        <span className="text-[11px] font-bold text-[#21242E]">{bodegaAsignada && bodegaAsignada.toLowerCase() !== 'ninguna' ? 'Sí' : 'No'}</span>
                       </div>
                     </div>
 
                     {/* Marco del Plano */}
-                    <div className="flex-1 flex items-center justify-center p-10 bg-white relative z-10">
-                       <div className="w-full h-full border-2 border-dashed border-[#EAE3DC] rounded-2xl flex items-center justify-center p-6 bg-[#Fdfcfb]">
-                          <img src={urlPlanoAsignado} alt="Plano Arienzo" className="w-full h-full max-h-[160mm] object-contain mix-blend-multiply" />
+                    <div className="flex-1 flex items-center justify-center p-8 bg-white relative z-10">
+                       <div className="w-full h-full border-[2px] border-[#D1C292] rounded-xl flex flex-col items-center justify-center p-6 bg-[#FDFCFB] relative shadow-inner overflow-hidden">
+                          <div className="absolute top-0 left-0 w-full bg-[#F9F7F5] border-b border-[#D1C292]/30 flex items-center justify-center py-2">
+                             <span className="text-[8px] font-bold text-[#B94A36] uppercase tracking-widest">Plano Esquemático de Distribución</span>
+                          </div>
+                          <img src={urlPlanoAsignado} alt="Plano Arienzo" className="w-full h-full mt-6 max-h-[145mm] object-contain mix-blend-multiply" />
                        </div>
                     </div>
 
                     {/* Footer: Render y Concepto */}
-                    <div className="bg-[#21242E] text-white flex items-stretch h-[140px] z-10 relative mt-auto">
-                      <div className="w-[220px] h-full relative">
+                    <div className="bg-[#21242E] text-white flex items-stretch h-[130px] z-10 relative mt-auto">
+                      <div className="w-[220px] h-full relative shrink-0">
                         <img src={RENDER_FACHADA} alt="Fachada Arienzo" className="w-full h-full object-cover" />
                         {/* Gradiente sutil para fundir la imagen con el fondo oscuro */}
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#21242E]"></div>
                       </div>
-                      <div className="flex-1 p-6 flex flex-col justify-center">
+                      <div className="flex-1 p-5 flex flex-col justify-center">
                         <h4 className="text-[10px] font-bold text-[#D1C292] uppercase tracking-widest mb-1.5">Un Estilo de Vida Superior</h4>
-                        <p className="text-[9px] text-white/70 leading-relaxed font-light">
+                        <p className="text-[8px] text-white/70 leading-relaxed font-light">
                           Diseño eficiente enfocado en confort e iluminación natural, concebido por el prestigioso estudio Diez+Muller. Acabados premium, ventanales de piso a techo y una distribución que maximiza cada espacio en el corazón de Barbasquillo.
                         </p>
                       </div>
