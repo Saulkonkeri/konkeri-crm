@@ -23,7 +23,6 @@ const MAPA_PLANOS = [
 ];
 
 const RENDER_FACHADA = 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Frontal.jpg';
-const LOGO_ORIGINAL = 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg';
 const LOGO_BLANCO = 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-blanco.svg';
 
 export default function CotizadorPage() {
@@ -252,7 +251,7 @@ export default function CotizadorPage() {
 
   const aplicarPlanRefuerzos = () => {
     const base = Number(cuotaBaseRapida);
-    if (base <= 0) return alert("Por favor ingresa una Cuota Base mayor a $0.");
+    if (base <= 0) return alert("Por favor ingresa una Cuota Base mayor a \$0.");
 
     const mesesExtra = mesesRefuerzoRapido.split(',').map(m => parseInt(m.trim())).filter(m => !isNaN(m) && m > 0 && m <= mesesConstruccion);
     if (mesesExtra.length === 0) return alert(`Ingresa al menos un mes válido entre 1 y ${mesesConstruccion}. (Ej: 12)`);
@@ -319,13 +318,12 @@ export default function CotizadorPage() {
                 .hoja-a4 { 
                   width: 210mm !important; 
                   height: 297mm !important; 
-                  max-height: 297mm !important; 
-                  page-break-after: always; 
                   box-sizing: border-box; 
                   background: white; 
                   position: relative; 
                   overflow: hidden; 
                   margin: 0;
+                  page-break-after: always; 
                 }
                 @media print {
                   body { background: white; }
@@ -534,7 +532,7 @@ export default function CotizadorPage() {
                 {!esLocal && (
                   <div>
                     <span className="text-[9px] text-[#ea0029]/80 font-bold uppercase tracking-wider block mb-1">M² Lanzamiento</span>
-                    <span className="font-bold font-mono text-[#ea0029]">{"$"}{valorM2Lanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    <span className="font-bold font-mono text-[#ea0029]">{"\$"}{valorM2Lanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                   </div>
                 )}
               </div>
@@ -548,20 +546,19 @@ export default function CotizadorPage() {
             </div>
           ) : pestañaActiva === 'previsualizar' ? (
             
-            // --- CONTENEDOR PRINCIPAL DE PREVISUALIZACIÓN ---
-            <div className="bg-[#1a1c23] py-12 px-4 sm:px-8 overflow-x-auto w-full flex flex-col items-center shadow-inner rounded-2xl">
+            // --- CONTENEDOR PRINCIPAL DE PREVISUALIZACIÓN (CANDADO A4 ESTRICTO) ---
+            <div className="bg-[#e5e5e5] py-8 overflow-auto flex justify-center w-full rounded-2xl shadow-inner border border-neutral-300">
               
               {/* Wrapper Flex que se asegura de mantener la forma A4 en web, idéntico al PDF */}
-              <div id="plantilla-pdf-arienzo" className="flex flex-col gap-12 print:gap-0 items-center transform scale-[0.65] sm:scale-[0.85] md:scale-100 origin-top">
+              <div id="plantilla-pdf-arienzo" className="flex flex-col gap-10 print:gap-0 items-center transform origin-top scale-[0.65] md:scale-[0.85] lg:scale-100">
                 
-                {/* --- PÁGINA 1: COTIZACIÓN FINANCIERA (CLON EXACTO) --- */}
-                {/* 🔥 El style en línea bloquea cualquier deformación en la previsualización web */}
-                <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm' }} className="shrink-0 bg-white text-neutral-900 shadow-2xl print:shadow-none border border-neutral-300 print:border-none relative flex flex-col overflow-hidden rounded-md print:rounded-none mx-auto">
+                {/* --- PÁGINA 1: COTIZACIÓN FINANCIERA (CLON DE CAPTURA 16) --- */}
+                <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm', overflow: 'hidden' }} className="hoja-a4 bg-white text-neutral-900 shadow-xl print:shadow-none border border-neutral-300 print:border-none relative flex flex-col rounded-md print:rounded-none mx-auto">
                   
                   <div className="px-10 pt-10 pb-8 flex flex-col h-full">
                     
                     {/* Header P1 - Bloque Terracota Puro */}
-                    <div className="bg-[#B94A36] px-8 py-6 flex justify-between items-center mb-8 shrink-0">
+                    <div className="bg-[#B94A36] px-8 py-6 flex justify-between items-center mb-6 shrink-0 rounded-sm">
                       <div className="flex items-center gap-3">
                         <img src="/logo-arienzo.png" alt="Arienzo Boutique Living" className="h-10 w-auto object-contain" />
                       </div>
@@ -573,45 +570,45 @@ export default function CotizadorPage() {
                     </div>
 
                     {/* Datos del Cliente */}
-                    <div className="mb-6 shrink-0 text-left">
-                      <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest mb-1">Inversionista de Propuesta</p>
-                      <p className="text-xl font-bold text-neutral-800">{clienteDataCompleta ? `${clienteDataCompleta.nombres} ${clienteDataCompleta.apellidos}` : 'Cliente Anónimo / Prospecto'}</p>
+                    <div className="mb-5 shrink-0 text-left">
+                      <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-widest mb-0.5">Inversionista de Propuesta</p>
+                      <p className="text-[20px] font-bold text-neutral-800">{clienteDataCompleta ? `${clienteDataCompleta.nombres} ${clienteDataCompleta.apellidos}` : 'Cliente Anónimo / Prospecto'}</p>
                     </div>
 
                     {/* Caja de Detalles de Unidad */}
-                    <div className="mb-6 shrink-0 border border-neutral-200 rounded-lg p-4 bg-[#F9F7F5]/50">
+                    <div className="mb-6 shrink-0 border border-neutral-200 rounded-lg p-3 bg-[#F9F7F5]/30">
                       <div className="flex items-center justify-between text-[10px]">
                         <div className="flex-1 text-left border-r border-neutral-200 pr-2">
-                          <span className="text-[8px] text-neutral-400 uppercase block mb-1">Unidad</span>
-                          <span className="font-bold text-neutral-800 text-[12px]">Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero}</span>
+                          <span className="text-[7.5px] text-neutral-400 uppercase block mb-1">Unidad</span>
+                          <span className="font-bold text-neutral-800 text-[11px]">Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero}</span>
                         </div>
-                        <div className="flex-1 text-left border-r border-neutral-200 px-4">
-                          <span className="text-[8px] text-neutral-400 uppercase block mb-1">Tipología</span>
-                          <span className="font-bold text-neutral-800 text-[12px]">{tipologia}</span>
+                        <div className="flex-1 text-left border-r border-neutral-200 px-3">
+                          <span className="text-[7.5px] text-neutral-400 uppercase block mb-1">Tipología</span>
+                          <span className="font-bold text-neutral-800 text-[11px]">{tipologia}</span>
                         </div>
-                        <div className="flex-[1.5] text-left border-r border-neutral-200 px-4">
-                          <span className="text-[8px] text-neutral-400 uppercase block mb-1">Complementos Asignados</span>
-                          <span className="font-semibold text-neutral-700 block">P: {parqueaderoTexto}</span>
-                          <span className="font-semibold text-neutral-700 block mt-0.5">B: {bodegaAsignada}</span>
+                        <div className="flex-[1.5] text-left border-r border-neutral-200 px-3">
+                          <span className="text-[7.5px] text-neutral-400 uppercase block mb-1">Complementos Asignados</span>
+                          <span className="font-semibold text-neutral-700 block text-[10px]">P: {parqueaderoTexto}</span>
+                          <span className="font-semibold text-neutral-700 block text-[10px] mt-0.5">B: {bodegaAsignada}</span>
                         </div>
-                        <div className={`flex-1 text-center ${esLocal ? '' : 'border-r border-neutral-200'} px-4`}>
-                          <span className="text-[8px] text-neutral-400 uppercase block mb-1">Área Total</span>
-                          <span className="font-bold text-neutral-800 text-[12px]">{areaTotal}m²</span>
+                        <div className={`flex-1 text-center ${esLocal ? '' : 'border-r border-neutral-200'} px-3`}>
+                          <span className="text-[7.5px] text-neutral-400 uppercase block mb-1">Área Total</span>
+                          <span className="font-bold text-neutral-800 text-[11px]">{areaTotal}m²</span>
                         </div>
                         {!esLocal && (
-                          <div className="flex-[1.4] text-right pl-4">
-                            <span className="text-[8px] text-neutral-400 uppercase block mb-1">Valor m² (Pre Lanzamiento)</span>
-                            <span className="font-bold text-[#B94A36] font-mono text-[12px]">{"$"}{valorM2Lanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}/m²</span>
+                          <div className="flex-[1.4] text-right pl-3">
+                            <span className="text-[7.5px] text-neutral-400 uppercase block mb-1">Valor m² (Pre Lanzamiento)</span>
+                            <span className="font-bold text-[#B94A36] font-mono text-[11px]">{"\$"}{valorM2Lanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}/m²</span>
                           </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="shrink-0 mb-4">
-                      <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#B94A36] mb-2 border-b border-[#B94A36]/20 pb-1.5">Plan de Financiamiento Específico</h4>
+                    <div className="shrink-0 mb-3">
+                      <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#B94A36] mb-1">Plan de Financiamiento Específico</h4>
                       <table className="w-full text-left text-[11px] border-collapse">
                         <thead>
-                          <tr className="border-b border-neutral-200 text-neutral-500 text-[9px] uppercase tracking-wider">
+                          <tr className="border-b border-[#B94A36] text-[#B94A36] text-[8px] uppercase tracking-wider">
                             <th className="pb-1.5 font-bold">Concepto Estructurado</th>
                             <th className="pb-1.5 text-center font-bold">Fecha / Control</th>
                             <th className="pb-1.5 text-center font-bold">Porcentaje</th>
@@ -623,14 +620,14 @@ export default function CotizadorPage() {
                             <td className="py-2 text-neutral-600 font-light">Valor {esLocal ? 'del Local Comercial' : 'del Departamento (Pre Lanzamiento)'}</td>
                             <td className="py-2 text-center text-neutral-400">—</td>
                             <td className="py-2 text-center text-neutral-400">—</td>
-                            <td className="py-2 text-right font-mono text-neutral-700 font-bold">{"$"}{precioDeptoPreLanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                            <td className="py-2 text-right font-mono text-neutral-700 font-bold">{"\$"}{precioDeptoPreLanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                           </tr>
                           {!esLocal && (
                             <tr>
                               <td className="py-2 text-neutral-600 font-light"><span className="text-neutral-400 mr-1 font-mono">(+)</span> Valor Parqueo y Bodega (Pre Lanzamiento)</td>
                               <td className="py-2 text-center text-neutral-400">—</td>
                               <td className="py-2 text-center text-neutral-400">—</td>
-                              <td className="py-2 text-right font-mono text-neutral-700 font-bold">{"$"}{valAnexosPreLanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                              <td className="py-2 text-right font-mono text-neutral-700 font-bold">{"\$"}{valAnexosPreLanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                             </tr>
                           )}
                           {montoDescuentoCalculado > 0 && (
@@ -641,7 +638,7 @@ export default function CotizadorPage() {
                               <td className="py-2 text-right font-mono font-bold">-{"$"}{montoDescuentoCalculado.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                             </tr>
                           )}
-                          <tr className="font-bold border-t-2 border-neutral-800 text-neutral-950 bg-neutral-50/50">
+                          <tr className="font-bold border-t border-neutral-300 text-neutral-950">
                             <td className="py-2.5"><span className="text-neutral-600 mr-1 font-mono">(=)</span> Valor Total de Venta</td>
                             <td className="py-2.5 text-center text-neutral-400">—</td>
                             <td className="py-2.5 text-center text-neutral-400">—</td>
@@ -667,7 +664,7 @@ export default function CotizadorPage() {
                           </tr>
                           <tr>
                             <td className="py-2.5 pl-3 font-bold text-[#B94A36]">↳ Saldo Final Contra Entrega</td>
-                            <td className="py-2.5 text-center text-neutral-500 text-[10px]">A la entrega física</td>
+                            <td className="py-2.5 text-center text-[#B94A36] text-[10px]">A la entrega física</td>
                             <td className="py-2.5 text-center text-[#B94A36]">{Number(pctContraEntregaReal.toFixed(1))}%</td>
                             <td className="py-2.5 text-right font-bold text-[#B94A36] font-mono">{"$"}{contraEntrega.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                           </tr>
@@ -676,12 +673,13 @@ export default function CotizadorPage() {
                       <p className="text-[7.5px] text-neutral-400 italic text-center mt-3">* Nota: El Valor Total de Venta detallado ya considera un beneficio especial del 5% de descuento por etapa de pre-lanzamiento respecto al precio de lista estándar.</p>
                     </div>
 
-                    {/* Cronograma de Pagos - Formato tabla limpia */}
+                    {/* Cronograma de Pagos - Formato tabla limpia de 2 columnas */}
                     {entradaDiferirTotal > 0 && (
-                      <div className="flex-1 min-h-[100px] overflow-hidden mb-4">
-                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#B94A36] mb-2 border-b border-[#B94A36]/20 pb-1.5">Cronograma de Pagos ({mesesConstruccion} Dividendos)</h4>
-                        <div className="grid grid-cols-2 gap-x-12 items-start text-[10px] text-neutral-600 h-full overflow-hidden">
-                          <div className="space-y-1">
+                      <div className="flex-1 overflow-hidden flex flex-col mb-4">
+                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#B94A36] mb-1">Cronograma de Pagos ({mesesConstruccion} Dividendos)</h4>
+                        <div className="border-t border-[#B94A36] w-full mb-2"></div>
+                        <div className="grid grid-cols-2 gap-x-12 items-start text-[10px] text-neutral-600 flex-1 overflow-hidden">
+                          <div className="space-y-0.5">
                             {cuotasDivididas.columnaIzquierda.map((cuota) => (
                               <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-100 py-1">
                                 <span>C{cuota.numeroCuota} | {cuota.fechaPago}</span>
@@ -689,7 +687,7 @@ export default function CotizadorPage() {
                               </div>
                             ))}
                           </div>
-                          <div className="space-y-1">
+                          <div className="space-y-0.5">
                             {cuotasDivididas.columnaDerecha.map((cuota) => (
                               <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-100 py-1">
                                 <span>C{cuota.numeroCuota} | {cuota.fechaPago}</span>
@@ -701,7 +699,7 @@ export default function CotizadorPage() {
                       </div>
                     )}
 
-                    <div className="shrink-0 bg-[#F9F7F5] border border-[#EAE3DC] rounded-lg p-4">
+                    <div className="shrink-0 border border-neutral-200 rounded-lg p-4 bg-[#F9F7F5]/30">
                       <h4 className="text-[9px] font-bold uppercase tracking-widest text-[#B94A36] mb-2">Valores Agregados a la Unidad</h4>
                       <ul className="text-[9.5px] text-neutral-700 space-y-1.5 pl-3 list-disc marker:text-[#DEB886]">
                         {esLocal ? (
@@ -710,13 +708,13 @@ export default function CotizadorPage() {
                           <li><span className="font-bold text-neutral-800">Complementos Inmobiliarios:</span> El Valor Total de Venta ya contempla la asignación de los parqueos y la bodega detallados en la ficha técnica.</li>
                         )}
                         {!esLocal && incluirClima && (<li><span className="font-bold text-neutral-800">Climatización Estética:</span> Sistema de aire acondicionado integral empotrado en el tumbado para todos los ambientes del departamento.</li>)}
-                        {!esLocal && incluirBbq && (<li><span className="font-bold text-neutral-800">Área de BBQ en Terraza:</span> Adecuación de espacio exterior con mesón y recubrimientos listos para su uso (no incluye parrilla ni equipos).</li>)}
+                        {!esLocal && (<li><span className="font-bold text-neutral-800">Equipamiento:</span> La unidad incluye calentador de agua.</li>)}
                       </ul>
                     </div>
 
                     {/* Espacio Exacto para Firmas - Líneas rectas y simetría total */}
-                    <div className="mt-auto shrink-0 pt-8 pb-2">
-                      <div className="grid grid-cols-2 gap-20 text-center text-[10px] px-10">
+                    <div className="mt-auto shrink-0 pt-8 pb-4">
+                      <div className="grid grid-cols-2 gap-24 text-center text-[10px] px-10">
                         <div>
                           <div className="border-t border-neutral-300 w-full mb-2"></div>
                           <p className="font-bold text-[#B94A36] uppercase tracking-wider">Arienzo Boutique Living</p>
@@ -734,100 +732,98 @@ export default function CotizadorPage() {
                 </div>
 
                 {/* --- PÁGINA 2: PLANO ARQUITECTÓNICO (DISEÑO ABSOLUTO Y REFINADO) --- */}
-                {incluirPlano && !esLocal && urlPlanoAsignado && (
-                  <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm' }} className="hoja-a4 shrink-0 bg-white flex flex-col justify-between text-neutral-900 shadow-2xl print:shadow-none border border-neutral-300 print:border-none overflow-hidden rounded-md print:rounded-none mx-auto">
-                    
-                    {/* Header P2: Gorra Negra Superior más gruesa con tipografía elegante */}
-                    <div className="flex items-stretch h-[160px] z-10 shrink-0 w-full bg-[#181A20] text-white">
-                      <div className="w-[210px] h-full relative">
-                        <img src={RENDER_FACHADA} alt="Fachada Arienzo" className="w-full h-full object-cover" />
-                      </div>
-                      <div className="flex-1 p-8 flex flex-col justify-center border-l border-white/10">
-                        <h3 className="text-[16px] font-bold tracking-widest uppercase text-[#D1C292]">Diseño Arquitectónico</h3>
-                        <p className="text-[11px] mt-1 font-bold tracking-wider text-white">Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero} | {tipologia}</p>
-                        <p className="text-[9.5px] text-white/80 leading-[1.8] font-light mt-3 max-w-[95%]">
-                          Un diseño arquitectónico exclusivo y minuciosamente pensado por el prestigioso estudio Diez+Muller, uno de los más reconocidos del país. Cada espacio ha sido concebido para ofrecer un estilo de vida superior, destacando una distribución inteligente y una selección de acabados de excelente calidad.
-                        </p>
-                      </div>
+                <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm', overflow: 'hidden' }} className="hoja-a4 bg-white flex flex-col justify-between text-neutral-900 shadow-2xl print:shadow-none border border-neutral-300 print:border-none rounded-md print:rounded-none mx-auto">
+                  
+                  {/* Header P2: Gorra Negra Superior Elegante */}
+                  <div className="flex items-stretch h-[170px] z-10 shrink-0 w-full bg-[#181A20] text-white">
+                    <div className="w-[210px] h-full relative">
+                      <img src={RENDER_FACHADA} alt="Fachada Arienzo" className="w-full h-full object-cover" />
                     </div>
-
-                    {/* Barra de Íconos Horizontales Limpia */}
-                    <div className="bg-[#F9F7F5] border-b border-[#EAE3DC] px-6 py-5 grid grid-cols-7 gap-1 items-center z-10 shrink-0">
-                      <div className="flex flex-col items-center gap-2 border-r border-neutral-300">
-                        <svg className="w-5 h-5 text-[#B94A36]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
-                        <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Área Total</span>
-                        <span className="text-[11px] font-black text-[#B94A36]">{areaTotal} m²</span>
-                      </div>
-                      <div className="flex flex-col items-center gap-2 border-r border-neutral-300">
-                        <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 10h16M4 14h16m-2-4v8m-12-8v8M6 10V8a2 2 0 012-2h8a2 2 0 012 2v2" /></svg>
-                        <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Dormitorios</span>
-                        <span className="text-[11px] font-bold text-[#21242E]">{numHabitaciones}</span>
-                      </div>
-                      <div className="flex flex-col items-center gap-2 border-r border-neutral-300">
-                        <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 8V6a2 2 0 012-2h4a2 2 0 012 2v2m-6 3v3m4-3v3m-2-3v3m-6 5h12" /></svg>
-                        <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Baños</span>
-                        <span className="text-[11px] font-bold text-[#21242E]">{numBanos}</span>
-                      </div>
-                      <div className="flex flex-col items-center gap-2 border-r border-neutral-300">
-                        <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2" strokeWidth="1.5" /><circle cx="12" cy="12" r="3" strokeWidth="1.5" /><path d="M9 6h2M13 6h2" strokeWidth="1.5" strokeLinecap="round" /></svg>
-                        <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Lavandería</span>
-                        <span className="text-[11px] font-bold text-[#21242E]">Sí</span>
-                      </div>
-                      <div className="flex flex-col items-center gap-2 border-r border-neutral-300">
-                        <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 14h16v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6zM4 14V6a2 2 0 012-2h12a2 2 0 012 2v8M8 14v6m8-6v6" /></svg>
-                        <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Terraza</span>
-                        <span className="text-[11px] font-bold text-[#21242E]">Sí</span>
-                      </div>
-                      <div className="flex flex-col items-center gap-2 border-r border-neutral-300">
-                        <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M5 13l2-6h10l2 6M5 13v6a1 1 0 001 1h1a1 1 0 001-1v-1h8v1a1 1 0 001 1h1a1 1 0 001-1v-6M5 13h14M8 16h.01M16 16h.01" /></svg>
-                        <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Parqueos</span>
-                        <span className="text-[11px] font-bold text-[#21242E]">{cantidadParqueos}</span>
-                      </div>
-                      <div className="flex flex-col items-center gap-2">
-                        <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16zM3.27 6.96L12 12.01l8.73-5.05M12 22.08V12" /></svg>
-                        <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Bodega</span>
-                        <span className="text-[11px] font-bold text-[#21242E]">{bodegaAsignada && bodegaAsignada.toLowerCase() !== 'ninguna' ? 'Sí' : 'No'}</span>
-                      </div>
-                    </div>
-
-                    {/* Marco del Plano Arquitectónico (Muchísimo Aire y Respiro) */}
-                    <div className="flex-1 flex items-center justify-center py-6 px-16 bg-white relative z-10 overflow-hidden">
-                       <div className="w-full h-full max-h-[145mm] border border-[#D1C292]/60 rounded-xl flex flex-col items-center justify-center p-8 bg-white relative">
-                          <div className="absolute top-0 left-0 w-full bg-[#F9F7F5] border-b border-[#D1C292]/30 flex items-center justify-center py-2.5 rounded-t-xl">
-                             <span className="text-[9px] font-bold text-[#B94A36] uppercase tracking-widest">Plano Esquemático de Distribución</span>
-                          </div>
-                          <img src={urlPlanoAsignado} alt="Plano Arienzo" className="w-full h-full mt-6 object-contain mix-blend-multiply" />
-                       </div>
-                    </div>
-
-                    {/* Resumen de Especificaciones Técnicas Detallado */}
-                    <div className="px-12 py-6 bg-[#F9F7F5] shrink-0 border-t border-[#EAE3DC]">
-                       <h4 className="text-[9px] font-bold uppercase tracking-widest text-[#B94A36] mb-4">Resumen de Especificaciones Técnicas y Equipamiento</h4>
-                       <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-[8.5px] text-neutral-700 leading-relaxed">
-                          <div>
-                            <p><strong>• Acabados y Estructura:</strong> Pisos de porcelanato importado rectificado (60x120cm). Paredes lisas con revestimiento decorativo. Puertas de madera con chapa natural lacada (h=2.30m).</p>
-                          </div>
-                          <div>
-                            <p><strong>• Mobiliario y Piezas:</strong> Cocina y clósets de melamínico (Madeval o similar). Mesones de piedra sinterizada. Fregadero undercounter (2 pozos). Lavamanos y grifería de línea alta (FV/Edesa).</p>
-                          </div>
-                          <div>
-                            <p><strong>• Diseño Arquitectónico:</strong> Ventanería de aluminio anodizado con vidrio claro (sistema proyectable). Pasamanos de vidrio templado con anclaje inferior.</p>
-                          </div>
-                          <div>
-                            <p><strong>• Amenidades Exclusivas:</strong> Área social de primer nivel con piscina, zona de barbacoa (BBQ), espacios de living y un gimnasio totalmente equipado.</p>
-                          </div>
-                          <div className="col-span-2">
-                            <p><strong>• Equipamiento del Edificio:</strong> Generador eléctrico con cobertura al 100% (áreas privadas y comunales) y ascensor de última generación.</p>
-                          </div>
-                       </div>
-                    </div>
-
-                    {/* Footer P2: Terracota Grueso */}
-                    <div className="bg-[#B94A36] h-[75px] flex justify-center items-center z-10 shrink-0">
-                      <img src={LOGO_BLANCO} alt="Arienzo" className="h-6 w-auto object-contain opacity-95" />
+                    <div className="flex-1 p-8 flex flex-col justify-center border-l border-white/10">
+                      <h3 className="text-[16px] font-bold tracking-widest uppercase text-[#D1C292]">Diseño Arquitectónico</h3>
+                      <p className="text-[11px] mt-1 font-bold tracking-wider text-white">Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero} | {tipologia}</p>
+                      <p className="text-[11px] text-white/85 leading-relaxed font-light mt-3 pr-4">
+                        Un diseño arquitectónico exclusivo y minuciosamente pensado por el prestigioso arquitecto Siegfried Müller, uno de los más reconocidos del país. Cada espacio ha sido concebido para ofrecer un estilo de vida superior, destacando una distribución inteligente y una selección de acabados de excelente calidad.
+                      </p>
                     </div>
                   </div>
-                )}
+
+                  {/* Barra de Íconos Horizontales Limpia */}
+                  <div className="bg-[#F9F7F5] border-b border-[#EAE3DC] px-6 py-5 grid grid-cols-7 gap-1 items-center z-10 shrink-0">
+                    <div className="flex flex-col items-center gap-2 border-r border-neutral-300">
+                      <svg className="w-5 h-5 text-[#B94A36]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                      <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Área Total</span>
+                      <span className="text-[11px] font-black text-[#B94A36]">{areaTotal} m²</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-2 border-r border-neutral-300">
+                      <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 10h16M4 14h16m-2-4v8m-12-8v8M6 10V8a2 2 0 012-2h8a2 2 0 012 2v2" /></svg>
+                      <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Dormitorios</span>
+                      <span className="text-[11px] font-bold text-[#21242E]">{numHabitaciones}</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-2 border-r border-neutral-300">
+                      <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 8V6a2 2 0 012-2h4a2 2 0 012 2v2m-6 3v3m4-3v3m-2-3v3m-6 5h12" /></svg>
+                      <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Baños</span>
+                      <span className="text-[11px] font-bold text-[#21242E]">{numBanos}</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-2 border-r border-neutral-300">
+                      <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2" strokeWidth="1.5" /><circle cx="12" cy="12" r="3" strokeWidth="1.5" /><path d="M9 6h2M13 6h2" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                      <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Lavandería</span>
+                      <span className="text-[11px] font-bold text-[#21242E]">Sí</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-2 border-r border-neutral-300">
+                      <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 14h16v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6zM4 14V6a2 2 0 012-2h12a2 2 0 012 2v8M8 14v6m8-6v6" /></svg>
+                      <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Terraza</span>
+                      <span className="text-[11px] font-bold text-[#21242E]">Sí</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-2 border-r border-neutral-300">
+                      <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M5 13l2-6h10l2 6M5 13v6a1 1 0 001 1h1a1 1 0 001-1v-1h8v1a1 1 0 001 1h1a1 1 0 001-1v-6M5 13h14M8 16h.01M16 16h.01" /></svg>
+                      <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Parqueos</span>
+                      <span className="text-[11px] font-bold text-[#21242E]">{cantidadParqueos}</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-2">
+                      <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16zM3.27 6.96L12 12.01l8.73-5.05M12 22.08V12" /></svg>
+                      <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Bodega</span>
+                      <span className="text-[11px] font-bold text-[#21242E]">{bodegaAsignada && bodegaAsignada.toLowerCase() !== 'ninguna' ? 'Sí' : 'No'}</span>
+                    </div>
+                  </div>
+
+                  {/* Marco del Plano Arquitectónico (Centrado y con respiro) */}
+                  <div className="flex-1 flex items-center justify-center py-6 px-16 bg-white relative z-10 overflow-hidden">
+                     <div className="w-full h-full max-h-[145mm] border border-[#D1C292]/60 rounded-xl flex flex-col items-center justify-center p-8 bg-white relative">
+                        <div className="absolute top-0 left-0 w-full bg-[#F9F7F5] border-b border-[#D1C292]/30 flex items-center justify-center py-2.5 rounded-t-xl">
+                           <span className="text-[9px] font-bold text-[#B94A36] uppercase tracking-widest">Plano Esquemático de Distribución</span>
+                        </div>
+                        <img src={urlPlanoAsignado} alt="Plano Arienzo" className="w-full h-full mt-6 object-contain mix-blend-multiply" />
+                     </div>
+                  </div>
+
+                  {/* Resumen de Especificaciones Técnicas Detallado */}
+                  <div className="px-12 py-6 bg-[#F9F7F5] shrink-0 border-t border-[#EAE3DC]">
+                     <h4 className="text-[9px] font-bold uppercase tracking-widest text-[#B94A36] mb-4">Resumen de Especificaciones Técnicas y Equipamiento</h4>
+                     <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-[9px] text-neutral-700 leading-relaxed">
+                        <div>
+                          <p><strong>• Acabados y Estructura:</strong> Pisos de porcelanato importado rectificado (60x120cm). Paredes lisas con revestimiento decorativo. Puertas de madera con chapa natural lacada (h=2.30m).</p>
+                        </div>
+                        <div>
+                          <p><strong>• Mobiliario y Piezas:</strong> Cocina y clósets de melamínico (Madeval o similar). Mesones de piedra sinterizada. Fregadero undercounter (2 pozos). Lavamanos y grifería de línea alta (FV/Edesa).</p>
+                        </div>
+                        <div>
+                          <p><strong>• Diseño Arquitectónico:</strong> Ventanería de aluminio anodizado con vidrio claro (sistema proyectable). Pasamanos de vidrio templado con anclaje inferior.</p>
+                        </div>
+                        <div>
+                          <p><strong>• Amenidades Exclusivas:</strong> Área social de primer nivel con piscina, zona de barbacoa (BBQ), espacios de living y un gimnasio totalmente equipado.</p>
+                        </div>
+                        <div className="col-span-2">
+                          <p><strong>• Equipamiento del Edificio:</strong> Generador eléctrico con cobertura al 100% (áreas privadas y comunales) y ascensor de última generación.</p>
+                        </div>
+                     </div>
+                  </div>
+
+                  {/* Footer P2: Terracota Grueso */}
+                  <div className="bg-[#B94A36] h-[75px] flex justify-center items-center z-10 shrink-0">
+                    <img src={LOGO_BLANCO} alt="Arienzo" className="h-6 w-auto object-contain opacity-95" />
+                  </div>
+                </div>
               </div>
             </div>
           ) : (
@@ -841,14 +837,14 @@ export default function CotizadorPage() {
                     Porcentaje (%)
                   </button>
                   <button type="button" onClick={() => { setTipoDescuento('valor'); setValorDescuento(0); }} className={`px-4 py-2 rounded-lg text-xs transition-all font-bold ${tipoDescuento === 'valor' ? 'bg-white text-[#415364] shadow-sm' : 'text-[#415364]/50 hover:text-[#415364]'}`}>
-                    Valor Fijo (\$)
+                    Valor Fijo ($)
                   </button>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 items-end">
                   <div className="sm:col-span-1">
                     <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">
-                      {tipoDescuento === 'porcentaje' ? 'Descuento (%)' : 'Descuento (\$)'}
+                      {tipoDescuento === 'porcentaje' ? 'Descuento (%)' : 'Descuento ($)'}
                     </label>
                     <input type="number" min="0" value={valorDescuento || ''} onChange={(e) => setValorDescuento(Math.max(0, Number(e.target.value)))} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-sm font-mono font-bold outline-none focus:border-[#ea0029]" placeholder="0" />
                   </div>
@@ -961,7 +957,7 @@ export default function CotizadorPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                   
                   <div className="space-y-2">
-                    <label className="block text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">Monto de Reserva (\$)</label>
+                    <label className="block text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">Monto de Reserva ($)</label>
                     <input type="number" min="0" value={reservaValor || ''} onChange={(e) => setReservaValor(Number(e.target.value))} className="w-full bg-white/10 border border-white/20 rounded-xl p-3 text-sm font-mono font-bold text-white outline-none focus:border-[#D1C292] transition-colors" />
                   </div>
 
@@ -970,7 +966,7 @@ export default function CotizadorPage() {
                       <label className="text-[10px] font-bold text-white uppercase tracking-widest">Abono Inicial</label>
                       <div className="flex bg-white/10 p-1 rounded-lg text-[10px] font-bold">
                         <button type="button" onClick={() => setTipoInicial('porcentaje')} className={`px-2 py-1 rounded-md transition-all ${tipoInicial === 'porcentaje' ? 'bg-[#ea0029] text-white shadow-sm' : 'text-white/50 hover:text-white'}`}>%</button>
-                        <button type="button" onClick={() => setTipoInicial('valor')} className={`px-2 py-1 rounded-md transition-all ${tipoInicial === 'valor' ? 'bg-[#ea0029] text-white shadow-sm' : 'text-white/50 hover:text-white'}`}>\$</button>
+                        <button type="button" onClick={() => setTipoInicial('valor')} className={`px-2 py-1 rounded-md transition-all ${tipoInicial === 'valor' ? 'bg-[#ea0029] text-white shadow-sm' : 'text-white/50 hover:text-white'}`}>$</button>
                       </div>
                     </div>
                     <input type="number" min="0" value={valorInicial || ''} onChange={(e) => setValorInicial(Number(e.target.value))} className="w-full bg-white border border-transparent rounded-lg p-2.5 text-sm font-mono font-bold text-[#21242E] outline-none focus:ring-2 focus:ring-[#ea0029]" />
@@ -986,7 +982,7 @@ export default function CotizadorPage() {
                       <label className="text-[10px] font-bold text-white/60 uppercase tracking-widest">Entrada Obra</label>
                       <div className="flex bg-white/10 p-1 rounded-lg text-[10px] font-bold">
                         <button type="button" onClick={() => setTipoEntrada('porcentaje')} className={`px-2 py-1 rounded-md transition-all ${tipoEntrada === 'porcentaje' ? 'bg-[#ea0029] text-white shadow-sm' : 'text-white/50 hover:text-white'}`}>%</button>
-                        <button type="button" onClick={() => setTipoEntrada('valor')} className={`px-2 py-1 rounded-md transition-all ${tipoEntrada === 'valor' ? 'bg-[#ea0029] text-white shadow-sm' : 'text-white/50 hover:text-white'}`}>\$</button>
+                        <button type="button" onClick={() => setTipoEntrada('valor')} className={`px-2 py-1 rounded-md transition-all ${tipoEntrada === 'valor' ? 'bg-[#ea0029] text-white shadow-sm' : 'text-white/50 hover:text-white'}`}>$</button>
                       </div>
                     </div>
                     <input type="number" min="0" value={valorEntrada || ''} onChange={(e) => setValorEntrada(Number(e.target.value))} className="w-full bg-white/10 border border-white/20 rounded-xl p-3 text-sm font-mono font-bold text-white outline-none focus:border-[#D1C292]" />
@@ -1019,7 +1015,7 @@ export default function CotizadorPage() {
                        <p className="text-[10px] text-[#dce3eb] font-medium leading-relaxed">Configura una <strong className="text-white">cuota base fija</strong> para todo el plan. El saldo sobrante se dividirá automáticamente en tus <strong className="text-white">meses de refuerzo</strong> (ej. utilidades, bonos, venta de activos).</p>
                        <div className="flex flex-col sm:flex-row gap-4 sm:items-end">
                           <div className="flex-1">
-                            <label className="text-[9px] font-bold text-[#dce3eb]/70 uppercase mb-1.5 block">Cuota Fija Base (\$)</label>
+                            <label className="text-[9px] font-bold text-[#dce3eb]/70 uppercase mb-1.5 block">Cuota Fija Base ($)</label>
                             <input type="number" value={cuotaBaseRapida} onChange={e => setCuotaBaseRapida(e.target.value === '' ? '' : Number(e.target.value))} placeholder="Ej: 1500" className="w-full bg-white/10 border border-white/20 p-2.5 text-xs font-mono font-bold text-white rounded-lg outline-none focus:border-white transition-colors"/>
                           </div>
                           <div className="flex-1">
@@ -1038,7 +1034,7 @@ export default function CotizadorPage() {
                       <div key={cuota.numeroCuota} className={`flex justify-between items-center p-4 transition-colors ${cuota.esEditable ? 'bg-[#ea0029]/10' : 'bg-white hover:bg-[#dce3eb]/20'}`}>
                         <span className={`text-[11px] font-bold ${cuota.esEditable ? 'text-[#ea0029]' : 'text-[#415364]'}`}>Cuota {cuota.numeroCuota} — <span className="font-medium opacity-70">{cuota.fechaPago}</span></span>
                         <div className={`flex items-center border-b border-dashed pb-0.5 ${cuota.esEditable ? 'border-[#ea0029]/40' : 'border-[#415364]/30'}`}>
-                          <span className={`text-xs mr-1 font-bold ${cuota.esEditable ? 'text-[#ea0029]' : 'text-[#415364]/50'}`}>{"\$"}</span>
+                          <span className={`text-xs mr-1 font-bold ${cuota.esEditable ? 'text-[#ea0029]' : 'text-[#415364]/50'}`}>{"$"}</span>
                           <input type="number" step="0.01" value={cuota.valor === 0 ? '' : Number(cuota.valor.toFixed(2))} onChange={(e) => actualizarValorCuota(cuota.numeroCuota, Number(e.target.value))} className={`w-28 bg-transparent text-right text-sm font-bold outline-none font-mono ${cuota.esEditable ? 'text-[#ea0029]' : 'text-[#415364]'}`} />
                         </div>
                       </div>
@@ -1057,11 +1053,11 @@ export default function CotizadorPage() {
               <h2 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest mb-3 border-b border-neutral-100 pb-2">Resumen Financiero</h2>
               {montoDescuentoCalculado > 0 && (
                 <div className="text-[11px] text-[#415364]/40 line-through font-mono font-bold mb-1">
-                  Lista Base: {"\$"}{precioListaOriginal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                  Lista Base: {"$"}{precioListaOriginal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                 </div>
               )}
               <div className="text-4xl font-bold tracking-tight text-[#415364] font-mono">
-                {"\$"}{precioTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                {"$"}{precioTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
               </div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#415364]/50 mt-1">Valor Total de Venta de la Unidad</p>
             </div>
@@ -1070,43 +1066,43 @@ export default function CotizadorPage() {
               
               <div className="flex justify-between items-center">
                 <span className="text-[11px] font-bold text-[#415364] uppercase tracking-wider">Cuota Inicial ({Number(pctInicialReal.toFixed(1))}%)</span>
-                <span className="font-bold text-[#415364] font-mono">{"\$"}{cuotaInicialTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                <span className="font-bold text-[#415364] font-mono">{"$"}{cuotaInicialTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
               </div>
               <div className="flex justify-between pl-4 text-[11px] text-[#415364]/70 border-l-2 border-[#ea0029]/30 font-medium">
                 <span>Reserva Inmediata:</span>
-                <span className="font-mono font-bold">{"\$"}{reservaValor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                <span className="font-mono font-bold">{"$"}{reservaValor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
               </div>
               <div className="flex justify-between pl-4 text-[11px] text-[#415364]/70 border-l-2 border-[#ea0029]/30 font-medium">
                 <span>Firma de Promesa:</span>
                 <span className="font-mono font-bold text-[#415364]">
-                  {"\$"}{saldoFirmaPromesa > 0 ? saldoFirmaPromesa.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}
+                  {"$"}{saldoFirmaPromesa > 0 ? saldoFirmaPromesa.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}
                 </span>
               </div>
               
               {mesesInicial > 1 && saldoFirmaPromesa > 0 && (
                 <div className="flex justify-between pl-4 pr-3 py-2 text-[10px] font-bold text-[#ea0029] bg-[#ea0029]/5 rounded-lg border border-[#ea0029]/10">
                   <span>↳ Dividido en {mesesInicial} pagos:</span>
-                  <span className="font-mono">{"\$"}{cuotaInicialMensual.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} c/u</span>
+                  <span className="font-mono">{"$"}{cuotaInicialMensual.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} c/u</span>
                 </div>
               )}
               
               <div className="flex justify-between items-center border-t border-[#415364]/10 pt-4">
                 <span className="text-[11px] font-bold text-[#415364] uppercase tracking-wider">Diferido Obra ({Number(pctEntradaReal.toFixed(1))}%)</span>
-                <span className="font-bold text-[#415364] font-mono">{"\$"}{entradaDiferirTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                <span className="font-bold text-[#415364] font-mono">{"$"}{entradaDiferirTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
               </div>
               
               {entradaDiferirTotal > 0 && (
                 <div className="flex justify-between text-[11px] text-[#415364]/60 font-medium bg-[#dce3eb]/30 px-3 py-2 rounded-lg border border-[#415364]/5">
                   <span>{mesesConstruccion} cuotas promedio de:</span>
                   <span className="font-mono font-bold">
-                    {"\$"}{cronogramaCuotas.length > 0 ? (entradaDiferirTotal / mesesConstruccion).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}
+                    {"$"}{cronogramaCuotas.length > 0 ? (entradaDiferirTotal / mesesConstruccion).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}
                   </span>
                 </div>
               )}
               
               <div className="flex justify-between items-center border-t-2 border-[#21242E] pt-4 mt-2">
                 <span className="text-[12px] font-bold text-[#21242E] uppercase tracking-widest">Contra Entrega ({Number(pctContraEntregaReal.toFixed(1))}%)</span>
-                <span className="font-bold text-[#21242E] text-lg font-mono">{"\$"}{contraEntrega.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                <span className="font-bold text-[#21242E] text-lg font-mono">{"$"}{contraEntrega.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
               </div>
             </div>
 
