@@ -23,6 +23,7 @@ const MAPA_PLANOS = [
 ];
 
 const RENDER_FACHADA = 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Frontal.jpg';
+const LOGO_ORIGINAL = 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg';
 const LOGO_BLANCO = 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-blanco.svg';
 
 export default function CotizadorPage() {
@@ -331,7 +332,7 @@ export default function CotizadorPage() {
                 
                 @media print {
                   body { background: white; }
-                  #wrapper { gap: 0 !important; padding: 0 !important; }
+                  #wrapper { gap: 0 !important; padding: 0 !important; transform: none !important; }
                   .hoja-a4 { box-shadow: none !important; border: none !important; margin: 0 !important; border-radius: 0 !important; }
                 }
               </style>
@@ -551,24 +552,20 @@ export default function CotizadorPage() {
             </div>
           ) : pestañaActiva === 'previsualizar' ? (
             
-            // --- CONTENEDOR PRINCIPAL DE PREVISUALIZACIÓN (FONDO GRIS OSCURO) ---
+            // --- CONTENEDOR PRINCIPAL DE PREVISUALIZACIÓN ---
             <div className="bg-[#1a1c23] py-12 px-4 sm:px-8 rounded-2xl shadow-inner flex justify-center overflow-x-auto w-full">
               
-              {/* --- ENVOLTURAS DE LAS HOJAS (Fuerza A4 estricto) --- */}
-              <div id="plantilla-pdf-arienzo" className="flex flex-col gap-12 print:gap-0 items-center mx-auto" style={{ width: '210mm' }}>
+              {/* Contenedor que agrupa ambas hojas, escalado para pantallas normales pero al 100% en impresión */}
+              <div id="plantilla-pdf-arienzo" className="flex flex-col gap-10 print:gap-0 items-center mx-auto transform scale-[0.85] sm:scale-100 origin-top">
                 
                 {/* --- PÁGINA 1: COTIZACIÓN FINANCIERA --- */}
                 <div className="hoja-a4 shrink-0 bg-white flex flex-col text-neutral-900 shadow-2xl print:shadow-none border border-neutral-200 print:border-none relative overflow-hidden rounded-md print:rounded-none">
                   
                   <div className="p-12 flex flex-col h-full">
-                    
-                    <div className="bg-[#B94A36] px-10 py-6 flex justify-between items-center rounded-t-sm -mx-12 -mt-12 mb-8 border-b-[4px] border-[#D1C292]">
+                    {/* Header P1 */}
+                    <div className="bg-[#B94A36] px-10 py-6 flex justify-between items-center rounded-t-sm -mx-12 -mt-12 mb-8 border-b-[4px] border-[#D1C292] shrink-0">
                       <div className="flex items-center gap-3">
-                        <img 
-                          src="/logo-arienzo.png" 
-                          alt="Arienzo Boutique Living" 
-                          className="h-8 w-auto object-contain" 
-                        />
+                        <img src="/logo-arienzo.png" alt="Arienzo Boutique Living" className="h-8 w-auto object-contain" />
                       </div>
                       <div className="text-right text-white">
                         <h3 className="text-[10px] font-bold tracking-widest uppercase opacity-90 text-[#D1C292]">Propuesta de Inversión</h3>
@@ -678,9 +675,9 @@ export default function CotizadorPage() {
                     </div>
 
                     {entradaDiferirTotal > 0 && (
-                      <div className="mt-3 overflow-hidden">
+                      <div className="mt-4 flex-1 min-h-[100px] overflow-hidden">
                         <h4 className="text-[8px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Cronograma de Pagos ({mesesConstruccion} Dividendos)</h4>
-                        <div className="grid grid-cols-2 gap-x-4 border border-[#EAE3DC] p-2.5 rounded-md bg-[#F9F7F5] items-start text-[9px]">
+                        <div className="grid grid-cols-2 gap-x-6 border border-[#EAE3DC] p-3 rounded-md bg-[#F9F7F5] items-start text-[9px] h-full overflow-hidden">
                           <div className="space-y-0.5">
                             {cuotasDivididas.columnaIzquierda.map((cuota) => (
                               <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-200/60 py-0.5">
@@ -701,7 +698,7 @@ export default function CotizadorPage() {
                       </div>
                     )}
 
-                    <div className="mt-3 bg-[#F9F7F5] border border-[#EAE3DC] rounded-md p-3">
+                    <div className="mt-4 shrink-0 bg-[#F9F7F5] border border-[#EAE3DC] rounded-md p-3">
                       <h4 className="text-[8px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Valores Agregados a la Unidad</h4>
                       <ul className="text-[9px] text-neutral-700 space-y-1 pl-3 list-disc marker:text-[#DEB886]">
                         {esLocal ? (
@@ -715,19 +712,18 @@ export default function CotizadorPage() {
                       </ul>
                     </div>
 
-                    {/* 🔥 FIRMA REPOSICIONADA: Margen superior fijo y borde sutil */}
-                    <div className="mt-10 shrink-0 border-t border-[#EAE3DC] pt-8">
+                    <div className="mt-auto pt-10 shrink-0">
                       <div className="grid grid-cols-2 gap-12 text-center text-[9px] px-8">
-                        <div>
+                        <div className="pt-2">
                           <p className="font-bold text-[#B94A36] uppercase tracking-wider">Arienzo Boutique Living</p>
                           <p className="text-neutral-400 mt-0.5">Emitido por: {nombreAsesor || 'Konkeri'}</p>
                         </div>
-                        <div>
+                        <div className="border-t border-neutral-800 pt-2">
                           <p className="font-bold text-neutral-800 uppercase tracking-wider">Aceptación de Propuesta</p>
                           <p className="text-neutral-400 mt-0.5">Firma del Inversionista</p>
                         </div>
                       </div>
-                      <div className="text-center mt-8">
+                      <div className="text-center mt-6">
                         <p className="text-[7px] text-neutral-400 italic">Documento generado el {new Date().toLocaleString('es-EC')} - Válido hasta {formatearFechaLegible(fechaCaducidad)}</p>
                       </div>
                     </div>
@@ -735,11 +731,11 @@ export default function CotizadorPage() {
                   </div>
                 </div>
 
-                {/* --- PÁGINA 2: PLANO ARQUITECTÓNICO --- */}
+                {/* --- PÁGINA 2: PLANO ARQUITECTÓNICO (FICHA TÉCNICA PREMIUM) --- */}
                 {incluirPlano && !esLocal && urlPlanoAsignado && (
-                  <div className="hoja-a4 page-break shrink-0 bg-white flex flex-col text-neutral-900 shadow-2xl print:shadow-none border border-neutral-200 print:border-none overflow-hidden rounded-md print:rounded-none">
+                  <div className="hoja-a4 shrink-0 bg-white flex flex-col justify-between text-neutral-900 shadow-2xl print:shadow-none border border-neutral-200 print:border-none overflow-hidden rounded-md print:rounded-none">
                     
-                    {/* 🔥 NUEVO HEADER P2: Render Fachada con Fondo Oscuro Arriba */}
+                    {/* Header P2 Superior (Render + Info) */}
                     <div className="bg-[#21242E] text-white flex items-stretch h-[130px] z-10 shrink-0 w-full border-b-[4px] border-[#D1C292]">
                       <div className="w-[200px] h-full relative">
                         <img src={RENDER_FACHADA} alt="Fachada Arienzo" className="w-full h-full object-cover" />
@@ -748,109 +744,97 @@ export default function CotizadorPage() {
                       <div className="flex-1 p-6 flex flex-col justify-center border-l border-[#D1C292]/30">
                         <h3 className="text-[14px] font-bold tracking-widest uppercase text-[#D1C292]">Diseño Arquitectónico</h3>
                         <p className="text-[10px] mt-1 font-bold tracking-wider text-white">Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero} | {tipologia}</p>
-                        <p className="text-[8px] text-white/70 leading-relaxed font-light mt-2 max-w-[90%]">
-                          Diseño eficiente enfocado en confort e iluminación natural, concebido por el prestigioso estudio Diez+Muller.
+                        <p className="text-[8px] text-white/70 leading-relaxed font-light mt-1.5 max-w-[90%]">
+                          Un estilo de vida superior enfocado en confort e iluminación natural, concebido por el prestigioso estudio Diez+Muller.
                         </p>
                       </div>
                     </div>
 
-                    {/* CONTENIDO CENTRAL: Íconos Izquierda + Plano Derecha */}
-                    <div className="flex-1 flex flex-row items-stretch justify-center p-8 gap-6 bg-white relative z-10 overflow-hidden">
+                    {/* Barra de Especificaciones con Íconos (7 Items Horizontales) */}
+                    <div className="bg-[#F9F7F5] border-b border-neutral-200 px-6 py-4 grid grid-cols-7 gap-1 items-center z-10 shrink-0">
                       
-                      {/* SIDEBAR DE ESPECIFICACIONES (Layout Vertical Elegante) */}
-                      <div className="w-[65mm] flex flex-col justify-center gap-3.5 bg-[#F9F7F5] rounded-xl border border-[#EAE3DC] p-5 shadow-sm shrink-0">
-                         <h4 className="text-[8px] font-bold text-[#B94A36] uppercase tracking-widest text-center border-b border-[#EAE3DC] pb-3 mb-2">Especificaciones</h4>
-                         
-                         {/* Área Total */}
-                         <div className="flex items-center gap-3">
-                           <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm border border-[#EAE3DC] shrink-0 text-[#B94A36]">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 21l7-7m-7 7v-5m0 5h5M21 3l-7 7m7-7v5m0-5h-5" /></svg>
-                           </div>
-                           <div>
-                             <span className="text-[7px] font-bold text-neutral-500 uppercase tracking-widest block">Área Total</span>
-                             <span className="text-[11px] font-black text-[#B94A36]">{areaTotal} m²</span>
-                           </div>
-                         </div>
-
-                         {/* Dormitorios */}
-                         <div className="flex items-center gap-3">
-                           <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm border border-[#EAE3DC] shrink-0 text-[#415364]">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 10h16M4 14h16m-2-4v8m-12-8v8M6 10V8a2 2 0 012-2h8a2 2 0 012 2v2" /></svg>
-                           </div>
-                           <div>
-                             <span className="text-[7px] font-bold text-neutral-500 uppercase tracking-widest block">Dormitorios</span>
-                             <span className="text-[11px] font-bold text-[#21242E]">{numHabitaciones}</span>
-                           </div>
-                         </div>
-
-                         {/* Baños */}
-                         <div className="flex items-center gap-3">
-                           <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm border border-[#EAE3DC] shrink-0 text-[#415364]">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 8V6a2 2 0 012-2h4a2 2 0 012 2v2m-6 3v3m4-3v3m-2-3v3m-6 5h12" /></svg>
-                           </div>
-                           <div>
-                             <span className="text-[7px] font-bold text-neutral-500 uppercase tracking-widest block">Baños</span>
-                             <span className="text-[11px] font-bold text-[#21242E]">{numBanos}</span>
-                           </div>
-                         </div>
-
-                         {/* Terraza */}
-                         <div className="flex items-center gap-3">
-                           <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm border border-[#EAE3DC] shrink-0 text-[#415364]">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 14h16v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6zM4 14V6a2 2 0 012-2h12a2 2 0 012 2v8M8 14v6m8-6v6" /></svg>
-                           </div>
-                           <div>
-                             <span className="text-[7px] font-bold text-neutral-500 uppercase tracking-widest block">Terraza</span>
-                             <span className="text-[11px] font-bold text-[#21242E]">Sí</span>
-                           </div>
-                         </div>
-
-                         {/* Lavandería */}
-                         <div className="flex items-center gap-3">
-                           <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm border border-[#EAE3DC] shrink-0 text-[#415364]">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2" strokeWidth="1.5" /><circle cx="12" cy="12" r="3" strokeWidth="1.5" /><path d="M9 6h2M13 6h2" strokeWidth="1.5" strokeLinecap="round" /></svg>
-                           </div>
-                           <div>
-                             <span className="text-[7px] font-bold text-neutral-500 uppercase tracking-widest block">Lavandería</span>
-                             <span className="text-[11px] font-bold text-[#21242E]">Sí</span>
-                           </div>
-                         </div>
-
-                         {/* Parqueos */}
-                         <div className="flex items-center gap-3">
-                           <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm border border-[#EAE3DC] shrink-0 text-[#415364]">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M5 13l2-6h10l2 6M5 13v6a1 1 0 001 1h1a1 1 0 001-1v-1h8v1a1 1 0 001 1h1a1 1 0 001-1v-6M5 13h14M8 16h.01M16 16h.01" /></svg>
-                           </div>
-                           <div>
-                             <span className="text-[7px] font-bold text-neutral-500 uppercase tracking-widest block">Parqueos</span>
-                             <span className="text-[11px] font-bold text-[#21242E]">{cantidadParqueos}</span>
-                           </div>
-                         </div>
-
-                         {/* Bodega */}
-                         <div className="flex items-center gap-3">
-                           <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm border border-[#EAE3DC] shrink-0 text-[#415364]">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16zM3.27 6.96L12 12.01l8.73-5.05M12 22.08V12" /></svg>
-                           </div>
-                           <div>
-                             <span className="text-[7px] font-bold text-neutral-500 uppercase tracking-widest block">Bodega</span>
-                             <span className="text-[11px] font-bold text-[#21242E]">{bodegaAsignada && bodegaAsignada.toLowerCase() !== 'ninguna' ? 'Sí' : 'No'}</span>
-                           </div>
-                         </div>
+                      {/* Área */}
+                      <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
+                        <svg className="w-5 h-5 text-[#B94A36]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 21l7-7m-7 7v-5m0 5h5M21 3l-7 7m7-7v5m0-5h-5" /></svg>
+                        <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Área Total</span>
+                        <span className="text-[10px] font-black text-[#B94A36]">{areaTotal} m²</span>
                       </div>
 
-                      {/* PLANO ARQUITECTÓNICO CENTRAL */}
-                      <div className="flex-1 border-[1.5px] border-[#D1C292] rounded-xl flex flex-col items-center justify-center p-6 bg-[#FDFCFB] relative shadow-inner overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full bg-[#F9F7F5] border-b border-[#D1C292]/30 flex items-center justify-center py-2 rounded-t-xl">
-                           <span className="text-[8px] font-bold text-[#B94A36] uppercase tracking-widest">Plano Esquemático de Distribución</span>
-                        </div>
-                        <img src={urlPlanoAsignado} alt="Plano Arienzo" className="w-full h-full mt-6 object-contain mix-blend-multiply drop-shadow-sm" />
+                      {/* Dormitorios */}
+                      <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
+                        <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 10h16M4 14h16m-2-4v8m-12-8v8M6 10V8a2 2 0 012-2h8a2 2 0 012 2v2" /></svg>
+                        <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Dormitorios</span>
+                        <span className="text-[10px] font-bold text-[#21242E]">{numHabitaciones}</span>
+                      </div>
+
+                      {/* Baños */}
+                      <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
+                        <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 8V6a2 2 0 012-2h4a2 2 0 012 2v2m-6 3v3m4-3v3m-2-3v3m-6 5h12" /></svg>
+                        <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Baños</span>
+                        <span className="text-[10px] font-bold text-[#21242E]">{numBanos}</span>
+                      </div>
+
+                      {/* Lavandería */}
+                      <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
+                        <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2" strokeWidth="1.5" /><circle cx="12" cy="12" r="3" strokeWidth="1.5" /><path d="M9 6h2M13 6h2" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                        <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Lavandería</span>
+                        <span className="text-[10px] font-bold text-[#21242E]">Sí</span>
+                      </div>
+
+                      {/* Terraza */}
+                      <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
+                        <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 14h16v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6zM4 14V6a2 2 0 012-2h12a2 2 0 012 2v8M8 14v6m8-6v6" /></svg>
+                        <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Terraza</span>
+                        <span className="text-[10px] font-bold text-[#21242E]">Sí</span>
+                      </div>
+
+                      {/* Parqueos */}
+                      <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
+                        <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M5 13l2-6h10l2 6M5 13v6a1 1 0 001 1h1a1 1 0 001-1v-1h8v1a1 1 0 001 1h1a1 1 0 001-1v-6M5 13h14M8 16h.01M16 16h.01" /></svg>
+                        <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Parqueos</span>
+                        <span className="text-[10px] font-bold text-[#21242E]">{cantidadParqueos}</span>
+                      </div>
+
+                      {/* Bodega */}
+                      <div className="flex flex-col items-center gap-1.5">
+                        <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16zM3.27 6.96L12 12.01l8.73-5.05M12 22.08V12" /></svg>
+                        <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Bodega</span>
+                        <span className="text-[10px] font-bold text-[#21242E]">{bodegaAsignada && bodegaAsignada.toLowerCase() !== 'ninguna' ? 'Sí' : 'No'}</span>
                       </div>
                     </div>
 
-                    {/* 🔥 NUEVO FOOTER P2: Terracota como Pie de Página */}
+                    {/* Marco del Plano Arquitectónico (Con mucho más aire y bordes redondeados) */}
+                    <div className="flex-1 flex items-center justify-center py-6 px-12 bg-white relative z-10 overflow-hidden">
+                       <div className="w-full h-full border-[1.5px] border-[#D1C292] rounded-xl flex flex-col items-center justify-center p-6 bg-[#FDFCFB] relative shadow-inner">
+                          <div className="absolute top-0 left-0 w-full bg-[#F9F7F5] border-b border-[#D1C292]/30 flex items-center justify-center py-2 rounded-t-xl">
+                             <span className="text-[8px] font-bold text-[#B94A36] uppercase tracking-widest">Plano Esquemático de Distribución</span>
+                          </div>
+                          <img src={urlPlanoAsignado} alt="Plano Arienzo" className="w-full h-full mt-6 max-h-[120mm] object-contain mix-blend-multiply drop-shadow-sm" />
+                       </div>
+                    </div>
+
+                    {/* Bloque de Especificaciones Técnicas (Resumen) */}
+                    <div className="px-10 py-6 bg-[#F9F7F5] shrink-0 border-t border-neutral-200">
+                       <h4 className="text-[8px] font-bold uppercase tracking-widest text-[#B94A36] mb-3">Resumen de Especificaciones Técnicas</h4>
+                       <div className="grid grid-cols-3 gap-6 text-[8px] text-neutral-700 leading-relaxed">
+                          <div>
+                            <p><strong>• Acabados Premium:</strong> Pisos de porcelanato importado rectificado. Puertas de madera con laca natural.</p>
+                            <p className="mt-2"><strong>• Cocina de Autor:</strong> Mesones de piedra sinterizada. Muebles Madeval o similar. Fregadero undercounter.</p>
+                          </div>
+                          <div>
+                            <p><strong>• Baños de Lujo:</strong> Grifería y sanitarios de gama alta (FV/Edesa). Mesón sinterizado y piso antideslizante.</p>
+                            <p className="mt-2"><strong>• Equipamiento Base:</strong> Incluye calentador de agua. Climatización empotrada {incluirClima ? '(Incluida)' : '(Opcional)'}.</p>
+                          </div>
+                          <div>
+                            <p><strong>• Diseño Arquitectónico:</strong> Ventanales de piso a techo (vidrio claro 6-8mm). Mampostería sólida estucada.</p>
+                            <p className="mt-2"><strong>• Áreas Comunales:</strong> Edificio con generador eléctrico al 100% y ascensor para 10 personas.</p>
+                          </div>
+                       </div>
+                    </div>
+
+                    {/* Footer P2: Terracota Centrado */}
                     <div className="bg-[#B94A36] h-[60px] flex justify-center items-center z-10 shrink-0 border-t-[4px] border-[#D1C292]">
-                      <img src={LOGO_BLANCO} alt="Arienzo" className="h-5 w-auto object-contain opacity-90" />
+                      <img src={LOGO_BLANCO} alt="Arienzo" className="h-6 w-auto object-contain opacity-95" />
                     </div>
                   </div>
                 )}
