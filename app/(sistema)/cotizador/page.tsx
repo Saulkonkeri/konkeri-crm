@@ -10,12 +10,28 @@ interface CuotaMes {
   esEditable: boolean;
 }
 
+// === MAPEO DE PLANOS POR ÁREA APROXIMADA ===
+const MAPA_PLANOS = [
+  { area: 69.43, url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_%2069,43m2.png' },
+  { area: 86.78, url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_86,78m2.png' },
+  { area: 100.2, url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_100.2m2.png' },
+  { area: 106.65, url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_106,65m2.png' },
+  { area: 121.61, url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_121,61m2.png' },
+  { area: 129.42, url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2d_129,42m2.png' },
+  { area: 150.14, url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/3D_150,14m2.png' },
+  { area: 158.77, url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/3D_158,77m2.png' },
+];
+
+const RENDER_FACHADA = 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Frontal.jpg';
+const LOGO_ARIENZO = 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg';
+
 export default function CotizadorPage() {
   const [propiedades, setPropiedades] = useState<any[]>([]);
   const [propiedadSeleccionada, setPropiedadSeleccionada] = useState<any>(null);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [generandoPdf, setGenerandoPdf] = useState(false);
+  const [enviandoCorreo, setEnviandoCorreo] = useState(false);
   
   const [pestañaActiva, setPestañaActiva] = useState<'configurar' | 'previsualizar'>('configurar');
 
@@ -25,7 +41,7 @@ export default function CotizadorPage() {
   const [clienteSeleccionado, setClienteSeleccionado] = useState<string>(''); 
   const [nombreAsesor, setNombreAsesor] = useState<string>('Saúl Intriago / Debbi Mera');
 
-  // --- CONTROL DE MODALIDAD TEMPORAL (CON/SIN FECHAS) ---
+  // --- CONTROL DE MODALIDAD TEMPORAL ---
   const [incluirFechas, setIncluirFechas] = useState<boolean>(true);
 
   // --- CONTROL DE DESCUENTOS ADICIONALES ---
@@ -33,9 +49,10 @@ export default function CotizadorPage() {
   const [valorDescuento, setValorDescuento] = useState<number>(0);
   const [motivoDescuento, setMotivoDescuento] = useState<string>('');
 
-  // --- COMPLEMENTOS ESTÉTICOS Y ARQUITECTÓNICOS (No afectan precios) ---
+  // --- COMPLEMENTOS ESTÉTICOS Y PLANO ---
   const [incluirClima, setIncluirClima] = useState<boolean>(false);
   const [incluirBbq, setIncluirBbq] = useState<boolean>(false);
+  const [incluirPlano, setIncluirPlano] = useState<boolean>(true); // 🔥 NUEVO: Control del Plano
 
   // --- PARÁMETROS FINANCIEROS Y DE FECHA ---
   const hoyStr = new Date().toISOString().split('T')[0];
@@ -62,7 +79,7 @@ export default function CotizadorPage() {
 
   const [cronogramaCuotas, setCronogramaCuotas] = useState<CuotaMes[]>([]);
 
-  // ESTADOS PARA CALCULADORA RÁPIDA DE REFUERZOS (Cuotas Balón)
+  // ESTADOS PARA CALCULADORA RÁPIDA DE REFUERZOS
   const [mostrarCalculadoraRefuerzos, setMostrarCalculadoraRefuerzos] = useState(false);
   const [cuotaBaseRapida, setCuotaBaseRapida] = useState<number | ''>('');
   const [mesesRefuerzoRapido, setMesesRefuerzoRapido] = useState<string>('');
@@ -98,7 +115,7 @@ export default function CotizadorPage() {
 
         const { data: dataCli, error: errorCli } = await supabase
           .from('clientes')
-          .select('id, nombres, apellidos, tipo, telefono')
+          .select('id, nombres, apellidos, tipo, telefono, email')
           .order('nombres', { ascending: true });
         if (!errorCli && dataCli) setClientes(dataCli);
 
@@ -121,27 +138,10 @@ export default function CotizadorPage() {
   }, [clientes, busquedaCliente]);
 
   const { 
-    precioListaOriginal,
-    montoDescuentoCalculado,
-    precioDeptoPreLanzamiento,
-    valAnexosPreLanzamiento,
-    precioTotal, 
-    cuotaInicialTotal, 
-    saldoFirmaPromesa, 
-    cuotaInicialMensual, 
-    entradaDiferirTotal, 
-    contraEntrega,
-    pctInicialReal,
-    pctFirmaReal,
-    pctEntradaReal,
-    pctContraEntregaReal,
-    areaTotal,
-    valorM2Lanzamiento,
-    tipologia,
-    parqueaderoTexto,
-    bodegaAsignada,
-    esLocal,
-    cantidadParqueos
+    precioListaOriginal, montoDescuentoCalculado, precioDeptoPreLanzamiento, valAnexosPreLanzamiento, precioTotal, 
+    cuotaInicialTotal, saldoFirmaPromesa, cuotaInicialMensual, entradaDiferirTotal, contraEntrega,
+    pctInicialReal, pctFirmaReal, pctEntradaReal, pctContraEntregaReal, areaTotal, valorM2Lanzamiento,
+    tipologia, parqueaderoTexto, bodegaAsignada, esLocal, cantidadParqueos, urlPlanoAsignado
   } = useMemo(() => {
     const listaOriginal = propiedadSeleccionada ? Number(propiedadSeleccionada.precio) : 0;
     
@@ -161,23 +161,11 @@ export default function CotizadorPage() {
       }
     }
 
-    let valAnexosBase = 0;
-    if (cant >= 2) {
-      valAnexosBase = 20000;
-    } else if (cant === 1) {
-      valAnexosBase = 11000;
-    }
-    
+    let valAnexosBase = cant >= 2 ? 20000 : cant === 1 ? 11000 : 0;
     const valAnexosDescontados = isLocalComercial ? 0 : valAnexosBase * 0.95;
     const precioDeptoDescontado = Math.max(0, listaOriginal - valAnexosDescontados);
 
-    let descuentoMonto = 0;
-    if (tipoDescuento === 'porcentaje') {
-      descuentoMonto = listaOriginal * (valorDescuento / 100);
-    } else {
-      descuentoMonto = valorDescuento;
-    }
-
+    let descuentoMonto = tipoDescuento === 'porcentaje' ? listaOriginal * (valorDescuento / 100) : valorDescuento;
     const precioFin = Math.max(0, listaOriginal - descuentoMonto);
     
     let inicialDeseado = tipoInicial === 'porcentaje' ? precioFin * (valorInicial / 100) : valorInicial;
@@ -210,37 +198,28 @@ export default function CotizadorPage() {
     const pEntrega = precioFin > 0 ? (entrega / precioFin) * 100 : 0;
 
     let textoParqueo = 'Ninguno';
-    if (asignadoText && asignadoText.toLowerCase() !== 'ninguno') {
-      textoParqueo = `${asignadoText} (${cant})`;
-    } else if (cant > 0) {
-      textoParqueo = `Asignado (${cant})`;
-    }
+    if (asignadoText && asignadoText.toLowerCase() !== 'ninguno') textoParqueo = `${asignadoText} (${cant})`;
+    else if (cant > 0) textoParqueo = `Asignado (${cant})`;
 
     const area = propiedadSeleccionada ? Number(propiedadSeleccionada.area_total || 0) : 0;
     const m2Lanzamiento = area > 0 ? precioDeptoDescontado / area : 0;
     
+    // 🔥 ENCONTRAR EL PLANO CORRECTO
+    let urlPlano = '';
+    if (area > 0 && !isLocalComercial) {
+      // Buscar el plano que más se acerque al área total (margen de 2m2)
+      const planoCercano = MAPA_PLANOS.find(p => Math.abs(p.area - area) <= 2.5);
+      if (planoCercano) urlPlano = planoCercano.url;
+    }
+
     return {
-      precioListaOriginal: listaOriginal,
-      montoDescuentoCalculado: descuentoMonto,
-      precioDeptoPreLanzamiento: precioDeptoDescontado,
-      valAnexosPreLanzamiento: valAnexosDescontados,
-      precioTotal: precioFin,
-      cuotaInicialTotal: reservaValor + saldoPromesa,
-      saldoFirmaPromesa: saldoPromesa,
-      cuotaInicialMensual: mensualInicial,
-      entradaDiferirTotal: entradaDiferir,
-      contraEntrega: entrega,
-      pctInicialReal: pInicialTotal,
-      pctFirmaReal: pFirma,
-      pctEntradaReal: pEntrada,
-      pctContraEntregaReal: pEntrega,
-      areaTotal: area,
-      valorM2Lanzamiento: m2Lanzamiento,
-      tipologia: propiedadSeleccionada?.tipologia || '---',
-      parqueaderoTexto: textoParqueo,
-      bodegaAsignada: bodegaText,
-      esLocal: isLocalComercial,
-      cantidadParqueos: cant > 0 ? cant : 1
+      precioListaOriginal: listaOriginal, montoDescuentoCalculado: descuentoMonto, precioDeptoPreLanzamiento: precioDeptoDescontado,
+      valAnexosPreLanzamiento: valAnexosDescontados, precioTotal: precioFin, cuotaInicialTotal: reservaValor + saldoPromesa,
+      saldoFirmaPromesa: saldoPromesa, cuotaInicialMensual: mensualInicial, entradaDiferirTotal: entradaDiferir, contraEntrega: entrega,
+      pctInicialReal: pInicialTotal, pctFirmaReal: pFirma, pctEntradaReal: pEntrada, pctContraEntregaReal: pEntrega,
+      areaTotal: area, valorM2Lanzamiento: m2Lanzamiento, tipologia: propiedadSeleccionada?.tipologia || '---',
+      parqueaderoTexto: textoParqueo, bodegaAsignada: bodegaText, esLocal: isLocalComercial, cantidadParqueos: cant > 0 ? cant : 1,
+      urlPlanoAsignado: urlPlano
     };
   }, [propiedadSeleccionada, tipoInicial, valorInicial, tipoEntrada, valorEntrada, tipoDescuento, valorDescuento, reservaValor, mesesInicial]);
 
@@ -259,18 +238,10 @@ export default function CotizadorPage() {
       if (incluirFechas) {
         const mesRelativo = (mesInicio - 1) + i;
         const fechaCuota = new Date(anioInicio, mesRelativo, diaPago);
-        const diaFormateado = String(fechaCuota.getDate()).padStart(2, '0');
-        const nombreMes = mesesNombres[fechaCuota.getMonth()];
-        const anioFormateado = fechaCuota.getFullYear();
-        etiquetaFecha = `${diaFormateado} de ${nombreMes} ${anioFormateado}`;
+        etiquetaFecha = `${String(fechaCuota.getDate()).padStart(2, '0')} de ${mesesNombres[fechaCuota.getMonth()]} ${fechaCuota.getFullYear()}`;
       }
 
-      return {
-        numeroCuota: i + 1,
-        fechaPago: etiquetaFecha,
-        valor: valorBaseCuota,
-        esEditable: false,
-      };
+      return { numeroCuota: i + 1, fechaPago: etiquetaFecha, valor: valorBaseCuota, esEditable: false };
     });
     setCronogramaCuotas(cuotasCalculadas);
   }, [propiedadSeleccionada, mesesConstruccion, entradaDiferirTotal, diaPago, mesInicio, anioInicio, incluirFechas]);
@@ -284,12 +255,7 @@ export default function CotizadorPage() {
   }, [cronogramaCuotas]);
 
   const actualizarValorCuota = (cuotaNumero: number, nuevoValor: number) => {
-    let nuevoCronograma = cronogramaCuotas.map(cuota => {
-      if (cuota.numeroCuota === cuotaNumero) {
-        return { ...cuota, valor: nuevoValor, esEditable: true };
-      }
-      return cuota;
-    });
+    let nuevoCronograma = cronogramaCuotas.map(cuota => cuota.numeroCuota === cuotaNumero ? { ...cuota, valor: nuevoValor, esEditable: true } : cuota);
 
     const totalManual = nuevoCronograma.filter(c => c.esEditable).reduce((acc, curr) => acc + curr.valor, 0);
     const saldoRestantePorCubrir = entradaDiferirTotal - totalManual;
@@ -297,108 +263,54 @@ export default function CotizadorPage() {
 
     if (mesesAutomaticos.length > 0) {
       const valorRepartido = Math.max(0, saldoRestantePorCubrir / mesesAutomaticos.length);
-      nuevoCronograma = nuevoCronograma.map(cuota => {
-        if (!cuota.esEditable) return { ...cuota, valor: valorRepartido };
-        return cuota;
-      });
+      nuevoCronograma = nuevoCronograma.map(cuota => !cuota.esEditable ? { ...cuota, valor: valorRepartido } : cuota);
     }
     setCronogramaCuotas(nuevoCronograma);
   };
 
-  // === FUNCIONES DE LLENADO RÁPIDO ===
   const reiniciarCuotas = () => {
     if (mesesConstruccion <= 0) return;
     const valorBaseCuota = entradaDiferirTotal / mesesConstruccion;
-    setCronogramaCuotas(cronogramaCuotas.map(c => ({
-      ...c,
-      valor: valorBaseCuota,
-      esEditable: false
-    })));
+    setCronogramaCuotas(cronogramaCuotas.map(c => ({ ...c, valor: valorBaseCuota, esEditable: false })));
   };
 
   const aplicarPlanRefuerzos = () => {
     const base = Number(cuotaBaseRapida);
-    if (base <= 0) {
-      alert("Por favor ingresa una Cuota Base mayor a $0.");
-      return;
-    }
+    if (base <= 0) return alert("Por favor ingresa una Cuota Base mayor a $0.");
 
-    const mesesExtra = mesesRefuerzoRapido
-      .split(',')
-      .map(m => parseInt(m.trim()))
-      .filter(m => !isNaN(m) && m > 0 && m <= mesesConstruccion);
+    const mesesExtra = mesesRefuerzoRapido.split(',').map(m => parseInt(m.trim())).filter(m => !isNaN(m) && m > 0 && m <= mesesConstruccion);
+    if (mesesExtra.length === 0) return alert(`Ingresa al menos un mes válido entre 1 y ${mesesConstruccion}. (Ej: 12)`);
 
-    if (mesesExtra.length === 0) {
-      alert(`Por favor ingresa al menos un mes válido entre 1 y ${mesesConstruccion}. (Ej: 12)`);
-      return;
-    }
+    const totalRegular = base * (mesesConstruccion - mesesExtra.length);
+    if (totalRegular > entradaDiferirTotal) return alert(`La cuota base de $${base} es muy alta. Supera el total a diferir ($${entradaDiferirTotal}).`);
 
-    const mesesRegularesCount = mesesConstruccion - mesesExtra.length;
-    const totalRegular = base * mesesRegularesCount;
-    
-    if (totalRegular > entradaDiferirTotal) {
-      alert(`La cuota base de $${base} es muy alta. Solo las cuotas regulares sumarían $${totalRegular}, superando el total a diferir ($${entradaDiferirTotal}).`);
-      return;
-    }
-
-    const saldoParaRefuerzos = entradaDiferirTotal - totalRegular;
-    const valorPorRefuerzo = saldoParaRefuerzos / mesesExtra.length;
-
-    const nuevoCronograma = cronogramaCuotas.map(cuota => {
-      const esRefuerzo = mesesExtra.includes(cuota.numeroCuota);
-      return {
-        ...cuota,
-        valor: esRefuerzo ? valorPorRefuerzo : base,
-        esEditable: true 
-      };
-    });
-
-    setCronogramaCuotas(nuevoCronograma);
+    const valorPorRefuerzo = (entradaDiferirTotal - totalRegular) / mesesExtra.length;
+    setCronogramaCuotas(cronogramaCuotas.map(cuota => ({
+      ...cuota, valor: mesesExtra.includes(cuota.numeroCuota) ? valorPorRefuerzo : base, esEditable: true 
+    })));
     setMostrarCalculadoraRefuerzos(false); 
   };
 
-  const nombreClienteActivo = useMemo(() => {
-    if (!clienteSeleccionado) return 'Cliente Anónimo / Prospecto Rápido';
-    const c = clientes.find(item => item.id.toString() === clienteSeleccionado.toString());
-    return c ? `${c.nombres} ${c.apellidos}` : 'Cliente Anónimo';
+  const clienteDataCompleta = useMemo(() => {
+    if (!clienteSeleccionado) return null;
+    return clientes.find(item => item.id.toString() === clienteSeleccionado.toString());
   }, [clienteSeleccionado, clientes]);
 
   const guardarCotizacionEnSistema = async () => {
     if (!propiedadSeleccionada) return;
     setGuardando(true);
     try {
-      const { error } = await supabase.from('cotizaciones').insert([
-        {
-          cliente_id: clienteSeleccionado || null, 
-          unidad_id: propiedadSeleccionada.id.toString(),
-          unidad_numero: propiedadSeleccionada.unidad || propiedadSeleccionada.numero,
-          precio_lista: precioListaOriginal,
-          monto_descuento: montoDescuentoCalculado,
-          motivo_descuento: motivoDescuento || null,
-          precio_total: precioTotal,
-          porcentaje_inicial: Number(pctInicialReal.toFixed(2)),
-          monto_inicial: cuotaInicialTotal,
-          porcentaje_entrada: Number(pctEntradaReal.toFixed(2)),
-          monto_entrada: entradaDiferirTotal,
-          meses_plazo: mesesConstruccion,
-          monto_contra_entrega: contraEntrega,
-          cronograma_pagos: cronogramaCuotas,
-          estado: 'Vigente'
-        }
-      ]);
-      
-      if (!error) {
-        alert('¡Cotización guardada exitosamente!');
-      } else {
-        console.error("Error de Supabase:", error);
-        alert(`Error de Base de Datos: ${error.message}`);
-      }
-    } catch (err: any) {
-      console.error(err);
-      alert(`Error inesperado: ${err.message}`);
-    } finally {
-      setGuardando(false);
-    }
+      const { error } = await supabase.from('cotizaciones').insert([{
+        cliente_id: clienteSeleccionado || null, 
+        unidad_id: propiedadSeleccionada.id.toString(), unidad_numero: propiedadSeleccionada.unidad || propiedadSeleccionada.numero,
+        precio_lista: precioListaOriginal, monto_descuento: montoDescuentoCalculado, motivo_descuento: motivoDescuento || null,
+        precio_total: precioTotal, porcentaje_inicial: Number(pctInicialReal.toFixed(2)), monto_inicial: cuotaInicialTotal,
+        porcentaje_entrada: Number(pctEntradaReal.toFixed(2)), monto_entrada: entradaDiferirTotal, meses_plazo: mesesConstruccion,
+        monto_contra_entrega: contraEntrega, cronograma_pagos: cronogramaCuotas, estado: 'Vigente'
+      }]);
+      if (!error) alert('¡Cotización guardada exitosamente!');
+      else alert(`Error de Base de Datos: ${error.message}`);
+    } catch (err: any) { alert(`Error inesperado: ${err.message}`); } finally { setGuardando(false); }
   };
 
   const descargarPdfComercial = () => {
@@ -409,18 +321,10 @@ export default function CotizadorPage() {
     setTimeout(() => {
       try {
         const elemento = document.getElementById('plantilla-pdf-arienzo');
-        if (!elemento) {
-          alert("Error: No se encontró la plantilla del PDF.");
-          setGenerandoPdf(false);
-          return;
-        }
+        if (!elemento) return alert("Error: No se encontró la plantilla del PDF.");
 
         const ventanaImpresion = window.open('', '_blank');
-        if (!ventanaImpresion) {
-          alert("Por favor, permite las ventanas emergentes.");
-          setGenerandoPdf(false);
-          return;
-        }
+        if (!ventanaImpresion) return alert("Por favor, permite las ventanas emergentes.");
 
         ventanaImpresion.document.write(`
           <html>
@@ -429,30 +333,81 @@ export default function CotizadorPage() {
               <script src="https://cdn.tailwindcss.com"></script>
               <style>
                 @page { size: A4 portrait; margin: 0mm; }
-                body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; font-family: ui-sans-serif, system-ui, sans-serif; }
-                .contenedor-a4 { width: 210mm; height: 297mm; page-break-inside: avoid; box-sizing: border-box; }
+                body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; font-family: ui-sans-serif, system-ui, sans-serif; background: white;}
+                .contenedor-a4 { width: 210mm; min-height: 297mm; page-break-after: always; box-sizing: border-box; background: white; position: relative;}
+                .page-break { page-break-before: always; }
               </style>
             </head>
             <body class="bg-white text-neutral-900 p-0 m-0">
-              <div class="contenedor-a4 p-10 flex flex-col justify-between">
-                ${elemento.innerHTML}
-              </div>
-              <script>
-                setTimeout(() => { window.print(); window.close(); }, 700);
-              </script>
+              ${elemento.innerHTML}
+              <script>setTimeout(() => { window.print(); window.close(); }, 800);</script>
             </body>
           </html>
         `);
-        
         ventanaImpresion.document.close();
-
-      } catch (error) {
-        console.error('Error procesando impresión:', error);
-        alert('Error al generar el documento.');
-      } finally {
-        setGenerandoPdf(false);
-      }
+      } catch (error) { alert('Error al generar el documento.'); } finally { setGenerandoPdf(false); }
     }, 500);
+  };
+
+  // 🔥 NUEVA FUNCIÓN: ENVIAR POR CORREO
+  const enviarCotizacionPorCorreo = async () => {
+    if (!clienteDataCompleta?.email) {
+      alert("⚠️ El cliente seleccionado no tiene un correo electrónico registrado en el CRM.");
+      return;
+    }
+    
+    setEnviandoCorreo(true);
+    setPestañaActiva('previsualizar'); // Aseguramos que el DOM del PDF esté renderizado
+    
+    setTimeout(async () => {
+      try {
+        const elemento = document.getElementById('plantilla-pdf-arienzo');
+        if (!elemento) throw new Error("No se encontró el diseño de la cotización");
+
+        // Construimos el HTML puro que el backend convertirá o enviará
+        const htmlContent = `
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <script src="https://cdn.tailwindcss.com"></script>
+              <style>
+                @page { size: A4 portrait; margin: 0mm; }
+                body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; font-family: sans-serif; background: white;}
+                .contenedor-a4 { width: 210mm; min-height: 297mm; page-break-after: always; box-sizing: border-box; background: white; padding: 40px; margin: 0 auto;}
+                .page-break { page-break-before: always; }
+              </style>
+            </head>
+            <body>
+              ${elemento.innerHTML}
+            </body>
+          </html>
+        `;
+
+        const response = await fetch('/api/enviar-cotizacion', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            emailDestino: clienteDataCompleta.email,
+            nombreCliente: clienteDataCompleta.nombres,
+            asesor: nombreAsesor,
+            unidad: propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero,
+            htmlCotizacion: htmlContent
+          })
+        });
+
+        if (response.ok) {
+          alert(`✅ Cotización enviada con éxito al correo: ${clienteDataCompleta.email}`);
+        } else {
+          const errData = await response.json();
+          alert(`❌ Error al enviar el correo: ${errData.error || 'Problema de servidor'}`);
+        }
+      } catch (error) {
+        console.error(error);
+        alert('❌ Error al procesar el envío por correo.');
+      } finally {
+        setEnviandoCorreo(false);
+      }
+    }, 500); // Pequeño delay para asegurar que React haya renderizado la previsualización
   };
 
   if (cargando) {
@@ -582,7 +537,7 @@ export default function CotizadorPage() {
                 {!esLocal && (
                   <div>
                     <span className="text-[9px] text-[#ea0029]/80 font-bold uppercase tracking-wider block mb-1">M² Lanzamiento</span>
-                    <span className="font-bold font-mono text-[#ea0029]">${valorM2Lanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    <span className="font-bold font-mono text-[#ea0029]">{"$"}{valorM2Lanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                   </div>
                 )}
               </div>
@@ -595,209 +550,258 @@ export default function CotizadorPage() {
               <p className="text-sm font-bold uppercase tracking-widest">Selecciona una unidad para habilitar el cotizador.</p>
             </div>
           ) : pestañaActiva === 'previsualizar' ? (
-            <div className="bg-[#1a1c23] p-6 rounded-2xl shadow-inner flex justify-center border border-[#415364]/30 overflow-x-auto">
+            <div className="bg-[#1a1c23] p-6 rounded-2xl shadow-inner flex flex-col items-center border border-[#415364]/30 overflow-x-auto gap-8">
               
-              {/* --- INICIO PDF (INTOCABLE) --- */}
-              <div id="plantilla-pdf-arienzo" className="bg-white w-[210mm] min-h-[297mm] p-10 flex flex-col justify-between text-neutral-900 rounded-sm shadow-2xl scale-95 sm:scale-100 origin-top transform">
-                <div>
-                  <div className="bg-[#B94A36] px-8 py-5 flex justify-between items-center rounded-t-sm">
-                    <div className="flex items-center gap-3">
-                      <img 
-                        src="/logo-arienzo.png" 
-                        alt="Arienzo Boutique Living" 
-                        className="h-9 w-auto object-contain max-w-[140px]" 
-                      />
+              {/* --- INICIO DEL CONTENEDOR PDF (INTOCABLE PARA QUE LA ESTRUCTURA SE MANTENGA AL IMPRIMIR/ENVIAR) --- */}
+              <div id="plantilla-pdf-arienzo" className="flex flex-col gap-0 scale-95 sm:scale-100 origin-top transform">
+                
+                {/* --- PÁGINA 1: COTIZACIÓN FINANCIERA --- */}
+                <div className="contenedor-a4 bg-white p-10 flex flex-col justify-between text-neutral-900 rounded-sm shadow-2xl relative">
+                  <div>
+                    <div className="bg-[#B94A36] px-8 py-5 flex justify-between items-center rounded-t-sm">
+                      <div className="flex items-center gap-3">
+                        <img 
+                          src="/logo-arienzo.png" 
+                          alt="Arienzo Boutique Living" 
+                          className="h-9 w-auto object-contain max-w-[140px]" 
+                        />
+                      </div>
+                      <div className="text-right text-white">
+                        <h3 className="text-[10px] font-semibold tracking-wider uppercase opacity-90">Propuesta de Inversión</h3>
+                        <p className="text-[9px] mt-0.5 font-light opacity-75">Emisión: {new Date().toLocaleDateString('es-EC')}</p>
+                        <p className="text-[9px] mt-0.5 font-bold text-red-200">Válida hasta: {formatearFechaLegible(fechaCaducidad)}</p>
+                      </div>
                     </div>
-                    <div className="text-right text-white">
-                      <h3 className="text-[10px] font-semibold tracking-wider uppercase opacity-90">Propuesta de Inversión</h3>
-                      <p className="text-[9px] mt-0.5 font-light opacity-75">Emisión: {new Date().toLocaleDateString('es-EC')}</p>
-                      <p className="text-[9px] mt-0.5 font-bold text-red-200">Válida hasta: {formatearFechaLegible(fechaCaducidad)}</p>
+
+                    <div className="my-3 border-b border-neutral-100 pb-2 text-left">
+                      <span className="text-[8px] uppercase tracking-wider text-neutral-400 block">Inversionista de Propuesta</span>
+                      <p className="text-sm font-semibold text-neutral-800">{clienteDataCompleta ? `${clienteDataCompleta.nombres} ${clienteDataCompleta.apellidos}` : 'Cliente Anónimo / Prospecto Rápido'}</p>
                     </div>
-                  </div>
 
-                  <div className="my-3 border-b border-neutral-100 pb-2 text-left">
-                    <span className="text-[8px] uppercase tracking-wider text-neutral-400 block">Inversionista de Propuesta</span>
-                    <p className="text-sm font-semibold text-neutral-800">{nombreClienteActivo}</p>
-                  </div>
-
-                  <div className="mb-4">
-                    <div className="flex items-center justify-between bg-[#F9F7F5] p-3 rounded-md border border-[#EAE3DC] text-[10px]">
-                      <div className="flex-1 text-left border-r border-[#EAE3DC] pr-2">
-                        <span className="text-[7px] text-neutral-400 uppercase block mb-0.5">Unidad</span>
-                        <span className="font-bold text-neutral-800">Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero}</span>
-                      </div>
-                      <div className="flex-1 text-left border-r border-[#EAE3DC] px-2">
-                        <span className="text-[7px] text-neutral-400 uppercase block mb-0.5">Tipología</span>
-                        <span className="font-semibold text-neutral-800">{tipologia}</span>
-                      </div>
-                      <div className="flex-[1.5] text-left border-r border-[#EAE3DC] px-2">
-                        <span className="text-[7px] text-neutral-400 uppercase block mb-0.5">Complementos Asignados</span>
-                        <span className="font-semibold text-neutral-700 block">P: {parqueaderoTexto}</span>
-                        <span className="font-semibold text-neutral-700 block mt-0.5">B: {bodegaAsignada}</span>
-                      </div>
-                      <div className={`flex-1 text-center ${esLocal ? '' : 'border-r border-[#EAE3DC]'} px-2`}>
-                        <span className="text-[7px] text-neutral-400 uppercase block mb-0.5">Área Total</span>
-                        <span className="font-semibold text-neutral-800">{areaTotal}m²</span>
-                      </div>
-                      {!esLocal && (
-                        <div className="flex-[1.4] text-right pl-2">
-                          <span className="text-[7px] text-neutral-400 uppercase block mb-0.5">Valor m² (Pre Lanzamiento)</span>
-                          <span className="font-bold text-[#B94A36] font-mono text-[11px]">${valorM2Lanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}/m²</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="mb-2">
-                    <h4 className="text-[8px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Plan de Financiamiento Específico</h4>
-                    <table className="w-full text-left text-[11px] border-collapse">
-                      <thead>
-                        <tr className="border-b border-neutral-200 text-neutral-500 text-[8px] uppercase tracking-wider">
-                          <th className="pb-1">Concepto Estructurado</th>
-                          <th className="pb-1 text-center">Fecha / Control</th>
-                          <th className="pb-1 text-center">Porcentaje</th>
-                          <th className="pb-1 text-right">Monto</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-neutral-100 text-neutral-700">
-                        <tr>
-                          <td className="py-1 text-neutral-600 font-light">Valor {esLocal ? 'del Local Comercial' : 'del Departamento (Pre Lanzamiento)'}</td>
-                          <td className="py-1 text-center text-neutral-400">—</td>
-                          <td className="py-1 text-center text-neutral-400">—</td>
-                          <td className="py-1 text-right font-mono text-neutral-700">${precioDeptoPreLanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                        </tr>
-                        
-                        {!esLocal && (
-                          <tr>
-                            <td className="py-1 text-neutral-600 font-light"><span className="text-neutral-400 mr-1 font-mono">(+)</span> Valor Parqueo y Bodega (Pre Lanzamiento)</td>
-                            <td className="py-1 text-center text-neutral-400">—</td>
-                            <td className="py-1 text-center text-neutral-400">—</td>
-                            <td className="py-1 text-right font-mono text-neutral-700">${valAnexosPreLanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                          </tr>
-                        )}
-                        
-                        {montoDescuentoCalculado > 0 && (
-                          <tr className="bg-red-50/40 text-red-900">
-                            <td className="py-1 pl-2 italic"><span className="text-red-700 mr-1 font-mono">(-)</span> Descuento Adicional {motivoDescuento && `(${motivoDescuento})`}</td>
-                            <td className="py-1 text-center text-red-700">—</td>
-                            <td className="py-1 text-center font-medium">
-                              {tipoDescuento === 'porcentaje' ? `${valorDescuento}%` : 'Fijo'}
-                            </td>
-                            <td className="py-1 text-right font-mono font-medium">-${montoDescuentoCalculado.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                          </tr>
-                        )}
-                        
-                        <tr className="font-bold border-t-2 border-neutral-800 text-neutral-950">
-                          <td className="py-2"><span className="text-neutral-600 mr-1 font-mono">(=)</span> Valor Total de Venta</td>
-                          <td className="py-2 text-center text-neutral-400">—</td>
-                          <td className="py-2 text-center text-neutral-400">—</td>
-                          <td className="py-2 text-right font-mono text-[12px]">${precioTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                        </tr>
-                        
-                        <tr>
-                          <td className="py-1.5 pl-3 text-neutral-600">↳ Reserva para Bloqueo</td>
-                          <td className="py-1.5 text-center text-neutral-700 text-[10px]">
-                            {incluirFechas ? formatearFechaLegible(fechaReserva) : 'Inmediato'}
-                          </td>
-                          <td className="py-1.5 text-center text-neutral-400">—</td>
-                          <td className="py-1.5 text-right font-medium font-mono">${reservaValor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                        </tr>
-                        <tr className="bg-[#F9F7F5]">
-                          <td className="py-1 pl-3 text-neutral-600">
-                            ↳ Abono Inicial Promesa {mesesInicial > 1 ? `(Diferido en ${mesesInicial} meses)` : ''}
-                          </td>
-                          <td className="py-1 text-center text-neutral-700 text-[10px]">
-                            {mesesInicial > 1 
-                              ? `${mesesInicial} pagos de $${cuotaInicialMensual.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` 
-                              : (incluirFechas ? formatearFechaLegible(fechaFirmaPromesa) : 'Plazo Convenido')}
-                          </td>
-                          <td className="py-1 text-center text-neutral-400">{Number(pctFirmaReal.toFixed(1))}%</td>
-                          <td className="py-1 text-right font-medium font-mono">${saldoFirmaPromesa > 0 ? saldoFirmaPromesa.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}</td>
-                        </tr>
-                        <tr>
-                          <td className="py-1 pl-3 font-medium text-neutral-800">↳ Monto Diferido Construcción</td>
-                          <td className="py-1 text-center text-neutral-500 text-[10px]">Diferido mensual</td>
-                          <td className="py-1 text-center text-neutral-400">{Number(pctEntradaReal.toFixed(1))}%</td>
-                          <td className="py-1 text-right font-medium font-mono">${entradaDiferirTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                        </tr>
-                        <tr className="bg-[#F9F7F5]">
-                          <td className="py-1.5 pl-3 font-bold text-[#B94A36]">↳ Saldo Final Contra Entrega</td>
-                          <td className="py-1.5 text-center text-neutral-500 text-[10px]">A la entrega física</td>
-                          <td className="py-1.5 text-center text-[#B94A36]">{Number(pctContraEntregaReal.toFixed(1))}%</td>
-                          <td className="py-1.5 text-right font-bold text-[#B94A36] font-mono">${contraEntrega.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                  
-                  {!esLocal && (
-                    <p className="text-[7px] text-neutral-400 italic mb-4 text-center">* Nota: El Valor Total de Venta detallado ya considera un beneficio especial del 5% de descuento por etapa de pre-lanzamiento respecto al precio de lista estándar.</p>
-                  )}
-
-                  {/* Cronograma Mensual */}
-                  {entradaDiferirTotal > 0 && (
                     <div className="mb-4">
-                      <h4 className="text-[8px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Cronograma de Pagos ({mesesConstruccion} Dividendos)</h4>
-                      <div className="grid grid-cols-2 gap-x-4 border border-[#EAE3DC] p-2.5 rounded-md bg-[#F9F7F5] items-start text-[9px]">
-                        <div className="space-y-0.5">
-                          {cuotasDivididas.columnaIzquierda.map((cuota) => (
-                            <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-200/60 py-0.5">
-                              <span className="text-neutral-500">C{cuota.numeroCuota} | {cuota.fechaPago}</span>
-                              <span className="font-semibold text-neutral-800 font-mono">${cuota.valor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                            </div>
-                          ))}
+                      <div className="flex items-center justify-between bg-[#F9F7F5] p-3 rounded-md border border-[#EAE3DC] text-[10px]">
+                        <div className="flex-1 text-left border-r border-[#EAE3DC] pr-2">
+                          <span className="text-[7px] text-neutral-400 uppercase block mb-0.5">Unidad</span>
+                          <span className="font-bold text-neutral-800">Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero}</span>
                         </div>
-                        <div className="space-y-0.5">
-                          {cuotasDivididas.columnaDerecha.map((cuota) => (
-                            <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-200/60 py-0.5">
-                              <span className="text-neutral-500">C{cuota.numeroCuota} | {cuota.fechaPago}</span>
-                              <span className="font-semibold text-neutral-800 font-mono">${cuota.valor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                            </div>
-                          ))}
+                        <div className="flex-1 text-left border-r border-[#EAE3DC] px-2">
+                          <span className="text-[7px] text-neutral-400 uppercase block mb-0.5">Tipología</span>
+                          <span className="font-semibold text-neutral-800">{tipologia}</span>
                         </div>
+                        <div className="flex-[1.5] text-left border-r border-[#EAE3DC] px-2">
+                          <span className="text-[7px] text-neutral-400 uppercase block mb-0.5">Complementos Asignados</span>
+                          <span className="font-semibold text-neutral-700 block">P: {parqueaderoTexto}</span>
+                          <span className="font-semibold text-neutral-700 block mt-0.5">B: {bodegaAsignada}</span>
+                        </div>
+                        <div className={`flex-1 text-center ${esLocal ? '' : 'border-r border-[#EAE3DC]'} px-2`}>
+                          <span className="text-[7px] text-neutral-400 uppercase block mb-0.5">Área Total</span>
+                          <span className="font-semibold text-neutral-800">{areaTotal}m²</span>
+                        </div>
+                        {!esLocal && (
+                          <div className="flex-[1.4] text-right pl-2">
+                            <span className="text-[7px] text-neutral-400 uppercase block mb-0.5">Valor m² (Pre Lanzamiento)</span>
+                            <span className="font-bold text-[#B94A36] font-mono text-[11px]">{"$"}{valorM2Lanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}/m²</span>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  )}
 
-                  <div className="mb-4 bg-[#F9F7F5] border border-[#EAE3DC] rounded-md p-3">
-                    <h4 className="text-[8px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Valores Agregados a la Unidad</h4>
-                    <ul className="text-[9px] text-neutral-700 space-y-1 pl-3 list-disc marker:text-[#DEB886]">
-                      {esLocal ? (
-                        <li><span className="font-semibold text-neutral-800">Complemento Inmobiliario:</span> La unidad incluye {cantidadParqueos} parqueo{cantidadParqueos !== 1 ? 's' : ''}.</li>
-                      ) : (
-                        <li><span className="font-semibold text-neutral-800">Complementos Inmobiliarios:</span> El Valor Total de Venta ya contempla la asignación de los parqueos y la bodega detallados en la ficha técnica.</li>
-                      )}
-                      
-                      {!esLocal && incluirClima && (
-                        <li><span className="font-semibold text-neutral-800">Climatización Estética:</span> Sistema de aire acondicionado integral empotrado en el tumbado para todos los ambientes del departamento.</li>
-                      )}
+                    <div className="mb-2">
+                      <h4 className="text-[8px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Plan de Financiamiento Específico</h4>
+                      <table className="w-full text-left text-[11px] border-collapse">
+                        <thead>
+                          <tr className="border-b border-neutral-200 text-neutral-500 text-[8px] uppercase tracking-wider">
+                            <th className="pb-1">Concepto Estructurado</th>
+                            <th className="pb-1 text-center">Fecha / Control</th>
+                            <th className="pb-1 text-center">Porcentaje</th>
+                            <th className="pb-1 text-right">Monto</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neutral-100 text-neutral-700">
+                          <tr>
+                            <td className="py-1 text-neutral-600 font-light">Valor {esLocal ? 'del Local Comercial' : 'del Departamento (Pre Lanzamiento)'}</td>
+                            <td className="py-1 text-center text-neutral-400">—</td>
+                            <td className="py-1 text-center text-neutral-400">—</td>
+                            <td className="py-1 text-right font-mono text-neutral-700">{"$"}{precioDeptoPreLanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                          </tr>
+                          
+                          {!esLocal && (
+                            <tr>
+                              <td className="py-1 text-neutral-600 font-light"><span className="text-neutral-400 mr-1 font-mono">(+)</span> Valor Parqueo y Bodega (Pre Lanzamiento)</td>
+                              <td className="py-1 text-center text-neutral-400">—</td>
+                              <td className="py-1 text-center text-neutral-400">—</td>
+                              <td className="py-1 text-right font-mono text-neutral-700">{"$"}{valAnexosPreLanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                            </tr>
+                          )}
+                          
+                          {montoDescuentoCalculado > 0 && (
+                            <tr className="bg-red-50/40 text-red-900">
+                              <td className="py-1 pl-2 italic"><span className="text-red-700 mr-1 font-mono">(-)</span> Descuento Adicional {motivoDescuento && `(${motivoDescuento})`}</td>
+                              <td className="py-1 text-center text-red-700">—</td>
+                              <td className="py-1 text-center font-medium">
+                                {tipoDescuento === 'porcentaje' ? `${valorDescuento}%` : 'Fijo'}
+                              </td>
+                              <td className="py-1 text-right font-mono font-medium">-{"$"}{montoDescuentoCalculado.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                            </tr>
+                          )}
+                          
+                          <tr className="font-bold border-t-2 border-neutral-800 text-neutral-950">
+                            <td className="py-2"><span className="text-neutral-600 mr-1 font-mono">(=)</span> Valor Total de Venta</td>
+                            <td className="py-2 text-center text-neutral-400">—</td>
+                            <td className="py-2 text-center text-neutral-400">—</td>
+                            <td className="py-2 text-right font-mono text-[12px]">{"$"}{precioTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                          </tr>
+                          
+                          <tr>
+                            <td className="py-1.5 pl-3 text-neutral-600">↳ Reserva para Bloqueo</td>
+                            <td className="py-1.5 text-center text-neutral-700 text-[10px]">
+                              {incluirFechas ? formatearFechaLegible(fechaReserva) : 'Inmediato'}
+                            </td>
+                            <td className="py-1.5 text-center text-neutral-400">—</td>
+                            <td className="py-1.5 text-right font-medium font-mono">{"$"}{reservaValor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                          </tr>
+                          <tr className="bg-[#F9F7F5]">
+                            <td className="py-1 pl-3 text-neutral-600">
+                              ↳ Abono Inicial Promesa {mesesInicial > 1 ? `(Diferido en ${mesesInicial} meses)` : ''}
+                            </td>
+                            <td className="py-1 text-center text-neutral-700 text-[10px]">
+                              {mesesInicial > 1 
+                                ? `${mesesInicial} pagos de $${cuotaInicialMensual.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` 
+                                : (incluirFechas ? formatearFechaLegible(fechaFirmaPromesa) : 'Plazo Convenido')}
+                            </td>
+                            <td className="py-1 text-center text-neutral-400">{Number(pctFirmaReal.toFixed(1))}%</td>
+                            <td className="py-1 text-right font-medium font-mono">{"$"}{saldoFirmaPromesa > 0 ? saldoFirmaPromesa.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}</td>
+                          </tr>
+                          <tr>
+                            <td className="py-1 pl-3 font-medium text-neutral-800">↳ Monto Diferido Construcción</td>
+                            <td className="py-1 text-center text-neutral-500 text-[10px]">Diferido mensual</td>
+                            <td className="py-1 text-center text-neutral-400">{Number(pctEntradaReal.toFixed(1))}%</td>
+                            <td className="py-1 text-right font-medium font-mono">{"$"}{entradaDiferirTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                          </tr>
+                          <tr className="bg-[#F9F7F5]">
+                            <td className="py-1.5 pl-3 font-bold text-[#B94A36]">↳ Saldo Final Contra Entrega</td>
+                            <td className="py-1.5 text-center text-neutral-500 text-[10px]">A la entrega física</td>
+                            <td className="py-1.5 text-center text-[#B94A36]">{Number(pctContraEntregaReal.toFixed(1))}%</td>
+                            <td className="py-1.5 text-right font-bold text-[#B94A36] font-mono">{"$"}{contraEntrega.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    
+                    {!esLocal && (
+                      <p className="text-[7px] text-neutral-400 italic mb-4 text-center">* Nota: El Valor Total de Venta detallado ya considera un beneficio especial del 5% de descuento por etapa de pre-lanzamiento respecto al precio de lista estándar.</p>
+                    )}
 
-                      {!esLocal && incluirBbq && (
-                        <li><span className="font-semibold text-neutral-800">Área de BBQ en Terraza:</span> Adecuación de espacio exterior con mesón y recubrimientos listos para su uso (no incluye parrilla ni equipos).</li>
-                      )}
+                    {/* Cronograma Mensual */}
+                    {entradaDiferirTotal > 0 && (
+                      <div className="mb-4">
+                        <h4 className="text-[8px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Cronograma de Pagos ({mesesConstruccion} Dividendos)</h4>
+                        <div className="grid grid-cols-2 gap-x-4 border border-[#EAE3DC] p-2.5 rounded-md bg-[#F9F7F5] items-start text-[9px]">
+                          <div className="space-y-0.5">
+                            {cuotasDivididas.columnaIzquierda.map((cuota) => (
+                              <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-200/60 py-0.5">
+                                <span className="text-neutral-500">C{cuota.numeroCuota} | {cuota.fechaPago}</span>
+                                <span className="font-semibold text-neutral-800 font-mono">{"$"}{cuota.valor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="space-y-0.5">
+                            {cuotasDivididas.columnaDerecha.map((cuota) => (
+                              <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-200/60 py-0.5">
+                                <span className="text-neutral-500">C{cuota.numeroCuota} | {cuota.fechaPago}</span>
+                                <span className="font-semibold text-neutral-800 font-mono">{"$"}{cuota.valor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
-                      {!esLocal && (
-                        <li><span className="font-semibold text-neutral-800">Equipamiento:</span> La unidad incluye calentador de agua.</li>
-                      )}
-                    </ul>
+                    <div className="mb-4 bg-[#F9F7F5] border border-[#EAE3DC] rounded-md p-3">
+                      <h4 className="text-[8px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Valores Agregados a la Unidad</h4>
+                      <ul className="text-[9px] text-neutral-700 space-y-1 pl-3 list-disc marker:text-[#DEB886]">
+                        {esLocal ? (
+                          <li><span className="font-semibold text-neutral-800">Complemento Inmobiliario:</span> La unidad incluye {cantidadParqueos} parqueo{cantidadParqueos !== 1 ? 's' : ''}.</li>
+                        ) : (
+                          <li><span className="font-semibold text-neutral-800">Complementos Inmobiliarios:</span> El Valor Total de Venta ya contempla la asignación de los parqueos y la bodega detallados en la ficha técnica.</li>
+                        )}
+                        
+                        {!esLocal && incluirClima && (
+                          <li><span className="font-semibold text-neutral-800">Climatización Estética:</span> Sistema de aire acondicionado integral empotrado en el tumbado para todos los ambientes del departamento.</li>
+                        )}
+
+                        {!esLocal && incluirBbq && (
+                          <li><span className="font-semibold text-neutral-800">Área de BBQ en Terraza:</span> Adecuación de espacio exterior con mesón y recubrimientos listos para su uso (no incluye parrilla ni equipos).</li>
+                        )}
+
+                        {!esLocal && (
+                          <li><span className="font-semibold text-neutral-800">Equipamiento:</span> La unidad incluye calentador de agua.</li>
+                        )}
+                      </ul>
+                    </div>
+
                   </div>
 
-                </div>
-
-                <div className="mt-2">
-                  <div className="grid grid-cols-2 gap-8 text-center text-[9px]">
-                    <div className="border-t border-neutral-300 pt-1.5">
-                      <p className="font-bold text-[#B94A36] uppercase tracking-wider">Arienzo Boutique Living</p>
-                      <p className="text-neutral-400 mt-0.5">Emitido por: {nombreAsesor || 'Konkeri'}</p>
-                    </div>
-                    <div className="border-t border-neutral-300 pt-1.5">
-                      <p className="font-bold text-neutral-800 uppercase tracking-wider">Aceptación de Propuesta</p>
-                      <p className="text-neutral-400 mt-0.5">Firma del Inversionista</p>
+                  <div className="mt-2">
+                    <div className="grid grid-cols-2 gap-8 text-center text-[9px]">
+                      <div className="border-t border-neutral-300 pt-1.5">
+                        <p className="font-bold text-[#B94A36] uppercase tracking-wider">Arienzo Boutique Living</p>
+                        <p className="text-neutral-400 mt-0.5">Emitido por: {nombreAsesor || 'Konkeri'}</p>
+                      </div>
+                      <div className="border-t border-neutral-300 pt-1.5">
+                        <p className="font-bold text-neutral-800 uppercase tracking-wider">Aceptación de Propuesta</p>
+                        <p className="text-neutral-400 mt-0.5">Firma del Inversionista</p>
+                      </div>
                     </div>
                   </div>
                 </div>
+
+                {/* --- PÁGINA 2: PLANO ARQUITECTÓNICO (OPCIONAL) --- */}
+                {incluirPlano && !esLocal && urlPlanoAsignado && (
+                  <div className="contenedor-a4 page-break bg-[#F9F7F5] flex flex-col relative text-neutral-900 shadow-2xl">
+                    {/* Header P2 */}
+                    <div className="bg-[#B94A36] px-10 py-5 flex justify-between items-center z-10 shadow-sm relative">
+                      <img src="/logo-arienzo.png" alt="Arienzo" className="h-8 w-auto object-contain" />
+                      <div className="text-right text-white">
+                        <h3 className="text-[10px] font-semibold tracking-wider uppercase opacity-90">Diseño Arquitectónico</h3>
+                        <p className="text-[10px] mt-0.5 font-bold text-white">Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero}</p>
+                      </div>
+                    </div>
+
+                    {/* Bar Specs */}
+                    <div className="bg-white border-b border-[#EAE3DC] px-10 py-3 flex justify-center gap-12 z-10 shadow-sm relative">
+                      <div className="text-center">
+                        <span className="text-[8px] uppercase tracking-wider text-neutral-400 block mb-0.5">Distribución</span>
+                        <span className="text-[12px] font-bold text-neutral-800">{tipologia}</span>
+                      </div>
+                      <div className="text-center border-l border-[#EAE3DC] pl-12">
+                        <span className="text-[8px] uppercase tracking-wider text-neutral-400 block mb-0.5">Área de la Unidad</span>
+                        <span className="text-[12px] font-bold text-[#B94A36]">{areaTotal} m²</span>
+                      </div>
+                    </div>
+
+                    {/* Plano Image */}
+                    <div className="flex-1 flex items-center justify-center p-12 bg-white relative z-10">
+                       <img src={urlPlanoAsignado} alt="Plano Arienzo" className="w-full h-full max-h-[190mm] object-contain" />
+                    </div>
+
+                    {/* Footer Info */}
+                    <div className="bg-[#21242E] text-white flex items-stretch h-[120px] z-10 relative">
+                      <div className="w-[180px] h-full">
+                        <img src={RENDER_FACHADA} alt="Fachada Arienzo" className="w-full h-full object-cover opacity-90" />
+                      </div>
+                      <div className="flex-1 p-6 flex flex-col justify-center">
+                        <div className="flex items-center gap-3 mb-2">
+                           <img src={LOGO_ARIENZO} alt="Arienzo" className="h-6 w-auto opacity-80" />
+                        </div>
+                        <p className="text-[9px] text-white/70 leading-relaxed max-w-sm">
+                          Diseño eficiente enfocado en confort e iluminación natural, concebido por el prestigioso estudio Diez+Muller. Un estilo de vida superior en el corazón de Barbasquillo.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-              {/* --- FIN PDF --- */}
             </div>
           ) : (
             <>
@@ -810,14 +814,14 @@ export default function CotizadorPage() {
                     Porcentaje (%)
                   </button>
                   <button type="button" onClick={() => { setTipoDescuento('valor'); setValorDescuento(0); }} className={`px-4 py-2 rounded-lg text-xs transition-all font-bold ${tipoDescuento === 'valor' ? 'bg-white text-[#415364] shadow-sm' : 'text-[#415364]/50 hover:text-[#415364]'}`}>
-                    Valor Fijo ($)
+                    Valor Fijo (\$)
                   </button>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 items-end">
                   <div className="sm:col-span-1">
                     <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">
-                      {tipoDescuento === 'porcentaje' ? 'Descuento (%)' : 'Descuento ($)'}
+                      {tipoDescuento === 'porcentaje' ? 'Descuento (%)' : 'Descuento (\$)'}
                     </label>
                     <input type="number" min="0" value={valorDescuento || ''} onChange={(e) => setValorDescuento(Math.max(0, Number(e.target.value)))} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-sm font-mono font-bold outline-none focus:border-[#ea0029]" placeholder="0" />
                   </div>
@@ -830,13 +834,24 @@ export default function CotizadorPage() {
 
               {!esLocal && propiedadSeleccionada && (
                 <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-sm space-y-4">
-                  <h2 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest border-b border-neutral-100 pb-2">3. Presentación de Extras (PDF)</h2>
+                  <div className="flex justify-between items-center border-b border-neutral-100 pb-2">
+                    <h2 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest">3. Presentación de Extras y Anexos (PDF)</h2>
+                  </div>
                   
+                  {/* 🔥 TOGGLE PARA EL PLANO ARQUITECTÓNICO */}
+                  <div className={`flex items-center gap-3 border p-4 rounded-xl cursor-pointer transition-colors ${incluirPlano ? 'bg-[#ea0029]/5 border-[#ea0029]/30' : 'bg-[#415364]/5 border-[#415364]/10 hover:border-[#ea0029]/40'}`} onClick={() => setIncluirPlano(!incluirPlano)}>
+                    <input type="checkbox" checked={incluirPlano} onChange={() => {}} className="w-4 h-4 text-[#ea0029] rounded focus:ring-[#ea0029] cursor-pointer" />
+                    <div>
+                      <p className={`text-xs font-bold ${incluirPlano ? 'text-[#ea0029]' : 'text-[#415364]'}`}>Incluir Plano Arquitectónico en el PDF</p>
+                      <p className="text-[10px] font-medium text-[#415364]/60">Añade una segunda página al documento con el diseño de la tipología y el render de la fachada.</p>
+                    </div>
+                  </div>
+
                   <div className="flex items-center gap-3 bg-[#415364]/5 border border-[#415364]/10 p-4 rounded-xl cursor-pointer hover:border-[#ea0029]/40 transition-colors" onClick={() => setIncluirClima(!incluirClima)}>
                     <input type="checkbox" checked={incluirClima} onChange={() => {}} className="w-4 h-4 text-[#ea0029] rounded focus:ring-[#ea0029] cursor-pointer" />
                     <div>
                       <p className="text-xs font-bold text-[#415364]">Mostrar Climatización Estética</p>
-                      <p className="text-[10px] font-medium text-[#415364]/60">Detalla en el PDF que la unidad incluye aire central empotrado.</p>
+                      <p className="text-[10px] font-medium text-[#415364]/60">Detalla en la hoja de venta que la unidad incluye aire central empotrado.</p>
                     </div>
                   </div>
 
@@ -844,7 +859,7 @@ export default function CotizadorPage() {
                     <input type="checkbox" checked={incluirBbq} onChange={() => {}} className="w-4 h-4 text-[#ea0029] rounded focus:ring-[#ea0029] cursor-pointer" />
                     <div>
                       <p className="text-xs font-bold text-[#415364]">Mostrar Área de BBQ (Terraza)</p>
-                      <p className="text-[10px] font-medium text-[#415364]/60">Agrega el texto descriptivo del mesón en la terraza.</p>
+                      <p className="text-[10px] font-medium text-[#415364]/60">Agrega el texto descriptivo del mesón en la terraza en la hoja de venta.</p>
                     </div>
                   </div>
                 </div>
@@ -919,7 +934,7 @@ export default function CotizadorPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                   
                   <div className="space-y-2">
-                    <label className="block text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">Monto de Reserva ($)</label>
+                    <label className="block text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">Monto de Reserva (\$)</label>
                     <input type="number" min="0" value={reservaValor || ''} onChange={(e) => setReservaValor(Number(e.target.value))} className="w-full bg-white/10 border border-white/20 rounded-xl p-3 text-sm font-mono font-bold text-white outline-none focus:border-[#D1C292] transition-colors" />
                   </div>
 
@@ -928,7 +943,7 @@ export default function CotizadorPage() {
                       <label className="text-[10px] font-bold text-white uppercase tracking-widest">Abono Inicial</label>
                       <div className="flex bg-white/10 p-1 rounded-lg text-[10px] font-bold">
                         <button type="button" onClick={() => setTipoInicial('porcentaje')} className={`px-2 py-1 rounded-md transition-all ${tipoInicial === 'porcentaje' ? 'bg-[#ea0029] text-white shadow-sm' : 'text-white/50 hover:text-white'}`}>%</button>
-                        <button type="button" onClick={() => setTipoInicial('valor')} className={`px-2 py-1 rounded-md transition-all ${tipoInicial === 'valor' ? 'bg-[#ea0029] text-white shadow-sm' : 'text-white/50 hover:text-white'}`}>$</button>
+                        <button type="button" onClick={() => setTipoInicial('valor')} className={`px-2 py-1 rounded-md transition-all ${tipoInicial === 'valor' ? 'bg-[#ea0029] text-white shadow-sm' : 'text-white/50 hover:text-white'}`}>\$</button>
                       </div>
                     </div>
                     <input type="number" min="0" value={valorInicial || ''} onChange={(e) => setValorInicial(Number(e.target.value))} className="w-full bg-white border border-transparent rounded-lg p-2.5 text-sm font-mono font-bold text-[#21242E] outline-none focus:ring-2 focus:ring-[#ea0029]" />
@@ -944,7 +959,7 @@ export default function CotizadorPage() {
                       <label className="text-[10px] font-bold text-white/60 uppercase tracking-widest">Entrada Obra</label>
                       <div className="flex bg-white/10 p-1 rounded-lg text-[10px] font-bold">
                         <button type="button" onClick={() => setTipoEntrada('porcentaje')} className={`px-2 py-1 rounded-md transition-all ${tipoEntrada === 'porcentaje' ? 'bg-[#ea0029] text-white shadow-sm' : 'text-white/50 hover:text-white'}`}>%</button>
-                        <button type="button" onClick={() => setTipoEntrada('valor')} className={`px-2 py-1 rounded-md transition-all ${tipoEntrada === 'valor' ? 'bg-[#ea0029] text-white shadow-sm' : 'text-white/50 hover:text-white'}`}>$</button>
+                        <button type="button" onClick={() => setTipoEntrada('valor')} className={`px-2 py-1 rounded-md transition-all ${tipoEntrada === 'valor' ? 'bg-[#ea0029] text-white shadow-sm' : 'text-white/50 hover:text-white'}`}>\$</button>
                       </div>
                     </div>
                     <input type="number" min="0" value={valorEntrada || ''} onChange={(e) => setValorEntrada(Number(e.target.value))} className="w-full bg-white/10 border border-white/20 rounded-xl p-3 text-sm font-mono font-bold text-white outline-none focus:border-[#D1C292]" />
@@ -977,7 +992,7 @@ export default function CotizadorPage() {
                        <p className="text-[10px] text-[#dce3eb] font-medium leading-relaxed">Configura una <strong className="text-white">cuota base fija</strong> para todo el plan. El saldo sobrante se dividirá automáticamente en tus <strong className="text-white">meses de refuerzo</strong> (ej. utilidades, bonos, venta de activos).</p>
                        <div className="flex flex-col sm:flex-row gap-4 sm:items-end">
                           <div className="flex-1">
-                            <label className="text-[9px] font-bold text-[#dce3eb]/70 uppercase mb-1.5 block">Cuota Fija Base ($)</label>
+                            <label className="text-[9px] font-bold text-[#dce3eb]/70 uppercase mb-1.5 block">Cuota Fija Base (\$)</label>
                             <input type="number" value={cuotaBaseRapida} onChange={e => setCuotaBaseRapida(e.target.value === '' ? '' : Number(e.target.value))} placeholder="Ej: 1500" className="w-full bg-white/10 border border-white/20 p-2.5 text-xs font-mono font-bold text-white rounded-lg outline-none focus:border-white transition-colors"/>
                           </div>
                           <div className="flex-1">
@@ -996,7 +1011,7 @@ export default function CotizadorPage() {
                       <div key={cuota.numeroCuota} className={`flex justify-between items-center p-4 transition-colors ${cuota.esEditable ? 'bg-[#ea0029]/10' : 'bg-white hover:bg-[#dce3eb]/20'}`}>
                         <span className={`text-[11px] font-bold ${cuota.esEditable ? 'text-[#ea0029]' : 'text-[#415364]'}`}>Cuota {cuota.numeroCuota} — <span className="font-medium opacity-70">{cuota.fechaPago}</span></span>
                         <div className={`flex items-center border-b border-dashed pb-0.5 ${cuota.esEditable ? 'border-[#ea0029]/40' : 'border-[#415364]/30'}`}>
-                          <span className={`text-xs mr-1 font-bold ${cuota.esEditable ? 'text-[#ea0029]' : 'text-[#415364]/50'}`}>$</span>
+                          <span className={`text-xs mr-1 font-bold ${cuota.esEditable ? 'text-[#ea0029]' : 'text-[#415364]/50'}`}>{"\$"}</span>
                           <input type="number" step="0.01" value={cuota.valor === 0 ? '' : Number(cuota.valor.toFixed(2))} onChange={(e) => actualizarValorCuota(cuota.numeroCuota, Number(e.target.value))} className={`w-28 bg-transparent text-right text-sm font-bold outline-none font-mono ${cuota.esEditable ? 'text-[#ea0029]' : 'text-[#415364]'}`} />
                         </div>
                       </div>
@@ -1015,11 +1030,11 @@ export default function CotizadorPage() {
               <h2 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest mb-3 border-b border-neutral-100 pb-2">Resumen Financiero</h2>
               {montoDescuentoCalculado > 0 && (
                 <div className="text-[11px] text-[#415364]/40 line-through font-mono font-bold mb-1">
-                  Lista Base: ${precioListaOriginal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                  Lista Base: {"\$"}{precioListaOriginal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                 </div>
               )}
               <div className="text-4xl font-bold tracking-tight text-[#415364] font-mono">
-                ${precioTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                {"\$"}{precioTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
               </div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#415364]/50 mt-1">Valor Total de Venta de la Unidad</p>
             </div>
@@ -1028,63 +1043,76 @@ export default function CotizadorPage() {
               
               <div className="flex justify-between items-center">
                 <span className="text-[11px] font-bold text-[#415364] uppercase tracking-wider">Cuota Inicial ({Number(pctInicialReal.toFixed(1))}%)</span>
-                <span className="font-bold text-[#415364] font-mono">${cuotaInicialTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                <span className="font-bold text-[#415364] font-mono">{"\$"}{cuotaInicialTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
               </div>
               <div className="flex justify-between pl-4 text-[11px] text-[#415364]/70 border-l-2 border-[#ea0029]/30 font-medium">
                 <span>Reserva Inmediata:</span>
-                <span className="font-mono font-bold">${reservaValor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                <span className="font-mono font-bold">{"\$"}{reservaValor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
               </div>
               <div className="flex justify-between pl-4 text-[11px] text-[#415364]/70 border-l-2 border-[#ea0029]/30 font-medium">
                 <span>Firma de Promesa:</span>
                 <span className="font-mono font-bold text-[#415364]">
-                  ${saldoFirmaPromesa > 0 ? saldoFirmaPromesa.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}
+                  {"\$"}{saldoFirmaPromesa > 0 ? saldoFirmaPromesa.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}
                 </span>
               </div>
               
               {mesesInicial > 1 && saldoFirmaPromesa > 0 && (
                 <div className="flex justify-between pl-4 pr-3 py-2 text-[10px] font-bold text-[#ea0029] bg-[#ea0029]/5 rounded-lg border border-[#ea0029]/10">
                   <span>↳ Dividido en {mesesInicial} pagos:</span>
-                  <span className="font-mono">${cuotaInicialMensual.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} c/u</span>
+                  <span className="font-mono">{"\$"}{cuotaInicialMensual.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} c/u</span>
                 </div>
               )}
               
               <div className="flex justify-between items-center border-t border-[#415364]/10 pt-4">
                 <span className="text-[11px] font-bold text-[#415364] uppercase tracking-wider">Diferido Obra ({Number(pctEntradaReal.toFixed(1))}%)</span>
-                <span className="font-bold text-[#415364] font-mono">${entradaDiferirTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                <span className="font-bold text-[#415364] font-mono">{"\$"}{entradaDiferirTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
               </div>
               
               {entradaDiferirTotal > 0 && (
                 <div className="flex justify-between text-[11px] text-[#415364]/60 font-medium bg-[#dce3eb]/30 px-3 py-2 rounded-lg border border-[#415364]/5">
                   <span>{mesesConstruccion} cuotas promedio de:</span>
                   <span className="font-mono font-bold">
-                    ${cronogramaCuotas.length > 0 ? (entradaDiferirTotal / mesesConstruccion).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}
+                    {"\$"}{cronogramaCuotas.length > 0 ? (entradaDiferirTotal / mesesConstruccion).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}
                   </span>
                 </div>
               )}
               
               <div className="flex justify-between items-center border-t-2 border-[#21242E] pt-4 mt-2">
                 <span className="text-[12px] font-bold text-[#21242E] uppercase tracking-widest">Contra Entrega ({Number(pctContraEntregaReal.toFixed(1))}%)</span>
-                <span className="font-bold text-[#21242E] text-lg font-mono">${contraEntrega.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                <span className="font-bold text-[#21242E] text-lg font-mono">{"\$"}{contraEntrega.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
               </div>
             </div>
 
             {propiedadSeleccionada && (
               <div className="space-y-3 pt-6 border-t border-[#415364]/10 mt-auto">
-                <button
-                  onClick={descargarPdfComercial}
-                  disabled={generandoPdf}
-                  className="w-full bg-white border-2 border-[#21242E] text-[#21242E] rounded-xl p-3.5 text-[11px] font-bold uppercase tracking-widest hover:bg-[#21242E] hover:text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path></svg>
-                  {generandoPdf ? 'Generando PDF...' : 'Generar Comercial'}
-                </button>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={descargarPdfComercial}
+                    disabled={generandoPdf}
+                    className="w-full bg-white border-2 border-[#21242E] text-[#21242E] rounded-xl p-3 text-[10px] font-bold uppercase tracking-widest hover:bg-[#21242E] hover:text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  >
+                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path></svg>
+                    {generandoPdf ? 'Generando...' : 'Bajar PDF'}
+                  </button>
+
+                  <button
+                    onClick={enviarCotizacionPorCorreo}
+                    disabled={enviandoCorreo || !clienteDataCompleta?.email}
+                    className={`w-full border-2 rounded-xl p-3 text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-1.5 ${!clienteDataCompleta?.email ? 'bg-neutral-100 border-neutral-200 text-neutral-400 cursor-not-allowed' : 'bg-white border-[#21242E] text-[#21242E] hover:bg-[#21242E] hover:text-white shadow-sm'}`}
+                    title={!clienteDataCompleta?.email ? "El cliente no tiene correo registrado" : "Enviar PDF por correo"}
+                  >
+                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                    {enviandoCorreo ? 'Enviando...' : 'Enviar Email'}
+                  </button>
+                </div>
+
                 <button
                   onClick={guardarCotizacionEnSistema}
                   disabled={guardando}
                   className="w-full bg-[#ea0029] text-white rounded-xl p-3.5 text-[11px] font-bold uppercase tracking-widest hover:bg-[#c90022] transition-colors shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-                  {guardando ? 'Guardando Registro...' : 'Guardar Cotización'}
+                  {guardando ? 'Guardando Registro...' : 'Guardar en CRM'}
                 </button>
               </div>
             )}
