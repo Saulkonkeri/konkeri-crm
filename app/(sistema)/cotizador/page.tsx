@@ -10,7 +10,7 @@ interface CuotaMes {
   esEditable: boolean;
 }
 
-// === MAPEO DE PLANOS ===
+// === MAPEO DE PLANOS ACTUALIZADO ===
 const MAPA_PLANOS = [
   { area: 69.43, url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_%2069,43m2.png' },
   { area: 86.78, url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_86,78m2.png' },
@@ -547,13 +547,13 @@ export default function CotizadorPage() {
             </div>
           ) : pestañaActiva === 'previsualizar' ? (
             
-            // --- CONTENEDOR PRINCIPAL DE PREVISUALIZACIÓN (VISTA REAL SIN DESBORDES) ---
+            // --- CONTENEDOR PRINCIPAL DE PREVISUALIZACIÓN (ESCALA PERFECTA TIPO PDF VISOR) ---
             <div className="bg-[#1a1c23] py-12 px-4 flex justify-center overflow-x-auto w-full rounded-2xl shadow-inner border border-neutral-300">
               
-              <div id="plantilla-pdf-arienzo" className="flex flex-col gap-10 print:gap-0 items-center mx-auto" style={{ width: '210mm' }}>
+              <div id="plantilla-pdf-arienzo" className="flex flex-col gap-12 print:gap-0 items-center mx-auto transform scale-[0.75] md:scale-[0.90] lg:scale-100 origin-top">
                 
                 {/* --- PÁGINA 1: COTIZACIÓN FINANCIERA (DISEÑO ORIGINAL CON SOMBRAS) --- */}
-                <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm', overflow: 'hidden' }} className="hoja-a4 shrink-0 bg-white text-neutral-900 shadow-2xl print:shadow-none relative flex flex-col rounded-md print:rounded-none">
+                <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm' }} className="hoja-a4 shrink-0 bg-white text-neutral-900 shadow-2xl print:shadow-none relative flex flex-col rounded-md print:rounded-none overflow-hidden">
                   
                   <div className="px-10 pt-10 pb-6 flex flex-col h-full">
                     
@@ -635,7 +635,7 @@ export default function CotizadorPage() {
                               <td className="py-1 pl-2 italic"><span className="text-red-700 mr-1 font-mono">(-)</span> Descuento Adicional {motivoDescuento && `(${motivoDescuento})`}</td>
                               <td className="py-1 text-center text-red-700">—</td>
                               <td className="py-1 text-center font-medium">{tipoDescuento === 'porcentaje' ? `${valorDescuento}%` : 'Fijo'}</td>
-                              <td className="py-1 text-right font-mono font-bold">-{"$"}{montoDescuentoCalculado.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                              <td className="py-1 text-right font-mono font-bold">-{"\$"}{montoDescuentoCalculado.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                             </tr>
                           )}
                           <tr className="font-bold border-t border-neutral-300 text-neutral-950">
@@ -734,7 +734,7 @@ export default function CotizadorPage() {
                 </div>
 
                 {/* --- PÁGINA 2: PLANO ARQUITECTÓNICO --- */}
-                <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm', overflow: 'hidden' }} className="hoja-a4 shrink-0 bg-white flex flex-col justify-between text-neutral-900 shadow-2xl print:shadow-none border border-neutral-300 print:border-none rounded-md print:rounded-none mx-auto">
+                <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm' }} className="hoja-a4 shrink-0 bg-white flex flex-col justify-between text-neutral-900 shadow-2xl print:shadow-none rounded-md print:rounded-none overflow-hidden">
                   
                   {/* Header P2: Gorra Negra con Diez+Muller */}
                   <div className="flex items-stretch h-[170px] z-10 shrink-0 w-full bg-[#181A20] text-white">
@@ -879,7 +879,7 @@ export default function CotizadorPage() {
                     <input type="checkbox" checked={incluirClima} onChange={() => {}} className="w-4 h-4 text-[#ea0029] rounded focus:ring-[#ea0029] cursor-pointer" />
                     <div>
                       <p className="text-xs font-bold text-[#415364]">Mostrar Climatización Estética</p>
-                      <p className="text-[10px] font-medium text-[#415364]/60">Detalla en la hoja de venta que la unidad includes aire central empotrado.</p>
+                      <p className="text-[10px] font-medium text-[#415364]/60">Detalla en la hoja de venta que la unidad incluye aire central empotrado.</p>
                     </div>
                   </div>
 
