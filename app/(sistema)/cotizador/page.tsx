@@ -38,7 +38,7 @@ export default function CotizadorPage() {
   const [clientes, setClientes] = useState<any[]>([]);
   const [busquedaCliente, setBusquedaCliente] = useState<string>('');
   const [clienteSeleccionado, setClienteSeleccionado] = useState<string>(''); 
-  const [nombreAsesor, setNombreAsesor] = useState<string>('Saúl Intriago / Debbi Mera');
+  const [nombreAsesor, setNombreAsesor] = useState<string>('Saúl Intriago');
 
   const [incluirFechas, setIncluirFechas] = useState<boolean>(true);
   const [tipoDescuento, setTipoDescuento] = useState<'porcentaje' | 'valor'>('porcentaje');
@@ -546,13 +546,13 @@ export default function CotizadorPage() {
             </div>
           ) : pestañaActiva === 'previsualizar' ? (
             
-            // --- CONTENEDOR PRINCIPAL DE PREVISUALIZACIÓN (CANDADO A4 ESTRICTO) ---
-            <div className="bg-[#e5e5e5] py-8 overflow-auto flex justify-center w-full rounded-2xl shadow-inner border border-neutral-300">
+            // --- VISOR DE PDF A4 ESTRICTO (RESUELVE EL ZONEADO) ---
+            <div className="bg-[#e5e5e5] py-8 px-4 overflow-x-auto overflow-y-auto max-h-[800px] flex justify-center w-full rounded-2xl shadow-inner border border-neutral-300">
               
-              {/* Wrapper Flex que se asegura de mantener la forma A4 en web, idéntico al PDF */}
-              <div id="plantilla-pdf-arienzo" className="flex flex-col gap-10 print:gap-0 items-center transform origin-top scale-[0.65] md:scale-[0.85] lg:scale-100">
+              {/* Contenedor que agrupa ambas hojas, escalado para pantallas normales pero MANTIENE las proporciones reales */}
+              <div id="plantilla-pdf-arienzo" className="flex flex-col gap-10 print:gap-0 items-center transform origin-top scale-[0.70] md:scale-[0.85] lg:scale-100 pb-[300px] md:pb-[100px] lg:pb-0">
                 
-                {/* --- PÁGINA 1: COTIZACIÓN FINANCIERA (CLON DE CAPTURA 16) --- */}
+                {/* --- PÁGINA 1: COTIZACIÓN FINANCIERA (CLON EXACTO DE LA CAPTURA) --- */}
                 <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm', overflow: 'hidden' }} className="hoja-a4 bg-white text-neutral-900 shadow-xl print:shadow-none border border-neutral-300 print:border-none relative flex flex-col rounded-md print:rounded-none mx-auto">
                   
                   <div className="px-10 pt-10 pb-8 flex flex-col h-full">
@@ -575,8 +575,8 @@ export default function CotizadorPage() {
                       <p className="text-[20px] font-bold text-neutral-800">{clienteDataCompleta ? `${clienteDataCompleta.nombres} ${clienteDataCompleta.apellidos}` : 'Cliente Anónimo / Prospecto'}</p>
                     </div>
 
-                    {/* Caja de Detalles de Unidad */}
-                    <div className="mb-6 shrink-0 border border-neutral-200 rounded-lg p-3 bg-[#F9F7F5]/30">
+                    {/* Caja de Detalles de Unidad (Restaurada con bordes y sombra) */}
+                    <div className="mb-6 shrink-0 border border-neutral-200 rounded-xl p-4 bg-white shadow-sm">
                       <div className="flex items-center justify-between text-[10px]">
                         <div className="flex-1 text-left border-r border-neutral-200 pr-2">
                           <span className="text-[7.5px] text-neutral-400 uppercase block mb-1">Unidad</span>
@@ -604,8 +604,9 @@ export default function CotizadorPage() {
                       </div>
                     </div>
 
+                    {/* Tabla de Financiamiento con Encabezados Rojos */}
                     <div className="shrink-0 mb-3">
-                      <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#B94A36] mb-1">Plan de Financiamiento Específico</h4>
+                      <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#B94A36] mb-2">Plan de Financiamiento Específico</h4>
                       <table className="w-full text-left text-[11px] border-collapse">
                         <thead>
                           <tr className="border-b border-[#B94A36] text-[#B94A36] text-[8px] uppercase tracking-wider">
@@ -670,18 +671,18 @@ export default function CotizadorPage() {
                           </tr>
                         </tbody>
                       </table>
-                      <p className="text-[7.5px] text-neutral-400 italic text-center mt-3">* Nota: El Valor Total de Venta detallado ya considera un beneficio especial del 5% de descuento por etapa de pre-lanzamiento respecto al precio de lista estándar.</p>
+                      <p className="text-[7px] text-neutral-400 italic text-center mt-2.5">* Nota: El Valor Total de Venta detallado ya considera un beneficio especial del 5% de descuento por etapa de pre-lanzamiento respecto al precio de lista estándar.</p>
                     </div>
 
-                    {/* Cronograma de Pagos - Formato tabla limpia de 2 columnas */}
+                    {/* Cronograma de Pagos - Resuelto el desborde (Sin overflow-hidden) */}
                     {entradaDiferirTotal > 0 && (
-                      <div className="flex-1 overflow-hidden flex flex-col mb-4">
-                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#B94A36] mb-1">Cronograma de Pagos ({mesesConstruccion} Dividendos)</h4>
-                        <div className="border-t border-[#B94A36] w-full mb-2"></div>
-                        <div className="grid grid-cols-2 gap-x-12 items-start text-[10px] text-neutral-600 flex-1 overflow-hidden">
+                      <div className="flex-1 flex flex-col mb-4">
+                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Cronograma de Pagos ({mesesConstruccion} Dividendos)</h4>
+                        <div className="border-t border-[#B94A36] w-full mb-1.5"></div>
+                        <div className="grid grid-cols-2 gap-x-12 items-start text-[10px] text-neutral-600">
                           <div className="space-y-0.5">
                             {cuotasDivididas.columnaIzquierda.map((cuota) => (
-                              <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-100 py-1">
+                              <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-100 py-0.5">
                                 <span>C{cuota.numeroCuota} | {cuota.fechaPago}</span>
                                 <span className="font-bold text-neutral-800 font-mono">{"$"}{cuota.valor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                               </div>
@@ -689,7 +690,7 @@ export default function CotizadorPage() {
                           </div>
                           <div className="space-y-0.5">
                             {cuotasDivididas.columnaDerecha.map((cuota) => (
-                              <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-100 py-1">
+                              <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-100 py-0.5">
                                 <span>C{cuota.numeroCuota} | {cuota.fechaPago}</span>
                                 <span className="font-bold text-neutral-800 font-mono">{"$"}{cuota.valor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                               </div>
@@ -699,21 +700,23 @@ export default function CotizadorPage() {
                       </div>
                     )}
 
-                    <div className="shrink-0 border border-neutral-200 rounded-lg p-4 bg-[#F9F7F5]/30">
+                    {/* Valores Agregados (Restaurado con bordes y sombra) */}
+                    <div className="shrink-0 border border-neutral-200 rounded-xl p-4 bg-white shadow-sm">
                       <h4 className="text-[9px] font-bold uppercase tracking-widest text-[#B94A36] mb-2">Valores Agregados a la Unidad</h4>
-                      <ul className="text-[9.5px] text-neutral-700 space-y-1.5 pl-3 list-disc marker:text-[#DEB886]">
+                      <ul className="text-[9px] text-neutral-700 space-y-1.5 pl-3 list-disc marker:text-[#DEB886]">
                         {esLocal ? (
                           <li><span className="font-bold text-neutral-800">Complemento Inmobiliario:</span> La unidad incluye {cantidadParqueos} parqueo{cantidadParqueos !== 1 ? 's' : ''}.</li>
                         ) : (
                           <li><span className="font-bold text-neutral-800">Complementos Inmobiliarios:</span> El Valor Total de Venta ya contempla la asignación de los parqueos y la bodega detallados en la ficha técnica.</li>
                         )}
-                        {!esLocal && incluirClima && (<li><span className="font-bold text-neutral-800">Climatización Estética:</span> Sistema de aire acondicionado integral empotrado en el tumbado para todos los ambientes del departamento.</li>)}
                         {!esLocal && (<li><span className="font-bold text-neutral-800">Equipamiento:</span> La unidad incluye calentador de agua.</li>)}
+                        {!esLocal && incluirClima && (<li><span className="font-bold text-neutral-800">Climatización Estética:</span> Sistema de aire acondicionado integral empotrado en el tumbado para todos los ambientes del departamento.</li>)}
+                        {!esLocal && incluirBbq && (<li><span className="font-bold text-neutral-800">Área de BBQ en Terraza:</span> Adecuación de espacio exterior con mesón y recubrimientos listos para su uso (no incluye parrilla ni equipos).</li>)}
                       </ul>
                     </div>
 
                     {/* Espacio Exacto para Firmas - Líneas rectas y simetría total */}
-                    <div className="mt-auto shrink-0 pt-8 pb-4">
+                    <div className="mt-auto shrink-0 pt-6 pb-2">
                       <div className="grid grid-cols-2 gap-24 text-center text-[10px] px-10">
                         <div>
                           <div className="border-t border-neutral-300 w-full mb-2"></div>
@@ -742,8 +745,9 @@ export default function CotizadorPage() {
                     <div className="flex-1 p-8 flex flex-col justify-center border-l border-white/10">
                       <h3 className="text-[16px] font-bold tracking-widest uppercase text-[#D1C292]">Diseño Arquitectónico</h3>
                       <p className="text-[11px] mt-1 font-bold tracking-wider text-white">Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero} | {tipologia}</p>
-                      <p className="text-[11px] text-white/85 leading-relaxed font-light mt-3 pr-4">
-                        Un diseño arquitectónico exclusivo y minuciosamente pensado por el prestigioso arquitecto Siegfried Müller, uno de los más reconocidos del país. Cada espacio ha sido concebido para ofrecer un estilo de vida superior, destacando una distribución inteligente y una selección de acabados de excelente calidad.
+                      {/* Tipografía mejorada y texto modificado de Siegfried Müller */}
+                      <p className="text-[11.5px] text-white/90 leading-[1.8] font-light mt-3 pr-6 tracking-wide">
+                        Un diseño arquitectónico exclusivo y minuciosamente pensado por el arquitecto Siegfried Müller, uno de los más reconocidos del país. Cada espacio ha sido concebido para ofrecer un estilo de vida superior, destacando una distribución inteligente y una selección de acabados de excelente calidad.
                       </p>
                     </div>
                   </div>
@@ -797,24 +801,27 @@ export default function CotizadorPage() {
                      </div>
                   </div>
 
-                  {/* Resumen de Especificaciones Técnicas Detallado */}
-                  <div className="px-12 py-6 bg-[#F9F7F5] shrink-0 border-t border-[#EAE3DC]">
-                     <h4 className="text-[9px] font-bold uppercase tracking-widest text-[#B94A36] mb-4">Resumen de Especificaciones Técnicas y Equipamiento</h4>
-                     <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-[9px] text-neutral-700 leading-relaxed">
+                  {/* Resumen de Especificaciones Técnicas (TEXTO LITERAL INDICADO) */}
+                  <div className="px-12 py-6 bg-white shrink-0 border-t border-[#EAE3DC]">
+                     <h4 className="text-[9.5px] font-bold uppercase tracking-widest text-[#B94A36] mb-4">Resumen de Especificaciones Técnicas y Equipamiento</h4>
+                     <div className="grid grid-cols-2 gap-x-10 gap-y-4 text-[8.5px] text-neutral-700 leading-relaxed">
                         <div>
-                          <p><strong>• Acabados y Estructura:</strong> Pisos de porcelanato importado rectificado (60x120cm). Paredes lisas con revestimiento decorativo. Puertas de madera con chapa natural lacada (h=2.30m).</p>
+                          <p><strong className="text-neutral-900 uppercase">Acabados Interiores:</strong> Pisos de porcelanato importado rectificado de 60 × 120 cm, paredes lisas con revestimientos decorativos y puertas de madera con chapa natural lacada de 2,30 m de altura.</p>
                         </div>
                         <div>
-                          <p><strong>• Mobiliario y Piezas:</strong> Cocina y clósets de melamínico (Madeval o similar). Mesones de piedra sinterizada. Fregadero undercounter (2 pozos). Lavamanos y grifería de línea alta (FV/Edesa).</p>
+                          <p><strong className="text-neutral-900 uppercase">Cocina y Clósets:</strong> Mobiliario de melamínico Madeval o similar. Mesones de piedra sinterizada y fregadero de acero inoxidable de dos pozos, tipo undercounter.</p>
                         </div>
                         <div>
-                          <p><strong>• Diseño Arquitectónico:</strong> Ventanería de aluminio anodizado con vidrio claro (sistema proyectable). Pasamanos de vidrio templado con anclaje inferior.</p>
+                          <p><strong className="text-neutral-900 uppercase">Baños y Grifería:</strong> Mesones de piedra sinterizada, muebles de melamínico, lavamanos FV o Edesa y grifería de línea alta FV o Edesa.</p>
                         </div>
                         <div>
-                          <p><strong>• Amenidades Exclusivas:</strong> Área social de primer nivel con piscina, zona de barbacoa (BBQ), espacios de living y un gimnasio totalmente equipado.</p>
+                          <p><strong className="text-neutral-900 uppercase">Ventanería y Pasamanos:</strong> Ventanas de aluminio anodizado color café, con vidrio claro y sistema de apertura proyectable. Pasamanos de vidrio templado con anclaje inferior.</p>
                         </div>
-                        <div className="col-span-2">
-                          <p><strong>• Equipamiento del Edificio:</strong> Generador eléctrico con cobertura al 100% (áreas privadas y comunales) y ascensor de última generación.</p>
+                        <div>
+                          <p><strong className="text-neutral-900 uppercase">Áreas Comunales y Amenidades:</strong> Área social con piscina, zona de barbacoa (BBQ), espacios de living y gimnasio.</p>
+                        </div>
+                        <div>
+                          <p><strong className="text-neutral-900 uppercase">Equipamiento del Edificio:</strong> Generador eléctrico con cobertura para el 100 % del edificio, incluidas las áreas privadas y comunales. Ascensor para 10 personas.</p>
                         </div>
                      </div>
                   </div>
