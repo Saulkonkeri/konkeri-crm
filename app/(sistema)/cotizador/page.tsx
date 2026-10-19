@@ -23,6 +23,7 @@ const MAPA_PLANOS = [
 ];
 
 const RENDER_FACHADA = 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Frontal.jpg';
+const LOGO_ORIGINAL = 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg';
 const LOGO_BLANCO = 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-blanco.svg';
 
 export default function CotizadorPage() {
@@ -312,26 +313,23 @@ export default function CotizadorPage() {
                   -webkit-print-color-adjust: exact !important; 
                   print-color-adjust: exact !important; 
                   font-family: ui-sans-serif, system-ui, sans-serif; 
-                  background: #e5e5e5;
+                  background: white;
                   margin: 0; padding: 0;
                 }
                 .hoja-a4 { 
                   width: 210mm !important; 
                   height: 297mm !important; 
-                  max-height: 297mm !important; 
-                  page-break-after: always; 
                   box-sizing: border-box; 
                   background: white; 
                   position: relative; 
                   overflow: hidden; 
-                  margin: 0 auto;
+                  margin: 0;
+                  page-break-after: always; 
                 }
-                .page-break { page-break-before: always; }
-                
                 @media print {
                   body { background: white; }
-                  #wrapper { gap: 0 !important; padding: 0 !important; transform: none !important; }
-                  .hoja-a4 { box-shadow: none !important; border: none !important; margin: 0 !important; border-radius: 0 !important; }
+                  #wrapper { gap: 0 !important; padding: 0 !important; transform: none !important; margin: 0 !important; align-items: flex-start !important; justify-content: flex-start !important; }
+                  .hoja-a4 { box-shadow: none !important; border: none !important; border-radius: 0 !important; }
                 }
               </style>
             </head>
@@ -370,8 +368,7 @@ export default function CotizadorPage() {
               <style>
                 @page { size: A4 portrait; margin: 0; }
                 body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; font-family: sans-serif; background: white; margin: 0; padding:0;}
-                .hoja-a4 { width: 210mm; height: 297mm; box-sizing: border-box; background: white; position: relative; overflow: hidden; margin: 0 auto;}
-                .page-break { page-break-before: always; }
+                .hoja-a4 { width: 210mm; height: 297mm; box-sizing: border-box; background: white; position: relative; overflow: hidden; margin: 0 auto; page-break-after: always;}
               </style>
             </head>
             <body>
@@ -551,20 +548,21 @@ export default function CotizadorPage() {
           ) : pestañaActiva === 'previsualizar' ? (
             
             // --- CONTENEDOR PRINCIPAL DE PREVISUALIZACIÓN ---
-            <div className="bg-[#1a1c23] py-12 px-4 sm:px-8 rounded-2xl shadow-inner flex justify-center overflow-x-auto w-full">
+            <div className="bg-[#1a1c23] py-12 px-2 overflow-x-auto w-full flex justify-center shadow-inner rounded-2xl">
               
-              <div id="plantilla-pdf-arienzo" className="flex flex-col gap-10 print:gap-0 items-center mx-auto transform scale-[0.85] sm:scale-100 origin-top">
+              {/* Wrapper Flex que se asegura de mantener la forma A4 en web, idéntico al PDF */}
+              <div id="plantilla-pdf-arienzo" className="flex flex-col gap-10 print:gap-0 items-center mx-auto">
                 
-                {/* --- PÁGINA 1: COTIZACIÓN FINANCIERA --- */}
-                <div className="hoja-a4 w-[210mm] h-[297mm] shrink-0 bg-white flex flex-col text-neutral-900 shadow-2xl print:shadow-none border border-neutral-200 print:border-none relative overflow-hidden rounded-md print:rounded-none">
+                {/* --- PÁGINA 1: COTIZACIÓN FINANCIERA (DISEÑO ORIGINAL PERFECTO) --- */}
+                <div className="hoja-a4 w-[210mm] h-[297mm] shrink-0 bg-white text-neutral-900 shadow-2xl print:shadow-none border border-neutral-200 print:border-none relative flex flex-col overflow-hidden rounded-md print:rounded-none">
                   
-                  <div className="pt-10 px-10 pb-6 flex flex-col h-full">
-                    {/* Header Original */}
+                  <div className="px-10 pt-10 pb-6 flex flex-col h-full">
+                    {/* Header P1 */}
                     <div className="flex justify-between items-start mb-6">
                       <img src="/logo-arienzo.png" alt="Arienzo Boutique Living" className="h-8 w-auto object-contain" />
                       <div className="text-right">
                         <h3 className="text-[12px] font-bold tracking-widest uppercase text-[#B94A36]">Propuesta de Inversión</h3>
-                        <p className="text-[10px] mt-1 font-bold text-neutral-600">Emisión: {new Date().toLocaleDateString('es-EC')} - Válida hasta: {formatearFechaLegible(fechaCaducidad)}</p>
+                        <p className="text-[10px] mt-1 font-bold text-neutral-600">Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero}</p>
                       </div>
                     </div>
 
@@ -574,19 +572,15 @@ export default function CotizadorPage() {
                         <span className="font-bold text-neutral-800 text-[11px]">{clienteDataCompleta ? `${clienteDataCompleta.nombres} ${clienteDataCompleta.apellidos}` : 'Cliente Anónimo'}</span>
                       </div>
                       <div className="text-right">
-                        <span className="block mb-0.5">Unidad</span>
-                        <span className="font-bold text-neutral-800 text-[11px]">Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero}</span>
+                        <span className="block mb-0.5">Tipología</span>
+                        <span className="font-bold text-neutral-800 text-[11px]">{tipologia}</span>
                       </div>
                     </div>
 
                     <div className="mb-4">
                       <div className="flex items-center justify-between text-[10px]">
-                        <div className="flex-1 text-left border-r border-[#EAE3DC] pr-2">
-                          <span className="text-[7px] text-neutral-400 uppercase block mb-0.5">Tipología</span>
-                          <span className="font-semibold text-neutral-800">{tipologia}</span>
-                        </div>
-                        <div className="flex-[1.5] text-left border-r border-[#EAE3DC] px-2">
-                          <span className="text-[7px] text-neutral-400 uppercase block mb-0.5">Complementos Asignados</span>
+                        <div className="flex-[1.5] text-left border-r border-[#EAE3DC] pr-2">
+                          <span className="text-[7px] text-neutral-400 uppercase block mb-0.5">Complementos</span>
                           <span className="font-semibold text-neutral-700 block">P: {parqueaderoTexto} / B: {bodegaAsignada}</span>
                         </div>
                         <div className={`flex-1 text-center ${esLocal ? '' : 'border-r border-[#EAE3DC]'} px-2`}>
@@ -602,7 +596,7 @@ export default function CotizadorPage() {
                       </div>
                     </div>
 
-                    <div className="shrink-0 mb-4">
+                    <div className="shrink-0 mb-3">
                       <h4 className="text-[9px] font-bold uppercase tracking-widest text-[#B94A36] mb-2 border-b border-[#B94A36]/20 pb-1">Plan de Financiamiento Específico</h4>
                       <table className="w-full text-left text-[11px] border-collapse">
                         <thead>
@@ -670,14 +664,14 @@ export default function CotizadorPage() {
                       </table>
                     </div>
 
-                    {/* Cronograma de Pagos - Sin gris de fondo, formato tabla limpia */}
+                    {/* Cronograma de Pagos - Sin gris de fondo, formato de lista a dos columnas */}
                     {entradaDiferirTotal > 0 && (
-                      <div className="flex-1 min-h-0 overflow-hidden mt-2">
+                      <div className="flex-1 min-h-[100px] overflow-hidden mt-1 mb-2">
                         <h4 className="text-[9px] font-bold uppercase tracking-widest text-[#B94A36] mb-2 border-b border-[#B94A36]/20 pb-1">Cronograma de Pagos ({mesesConstruccion} Dividendos)</h4>
                         <div className="grid grid-cols-2 gap-x-12 items-start text-[10px] text-neutral-600 h-full overflow-hidden">
                           <div className="space-y-1">
                             {cuotasDivididas.columnaIzquierda.map((cuota) => (
-                              <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-100 py-1">
+                              <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-100 py-0.5">
                                 <span>C{cuota.numeroCuota} | {cuota.fechaPago}</span>
                                 <span className="font-bold text-neutral-800 font-mono">{"$"}{cuota.valor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                               </div>
@@ -685,7 +679,7 @@ export default function CotizadorPage() {
                           </div>
                           <div className="space-y-1">
                             {cuotasDivididas.columnaDerecha.map((cuota) => (
-                              <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-100 py-1">
+                              <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-100 py-0.5">
                                 <span>C{cuota.numeroCuota} | {cuota.fechaPago}</span>
                                 <span className="font-bold text-neutral-800 font-mono">{"$"}{cuota.valor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                               </div>
@@ -695,7 +689,7 @@ export default function CotizadorPage() {
                       </div>
                     )}
 
-                    <div className="mt-4 shrink-0 bg-[#F9F7F5] border border-[#EAE3DC] rounded-md p-3">
+                    <div className="mt-2 shrink-0 bg-[#F9F7F5] border border-[#EAE3DC] rounded-md p-3">
                       <h4 className="text-[8px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Valores Agregados a la Unidad</h4>
                       <ul className="text-[9px] text-neutral-700 space-y-1 pl-3 list-disc marker:text-[#DEB886]">
                         {esLocal ? (
@@ -705,12 +699,11 @@ export default function CotizadorPage() {
                         )}
                         {!esLocal && incluirClima && (<li><span className="font-semibold text-neutral-800">Climatización Estética:</span> Sistema de aire acondicionado integral empotrado en el tumbado para todos los ambientes del departamento.</li>)}
                         {!esLocal && incluirBbq && (<li><span className="font-semibold text-neutral-800">Área de BBQ en Terraza:</span> Adecuación de espacio exterior con mesón y recubrimientos listos para su uso (no incluye parrilla ni equipos).</li>)}
-                        {!esLocal && (<li><span className="font-semibold text-neutral-800">Equipamiento:</span> La unidad incluye calentador de agua.</li>)}
                       </ul>
                     </div>
 
-                    {/* Espacio Exacto para Firmas */}
-                    <div className="mt-8 shrink-0 pb-4">
+                    {/* Espacio Exacto para Firmas - Margen superior automático y simetría total */}
+                    <div className="mt-auto shrink-0 pb-2 pt-6">
                       <div className="grid grid-cols-2 gap-12 text-center text-[10px] px-10">
                         <div>
                           <p className="font-bold text-[#B94A36] uppercase tracking-wider">Arienzo Boutique Living</p>
@@ -721,7 +714,7 @@ export default function CotizadorPage() {
                           <p className="text-neutral-400 mt-1">Firma del Inversionista</p>
                         </div>
                       </div>
-                      <div className="text-center mt-10">
+                      <div className="text-center mt-8">
                         <p className="text-[7px] text-neutral-400 italic">Documento generado el {new Date().toLocaleString('es-EC')} - Válido hasta {formatearFechaLegible(fechaCaducidad)}</p>
                       </div>
                     </div>
@@ -729,11 +722,11 @@ export default function CotizadorPage() {
                   </div>
                 </div>
 
-                {/* --- PÁGINA 2: PLANO ARQUITECTÓNICO (DISEÑO ABSOLUTO) --- */}
+                {/* --- PÁGINA 2: PLANO ARQUITECTÓNICO (DISEÑO ABSOLUTO Y REFINADO) --- */}
                 {incluirPlano && !esLocal && urlPlanoAsignado && (
-                  <div className="hoja-a4 page-break w-[210mm] h-[297mm] shrink-0 bg-white flex flex-col justify-between text-neutral-900 shadow-2xl print:shadow-none border border-neutral-200 print:border-none overflow-hidden rounded-md print:rounded-none">
+                  <div className="hoja-a4 w-[210mm] h-[297mm] shrink-0 bg-white flex flex-col justify-between text-neutral-900 shadow-2xl print:shadow-none border border-neutral-200 print:border-none overflow-hidden rounded-md print:rounded-none">
                     
-                    {/* Header P2: Render Izquierda (Corte Limpio), Texto Oscuro Derecha */}
+                    {/* Header P2: Gorra Negra Superior con Texto Exclusivo */}
                     <div className="flex items-stretch h-[120px] z-10 shrink-0 w-full bg-[#21242E] text-white">
                       <div className="w-[180px] h-full relative">
                         <img src={RENDER_FACHADA} alt="Fachada Arienzo" className="w-full h-full object-cover" />
@@ -742,12 +735,12 @@ export default function CotizadorPage() {
                         <h3 className="text-[14px] font-bold tracking-widest uppercase text-[#D1C292]">Diseño Arquitectónico</h3>
                         <p className="text-[10px] mt-1 font-bold tracking-wider text-white">Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero} | {tipologia}</p>
                         <p className="text-[8px] text-white/70 leading-relaxed font-light mt-2 max-w-[95%]">
-                          Un estilo de vida superior enfocado en confort e iluminación natural, concebido por el prestigioso estudio Diez+Muller.
+                          Un diseño arquitectónico exclusivo y minuciosamente pensado por el prestigioso estudio Diez+Muller, uno de los más reconocidos del país. Cada espacio ha sido concebido para ofrecer un estilo de vida superior, destacando una distribución inteligente y acabados de la más alta gama.
                         </p>
                       </div>
                     </div>
 
-                    {/* Barra de Íconos Horizontales Fina */}
+                    {/* Barra de Íconos Horizontales Limpia */}
                     <div className="bg-[#F9F7F5] border-b border-[#EAE3DC] px-6 py-4 grid grid-cols-7 gap-1 items-center z-10 shrink-0">
                       
                       <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
@@ -761,7 +754,7 @@ export default function CotizadorPage() {
                         <span className="text-[10px] font-bold text-[#21242E]">{numHabitaciones}</span>
                       </div>
                       <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
-                        <svg className="w-4 h-4 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 8h16M4 8a2 2 0 00-2 2v2a4 4 0 004 4h12a4 4 0 004-4v-2a2 2 0 00-2-2M4 8V4a2 2 0 012-2h4a2 2 0 012 2v4" /></svg>
+                        <svg className="w-4 h-4 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 8V6a2 2 0 012-2h4a2 2 0 012 2v2m-6 3v3m4-3v3m-2-3v3m-6 5h12" /></svg>
                         <span className="text-[6px] font-bold text-neutral-500 uppercase tracking-widest">Baños</span>
                         <span className="text-[10px] font-bold text-[#21242E]">{numBanos}</span>
                       </div>
@@ -787,43 +780,43 @@ export default function CotizadorPage() {
                       </div>
                     </div>
 
-                    {/* Marco del Plano Arquitectónico (Muchísimo Aire y Respiro) */}
+                    {/* Marco del Plano Arquitectónico (Mucho más pequeño y centrado) */}
                     <div className="flex-1 flex items-center justify-center py-6 px-16 bg-white relative z-10 overflow-hidden">
-                       <div className="w-full h-full border border-[#D1C292]/60 rounded-xl flex flex-col items-center justify-center p-8 bg-white relative">
-                          <div className="absolute top-0 left-0 w-full bg-white border-b border-[#D1C292]/30 flex items-center justify-center py-2.5 rounded-t-xl">
+                       <div className="w-full h-full max-h-[140mm] border border-[#D1C292]/60 rounded-xl flex flex-col items-center justify-center p-8 bg-white relative">
+                          <div className="absolute top-0 left-0 w-full bg-[#F9F7F5] border-b border-[#D1C292]/30 flex items-center justify-center py-2.5 rounded-t-xl">
                              <span className="text-[9px] font-bold text-[#B94A36] uppercase tracking-widest">Plano Esquemático de Distribución</span>
                           </div>
-                          <img src={urlPlanoAsignado} alt="Plano Arienzo" className="w-full h-full mt-6 max-h-[125mm] object-contain mix-blend-multiply" />
+                          <img src={urlPlanoAsignado} alt="Plano Arienzo" className="w-full h-full mt-6 object-contain mix-blend-multiply" />
                        </div>
                     </div>
 
-                    {/* Resumen de Especificaciones Técnicas */}
+                    {/* Resumen de Especificaciones Técnicas Detallado */}
                     <div className="px-12 py-5 bg-[#F9F7F5] shrink-0 border-t border-[#EAE3DC]">
-                       <h4 className="text-[8px] font-bold uppercase tracking-widest text-[#B94A36] mb-3">Resumen de Especificaciones Técnicas</h4>
+                       <h4 className="text-[8px] font-bold uppercase tracking-widest text-[#B94A36] mb-3">Resumen de Especificaciones Técnicas y Equipamiento</h4>
                        <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-[8px] text-neutral-700 leading-relaxed">
                           <div>
-                            <p><strong>• Acabados Premium:</strong> Pisos de porcelanato importado rectificado. Puertas de madera con laca natural.</p>
+                            <p><strong>• Acabados Premium:</strong> Pisos de porcelanato importado rectificado de gran formato (60x120cm). Puertas de madera con chapa natural (altura 2.30m).</p>
                           </div>
                           <div>
-                            <p><strong>• Baños de Lujo:</strong> Grifería y sanitarios de gama alta (FV/Edesa). Mesón sinterizado y piso antideslizante.</p>
+                            <p><strong>• Baños de Lujo:</strong> Grifería y sanitarios de gama alta (Línea premium FV/Edesa). Muebles en melamínico y mesón de piedra sinterizada.</p>
                           </div>
                           <div>
-                            <p><strong>• Cocina de Autor:</strong> Mesones de piedra sinterizada. Muebles Madeval o similar. Fregadero undercounter.</p>
+                            <p><strong>• Cocina de Autor:</strong> Muebles de melamínico (Madeval o similar). Mesones de piedra sinterizada. Fregadero undercounter de acero inoxidable.</p>
                           </div>
                           <div>
-                            <p><strong>• Equipamiento:</strong> Incluye calentador de agua. Climatización empotrada {incluirClima ? '(Incluida)' : '(Opcional)'}.</p>
+                            <p><strong>• Diseño Estructural:</strong> Ventanería de aluminio anodizado con vidrio claro (sistema proyectable). Pasamanos de vidrio templado.</p>
                           </div>
                           <div>
-                            <p><strong>• Diseño Arquitectónico:</strong> Ventanales de piso a techo (vidrio 6-8mm). Mampostería sólida estucada.</p>
+                            <p><strong>• Amenidades Exclusivas:</strong> Área social de primer nivel con piscina, zona de barbacoa (BBQ), áreas de living y un gimnasio totalmente equipado.</p>
                           </div>
                           <div>
-                            <p><strong>• Áreas Comunales:</strong> Edificio con generador eléctrico al 100% y ascensor para 10 personas.</p>
+                            <p><strong>• Equipamiento del Edificio:</strong> Generador eléctrico con cobertura al 100% (áreas privadas y comunales) y ascensor de última generación.</p>
                           </div>
                        </div>
                     </div>
 
-                    {/* Footer P2: Terracota Centrado - Franja Sólida */}
-                    <div className="bg-[#B94A36] h-[60px] flex justify-center items-center z-10 shrink-0">
+                    {/* Footer P2: Terracota Grueso */}
+                    <div className="bg-[#B94A36] h-[75px] flex justify-center items-center z-10 shrink-0">
                       <img src={LOGO_BLANCO} alt="Arienzo" className="h-6 w-auto object-contain opacity-95" />
                     </div>
                   </div>
