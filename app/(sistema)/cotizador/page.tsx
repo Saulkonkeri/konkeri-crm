@@ -635,7 +635,7 @@ export default function CotizadorPage() {
                               <td className="py-1 pl-2 italic"><span className="text-red-700 mr-1 font-mono">(-)</span> Descuento Adicional {motivoDescuento && `(${motivoDescuento})`}</td>
                               <td className="py-1 text-center text-red-700">—</td>
                               <td className="py-1 text-center font-medium">{tipoDescuento === 'porcentaje' ? `${valorDescuento}%` : 'Fijo'}</td>
-                              <td className="py-1 text-right font-mono font-bold">-{"\$"}{montoDescuentoCalculado.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                              <td className="py-1 text-right font-mono font-bold">-{"$"}{montoDescuentoCalculado.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                             </tr>
                           )}
                           <tr className="font-bold border-t border-neutral-300 text-neutral-950">
@@ -819,7 +819,7 @@ export default function CotizadorPage() {
                           <p><strong className="text-neutral-900 uppercase">Áreas Comunales y Amenidades:</strong> Área social con piscina, zona de barbacoa (BBQ), espacios de living y gimnasio.</p>
                         </div>
                         <div>
-                          <p><strong className="text-neutral-900 uppercase">Equipamiento del Edificio:</strong> Generador eléctrico con cobertura para el 100 % del edificio, incluidas las áreas privadas y comunales. Ascensor para 10 personas.</p>
+                          <p><strong className="text-neutral-900 uppercase">Equipamiento del Edificio:</strong> Generador eléctrico. Ascensor para 10 personas.</p>
                         </div>
                      </div>
                   </div>
@@ -879,7 +879,7 @@ export default function CotizadorPage() {
                     <input type="checkbox" checked={incluirClima} onChange={() => {}} className="w-4 h-4 text-[#ea0029] rounded focus:ring-[#ea0029] cursor-pointer" />
                     <div>
                       <p className="text-xs font-bold text-[#415364]">Mostrar Climatización Estética</p>
-                      <p className="text-[10px] font-medium text-[#415364]/60">Detalla en la hoja de venta que la unidad incluye aire central empotrado.</p>
+                      <p className="text-[10px] font-medium text-[#415364]/60">Detalla en la hoja de venta que la unidad includes aire central empotrado.</p>
                     </div>
                   </div>
 
