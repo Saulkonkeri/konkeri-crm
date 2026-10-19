@@ -23,7 +23,7 @@ const MAPA_PLANOS = [
 ];
 
 const RENDER_FACHADA = 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Frontal.jpg';
-const LOGO_ORIGINAL = 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg';
+const LOGO_BLANCO = 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-blanco.svg';
 
 export default function CotizadorPage() {
   const [propiedades, setPropiedades] = useState<any[]>([]);
@@ -551,15 +551,15 @@ export default function CotizadorPage() {
             <div className="bg-[#1a1c23] py-8 px-4 sm:px-8 rounded-2xl shadow-inner flex flex-col items-center border border-[#415364]/30 overflow-x-auto">
               
               {/* --- INICIO DEL CONTENEDOR PDF --- */}
-              {/* Separación de 40px (gap-10) en web para ver que son 2 hojas distintas */}
               <div id="plantilla-pdf-arienzo" className="flex flex-col gap-10 print:gap-0 items-center transform scale-95 origin-top sm:scale-100">
                 
                 {/* --- PÁGINA 1: COTIZACIÓN FINANCIERA --- */}
-                <div className="hoja-a4 w-[210mm] h-[297mm] shrink-0 bg-white flex flex-col text-neutral-900 shadow-2xl print:shadow-none border border-neutral-200 print:border-none relative overflow-hidden">
-                  <div className="px-10 pt-10 pb-4 flex flex-col h-full">
+                {/* 🔥 SOLUCIÓN A4: Medidas absolutas y overflow escondido para no deformar */}
+                <div className="hoja-a4 w-[210mm] h-[297mm] bg-white flex flex-col text-neutral-900 shadow-2xl print:shadow-none border border-neutral-200 print:border-none relative overflow-hidden">
+                  <div className="p-8 flex flex-col h-full">
                     
                     {/* Header P1 */}
-                    <div className="bg-[#B94A36] px-8 py-5 flex justify-between items-center rounded-t-sm -mx-10 -mt-10 mb-6 shrink-0 border-b-[4px] border-[#D1C292]">
+                    <div className="bg-[#B94A36] px-8 py-5 flex justify-between items-center rounded-t-sm -mx-8 -mt-8 mb-6 border-b-[4px] border-[#D1C292]">
                       <div className="flex items-center gap-3">
                         <img 
                           src="/logo-arienzo.png" 
@@ -573,13 +573,13 @@ export default function CotizadorPage() {
                       </div>
                     </div>
 
-                    <div className="flex-1 flex flex-col space-y-4">
-                      <div className="border-b border-neutral-100 pb-2 text-left shrink-0">
-                        <span className="text-[8px] uppercase tracking-wider text-neutral-400 block">Inversionista de Propuesta</span>
-                        <p className="text-sm font-semibold text-neutral-800">{clienteDataCompleta ? `${clienteDataCompleta.nombres} ${clienteDataCompleta.apellidos}` : 'Cliente Anónimo / Prospecto Rápido'}</p>
-                      </div>
+                    <div className="my-2 border-b border-neutral-100 pb-2 text-left">
+                      <span className="text-[8px] uppercase tracking-wider text-neutral-400 block">Inversionista de Propuesta</span>
+                      <p className="text-sm font-semibold text-neutral-800">{clienteDataCompleta ? `${clienteDataCompleta.nombres} ${clienteDataCompleta.apellidos}` : 'Cliente Anónimo / Prospecto Rápido'}</p>
+                    </div>
 
-                      <div className="flex items-center justify-between bg-[#F9F7F5] p-3 rounded-md border border-[#EAE3DC] text-[10px] shrink-0">
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between bg-[#F9F7F5] p-3 rounded-md border border-[#EAE3DC] text-[10px]">
                         <div className="flex-1 text-left border-r border-[#EAE3DC] pr-2">
                           <span className="text-[7px] text-neutral-400 uppercase block mb-0.5">Unidad</span>
                           <span className="font-bold text-neutral-800">Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero}</span>
@@ -589,7 +589,7 @@ export default function CotizadorPage() {
                           <span className="font-semibold text-neutral-800">{tipologia}</span>
                         </div>
                         <div className="flex-[1.5] text-left border-r border-[#EAE3DC] px-2">
-                          <span className="text-[7px] text-neutral-400 uppercase block mb-0.5">Complementos Asignados</span>
+                          <span className="text-[7px] text-neutral-400 uppercase block mb-0.5">Complementos</span>
                           <span className="font-semibold text-neutral-700 block">P: {parqueaderoTexto}</span>
                           <span className="font-semibold text-neutral-700 block mt-0.5">B: {bodegaAsignada}</span>
                         </div>
@@ -604,118 +604,118 @@ export default function CotizadorPage() {
                           </div>
                         )}
                       </div>
-
-                      <div className="shrink-0">
-                        <h4 className="text-[8px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Plan de Financiamiento Específico</h4>
-                        <table className="w-full text-left text-[11px] border-collapse">
-                          <thead>
-                            <tr className="border-b border-neutral-200 text-neutral-500 text-[8px] uppercase tracking-wider">
-                              <th className="pb-1">Concepto Estructurado</th>
-                              <th className="pb-1 text-center">Fecha / Control</th>
-                              <th className="pb-1 text-center">Porcentaje</th>
-                              <th className="pb-1 text-right">Monto</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-neutral-100 text-neutral-700">
-                            <tr>
-                              <td className="py-1 text-neutral-600 font-light">Valor {esLocal ? 'del Local Comercial' : 'del Departamento (Pre Lanzamiento)'}</td>
-                              <td className="py-1 text-center text-neutral-400">—</td>
-                              <td className="py-1 text-center text-neutral-400">—</td>
-                              <td className="py-1 text-right font-mono text-neutral-700">{"$"}{precioDeptoPreLanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                            </tr>
-                            {!esLocal && (
-                              <tr>
-                                <td className="py-1 text-neutral-600 font-light"><span className="text-neutral-400 mr-1 font-mono">(+)</span> Valor Parqueo y Bodega (Pre Lanzamiento)</td>
-                                <td className="py-1 text-center text-neutral-400">—</td>
-                                <td className="py-1 text-center text-neutral-400">—</td>
-                                <td className="py-1 text-right font-mono text-neutral-700">{"$"}{valAnexosPreLanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                              </tr>
-                            )}
-                            {montoDescuentoCalculado > 0 && (
-                              <tr className="bg-red-50/40 text-red-900">
-                                <td className="py-1 pl-2 italic"><span className="text-red-700 mr-1 font-mono">(-)</span> Descuento Adicional {motivoDescuento && `(${motivoDescuento})`}</td>
-                                <td className="py-1 text-center text-red-700">—</td>
-                                <td className="py-1 text-center font-medium">{tipoDescuento === 'porcentaje' ? `${valorDescuento}%` : 'Fijo'}</td>
-                                <td className="py-1 text-right font-mono font-medium">-{"$"}{montoDescuentoCalculado.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                              </tr>
-                            )}
-                            <tr className="font-bold border-t-2 border-neutral-800 text-neutral-950">
-                              <td className="py-2"><span className="text-neutral-600 mr-1 font-mono">(=)</span> Valor Total de Venta</td>
-                              <td className="py-2 text-center text-neutral-400">—</td>
-                              <td className="py-2 text-center text-neutral-400">—</td>
-                              <td className="py-2 text-right font-mono text-[12px]">{"$"}{precioTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                            </tr>
-                            <tr>
-                              <td className="py-1.5 pl-3 text-neutral-600">↳ Reserva para Bloqueo</td>
-                              <td className="py-1.5 text-center text-neutral-700 text-[10px]">{incluirFechas ? formatearFechaLegible(fechaReserva) : 'Inmediato'}</td>
-                              <td className="py-1.5 text-center text-neutral-400">—</td>
-                              <td className="py-1.5 text-right font-medium font-mono">{"$"}{reservaValor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                            </tr>
-                            <tr className="bg-[#F9F7F5]">
-                              <td className="py-1 pl-3 text-neutral-600">↳ Abono Inicial Promesa {mesesInicial > 1 ? `(Diferido en ${mesesInicial} meses)` : ''}</td>
-                              <td className="py-1 text-center text-neutral-700 text-[10px]">{mesesInicial > 1 ? `${mesesInicial} pagos de $${cuotaInicialMensual.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : (incluirFechas ? formatearFechaLegible(fechaFirmaPromesa) : 'Plazo Convenido')}</td>
-                              <td className="py-1 text-center text-neutral-400">{Number(pctFirmaReal.toFixed(1))}%</td>
-                              <td className="py-1 text-right font-medium font-mono">{"$"}{saldoFirmaPromesa > 0 ? saldoFirmaPromesa.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}</td>
-                            </tr>
-                            <tr>
-                              <td className="py-1 pl-3 font-medium text-neutral-800">↳ Monto Diferido Construcción</td>
-                              <td className="py-1 text-center text-neutral-500 text-[10px]">Diferido mensual</td>
-                              <td className="py-1 text-center text-neutral-400">{Number(pctEntradaReal.toFixed(1))}%</td>
-                              <td className="py-1 text-right font-medium font-mono">{"$"}{entradaDiferirTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                            </tr>
-                            <tr className="bg-[#F9F7F5]">
-                              <td className="py-1.5 pl-3 font-bold text-[#B94A36]">↳ Saldo Final Contra Entrega</td>
-                              <td className="py-1.5 text-center text-neutral-500 text-[10px]">A la entrega física</td>
-                              <td className="py-1.5 text-center text-[#B94A36]">{Number(pctContraEntregaReal.toFixed(1))}%</td>
-                              <td className="py-1.5 text-right font-bold text-[#B94A36] font-mono">{"$"}{contraEntrega.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-
-                      {/* Cronograma de Pagos - Con ajuste para que ocupe el espacio disponible sin deformar la hoja */}
-                      {entradaDiferirTotal > 0 && (
-                        <div className="flex-1 min-h-[100px]">
-                          <h4 className="text-[8px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Cronograma de Pagos ({mesesConstruccion} Dividendos)</h4>
-                          <div className="grid grid-cols-2 gap-x-4 border border-[#EAE3DC] p-2.5 rounded-md bg-[#F9F7F5] items-start text-[9px] h-full overflow-hidden">
-                            <div className="space-y-0.5">
-                              {cuotasDivididas.columnaIzquierda.map((cuota) => (
-                                <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-200/60 py-0.5">
-                                  <span className="text-neutral-500">C{cuota.numeroCuota} | {cuota.fechaPago}</span>
-                                  <span className="font-semibold text-neutral-800 font-mono">{"$"}{cuota.valor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                                </div>
-                              ))}
-                            </div>
-                            <div className="space-y-0.5">
-                              {cuotasDivididas.columnaDerecha.map((cuota) => (
-                                <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-200/60 py-0.5">
-                                  <span className="text-neutral-500">C{cuota.numeroCuota} | {cuota.fechaPago}</span>
-                                  <span className="font-semibold text-neutral-800 font-mono">{"$"}{cuota.valor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="shrink-0 bg-[#F9F7F5] border border-[#EAE3DC] rounded-md p-3">
-                        <h4 className="text-[8px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Valores Agregados a la Unidad</h4>
-                        <ul className="text-[9px] text-neutral-700 space-y-1 pl-3 list-disc marker:text-[#DEB886]">
-                          {esLocal ? (
-                            <li><span className="font-semibold text-neutral-800">Complemento Inmobiliario:</span> La unidad incluye {cantidadParqueos} parqueo{cantidadParqueos !== 1 ? 's' : ''}.</li>
-                          ) : (
-                            <li><span className="font-semibold text-neutral-800">Complementos Inmobiliarios:</span> El Valor Total de Venta ya contempla la asignación de los parqueos y la bodega detallados en la ficha técnica.</li>
-                          )}
-                          {!esLocal && incluirClima && (<li><span className="font-semibold text-neutral-800">Climatización Estética:</span> Sistema de aire acondicionado integral empotrado en el tumbado para todos los ambientes del departamento.</li>)}
-                          {!esLocal && incluirBbq && (<li><span className="font-semibold text-neutral-800">Área de BBQ en Terraza:</span> Adecuación de espacio exterior con mesón y recubrimientos listos para su uso (no incluye parrilla ni equipos).</li>)}
-                          {!esLocal && (<li><span className="font-semibold text-neutral-800">Equipamiento:</span> La unidad incluye calentador de agua.</li>)}
-                        </ul>
-                      </div>
                     </div>
 
-                    {/* Espacio generoso para la firma */}
-                    <div className="pt-8 mt-auto shrink-0">
-                      <div className="grid grid-cols-2 gap-12 text-center text-[9px] px-10">
+                    <div>
+                      <h4 className="text-[8px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Plan de Financiamiento Específico</h4>
+                      <table className="w-full text-left text-[11px] border-collapse">
+                        <thead>
+                          <tr className="border-b border-neutral-200 text-neutral-500 text-[8px] uppercase tracking-wider">
+                            <th className="pb-1">Concepto Estructurado</th>
+                            <th className="pb-1 text-center">Fecha / Control</th>
+                            <th className="pb-1 text-center">Porcentaje</th>
+                            <th className="pb-1 text-right">Monto</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neutral-100 text-neutral-700">
+                          <tr>
+                            <td className="py-1 text-neutral-600 font-light">Valor {esLocal ? 'del Local Comercial' : 'del Departamento (Pre Lanzamiento)'}</td>
+                            <td className="py-1 text-center text-neutral-400">—</td>
+                            <td className="py-1 text-center text-neutral-400">—</td>
+                            <td className="py-1 text-right font-mono text-neutral-700">{"$"}{precioDeptoPreLanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                          </tr>
+                          {!esLocal && (
+                            <tr>
+                              <td className="py-1 text-neutral-600 font-light"><span className="text-neutral-400 mr-1 font-mono">(+)</span> Valor Parqueo y Bodega (Pre Lanzamiento)</td>
+                              <td className="py-1 text-center text-neutral-400">—</td>
+                              <td className="py-1 text-center text-neutral-400">—</td>
+                              <td className="py-1 text-right font-mono text-neutral-700">{"$"}{valAnexosPreLanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                            </tr>
+                          )}
+                          {montoDescuentoCalculado > 0 && (
+                            <tr className="bg-red-50/40 text-red-900">
+                              <td className="py-1 pl-2 italic"><span className="text-red-700 mr-1 font-mono">(-)</span> Descuento Adicional {motivoDescuento && `(${motivoDescuento})`}</td>
+                              <td className="py-1 text-center text-red-700">—</td>
+                              <td className="py-1 text-center font-medium">{tipoDescuento === 'porcentaje' ? `${valorDescuento}%` : 'Fijo'}</td>
+                              <td className="py-1 text-right font-mono font-medium">-{"$"}{montoDescuentoCalculado.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                            </tr>
+                          )}
+                          <tr className="font-bold border-t-2 border-neutral-800 text-neutral-950">
+                            <td className="py-2"><span className="text-neutral-600 mr-1 font-mono">(=)</span> Valor Total de Venta</td>
+                            <td className="py-2 text-center text-neutral-400">—</td>
+                            <td className="py-2 text-center text-neutral-400">—</td>
+                            <td className="py-2 text-right font-mono text-[12px]">{"$"}{precioTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                          </tr>
+                          <tr>
+                            <td className="py-1.5 pl-3 text-neutral-600">↳ Reserva para Bloqueo</td>
+                            <td className="py-1.5 text-center text-neutral-700 text-[10px]">{incluirFechas ? formatearFechaLegible(fechaReserva) : 'Inmediato'}</td>
+                            <td className="py-1.5 text-center text-neutral-400">—</td>
+                            <td className="py-1.5 text-right font-medium font-mono">{"$"}{reservaValor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                          </tr>
+                          <tr className="bg-[#F9F7F5]">
+                            <td className="py-1 pl-3 text-neutral-600">↳ Abono Inicial Promesa {mesesInicial > 1 ? `(Diferido en ${mesesInicial} meses)` : ''}</td>
+                            <td className="py-1 text-center text-neutral-700 text-[10px]">{mesesInicial > 1 ? `${mesesInicial} pagos de $${cuotaInicialMensual.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : (incluirFechas ? formatearFechaLegible(fechaFirmaPromesa) : 'Plazo Convenido')}</td>
+                            <td className="py-1 text-center text-neutral-400">{Number(pctFirmaReal.toFixed(1))}%</td>
+                            <td className="py-1 text-right font-medium font-mono">{"$"}{saldoFirmaPromesa > 0 ? saldoFirmaPromesa.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}</td>
+                          </tr>
+                          <tr>
+                            <td className="py-1 pl-3 font-medium text-neutral-800">↳ Monto Diferido Construcción</td>
+                            <td className="py-1 text-center text-neutral-500 text-[10px]">Diferido mensual</td>
+                            <td className="py-1 text-center text-neutral-400">{Number(pctEntradaReal.toFixed(1))}%</td>
+                            <td className="py-1 text-right font-medium font-mono">{"$"}{entradaDiferirTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                          </tr>
+                          <tr className="bg-[#F9F7F5]">
+                            <td className="py-1.5 pl-3 font-bold text-[#B94A36]">↳ Saldo Final Contra Entrega</td>
+                            <td className="py-1.5 text-center text-neutral-500 text-[10px]">A la entrega física</td>
+                            <td className="py-1.5 text-center text-[#B94A36]">{Number(pctContraEntregaReal.toFixed(1))}%</td>
+                            <td className="py-1.5 text-right font-bold text-[#B94A36] font-mono">{"$"}{contraEntrega.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Cronograma de Pagos - Altura controlada para no desbordar */}
+                    {entradaDiferirTotal > 0 && (
+                      <div className="mt-3 overflow-hidden">
+                        <h4 className="text-[8px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Cronograma de Pagos ({mesesConstruccion} Dividendos)</h4>
+                        <div className="grid grid-cols-2 gap-x-4 border border-[#EAE3DC] p-2.5 rounded-md bg-[#F9F7F5] items-start text-[9px]">
+                          <div className="space-y-0.5">
+                            {cuotasDivididas.columnaIzquierda.map((cuota) => (
+                              <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-200/60 py-0.5">
+                                <span className="text-neutral-500">C{cuota.numeroCuota} | {cuota.fechaPago}</span>
+                                <span className="font-semibold text-neutral-800 font-mono">{"$"}{cuota.valor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="space-y-0.5">
+                            {cuotasDivididas.columnaDerecha.map((cuota) => (
+                              <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-200/60 py-0.5">
+                                <span className="text-neutral-500">C{cuota.numeroCuota} | {cuota.fechaPago}</span>
+                                <span className="font-semibold text-neutral-800 font-mono">{"$"}{cuota.valor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="mt-3 bg-[#F9F7F5] border border-[#EAE3DC] rounded-md p-3">
+                      <h4 className="text-[8px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Valores Agregados a la Unidad</h4>
+                      <ul className="text-[9px] text-neutral-700 space-y-1 pl-3 list-disc marker:text-[#DEB886]">
+                        {esLocal ? (
+                          <li><span className="font-semibold text-neutral-800">Complemento Inmobiliario:</span> La unidad incluye {cantidadParqueos} parqueo{cantidadParqueos !== 1 ? 's' : ''}.</li>
+                        ) : (
+                          <li><span className="font-semibold text-neutral-800">Complementos Inmobiliarios:</span> El Valor Total de Venta ya contempla la asignación de los parqueos y la bodega detallados en la ficha técnica.</li>
+                        )}
+                        {!esLocal && incluirClima && (<li><span className="font-semibold text-neutral-800">Climatización Estética:</span> Sistema de aire acondicionado integral empotrado en el tumbado para todos los ambientes del departamento.</li>)}
+                        {!esLocal && incluirBbq && (<li><span className="font-semibold text-neutral-800">Área de BBQ en Terraza:</span> Adecuación de espacio exterior con mesón y recubrimientos listos para su uso (no incluye parrilla ni equipos).</li>)}
+                        {!esLocal && (<li><span className="font-semibold text-neutral-800">Equipamiento:</span> La unidad incluye calentador de agua.</li>)}
+                      </ul>
+                    </div>
+
+                    {/* Espacio final de Firmas con margen superior automático para empujarlo al fondo sin desbordar */}
+                    <div className="mt-auto pt-6">
+                      <div className="grid grid-cols-2 gap-12 text-center text-[9px] px-8">
                         <div className="pt-2">
                           <p className="font-bold text-[#B94A36] uppercase tracking-wider">Arienzo Boutique Living</p>
                           <p className="text-neutral-400 mt-0.5">Emitido por: {nombreAsesor || 'Konkeri'}</p>
@@ -735,64 +735,71 @@ export default function CotizadorPage() {
 
                 {/* --- PÁGINA 2: PLANO ARQUITECTÓNICO --- */}
                 {incluirPlano && !esLocal && urlPlanoAsignado && (
-                  <div className="hoja-a4 page-break w-[210mm] h-[297mm] shrink-0 bg-white flex flex-col justify-between text-neutral-900 shadow-2xl print:shadow-none border border-neutral-200 print:border-none overflow-hidden">
+                  <div className="hoja-a4 page-break w-[210mm] h-[297mm] bg-white flex flex-col justify-between text-neutral-900 shadow-2xl print:shadow-none border border-neutral-200 print:border-none overflow-hidden">
                     
-                    {/* Header P2: Terracota para identidad corporativa (Mismo diseño P1) */}
-                    <div className="bg-[#B94A36] px-10 py-6 flex justify-between items-center z-10 shrink-0 border-b-[4px] border-[#D1C292]">
-                      <img src={LOGO_ORIGINAL} alt="Arienzo" className="h-7 w-auto object-contain brightness-0 invert" />
+                    {/* Header P2: Terracota para identidad corporativa (Mismo diseño P1 pero con logo blanco) */}
+                    <div className="bg-[#B94A36] px-10 py-6 flex justify-between items-center z-10 border-b-[4px] border-[#D1C292]">
+                      <img src={LOGO_BLANCO} alt="Arienzo" className="h-5 w-auto object-contain" />
                       <div className="text-right">
                         <h3 className="text-[12px] font-bold tracking-widest uppercase text-white opacity-90">Diseño Arquitectónico</h3>
                         <p className="text-[10px] mt-1 font-bold tracking-wider text-[#D1C292]">Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero} | {tipologia}</p>
                       </div>
                     </div>
 
-                    {/* Barra de Especificaciones con Íconos Ordenados Correctamente */}
-                    <div className="bg-[#F9F7F5] border-b border-neutral-200 px-6 py-5 grid grid-cols-6 gap-2 items-center z-10 shrink-0">
+                    {/* Barra de Especificaciones con Íconos Reordenados EXACTOS */}
+                    <div className="bg-[#F9F7F5] border-b border-neutral-200 px-6 py-4 grid grid-cols-7 gap-1 items-center z-10">
                       
                       {/* Área */}
                       <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
-                        <svg className="w-5 h-5 text-[#B94A36]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                        <svg className="w-5 h-5 text-[#B94A36]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 21l7-7m-7 7v-5m0 5h5M21 3l-7 7m7-7v5m0-5h-5" /></svg>
                         <span className="text-[7px] font-bold text-neutral-500 uppercase tracking-widest">Área Total</span>
-                        <span className="text-[11px] font-black text-[#B94A36]">{areaTotal} m²</span>
+                        <span className="text-[10px] font-black text-[#B94A36]">{areaTotal} m²</span>
                       </div>
 
-                      {/* Dormitorios */}
+                      {/* Dormitorios (Cama) */}
                       <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
-                        <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M5 3v4M3 11V9a2 2 0 012-2h14a2 2 0 012 2v2M3 11h18M3 11v8m18-8v8M5 19v2m14-2v2M8 11v-4m8 4v-4" /></svg>
+                        <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 10h16M4 14h16m-2-4v8m-12-8v8M6 10V8a2 2 0 012-2h8a2 2 0 012 2v2" /></svg>
                         <span className="text-[7px] font-bold text-neutral-500 uppercase tracking-widest">Dormitorios</span>
-                        <span className="text-[11px] font-bold text-[#21242E]">{numHabitaciones}</span>
+                        <span className="text-[10px] font-bold text-[#21242E]">{numHabitaciones}</span>
                       </div>
 
-                      {/* Baños (Ducha minimalista) */}
+                      {/* Baños (Ducha Nueva) */}
                       <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
-                        <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 4v4m0 0c-1.5 0-2.5 1-2.5 2.5m2.5-2.5c1.5 0 2.5 1 2.5 2.5M10.5 14h3m-1.5 3v2M7 19h10a2 2 0 002-2v-5H5v5a2 2 0 002 2zM12 4a2 2 0 100-4 2 2 0 000 4z" /></svg>
+                        <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 8V6a2 2 0 012-2h4a2 2 0 012 2v2m-6 3v3m4-3v3m-2-3v3m-6 5h12" /></svg>
                         <span className="text-[7px] font-bold text-neutral-500 uppercase tracking-widest">Baños</span>
-                        <span className="text-[11px] font-bold text-[#21242E]">{numBanos}</span>
+                        <span className="text-[10px] font-bold text-[#21242E]">{numBanos}</span>
+                      </div>
+
+                      {/* Terraza (Balcón) */}
+                      <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
+                        <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 14h16v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6zM4 14V6a2 2 0 012-2h12a2 2 0 012 2v8M8 14v6m8-6v6" /></svg>
+                        <span className="text-[7px] font-bold text-neutral-500 uppercase tracking-widest">Terraza</span>
+                        <span className="text-[10px] font-bold text-[#21242E]">Sí</span>
                       </div>
 
                       {/* Lavandería (Lavadora frontal) */}
                       <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
                         <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <rect x="5" y="3" width="14" height="18" rx="2" strokeWidth="1.5" />
-                          <circle cx="12" cy="13" r="4" strokeWidth="1.5" />
-                          <path d="M8 6h.01M10 6h.01" strokeWidth="1.5" strokeLinecap="round" />
+                          <circle cx="12" cy="12" r="3" strokeWidth="1.5" />
+                          <path d="M9 6h2M13 6h2" strokeWidth="1.5" strokeLinecap="round" />
                         </svg>
                         <span className="text-[7px] font-bold text-neutral-500 uppercase tracking-widest">Lavandería</span>
-                        <span className="text-[11px] font-bold text-[#21242E]">Sí</span>
+                        <span className="text-[10px] font-bold text-[#21242E]">Sí</span>
                       </div>
 
                       {/* Parqueos (Auto Frente Simple) */}
                       <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
-                        <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M5 10l1.5-4.5A2 2 0 018.4 4h7.2a2 2 0 011.9 1.5L19 10m-14 0v7a2 2 0 002 2h10a2 2 0 002-2v-7m-14 0h14M8 14h.01M16 14h.01" /></svg>
+                        <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M5 13l2-6h10l2 6M5 13v6a1 1 0 001 1h1a1 1 0 001-1v-1h8v1a1 1 0 001 1h1a1 1 0 001-1v-6M5 13h14M8 16h.01M16 16h.01" /></svg>
                         <span className="text-[7px] font-bold text-neutral-500 uppercase tracking-widest">Parqueos</span>
-                        <span className="text-[11px] font-bold text-[#21242E]">{cantidadParqueos}</span>
+                        <span className="text-[10px] font-bold text-[#21242E]">{cantidadParqueos}</span>
                       </div>
 
                       {/* Bodega (Caja 3D) */}
                       <div className="flex flex-col items-center gap-1.5">
-                        <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                        <svg className="w-5 h-5 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16zM3.27 6.96L12 12.01l8.73-5.05M12 22.08V12" /></svg>
                         <span className="text-[7px] font-bold text-neutral-500 uppercase tracking-widest">Bodega</span>
-                        <span className="text-[11px] font-bold text-[#21242E]">{bodegaAsignada && bodegaAsignada.toLowerCase() !== 'ninguna' ? 'Sí' : 'No'}</span>
+                        <span className="text-[10px] font-bold text-[#21242E]">{bodegaAsignada && bodegaAsignada.toLowerCase() !== 'ninguna' ? 'Sí' : 'No'}</span>
                       </div>
                     </div>
 
@@ -807,8 +814,8 @@ export default function CotizadorPage() {
                     </div>
 
                     {/* Footer Limpio: Render Izquierda, Texto Derecha (Sin Blur y Cuadro Perfecto) */}
-                    <div className="bg-[#21242E] text-white flex items-stretch h-[130px] z-10 shrink-0 w-full">
-                      <div className="w-[180px] h-full shrink-0">
+                    <div className="bg-[#21242E] text-white flex items-stretch h-[130px] z-10">
+                      <div className="w-[200px] h-full">
                         <img src={RENDER_FACHADA} alt="Fachada Arienzo" className="w-full h-full object-cover" />
                       </div>
                       <div className="flex-1 p-6 flex flex-col justify-center border-l-4 border-[#D1C292]">
