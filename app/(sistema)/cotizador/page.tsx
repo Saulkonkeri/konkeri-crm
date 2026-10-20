@@ -551,21 +551,21 @@ export default function CotizadorPage() {
             </div>
           ) : pestañaActiva === 'previsualizar' ? (
             
-            // --- CONTENEDOR PRINCIPAL DE PREVISUALIZACIÓN (VISOR PDF ESTILO ADOBE CON SCROLL COMPLETO Y CENTRADO) ---
+            // --- CONTENEDOR PRINCIPAL DE PREVISUALIZACIÓN (VISOR PDF ESTILO ADOBE CON SCROLL NATURAL Y CENTRADO) ---
             <div className="bg-[#525659] w-full rounded-2xl shadow-inner border border-[#415364]/30 overflow-auto max-h-[85vh] custom-scrollbar">
               
-              {/* Este contenedor min-w-max asegura que si la pantalla es pequeña, no aplasta la hoja, sino que habilita el scroll */}
-              <div className="w-max min-w-full py-12 flex flex-col items-center">
+              {/* Este padding y min-w-fit aseguran que la hoja no se recorte a la izquierda en pantallas pequeñas y siempre esté centrada */}
+              <div className="min-w-fit py-12 px-6 flex flex-col items-center">
                 
-                <div id="plantilla-pdf-arienzo" className="flex flex-col gap-12 print:gap-0" style={{ width: '210mm' }}>
+                <div id="plantilla-pdf-arienzo" className="flex flex-col gap-10 print:gap-0 mx-auto" style={{ width: '210mm' }}>
                   
-                  {/* --- PÁGINA 1: COTIZACIÓN FINANCIERA (DISEÑO ORIGINAL LIMPIO SIN FONDOS TERRACOTA) --- */}
-                  <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm' }} className="pdf-page-container bg-white text-neutral-900 shadow-2xl print:shadow-none relative flex flex-col print:rounded-none overflow-hidden mx-auto shrink-0">
+                  {/* --- PÁGINA 1: COTIZACIÓN FINANCIERA (SOMBRAS FUERTES Y COMPACTA) --- */}
+                  <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm' }} className="pdf-page-container bg-white text-neutral-900 shadow-[0_10px_40px_rgba(0,0,0,0.35)] print:shadow-none relative flex flex-col print:rounded-none overflow-hidden shrink-0">
                     
                     <div className="px-10 pt-10 pb-6 flex flex-col h-full">
                       
                       {/* Header P1 */}
-                      <div className="bg-[#B94A36] px-8 py-6 flex justify-between items-center mb-6 shrink-0 rounded-sm">
+                      <div className="bg-[#B94A36] px-8 py-6 flex justify-between items-center mb-6 shrink-0 rounded-[8px]">
                         <div className="flex items-center gap-3">
                           <img src="/logo-arienzo.png" alt="Arienzo Boutique Living" className="h-10 w-auto object-contain" />
                         </div>
@@ -582,8 +582,8 @@ export default function CotizadorPage() {
                         <p className="text-[20px] font-bold text-neutral-800">{clienteDataCompleta ? `${clienteDataCompleta.nombres} ${clienteDataCompleta.apellidos}` : 'Cliente Anónimo / Prospecto'}</p>
                       </div>
 
-                      {/* Caja de Detalles (Diseño limpio original) */}
-                      <div className="mb-4 shrink-0 border border-neutral-200 rounded-xl p-3 bg-white shadow-sm">
+                      {/* Caja de Detalles (Con sombra visible y bordes sutiles) */}
+                      <div className="mb-4 shrink-0 border border-neutral-200 rounded-[10px] p-4 bg-white shadow-md">
                         <div className="flex items-center justify-between text-[10px]">
                           <div className="flex-1 text-left border-r border-neutral-200 pr-2">
                             <span className="text-[7.5px] text-neutral-400 uppercase block mb-1">Unidad</span>
@@ -611,19 +611,19 @@ export default function CotizadorPage() {
                         </div>
                       </div>
 
-                      {/* Plan de Financiamiento Específico - Limpio y sin cajón oscurecido */}
-                      <div className="shrink-0 mb-3">
-                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#B94A36] mb-1">Plan de Financiamiento Específico</h4>
+                      {/* Plan de Financiamiento Específico - En caja con sombra fuerte y color terracota bajito */}
+                      <div className="shrink-0 mb-4 border border-[#EAE3DC] bg-[#FDF8F5] rounded-[10px] p-4 shadow-md">
+                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#B94A36] mb-2">Plan de Financiamiento Específico</h4>
                         <table className="w-full text-left text-[11px] border-collapse">
                           <thead>
                             <tr className="border-b border-[#B94A36] text-[#B94A36] text-[8px] uppercase tracking-wider">
-                              <th className="pb-1 font-bold">Concepto Estructurado</th>
-                              <th className="pb-1 text-center font-bold">Fecha / Control</th>
-                              <th className="pb-1 text-center font-bold">Porcentaje</th>
-                              <th className="pb-1 text-right font-bold">Monto</th>
+                              <th className="pb-1.5 font-bold">Concepto Estructurado</th>
+                              <th className="pb-1.5 text-center font-bold">Fecha / Control</th>
+                              <th className="pb-1.5 text-center font-bold">Porcentaje</th>
+                              <th className="pb-1.5 text-right font-bold">Monto</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-neutral-100 text-neutral-700">
+                          <tbody className="divide-y divide-neutral-200 text-neutral-700">
                             <tr>
                               <td className="py-1 text-neutral-600 font-light">Valor {esLocal ? 'del Local Comercial' : 'del Departamento (Pre Lanzamiento)'}</td>
                               <td className="py-1 text-center text-neutral-400">—</td>
@@ -681,15 +681,15 @@ export default function CotizadorPage() {
                         <p className="text-[7px] text-neutral-400 italic text-center mt-2">* Nota: El Valor Total de Venta detallado ya considera un beneficio especial del 5% de descuento por etapa de pre-lanzamiento respecto al precio de lista estándar.</p>
                       </div>
 
-                      {/* Cronograma de Pagos - Limpio y natural sin cajón oscurecido */}
+                      {/* Cronograma de Pagos - Fondo terracota sutil y sombra fuerte */}
                       {entradaDiferirTotal > 0 && (
-                        <div className="flex-1 flex flex-col mb-4 min-h-0">
-                          <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#B94A36] mb-1">Cronograma de Pagos ({mesesConstruccion} Dividendos)</h4>
-                          <div className="border-t border-[#B94A36] w-full mb-1"></div>
-                          <div className="grid grid-cols-2 gap-x-12 items-start text-[10px] text-neutral-600 flex-1">
+                        <div className="shrink-0 mb-4 border border-[#EAE3DC] bg-[#FDF8F5] rounded-[10px] p-4 shadow-md">
+                          <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Cronograma de Pagos ({mesesConstruccion} Dividendos)</h4>
+                          <div className="border-t border-[#B94A36] w-full mb-1.5"></div>
+                          <div className="grid grid-cols-2 gap-x-12 items-start text-[10px] text-neutral-600">
                             <div className="space-y-0">
                               {cuotasDivididas.columnaIzquierda.map((cuota) => (
-                                <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-100 py-[2.5px]">
+                                <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-200 py-[2px]">
                                   <span>C{cuota.numeroCuota} | {cuota.fechaPago}</span>
                                   <span className="font-bold text-neutral-800 font-mono">{"$"}{cuota.valor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                                 </div>
@@ -697,7 +697,7 @@ export default function CotizadorPage() {
                             </div>
                             <div className="space-y-0">
                               {cuotasDivididas.columnaDerecha.map((cuota) => (
-                                <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-100 py-[2.5px]">
+                                <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-200 py-[2px]">
                                   <span>C{cuota.numeroCuota} | {cuota.fechaPago}</span>
                                   <span className="font-bold text-neutral-800 font-mono">{"$"}{cuota.valor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                                 </div>
@@ -707,8 +707,8 @@ export default function CotizadorPage() {
                         </div>
                       )}
 
-                      {/* Valores Agregados (Diseño Limpio Original) - Pegadito abajo */}
-                      <div className="shrink-0 border border-neutral-200 rounded-xl p-3.5 bg-white shadow-sm mt-auto">
+                      {/* Valores Agregados (Caja flotante y sombra) - Sigue flujo natural, no tiene mt-auto para no empujar a las firmas */}
+                      <div className="shrink-0 border border-neutral-200 bg-white rounded-[10px] p-4 shadow-md">
                         <h4 className="text-[9px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Valores Agregados a la Unidad</h4>
                         <ul className="text-[9px] text-neutral-700 space-y-1 pl-3 list-disc marker:text-[#DEB886]">
                           {esLocal ? (
@@ -722,8 +722,8 @@ export default function CotizadorPage() {
                         </ul>
                       </div>
 
-                      {/* Espacio Exacto para Firmas */}
-                      <div className="shrink-0 pt-6 pb-2">
+                      {/* Espacio Exacto para Firmas (Tiene mt-auto, esto las empuja al fondo y deja un espacio blanco gigante arriba) */}
+                      <div className="mt-auto shrink-0 pt-6 pb-2">
                         <div className="grid grid-cols-2 gap-24 text-center text-[10px] px-10">
                           <div>
                             <div className="border-t border-neutral-300 w-full mb-2"></div>
@@ -742,7 +742,7 @@ export default function CotizadorPage() {
                   </div>
 
                   {/* --- PÁGINA 2: PLANO ARQUITECTÓNICO (SIN FRANJA ROJA SUPERIOR, RENDER AL BORDE Y FOOTER TERRACOTA GRUESO) --- */}
-                  <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm' }} className="pdf-page-container bg-white text-neutral-900 shadow-2xl print:shadow-none relative flex flex-col print:rounded-none overflow-hidden shrink-0 mx-auto">
+                  <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm' }} className="pdf-page-container bg-white text-neutral-900 shadow-[0_10px_40px_rgba(0,0,0,0.35)] print:shadow-none relative flex flex-col print:rounded-none overflow-hidden shrink-0 mx-auto">
                     
                     <div className="px-10 py-10 flex flex-col h-full">
                        
@@ -824,7 +824,7 @@ export default function CotizadorPage() {
                              </div>
                           </div>
 
-                          {/* Nuevo Footer P2: Franja terracota más gruesa (60px) manteniendo logo de Arienzo pequeño (14px) */}
+                          {/* Nuevo Footer P2: Franja terracota más gruesa (60px) manteniendo logo pequeño (14px) */}
                           <div className="bg-[#B94A36] h-[60px] flex justify-center items-center shrink-0">
                              <img src={LOGO_BLANCO} alt="Arienzo Boutique Living" className="h-[14px] w-auto object-contain opacity-95" />
                           </div>
