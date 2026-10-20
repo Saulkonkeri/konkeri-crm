@@ -36,6 +36,7 @@ export default function CotizadorPage() {
   const [mostrarModalCorreo, setMostrarModalCorreo] = useState(false);
   const [enviandoCorreo, setEnviandoCorreo] = useState(false);
   const [mensajeCorreo, setMensajeCorreo] = useState('');
+  const [nombreDestinatarioCorreo, setNombreDestinatarioCorreo] = useState('');
   
   const [pestañaActiva, setPestañaActiva] = useState<'configurar' | 'previsualizar'>('configurar');
 
@@ -130,6 +131,20 @@ export default function CotizadorPage() {
     const b = busquedaCliente.toLowerCase();
     return clientes.filter(c => `${c.nombres || ''} ${c.apellidos || ''}`.toLowerCase().includes(b) || (c.telefono && c.telefono.includes(b)));
   }, [clientes, busquedaCliente]);
+
+  const clienteDataCompleta = useMemo(() => {
+    if (!clienteSeleccionado) return null;
+    return clientes.find(item => item.id.toString() === clienteSeleccionado.toString());
+  }, [clienteSeleccionado, clientes]);
+
+  // Sincronizar el nombre editable cuando cambia el cliente seleccionado
+  useEffect(() => {
+    if (clienteDataCompleta) {
+      setNombreDestinatarioCorreo(`${clienteDataCompleta.nombres || ''} ${clienteDataCompleta.apellidos || ''}`.trim());
+    } else {
+      setNombreDestinatarioCorreo('Cliente / Inversionista');
+    }
+  }, [clienteDataCompleta]);
 
   const { 
     precioListaOriginal, montoDescuentoCalculado, precioDeptoPreLanzamiento, valAnexosPreLanzamiento, precioTotal, 
@@ -283,11 +298,6 @@ export default function CotizadorPage() {
     setMostrarCalculadoraRefuerzos(false); 
   };
 
-  const clienteDataCompleta = useMemo(() => {
-    if (!clienteSeleccionado) return null;
-    return clientes.find(item => item.id.toString() === clienteSeleccionado.toString());
-  }, [clienteSeleccionado, clientes]);
-
   const guardarCotizacionEnSistema = async () => {
     if (!propiedadSeleccionada) return;
     setGuardando(true);
@@ -395,7 +405,7 @@ export default function CotizadorPage() {
             <img src="${LOGO_BLANCO}" height="35" alt="Arienzo Boutique Living" style="display: block; margin: 0 auto;" />
           </div>
           <div style="padding: 35px 30px; color: #415364; font-size: 14px; line-height: 1.6; background-color: #ffffff;">
-            <p style="margin-top: 0;">Estimado/a <strong style="color: #21242E;">${clienteDataCompleta?.nombres}</strong>,</p>
+            <p style="margin-top: 0;">Estimado/a <strong style="color: #21242E;">${nombreDestinatarioCorreo}</strong>,</p>
             <div style="margin-top: 20px; margin-bottom: 25px; color: #415364;">
               ${mensajeCorreo.replace(/\n/g, '<br/>')}
             </div>
@@ -407,7 +417,7 @@ export default function CotizadorPage() {
             ` : ''}
           </div>
           <div style="background-color: #F9F7F5; padding: 15px; text-align: center; border-top: 1px solid #EAE3DC;">
-            <p style="margin: 0; font-size: 10px; color: #9CA3AF; text-transform: uppercase; letter-spacing: 1px;">Este es un mensaje automático de Konkeri CRM</p>
+            <p style="margin: 0; font-size: 10px; color: #9CA3AF; text-transform: uppercase; letter-spacing: 1px;">Este es un mensaje generado desde Konkeri CRM</p>
           </div>
         </div>
       `;
@@ -417,7 +427,7 @@ export default function CotizadorPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           emailDestino: clienteDataCompleta?.email,
-          nombreCliente: clienteDataCompleta?.nombres,
+          nombreCliente: nombreDestinatarioCorreo,
           asesor: nombreAsesor,
           unidad: propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero,
           htmlCotizacion: htmlContent,
@@ -454,7 +464,7 @@ export default function CotizadorPage() {
       {/* --- MODAL DE PREVISUALIZACIÓN DE CORREO (ESTILO CRM) --- */}
       {mostrarModalCorreo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#21242E]/80 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl w-full max-w-[800px] max-h-[95vh] shadow-2xl flex flex-col animate-in fade-in zoom-in-95">
+          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[95vh] shadow-2xl flex flex-col animate-in fade-in zoom-in-95">
             
             <div className="px-6 py-5 border-b border-neutral-100 flex justify-between items-center bg-[#F9F7F5] shrink-0 rounded-t-2xl">
               <div>
@@ -468,13 +478,26 @@ export default function CotizadorPage() {
               </button>
             </div>
             
-            <div className="p-6 overflow-y-auto flex-1 grid grid-cols-1 md:grid-cols-2 gap-8 custom-scrollbar">
+            <div className="p-6 overflow-y-auto flex-1 grid grid-cols-1 lg:grid-cols-2 gap-8 custom-scrollbar">
+              
               <div className="space-y-6">
                 <div className="space-y-3">
                   <div className="bg-[#dce3eb]/30 border border-[#415364]/10 rounded-xl p-3.5">
-                    <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-0.5">Destinatario</p>
-                    <p className="text-sm font-bold text-[#415364]">{clienteDataCompleta?.nombres} {clienteDataCompleta?.apellidos} &lt;{clienteDataCompleta?.email}&gt;</p>
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5 block">Destinatario (Editable)</label>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                      <input 
+                        type="text" 
+                        value={nombreDestinatarioCorreo} 
+                        onChange={(e) => setNombreDestinatarioCorreo(e.target.value)} 
+                        className="flex-1 bg-white border border-[#415364]/20 rounded-lg p-2 text-sm font-bold text-[#415364] outline-none focus:border-[#ea0029]"
+                        placeholder="Nombre del cliente..."
+                      />
+                      <span className="text-xs font-medium text-neutral-500 bg-neutral-100 px-2 py-2 rounded-lg border border-neutral-200 whitespace-nowrap">
+                        &lt;{clienteDataCompleta?.email}&gt;
+                      </span>
+                    </div>
                   </div>
+                  
                   <div className="bg-[#dce3eb]/30 border border-[#415364]/10 rounded-xl p-3.5">
                     <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-0.5">Asunto del Correo</p>
                     <p className="text-[13px] font-medium text-[#415364]">Propuesta de Inversión - Arienzo Boutique Living - Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero}</p>
@@ -512,6 +535,7 @@ export default function CotizadorPage() {
                 </div>
               </div>
 
+              {/* Vista Previa del Correo Cliente */}
               <div className="flex flex-col">
                 <p className="text-[10px] font-bold text-[#415364]/50 uppercase tracking-widest mb-3 flex items-center gap-2">
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
@@ -529,7 +553,7 @@ export default function CotizadorPage() {
                         <img src={LOGO_BLANCO} alt="Arienzo" className="h-5 mx-auto" />
                       </div>
                       <div className="p-5 text-[12px] text-[#415364] leading-relaxed">
-                        <p className="mb-4">Estimado/a <strong className="text-[#21242E]">{clienteDataCompleta?.nombres}</strong>,</p>
+                        <p className="mb-4">Estimado/a <strong className="text-[#21242E]">{nombreDestinatarioCorreo}</strong>,</p>
                         <div className="whitespace-pre-wrap">{mensajeCorreo}</div>
                         {incluirFirmas && (
                           <div className="mt-5 pt-4 border-t border-neutral-100">
@@ -552,6 +576,7 @@ export default function CotizadorPage() {
                   </div>
                 </div>
               </div>
+
             </div>
             
             <div className="p-5 border-t border-neutral-100 bg-white flex justify-end gap-3 shrink-0 rounded-b-2xl">
@@ -702,13 +727,13 @@ export default function CotizadorPage() {
             // --- CONTENEDOR PRINCIPAL DE PREVISUALIZACIÓN (VISOR PDF CON SCROLL NATURAL Y CENTRADO PERFECTO) ---
             <div className="bg-[#525659] w-full rounded-2xl shadow-inner border border-[#415364]/30 overflow-auto max-h-[85vh] custom-scrollbar text-center">
               
-              {/* Contenedor inline-block que garantiza el centrado en pantallas grandes y permite el scroll completo en pantallas pequeñas sin cortar la izquierda */}
+              {/* Contenedor inline-block que garantiza el centrado en pantallas grandes y permite el scroll completo en pantallas pequeñas sin cortar el margen izquierdo */}
               <div className="inline-block text-left py-12 px-4 sm:px-12 min-w-max">
                 
                 <div id="plantilla-pdf-arienzo" className="flex flex-col gap-10 print:gap-0" style={{ width: '210mm' }}>
                   
-                  {/* --- PÁGINA 1: COTIZACIÓN FINANCIERA (DISEÑO ORIGINAL LIMPIO CALCADO AL PDF) --- */}
-                  <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm' }} className="pdf-page-container bg-white text-neutral-900 shadow-2xl print:shadow-none relative flex flex-col print:rounded-none overflow-hidden shrink-0 mx-auto">
+                  {/* --- PÁGINA 1: COTIZACIÓN FINANCIERA (DISEÑO ORIGINAL LIMPIO) --- */}
+                  <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm' }} className="pdf-page-container bg-white text-neutral-900 shadow-2xl print:shadow-none relative flex flex-col print:rounded-none overflow-hidden mx-auto shrink-0">
                     
                     <div className="px-10 pt-10 pb-6 flex flex-col h-full">
                       
@@ -730,7 +755,7 @@ export default function CotizadorPage() {
                         <p className="text-[20px] font-bold text-neutral-800">{clienteDataCompleta ? `${clienteDataCompleta.nombres} ${clienteDataCompleta.apellidos}` : 'Cliente Anónimo / Prospecto'}</p>
                       </div>
 
-                      {/* Caja de Detalles (Diseño limpio original sin sombra) */}
+                      {/* Caja de Detalles */}
                       <div className="mb-4 shrink-0 border border-neutral-200/80 rounded-[8px] p-3 bg-white">
                         <div className="flex items-center justify-between text-[10px]">
                           <div className="flex-1 text-left border-r border-neutral-200 pr-2">
@@ -759,7 +784,7 @@ export default function CotizadorPage() {
                         </div>
                       </div>
 
-                      {/* Plan de Financiamiento Específico - Sin cajón ni sombra, como el PDF */}
+                      {/* Plan de Financiamiento Específico */}
                       <div className="shrink-0 mb-4">
                         <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Plan de Financiamiento Específico</h4>
                         <table className="w-full text-left text-[11px] border-collapse">
@@ -829,7 +854,7 @@ export default function CotizadorPage() {
                         <p className="text-[7px] text-neutral-400 italic text-center mt-2">* Nota: El Valor Total de Venta detallado ya considera un beneficio especial del 5% de descuento por etapa de pre-lanzamiento respecto al precio de lista estándar.</p>
                       </div>
 
-                      {/* Cronograma de Pagos - Sin cajón ni sombra, como el PDF original */}
+                      {/* Cronograma de Pagos */}
                       {entradaDiferirTotal > 0 && (
                         <div className="shrink-0 mb-4">
                           <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Cronograma de Pagos ({mesesConstruccion} Dividendos)</h4>
@@ -855,7 +880,7 @@ export default function CotizadorPage() {
                         </div>
                       )}
 
-                      {/* Valores Agregados - ESTA es la única que lleva el fondo terracota sutil como en el PDF */}
+                      {/* Valores Agregados (Cajón Terracota Sutil) */}
                       <div className="shrink-0 border border-[#EAE3DC] rounded-[8px] p-3.5 bg-[#FDF8F5] mb-4">
                         <h4 className="text-[9px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Valores Agregados a la Unidad</h4>
                         <ul className="text-[9px] text-neutral-700 space-y-1 pl-3 list-disc marker:text-[#DEB886]">
@@ -870,7 +895,7 @@ export default function CotizadorPage() {
                         </ul>
                       </div>
 
-                      {/* Espacio Exacto para Firmas - Con mt-auto se empuja al fondo */}
+                      {/* Espacio para Firmas */}
                       {incluirFirmas && (
                         <div className="mt-auto shrink-0 pt-6 pb-2">
                           <div className="grid grid-cols-2 gap-24 text-center text-[10px] px-10">
@@ -891,7 +916,7 @@ export default function CotizadorPage() {
                     </div>
                   </div>
 
-                  {/* --- PÁGINA 2: PLANO ARQUITECTÓNICO (OPCIONAL, NUEVOS ICONOS LINE-ART Y RENDER AL BORDE) --- */}
+                  {/* --- PÁGINA 2: PLANO ARQUITECTÓNICO CON TUS ICONOS DE SUPABASE --- */}
                   {incluirPlano && (
                     <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm' }} className="pdf-page-container bg-white text-neutral-900 shadow-2xl print:shadow-none relative flex flex-col print:rounded-none overflow-hidden shrink-0 mx-auto">
                       
@@ -900,13 +925,11 @@ export default function CotizadorPage() {
                          {/* Contenedor central Arquitectura */}
                          <div className="flex-1 flex flex-col border border-neutral-300 rounded-[12px] overflow-hidden shadow-sm bg-white">
                             
-                            {/* Seccion 1: Render + Info - Render TOPA el borde izquierdo y superior de la tarjeta */}
+                            {/* Render + Info */}
                             <div className="flex h-[150px] shrink-0 bg-white border-b border-neutral-200">
-                               {/* El render pegado completamente al borde izquierdo */}
                                <div className="w-[230px] h-full shrink-0 bg-[#181A20]">
                                   <img src={RENDER_FACHADA} className="w-full h-full object-cover" alt="Fachada Arienzo" />
                                </div>
-                               {/* Info a la derecha */}
                                <div className="flex-1 pl-8 pr-6 flex flex-col justify-center">
                                   <h3 className="text-[15px] font-bold tracking-widest uppercase text-[#B94A36]">Diseño Arquitectónico</h3>
                                   <p className="text-[11px] mt-0.5 font-bold tracking-wider text-neutral-800">Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero} | {tipologia}</p>
@@ -916,73 +939,53 @@ export default function CotizadorPage() {
                                </div>
                             </div>
 
-                            {/* Seccion 2: Iconos NUEVOS (Estilo Line-Art, stroke 1.5) */}
+                            {/* TUS ICONOS DE SUPABASE AQUÍ */}
                             <div className="bg-[#F9F7F5] px-4 py-3.5 grid grid-cols-7 gap-1 items-center shrink-0 border-b border-neutral-200">
                                <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
-                                  <svg className="w-4 h-4 text-[#B94A36]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <rect x="4" y="4" width="16" height="16" rx="2" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M14 10l4-4m0 0v3m0-3h-3M10 14l-4 4m0 0v-3m0 3h3" />
-                                  </svg>
+                                  <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/iconos/area.png" alt="Área Total" className="w-[22px] h-[22px] object-contain" />
                                   <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Área Total</span>
                                   <span className="text-[10px] font-black text-[#B94A36]">{areaTotal} m²</span>
                                </div>
                                <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
-                                  <svg className="w-4 h-4 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 7v10M20 17v-2a2 2 0 00-2-2H6M6 11h4a2 2 0 012 2v2H6v-4z" />
-                                  </svg>
+                                  <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/iconos/dormitorio.png" alt="Dormitorios" className="w-[22px] h-[22px] object-contain" />
                                   <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Dormitorios</span>
                                   <span className="text-[10px] font-bold text-[#21242E]">{numHabitaciones}</span>
                                </div>
                                <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
-                                  <svg className="w-4 h-4 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 21V7a2 2 0 012-2h4a2 2 0 012 2v2m-6 3v.01M10 15v.01M10 18v.01M13 12v.01M13 15v.01M13 18v.01M16 15v.01M16 18v.01" />
-                                  </svg>
+                                  <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/iconos/ducha.png" alt="Baños" className="w-[22px] h-[22px] object-contain" />
                                   <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Baños</span>
                                   <span className="text-[10px] font-bold text-[#21242E]">{numBanos}</span>
                                </div>
                                <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
-                                  <svg className="w-4 h-4 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <rect x="5" y="3" width="14" height="18" rx="2" strokeWidth="1.5" />
-                                    <circle cx="12" cy="13" r="3.5" strokeWidth="1.5" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 7h1.5M12.5 7h2.5" />
-                                  </svg>
+                                  <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/iconos/lavadora.png" alt="Lavandería" className="w-[22px] h-[22px] object-contain" />
                                   <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Lavandería</span>
                                   <span className="text-[10px] font-bold text-[#21242E]">Sí</span>
                                </div>
                                <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
-                                  <svg className="w-4 h-4 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 7h18M5 7v12M19 7v12M9 14h6M10 14v3M14 14v3M8 14v-1h8v1" />
-                                  </svg>
+                                  <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/iconos/terraza.png" alt="Terraza" className="w-[22px] h-[22px] object-contain" />
                                   <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Terraza</span>
                                   <span className="text-[10px] font-bold text-[#21242E]">Sí</span>
                                </div>
                                <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
-                                  <svg className="w-4 h-4 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 10L12 4l9 6v10M6 10l1.5-3h9L18 10M6 10v6h2v2h8v-2h2v-6H6z" />
-                                    <circle cx="8" cy="14" r="1" strokeWidth="1.5" />
-                                    <circle cx="16" cy="14" r="1" strokeWidth="1.5" />
-                                  </svg>
+                                  <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/iconos/garaje.png" alt="Parqueos" className="w-[22px] h-[22px] object-contain" />
                                   <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Parqueos</span>
                                   <span className="text-[10px] font-bold text-[#21242E]">{cantidadParqueos}</span>
                                </div>
                                <div className="flex flex-col items-center gap-1.5">
-                                  <svg className="w-4 h-4 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 16.5V7.5a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 7.5v9a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16.5z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3.27 7.46L12 12.5l8.73-5.04M12 22.5V12" />
-                                  </svg>
+                                  <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/iconos/bodega.png" alt="Bodega" className="w-[22px] h-[22px] object-contain" />
                                   <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Bodega</span>
                                   <span className="text-[10px] font-bold text-[#21242E]">{bodegaAsignada && bodegaAsignada.toLowerCase() !== 'ninguna' ? 'Sí' : 'No'}</span>
                                </div>
                             </div>
 
-                            {/* Seccion 3: Plano */}
+                            {/* Plano */}
                             <div className="flex-1 flex items-center justify-center p-6 relative bg-white">
                                <div className="w-full h-full max-h-[110mm] flex items-center justify-center">
                                   <img src={urlPlanoAsignado} alt="Plano Arienzo" className="max-w-[75%] max-h-full object-contain mix-blend-multiply" />
                                </div>
                             </div>
 
-                            {/* Seccion 4: Especificaciones */}
+                            {/* Especificaciones */}
                             <div className="px-8 py-5 bg-[#F9F7F5] shrink-0 border-t border-neutral-200">
                                <h4 className="text-[9px] font-bold uppercase tracking-widest text-[#B94A36] mb-2.5">Resumen de Especificaciones Técnicas y Equipamiento</h4>
                                <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-[7.5px] text-neutral-700 leading-tight">
@@ -995,7 +998,7 @@ export default function CotizadorPage() {
                                </div>
                             </div>
 
-                            {/* Footer P2: Franja terracota gruesa */}
+                            {/* Footer */}
                             <div className="bg-[#B94A36] h-[55px] flex justify-center items-center shrink-0">
                                <img src={LOGO_BLANCO} alt="Arienzo Boutique Living" className="h-[14px] w-auto object-contain opacity-95" />
                             </div>
@@ -1044,7 +1047,7 @@ export default function CotizadorPage() {
                     <h2 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest">3. Presentación de Extras y Anexos (PDF)</h2>
                   </div>
                   
-                  {/* 🔥 TOGGLE PARA EL PLANO ARQUITECTÓNICO - Controla lo que se ve y se manda */}
+                  {/* Toggles */}
                   <div className={`flex items-center gap-3 border p-4 rounded-xl cursor-pointer transition-colors ${incluirPlano ? 'bg-[#ea0029]/5 border-[#ea0029]/30' : 'bg-[#415364]/5 border-[#415364]/10 hover:border-[#ea0029]/40'}`} onClick={() => setIncluirPlano(!incluirPlano)}>
                     <input type="checkbox" checked={incluirPlano} onChange={e => setIncluirPlano(e.target.checked)} className="w-4 h-4 text-[#ea0029] rounded focus:ring-[#ea0029] cursor-pointer" />
                     <div>
@@ -1053,7 +1056,6 @@ export default function CotizadorPage() {
                     </div>
                   </div>
 
-                  {/* 🔥 TOGGLE PARA LAS FIRMAS */}
                   <div className={`flex items-center gap-3 border p-4 rounded-xl cursor-pointer transition-colors ${incluirFirmas ? 'bg-[#ea0029]/5 border-[#ea0029]/30' : 'bg-[#415364]/5 border-[#415364]/10 hover:border-[#ea0029]/40'}`} onClick={() => setIncluirFirmas(!incluirFirmas)}>
                     <input type="checkbox" checked={incluirFirmas} onChange={e => setIncluirFirmas(e.target.checked)} className="w-4 h-4 text-[#ea0029] rounded focus:ring-[#ea0029] cursor-pointer" />
                     <div>
