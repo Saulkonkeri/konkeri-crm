@@ -180,7 +180,6 @@ export default function CotizadorPage() {
     const area = propiedadSeleccionada ? Number(propiedadSeleccionada.area_total || 0) : 0;
     const m2Lanzamiento = area > 0 ? precioDeptoDescontado / area : 0;
     
-    // BÚSQUEDA MATEMÁTICA SEGURA DEL PLANO
     let urlPlano = '';
     if (area > 0 && !isLocalComercial) {
       const planoMasCercano = MAPA_PLANOS.reduce((prev, curr) => 
@@ -320,6 +319,17 @@ export default function CotizadorPage() {
                   background: white;
                   margin: 0; padding: 0;
                 }
+                .pdf-page-container {
+                  width: 210mm !important; 
+                  height: 297mm !important; 
+                  max-height: 297mm !important; 
+                  page-break-after: always; 
+                  box-sizing: border-box; 
+                  background: white; 
+                  position: relative; 
+                  overflow: hidden; 
+                  margin: 0;
+                }
                 @media print {
                   body { background: white; }
                   #wrapper { gap: 0 !important; padding: 0 !important; transform: none !important; margin: 0 !important; align-items: flex-start !important; justify-content: flex-start !important; width: auto !important; max-width: none !important;}
@@ -362,6 +372,7 @@ export default function CotizadorPage() {
               <style>
                 @page { size: A4 portrait; margin: 0; }
                 body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; font-family: sans-serif; background: white; margin: 0; padding:0;}
+                .pdf-page-container { width: 210mm; height: 297mm; box-sizing: border-box; background: white; position: relative; overflow: hidden; margin: 0 auto; page-break-after: always;}
               </style>
             </head>
             <body>
@@ -543,18 +554,19 @@ export default function CotizadorPage() {
             // --- CONTENEDOR PRINCIPAL DE PREVISUALIZACIÓN (VISOR PDF DEFINITIVO, SEGURO Y CON SCROLL) ---
             <div className="relative w-full bg-[#525659] rounded-2xl shadow-inner border border-[#415364]/30 overflow-auto max-h-[85vh] custom-scrollbar">
               
-              {/* Este padding envolvente garantiza que el "documento" nunca toque los bordes del visor */}
-              <div className="w-max min-w-full p-8 md:p-12 flex flex-col items-center">
+              {/* Este padding envolvente garantiza que el documento tenga fondo gris para scrollear sin problemas */}
+              <div className="w-max min-w-full p-8 flex flex-col items-center">
                 
-                <div id="plantilla-pdf-arienzo" className="flex flex-col gap-12 print:gap-0 items-center">
+                <div id="plantilla-pdf-arienzo" className="flex flex-col gap-10 print:gap-0 items-center">
                   
-                  {/* --- PÁGINA 1: COTIZACIÓN FINANCIERA (SOMBRAS FUERTES Y COMPACTA) --- */}
+                  {/* --- PÁGINA 1: COTIZACIÓN FINANCIERA --- */}
+                  {/* Aseguramos height A4 y márgenes comprimidos para que las 28 cuotas quepan sin desbordar */}
                   <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm' }} className="pdf-page-container bg-white text-neutral-900 shadow-[0_10px_40px_rgba(0,0,0,0.35)] print:shadow-none relative flex flex-col print:rounded-none overflow-hidden shrink-0">
                     
-                    <div className="px-10 pt-10 pb-6 flex flex-col h-full">
+                    <div className="px-10 py-8 flex flex-col h-full">
                       
                       {/* Header P1 */}
-                      <div className="bg-[#B94A36] px-8 py-6 flex justify-between items-center mb-6 shrink-0 rounded-[8px]">
+                      <div className="bg-[#B94A36] px-8 py-5 flex justify-between items-center mb-4 shrink-0 rounded-[8px]">
                         <div className="flex items-center gap-3">
                           <img src="/logo-arienzo.png" alt="Arienzo Boutique Living" className="h-10 w-auto object-contain" />
                         </div>
@@ -566,13 +578,13 @@ export default function CotizadorPage() {
                       </div>
 
                       {/* Datos del Cliente */}
-                      <div className="mb-4 shrink-0 text-left">
+                      <div className="mb-3 shrink-0 text-left">
                         <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-widest mb-0.5">Inversionista de Propuesta</p>
                         <p className="text-[20px] font-bold text-neutral-800">{clienteDataCompleta ? `${clienteDataCompleta.nombres} ${clienteDataCompleta.apellidos}` : 'Cliente Anónimo / Prospecto'}</p>
                       </div>
 
-                      {/* Caja de Detalles (Con sombra visible y bordes sutiles) */}
-                      <div className="mb-5 shrink-0 border border-neutral-200 rounded-[10px] p-4 bg-white shadow-md">
+                      {/* Caja de Detalles (Fondo muy bajito terracota y sombra) */}
+                      <div className="mb-3 shrink-0 border border-neutral-200 bg-[#F9F7F5] rounded-[10px] p-3 shadow-md">
                         <div className="flex items-center justify-between text-[10px]">
                           <div className="flex-1 text-left border-r border-neutral-200 pr-2">
                             <span className="text-[7.5px] text-neutral-400 uppercase block mb-1">Unidad</span>
@@ -600,19 +612,19 @@ export default function CotizadorPage() {
                         </div>
                       </div>
 
-                      {/* Plan de Financiamiento Específico - En caja con sombra fuerte */}
-                      <div className="shrink-0 mb-4 border border-neutral-200 rounded-[10px] p-4 bg-white shadow-md">
-                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#B94A36] mb-2">Plan de Financiamiento Específico</h4>
-                        <table className="w-full text-left text-[11px] border-collapse">
+                      {/* Plan de Financiamiento Específico - Fondo FFF9F6 (terracota bajísimo) y sombra fuerte */}
+                      <div className="shrink-0 mb-3 border border-neutral-200 bg-[#FFF9F6] rounded-[10px] p-3 shadow-md">
+                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Plan de Financiamiento Específico</h4>
+                        <table className="w-full text-left text-[10px] border-collapse">
                           <thead>
-                            <tr className="border-b border-[#B94A36] text-[#B94A36] text-[8px] uppercase tracking-wider">
-                              <th className="pb-1.5 font-bold">Concepto Estructurado</th>
-                              <th className="pb-1.5 text-center font-bold">Fecha / Control</th>
-                              <th className="pb-1.5 text-center font-bold">Porcentaje</th>
-                              <th className="pb-1.5 text-right font-bold">Monto</th>
+                            <tr className="border-b border-[#B94A36] text-[#B94A36] text-[7.5px] uppercase tracking-wider">
+                              <th className="pb-1 font-bold">Concepto Estructurado</th>
+                              <th className="pb-1 text-center font-bold">Fecha / Control</th>
+                              <th className="pb-1 text-center font-bold">Porcentaje</th>
+                              <th className="pb-1 text-right font-bold">Monto</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-neutral-100 text-neutral-700">
+                          <tbody className="divide-y divide-neutral-200/50 text-neutral-700">
                             <tr>
                               <td className="py-1 text-neutral-600 font-light">Valor {esLocal ? 'del Local Comercial' : 'del Departamento (Pre Lanzamiento)'}</td>
                               <td className="py-1 text-center text-neutral-400">—</td>
@@ -636,49 +648,49 @@ export default function CotizadorPage() {
                               </tr>
                             )}
                             <tr className="font-bold border-t border-neutral-300 text-neutral-950">
-                              <td className="py-1.5"><span className="text-neutral-600 mr-1 font-mono">(=)</span> Valor Total de Venta</td>
-                              <td className="py-1.5 text-center text-neutral-400">—</td>
-                              <td className="py-1.5 text-center text-neutral-400">—</td>
-                              <td className="py-1.5 text-right font-mono text-[13px]">{"$"}{precioTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                              <td className="py-1"><span className="text-neutral-600 mr-1 font-mono">(=)</span> Valor Total de Venta</td>
+                              <td className="py-1 text-center text-neutral-400">—</td>
+                              <td className="py-1 text-center text-neutral-400">—</td>
+                              <td className="py-1 text-right font-mono text-[12px]">{"$"}{precioTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                             </tr>
                             <tr>
                               <td className="py-1 pl-3 text-neutral-600">↳ Reserva para Bloqueo</td>
-                              <td className="py-1 text-center text-neutral-700 text-[10px]">{incluirFechas ? formatearFechaLegible(fechaReserva) : 'Inmediato'}</td>
+                              <td className="py-1 text-center text-neutral-700 text-[9px]">{incluirFechas ? formatearFechaLegible(fechaReserva) : 'Inmediato'}</td>
                               <td className="py-1 text-center text-neutral-400">—</td>
                               <td className="py-1 text-right font-medium font-mono">{"$"}{reservaValor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                             </tr>
                             <tr>
                               <td className="py-1 pl-3 text-neutral-600">↳ Abono Inicial Promesa {mesesInicial > 1 ? `(Diferido en ${mesesInicial} meses)` : ''}</td>
-                              <td className="py-1 text-center text-neutral-700 text-[10px]">{mesesInicial > 1 ? `${mesesInicial} pagos de $${cuotaInicialMensual.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : (incluirFechas ? formatearFechaLegible(fechaFirmaPromesa) : 'Plazo Convenido')}</td>
+                              <td className="py-1 text-center text-neutral-700 text-[9px]">{mesesInicial > 1 ? `${mesesInicial} pagos de $${cuotaInicialMensual.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : (incluirFechas ? formatearFechaLegible(fechaFirmaPromesa) : 'Plazo Convenido')}</td>
                               <td className="py-1 text-center text-neutral-500">{Number(pctFirmaReal.toFixed(1))}%</td>
                               <td className="py-1 text-right font-medium font-mono text-neutral-700">{"$"}{saldoFirmaPromesa > 0 ? saldoFirmaPromesa.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}</td>
                             </tr>
                             <tr>
                               <td className="py-1 pl-3 font-medium text-neutral-800">↳ Monto Diferido Construcción</td>
-                              <td className="py-1 text-center text-neutral-500 text-[10px]">Diferido mensual</td>
+                              <td className="py-1 text-center text-neutral-500 text-[9px]">Diferido mensual</td>
                               <td className="py-1 text-center text-neutral-500">{Number(pctEntradaReal.toFixed(1))}%</td>
                               <td className="py-1 text-right font-medium font-mono text-neutral-700">{"$"}{entradaDiferirTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                             </tr>
                             <tr>
-                              <td className="py-1.5 pl-3 font-bold text-[#B94A36]">↳ Saldo Final Contra Entrega</td>
-                              <td className="py-1.5 text-center text-[#B94A36] text-[10px]">A la entrega física</td>
-                              <td className="py-1.5 text-center text-[#B94A36]">{Number(pctContraEntregaReal.toFixed(1))}%</td>
-                              <td className="py-1.5 text-right font-bold text-[#B94A36] font-mono">{"$"}{contraEntrega.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                              <td className="py-1 pl-3 font-bold text-[#B94A36]">↳ Saldo Final Contra Entrega</td>
+                              <td className="py-1 text-center text-[#B94A36] text-[9px]">A la entrega física</td>
+                              <td className="py-1 text-center text-[#B94A36]">{Number(pctContraEntregaReal.toFixed(1))}%</td>
+                              <td className="py-1 text-right font-bold text-[#B94A36] font-mono">{"$"}{contraEntrega.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                             </tr>
                           </tbody>
                         </table>
-                        <p className="text-[7px] text-neutral-400 italic text-center mt-2">* Nota: El Valor Total de Venta detallado ya considera un beneficio especial del 5% de descuento por etapa de pre-lanzamiento respecto al precio de lista estándar.</p>
+                        <p className="text-[6.5px] text-neutral-400 italic text-center mt-1.5">* Nota: El Valor Total de Venta detallado ya considera un beneficio especial del 5% de descuento por etapa de pre-lanzamiento respecto al precio de lista estándar.</p>
                       </div>
 
-                      {/* Cronograma de Pagos - Sombra Fuerte */}
+                      {/* Cronograma de Pagos - Fondo FFF9F6 y Sombra Fuerte. Reducimos py para que quepan 28+ cuotas sin desbordar. */}
                       {entradaDiferirTotal > 0 && (
-                        <div className="shrink-0 mb-4 border border-neutral-200 rounded-[10px] p-4 bg-white shadow-md">
-                          <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Cronograma de Pagos ({mesesConstruccion} Dividendos)</h4>
-                          <div className="border-t border-[#B94A36] w-full mb-1.5"></div>
-                          <div className="grid grid-cols-2 gap-x-12 items-start text-[10px] text-neutral-600">
+                        <div className="shrink-0 mb-3 border border-neutral-200 bg-[#FFF9F6] rounded-[10px] p-3 shadow-md">
+                          <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#B94A36] mb-1">Cronograma de Pagos ({mesesConstruccion} Dividendos)</h4>
+                          <div className="border-t border-[#B94A36] w-full mb-1"></div>
+                          <div className="grid grid-cols-2 gap-x-12 items-start text-[9px] text-neutral-600">
                             <div className="space-y-0">
                               {cuotasDivididas.columnaIzquierda.map((cuota) => (
-                                <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-100 py-[2.5px]">
+                                <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-200/50 py-[1.5px]">
                                   <span>C{cuota.numeroCuota} | {cuota.fechaPago}</span>
                                   <span className="font-bold text-neutral-800 font-mono">{"$"}{cuota.valor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                                 </div>
@@ -686,7 +698,7 @@ export default function CotizadorPage() {
                             </div>
                             <div className="space-y-0">
                               {cuotasDivididas.columnaDerecha.map((cuota) => (
-                                <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-100 py-[2.5px]">
+                                <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-200/50 py-[1.5px]">
                                   <span>C{cuota.numeroCuota} | {cuota.fechaPago}</span>
                                   <span className="font-bold text-neutral-800 font-mono">{"$"}{cuota.valor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                                 </div>
@@ -696,10 +708,10 @@ export default function CotizadorPage() {
                         </div>
                       )}
 
-                      {/* Valores Agregados (Caja flotante y sombra) - Sigue flujo natural */}
-                      <div className="shrink-0 border border-neutral-200 rounded-[10px] p-4 bg-white shadow-md">
-                        <h4 className="text-[9px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Valores Agregados a la Unidad</h4>
-                        <ul className="text-[9px] text-neutral-700 space-y-1 pl-3 list-disc marker:text-[#DEB886]">
+                      {/* Valores Agregados (Caja flotante y sombra) - Sigue flujo natural, bien pegado */}
+                      <div className="shrink-0 border border-neutral-200 bg-[#F9F7F5] rounded-[10px] p-3 shadow-md">
+                        <h4 className="text-[9px] font-bold uppercase tracking-widest text-[#B94A36] mb-1">Valores Agregados a la Unidad</h4>
+                        <ul className="text-[8px] text-neutral-700 space-y-1 pl-3 list-disc marker:text-[#DEB886]">
                           {esLocal ? (
                             <li><span className="font-bold text-neutral-800">Complemento Inmobiliario:</span> La unidad incluye {cantidadParqueos} parqueo{cantidadParqueos !== 1 ? 's' : ''}.</li>
                           ) : (
@@ -712,7 +724,7 @@ export default function CotizadorPage() {
                       </div>
 
                       {/* Espacio Exacto para Firmas */}
-                      <div className="mt-auto shrink-0 pt-6 pb-2">
+                      <div className="mt-auto shrink-0 pt-4">
                         <div className="grid grid-cols-2 gap-24 text-center text-[10px] px-10">
                           <div>
                             <div className="border-t border-neutral-300 w-full mb-2"></div>
@@ -738,7 +750,7 @@ export default function CotizadorPage() {
                        {/* Contenedor central Arquitectura (Gran Tarjeta con borde y sombra) */}
                        <div className="flex-1 flex flex-col border border-neutral-300 rounded-[12px] overflow-hidden shadow-md bg-white">
                           
-                          {/* Seccion 1: Render + Info - Render TOPA el borde izquierdo y superior de la tarjeta */}
+                          {/* Seccion 1: Render + Info - Render TOPA el borde izquierdo y superior de la tarjeta sin márgenes blancos */}
                           <div className="flex h-[150px] shrink-0 bg-white border-b border-neutral-200">
                              {/* El render pegado completamente al borde izquierdo (sin padding extra) */}
                              <div className="w-[230px] h-full shrink-0 bg-[#181A20]">
@@ -813,9 +825,9 @@ export default function CotizadorPage() {
                              </div>
                           </div>
 
-                          {/* Nuevo Footer P2: Franja terracota más gruesa (40px) manteniendo logo pequeño (14px) */}
-                          <div className="bg-[#B94A36] h-[40px] flex justify-center items-center shrink-0">
-                             <img src={LOGO_BLANCO} alt="Arienzo Boutique Living" className="h-[14px] w-auto object-contain opacity-95" />
+                          {/* Nuevo Footer P2: Franja terracota más gruesa (60px) manteniendo logo pequeño (16px) */}
+                          <div className="bg-[#B94A36] h-[60px] flex justify-center items-center shrink-0">
+                             <img src={LOGO_BLANCO} alt="Arienzo Boutique Living" className="h-[16px] w-auto object-contain opacity-95" />
                           </div>
 
                        </div>
