@@ -49,6 +49,7 @@ export default function CotizadorPage() {
   const [valorDescuento, setValorDescuento] = useState<number>(0);
   const [motivoDescuento, setMotivoDescuento] = useState<string>('');
 
+  // Toggles de Presentación
   const [incluirClima, setIncluirClima] = useState<boolean>(false);
   const [incluirBbq, setIncluirBbq] = useState<boolean>(false);
   const [incluirPlano, setIncluirPlano] = useState<boolean>(true);
@@ -369,7 +370,6 @@ export default function CotizadorPage() {
       const elemento = document.getElementById('plantilla-pdf-arienzo');
       if (!elemento) throw new Error("No se encontró el diseño de la cotización");
 
-      // El documento en PDF
       const htmlContent = `
         <!DOCTYPE html>
         <html>
@@ -389,7 +389,6 @@ export default function CotizadorPage() {
         </html>
       `;
 
-      // Diseño en HTML para el cuerpo del correo (Elegante y tipo CRM)
       const emailHtmlBody = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #EAE3DC; border-radius: 8px; overflow: hidden;">
           <div style="background-color: #B94A36; padding: 25px; text-align: center;">
@@ -457,7 +456,6 @@ export default function CotizadorPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#21242E]/80 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl w-full max-w-[800px] max-h-[95vh] shadow-2xl flex flex-col animate-in fade-in zoom-in-95">
             
-            {/* Header del Modal */}
             <div className="px-6 py-5 border-b border-neutral-100 flex justify-between items-center bg-[#F9F7F5] shrink-0 rounded-t-2xl">
               <div>
                 <h3 className="font-bold text-[#B94A36] uppercase tracking-widest text-sm flex items-center gap-2">
@@ -470,18 +468,13 @@ export default function CotizadorPage() {
               </button>
             </div>
             
-            {/* Cuerpo del Modal con Scroll */}
             <div className="p-6 overflow-y-auto flex-1 grid grid-cols-1 md:grid-cols-2 gap-8 custom-scrollbar">
-              
-              {/* Columna Izquierda: Controles y Edición */}
               <div className="space-y-6">
-                
                 <div className="space-y-3">
                   <div className="bg-[#dce3eb]/30 border border-[#415364]/10 rounded-xl p-3.5">
                     <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-0.5">Destinatario</p>
                     <p className="text-sm font-bold text-[#415364]">{clienteDataCompleta?.nombres} {clienteDataCompleta?.apellidos} &lt;{clienteDataCompleta?.email}&gt;</p>
                   </div>
-                  
                   <div className="bg-[#dce3eb]/30 border border-[#415364]/10 rounded-xl p-3.5">
                     <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-0.5">Asunto del Correo</p>
                     <p className="text-[13px] font-medium text-[#415364]">Propuesta de Inversión - Arienzo Boutique Living - Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero}</p>
@@ -502,7 +495,6 @@ export default function CotizadorPage() {
 
                 <div className="border border-[#D1C292]/50 bg-[#F9F7F5] rounded-xl p-4 space-y-3">
                   <p className="text-[10px] font-bold text-[#B94A36] uppercase tracking-widest">Opciones de Envío</p>
-                  
                   <label className="flex items-center gap-3 cursor-pointer group">
                     <input type="checkbox" checked={incluirPlano} onChange={e => setIncluirPlano(e.target.checked)} className="w-4 h-4 text-[#ea0029] focus:ring-[#ea0029] rounded border-neutral-300" />
                     <div>
@@ -510,7 +502,6 @@ export default function CotizadorPage() {
                       <p className="text-[9.5px] text-neutral-500 mt-0.5">Incluye el render y diseño arquitectónico.</p>
                     </div>
                   </label>
-
                   <label className="flex items-center gap-3 cursor-pointer group">
                     <input type="checkbox" checked={incluirFirmas} onChange={e => setIncluirFirmas(e.target.checked)} className="w-4 h-4 text-[#ea0029] focus:ring-[#ea0029] rounded border-neutral-300" />
                     <div>
@@ -519,24 +510,19 @@ export default function CotizadorPage() {
                     </div>
                   </label>
                 </div>
-
               </div>
 
-              {/* Columna Derecha: Vista Previa Real del Correo */}
               <div className="flex flex-col">
                 <p className="text-[10px] font-bold text-[#415364]/50 uppercase tracking-widest mb-3 flex items-center gap-2">
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                   Vista previa del diseño del cliente
                 </p>
                 <div className="border border-neutral-200 rounded-xl overflow-hidden bg-[#F9F7F5] flex-1 flex flex-col shadow-sm">
-                  {/* Fake Email Header */}
                   <div className="bg-white border-b border-neutral-200 px-4 py-3 flex gap-2 items-center shrink-0">
                     <div className="w-2.5 h-2.5 rounded-full bg-red-400"></div>
                     <div className="w-2.5 h-2.5 rounded-full bg-amber-400"></div>
                     <div className="w-2.5 h-2.5 rounded-full bg-green-400"></div>
                   </div>
-                  
-                  {/* Email Body Design */}
                   <div className="p-4 overflow-y-auto custom-scrollbar bg-[#F3F4F6] flex-1">
                     <div className="bg-white border border-neutral-200 rounded-lg overflow-hidden shadow-sm">
                       <div className="bg-[#B94A36] p-4 text-center">
@@ -545,7 +531,6 @@ export default function CotizadorPage() {
                       <div className="p-5 text-[12px] text-[#415364] leading-relaxed">
                         <p className="mb-4">Estimado/a <strong className="text-[#21242E]">{clienteDataCompleta?.nombres}</strong>,</p>
                         <div className="whitespace-pre-wrap">{mensajeCorreo}</div>
-                        
                         {incluirFirmas && (
                           <div className="mt-5 pt-4 border-t border-neutral-100">
                              <p className="font-bold text-[#B94A36] text-[13px] m-0">{nombreAsesor}</p>
@@ -554,8 +539,6 @@ export default function CotizadorPage() {
                           </div>
                         )}
                       </div>
-                      
-                      {/* Fake Attachment */}
                       <div className="bg-neutral-50 p-4 border-t border-neutral-100 flex items-center gap-3">
                         <div className="bg-red-100 p-2 rounded-lg">
                           <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd"></path></svg>
@@ -569,10 +552,8 @@ export default function CotizadorPage() {
                   </div>
                 </div>
               </div>
-
             </div>
             
-            {/* Footer del Modal */}
             <div className="p-5 border-t border-neutral-100 bg-white flex justify-end gap-3 shrink-0 rounded-b-2xl">
               <button onClick={() => setMostrarModalCorreo(false)} className="px-6 py-3 rounded-xl text-xs font-bold text-[#415364] hover:bg-neutral-100 transition-colors">Cancelar Envío</button>
               <button onClick={enviarCotizacionPorCorreo} disabled={enviandoCorreo} className="bg-[#ea0029] text-white px-8 py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-[#c90022] transition-colors shadow-md shadow-[#ea0029]/20 flex items-center gap-2 disabled:opacity-50">
@@ -718,18 +699,18 @@ export default function CotizadorPage() {
             </div>
           ) : pestañaActiva === 'previsualizar' ? (
             
-            // --- CONTENEDOR PRINCIPAL DE PREVISUALIZACIÓN (VISOR PDF ESTILO ADOBE CON SCROLL NATURAL Y CENTRADO PERFECTO) ---
-            <div className="bg-[#525659] w-full rounded-2xl shadow-inner border border-[#415364]/30 overflow-auto max-h-[85vh] custom-scrollbar">
+            // --- CONTENEDOR PRINCIPAL DE PREVISUALIZACIÓN (VISOR PDF CON SCROLL NATURAL Y CENTRADO PERFECTO) ---
+            <div className="bg-[#525659] w-full rounded-2xl shadow-inner border border-[#415364]/30 overflow-auto max-h-[85vh] custom-scrollbar text-center">
               
-              {/* min-w-max asegura que si la pantalla es pequeña, no aplasta la hoja, sino que habilita el scroll mostrando márgenes completos */}
-              <div className="min-w-max flex justify-center p-4 sm:p-10">
+              {/* Contenedor inline-block que garantiza el centrado en pantallas grandes y permite el scroll completo en pantallas pequeñas sin cortar la izquierda */}
+              <div className="inline-block text-left py-12 px-4 sm:px-12 min-w-max">
                 
                 <div id="plantilla-pdf-arienzo" className="flex flex-col gap-10 print:gap-0" style={{ width: '210mm' }}>
                   
                   {/* --- PÁGINA 1: COTIZACIÓN FINANCIERA (DISEÑO ORIGINAL LIMPIO CALCADO AL PDF) --- */}
-                  <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm' }} className="pdf-page-container bg-white text-neutral-900 shadow-2xl print:shadow-none relative flex flex-col print:rounded-none overflow-hidden mx-auto shrink-0">
+                  <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm' }} className="pdf-page-container bg-white text-neutral-900 shadow-2xl print:shadow-none relative flex flex-col print:rounded-none overflow-hidden shrink-0 mx-auto">
                     
-                    <div className="px-10 pt-10 pb-8 flex flex-col h-full">
+                    <div className="px-10 pt-10 pb-6 flex flex-col h-full">
                       
                       {/* Header P1 */}
                       <div className="bg-[#B94A36] px-8 py-5 flex justify-between items-center mb-6 shrink-0 rounded-[8px]">
@@ -749,8 +730,8 @@ export default function CotizadorPage() {
                         <p className="text-[20px] font-bold text-neutral-800">{clienteDataCompleta ? `${clienteDataCompleta.nombres} ${clienteDataCompleta.apellidos}` : 'Cliente Anónimo / Prospecto'}</p>
                       </div>
 
-                      {/* Caja de Detalles (Diseño limpio original) */}
-                      <div className="mb-5 shrink-0 border border-neutral-200/80 rounded-[8px] p-3.5 bg-white">
+                      {/* Caja de Detalles (Diseño limpio original sin sombra) */}
+                      <div className="mb-4 shrink-0 border border-neutral-200/80 rounded-[8px] p-3 bg-white">
                         <div className="flex items-center justify-between text-[10px]">
                           <div className="flex-1 text-left border-r border-neutral-200 pr-2">
                             <span className="text-[7.5px] text-neutral-400 uppercase block mb-1">Unidad</span>
@@ -779,7 +760,7 @@ export default function CotizadorPage() {
                       </div>
 
                       {/* Plan de Financiamiento Específico - Sin cajón ni sombra, como el PDF */}
-                      <div className="shrink-0 mb-5">
+                      <div className="shrink-0 mb-4">
                         <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Plan de Financiamiento Específico</h4>
                         <table className="w-full text-left text-[11px] border-collapse">
                           <thead>
@@ -856,7 +837,7 @@ export default function CotizadorPage() {
                           <div className="grid grid-cols-2 gap-x-12 items-start text-[10px] text-neutral-600">
                             <div className="space-y-0">
                               {cuotasDivididas.columnaIzquierda.map((cuota) => (
-                                <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-100 py-[2px]">
+                                <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-100 py-[2.5px]">
                                   <span>C{cuota.numeroCuota} | {cuota.fechaPago}</span>
                                   <span className="font-bold text-neutral-800 font-mono">{"$"}{cuota.valor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                                 </div>
@@ -864,7 +845,7 @@ export default function CotizadorPage() {
                             </div>
                             <div className="space-y-0">
                               {cuotasDivididas.columnaDerecha.map((cuota) => (
-                                <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-100 py-[2px]">
+                                <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-100 py-[2.5px]">
                                   <span>C{cuota.numeroCuota} | {cuota.fechaPago}</span>
                                   <span className="font-bold text-neutral-800 font-mono">{"$"}{cuota.valor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                                 </div>
@@ -910,7 +891,7 @@ export default function CotizadorPage() {
                     </div>
                   </div>
 
-                  {/* --- PÁGINA 2: PLANO ARQUITECTÓNICO (TOTALMENTE OPCIONAL A TRAVÉS DE incluirPlano) --- */}
+                  {/* --- PÁGINA 2: PLANO ARQUITECTÓNICO (OPCIONAL, NUEVOS ICONOS LINE-ART Y RENDER AL BORDE) --- */}
                   {incluirPlano && (
                     <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm' }} className="pdf-page-container bg-white text-neutral-900 shadow-2xl print:shadow-none relative flex flex-col print:rounded-none overflow-hidden shrink-0 mx-auto">
                       
@@ -921,9 +902,11 @@ export default function CotizadorPage() {
                             
                             {/* Seccion 1: Render + Info - Render TOPA el borde izquierdo y superior de la tarjeta */}
                             <div className="flex h-[150px] shrink-0 bg-white border-b border-neutral-200">
+                               {/* El render pegado completamente al borde izquierdo */}
                                <div className="w-[230px] h-full shrink-0 bg-[#181A20]">
                                   <img src={RENDER_FACHADA} className="w-full h-full object-cover" alt="Fachada Arienzo" />
                                </div>
+                               {/* Info a la derecha */}
                                <div className="flex-1 pl-8 pr-6 flex flex-col justify-center">
                                   <h3 className="text-[15px] font-bold tracking-widest uppercase text-[#B94A36]">Diseño Arquitectónico</h3>
                                   <p className="text-[11px] mt-0.5 font-bold tracking-wider text-neutral-800">Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero} | {tipologia}</p>
@@ -933,40 +916,60 @@ export default function CotizadorPage() {
                                </div>
                             </div>
 
-                            {/* Seccion 2: Iconos (Fondo F9F7F5) */}
+                            {/* Seccion 2: Iconos NUEVOS (Estilo Line-Art, stroke 1.5) */}
                             <div className="bg-[#F9F7F5] px-4 py-3.5 grid grid-cols-7 gap-1 items-center shrink-0 border-b border-neutral-200">
                                <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
-                                  <svg className="w-4 h-4 text-[#B94A36]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                                  <svg className="w-4 h-4 text-[#B94A36]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <rect x="4" y="4" width="16" height="16" rx="2" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M14 10l4-4m0 0v3m0-3h-3M10 14l-4 4m0 0v-3m0 3h3" />
+                                  </svg>
                                   <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Área Total</span>
                                   <span className="text-[10px] font-black text-[#B94A36]">{areaTotal} m²</span>
                                </div>
                                <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
-                                  <svg className="w-4 h-4 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 10h16M4 14h16m-2-4v8m-12-8v8M6 10V8a2 2 0 012-2h8a2 2 0 012 2v2" /></svg>
+                                  <svg className="w-4 h-4 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 7v10M20 17v-2a2 2 0 00-2-2H6M6 11h4a2 2 0 012 2v2H6v-4z" />
+                                  </svg>
                                   <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Dormitorios</span>
                                   <span className="text-[10px] font-bold text-[#21242E]">{numHabitaciones}</span>
                                </div>
                                <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
-                                  <svg className="w-4 h-4 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 8V6a2 2 0 012-2h4a2 2 0 012 2v2m-6 3v3m4-3v3m-2-3v3m-6 5h12" /></svg>
+                                  <svg className="w-4 h-4 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 21V7a2 2 0 012-2h4a2 2 0 012 2v2m-6 3v.01M10 15v.01M10 18v.01M13 12v.01M13 15v.01M13 18v.01M16 15v.01M16 18v.01" />
+                                  </svg>
                                   <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Baños</span>
                                   <span className="text-[10px] font-bold text-[#21242E]">{numBanos}</span>
                                </div>
                                <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
-                                  <svg className="w-4 h-4 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2" strokeWidth="1.5" /><circle cx="12" cy="12" r="3" strokeWidth="1.5" /><path d="M9 6h2M13 6h2" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                                  <svg className="w-4 h-4 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <rect x="5" y="3" width="14" height="18" rx="2" strokeWidth="1.5" />
+                                    <circle cx="12" cy="13" r="3.5" strokeWidth="1.5" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 7h1.5M12.5 7h2.5" />
+                                  </svg>
                                   <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Lavandería</span>
                                   <span className="text-[10px] font-bold text-[#21242E]">Sí</span>
                                </div>
                                <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
-                                  <svg className="w-4 h-4 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 14h16v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6zM4 14V6a2 2 0 012-2h12a2 2 0 012 2v8M8 14v6m8-6v6" /></svg>
+                                  <svg className="w-4 h-4 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 7h18M5 7v12M19 7v12M9 14h6M10 14v3M14 14v3M8 14v-1h8v1" />
+                                  </svg>
                                   <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Terraza</span>
                                   <span className="text-[10px] font-bold text-[#21242E]">Sí</span>
                                </div>
                                <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
-                                  <svg className="w-4 h-4 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M5 13l2-6h10l2 6M5 13v6a1 1 0 001 1h1a1 1 0 001-1v-6M5 13h14M8 16h.01M16 16h.01" /></svg>
+                                  <svg className="w-4 h-4 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 10L12 4l9 6v10M6 10l1.5-3h9L18 10M6 10v6h2v2h8v-2h2v-6H6z" />
+                                    <circle cx="8" cy="14" r="1" strokeWidth="1.5" />
+                                    <circle cx="16" cy="14" r="1" strokeWidth="1.5" />
+                                  </svg>
                                   <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Parqueos</span>
                                   <span className="text-[10px] font-bold text-[#21242E]">{cantidadParqueos}</span>
                                </div>
                                <div className="flex flex-col items-center gap-1.5">
-                                  <svg className="w-4 h-4 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16zM3.27 6.96L12 12.01l8.73-5.05M12 22.08V12" /></svg>
+                                  <svg className="w-4 h-4 text-[#415364]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 16.5V7.5a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 7.5v9a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16.5z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3.27 7.46L12 12.5l8.73-5.04M12 22.5V12" />
+                                  </svg>
                                   <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Bodega</span>
                                   <span className="text-[10px] font-bold text-[#21242E]">{bodegaAsignada && bodegaAsignada.toLowerCase() !== 'ninguna' ? 'Sí' : 'No'}</span>
                                </div>
@@ -1041,7 +1044,7 @@ export default function CotizadorPage() {
                     <h2 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest">3. Presentación de Extras y Anexos (PDF)</h2>
                   </div>
                   
-                  {/* 🔥 TOGGLE PARA EL PLANO ARQUITECTÓNICO */}
+                  {/* 🔥 TOGGLE PARA EL PLANO ARQUITECTÓNICO - Controla lo que se ve y se manda */}
                   <div className={`flex items-center gap-3 border p-4 rounded-xl cursor-pointer transition-colors ${incluirPlano ? 'bg-[#ea0029]/5 border-[#ea0029]/30' : 'bg-[#415364]/5 border-[#415364]/10 hover:border-[#ea0029]/40'}`} onClick={() => setIncluirPlano(!incluirPlano)}>
                     <input type="checkbox" checked={incluirPlano} onChange={e => setIncluirPlano(e.target.checked)} className="w-4 h-4 text-[#ea0029] rounded focus:ring-[#ea0029] cursor-pointer" />
                     <div>
