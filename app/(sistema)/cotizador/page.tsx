@@ -32,9 +32,10 @@ export default function CotizadorPage() {
   const [guardando, setGuardando] = useState(false);
   const [generandoPdf, setGenerandoPdf] = useState(false);
   
-  // Variables nuevas para el Modal de Correo y Funciones de Exportación
-  const [enviandoCorreo, setEnviandoCorreo] = useState(false);
+  // Variables de Modal y Correo
   const [mostrarModalCorreo, setMostrarModalCorreo] = useState(false);
+  const [enviandoCorreo, setEnviandoCorreo] = useState(false);
+  const [mensajeCorreo, setMensajeCorreo] = useState('');
   
   const [pestañaActiva, setPestañaActiva] = useState<'configurar' | 'previsualizar'>('configurar');
 
@@ -48,7 +49,6 @@ export default function CotizadorPage() {
   const [valorDescuento, setValorDescuento] = useState<number>(0);
   const [motivoDescuento, setMotivoDescuento] = useState<string>('');
 
-  // Toggles de Presentación
   const [incluirClima, setIncluirClima] = useState<boolean>(false);
   const [incluirBbq, setIncluirBbq] = useState<boolean>(false);
   const [incluirPlano, setIncluirPlano] = useState<boolean>(true);
@@ -80,6 +80,13 @@ export default function CotizadorPage() {
   const [mostrarCalculadoraRefuerzos, setMostrarCalculadoraRefuerzos] = useState(false);
   const [cuotaBaseRapida, setCuotaBaseRapida] = useState<number | ''>('');
   const [mesesRefuerzoRapido, setMesesRefuerzoRapido] = useState<string>('');
+
+  // Auto-generar plantilla de correo al seleccionar propiedad
+  useEffect(() => {
+    if (propiedadSeleccionada) {
+      setMensajeCorreo(`Es un placer saludarle.\n\nAdjunto a este correo encontrará la propuesta de inversión estructurada para la Unidad ${propiedadSeleccionada.unidad || propiedadSeleccionada.numero} en nuestro proyecto Arienzo Boutique Living.\n\nEl documento en formato PDF incluye el desglose financiero detallado y el diseño arquitectónico de la propiedad.\n\nQuedo a su entera disposición para cualquier consulta o para agendar una reunión.`);
+    }
+  }, [propiedadSeleccionada]);
 
   const setDiasCaducidad = (dias: number) => {
     const nuevaFecha = new Date(Date.now() + dias * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -356,64 +363,82 @@ export default function CotizadorPage() {
   };
 
   const enviarCotizacionPorCorreo = async () => {
-    if (!clienteDataCompleta?.email) {
-      alert("⚠️ El cliente seleccionado no tiene un correo electrónico registrado en el CRM.");
-      return;
-    }
-    
     setEnviandoCorreo(true);
-    setPestañaActiva('previsualizar'); 
     
-    setTimeout(async () => {
-      try {
-        const elemento = document.getElementById('plantilla-pdf-arienzo');
-        if (!elemento) throw new Error("No se encontró el diseño de la cotización");
+    try {
+      const elemento = document.getElementById('plantilla-pdf-arienzo');
+      if (!elemento) throw new Error("No se encontró el diseño de la cotización");
 
-        const htmlContent = `
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <script src="https://cdn.tailwindcss.com"></script>
-              <style>
-                @page { size: A4 portrait; margin: 0; }
-                body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; font-family: sans-serif; background: white; margin: 0; padding:0;}
-                .pdf-page-container { width: 210mm; height: 297mm; box-sizing: border-box; background: white; position: relative; overflow: hidden; margin: 0 auto; page-break-after: always;}
-              </style>
-            </head>
-            <body>
-              <div class="flex flex-col items-center">
-                ${elemento.innerHTML}
-              </div>
-            </body>
-          </html>
-        `;
+      // El documento en PDF
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <script src="https://cdn.tailwindcss.com"></script>
+            <style>
+              @page { size: A4 portrait; margin: 0; }
+              body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; font-family: sans-serif; background: white; margin: 0; padding:0;}
+              .pdf-page-container { width: 210mm; height: 297mm; box-sizing: border-box; background: white; position: relative; overflow: hidden; margin: 0 auto; page-break-after: always;}
+            </style>
+          </head>
+          <body>
+            <div class="flex flex-col items-center">
+              ${elemento.innerHTML}
+            </div>
+          </body>
+        </html>
+      `;
 
-        const response = await fetch('/api/enviar-cotizacion', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            emailDestino: clienteDataCompleta?.email,
-            nombreCliente: clienteDataCompleta?.nombres,
-            asesor: nombreAsesor,
-            unidad: propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero,
-            htmlCotizacion: htmlContent
-          })
-        });
+      // Diseño en HTML para el cuerpo del correo (Elegante y tipo CRM)
+      const emailHtmlBody = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #EAE3DC; border-radius: 8px; overflow: hidden;">
+          <div style="background-color: #B94A36; padding: 25px; text-align: center;">
+            <img src="${LOGO_BLANCO}" height="35" alt="Arienzo Boutique Living" style="display: block; margin: 0 auto;" />
+          </div>
+          <div style="padding: 35px 30px; color: #415364; font-size: 14px; line-height: 1.6; background-color: #ffffff;">
+            <p style="margin-top: 0;">Estimado/a <strong style="color: #21242E;">${clienteDataCompleta?.nombres}</strong>,</p>
+            <div style="margin-top: 20px; margin-bottom: 25px; color: #415364;">
+              ${mensajeCorreo.replace(/\n/g, '<br/>')}
+            </div>
+            ${incluirFirmas ? `
+            <div style="margin-top: 35px; padding-top: 25px; border-top: 1px solid #EAE3DC;">
+              <p style="margin: 0; color: #B94A36; font-weight: bold; font-size: 15px;">\${nombreAsesor}</p>
+              <p style="margin: 4px 0 0 0; font-size: 12px; color: #737373;">Asesor Comercial - Arienzo Boutique Living<br/>Konkeri Developer Group</p>
+            </div>
+            ` : ''}
+          </div>
+          <div style="background-color: #F9F7F5; padding: 15px; text-align: center; border-top: 1px solid #EAE3DC;">
+            <p style="margin: 0; font-size: 10px; color: #9CA3AF; text-transform: uppercase; letter-spacing: 1px;">Este es un mensaje automático de Konkeri CRM</p>
+          </div>
+        </div>
+      `;
 
-        if (response.ok) {
-          alert(`✅ Cotización enviada con éxito al correo: ${clienteDataCompleta?.email}`);
-          setMostrarModalCorreo(false);
-        } else {
-          const errData = await response.json();
-          alert(`❌ Error al enviar el correo: ${errData.error || 'Problema de servidor'}`);
-        }
-      } catch (error) {
-        console.error(error);
-        alert('❌ Error al procesar el envío por correo.');
-      } finally {
-        setEnviandoCorreo(false);
+      const response = await fetch('/api/enviar-cotizacion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          emailDestino: clienteDataCompleta?.email,
+          nombreCliente: clienteDataCompleta?.nombres,
+          asesor: nombreAsesor,
+          unidad: propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero,
+          htmlCotizacion: htmlContent,
+          htmlBody: emailHtmlBody
+        })
+      });
+
+      if (response.ok) {
+        alert(`✅ Cotización enviada con éxito al correo: ${clienteDataCompleta?.email}`);
+        setMostrarModalCorreo(false);
+      } else {
+        const errData = await response.json();
+        alert(`❌ Error al enviar el correo: ${errData.error || 'Problema de servidor'}`);
       }
-    }, 500); 
+    } catch (error) {
+      console.error(error);
+      alert('❌ Error al procesar el envío por correo.');
+    } finally {
+      setEnviandoCorreo(false);
+    }
   };
 
   if (cargando) {
@@ -427,67 +452,138 @@ export default function CotizadorPage() {
   return (
     <div className="min-h-screen bg-[#dce3eb] p-4 md:p-6 font-sans text-[#415364] relative">
       
-      {/* --- MODAL DE PREVISUALIZACIÓN DE CORREO --- */}
+      {/* --- MODAL DE PREVISUALIZACIÓN DE CORREO (ESTILO CRM) --- */}
       {mostrarModalCorreo && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#21242E]/80 backdrop-blur-sm p-4">
-          <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
-             
-             {/* Modal Header */}
-             <div className="bg-[#B94A36] px-6 py-4 flex justify-between items-center text-white">
-               <div className="flex items-center gap-2">
-                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                 <h3 className="font-bold text-[13px] uppercase tracking-widest">Enviar Propuesta Comercial</h3>
-               </div>
-               <button onClick={() => setMostrarModalCorreo(false)} className="text-white/70 hover:text-white transition-colors">
-                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-               </button>
-             </div>
-             
-             {/* Modal Body */}
-             <div className="p-6 overflow-y-auto bg-white text-sm text-[#415364] space-y-5">
-               <div className="space-y-1.5 border-b border-neutral-100 pb-5">
-                 <p className="flex items-center gap-3"><span className="font-bold w-12 text-[#415364]/50 uppercase text-[10px] tracking-widest">Para:</span> <span className="font-medium bg-[#dce3eb]/50 px-2 py-0.5 rounded text-xs">{clienteDataCompleta?.email}</span></p>
-                 <p className="flex items-center gap-3"><span className="font-bold w-12 text-[#415364]/50 uppercase text-[10px] tracking-widest">Asunto:</span> <span className="font-bold text-[13px]">Propuesta de Inversión - Arienzo Boutique Living (Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero})</span></p>
-               </div>
-               
-               <div>
-                  <p className="text-[10px] font-bold text-[#ea0029] uppercase tracking-widest mb-2">Vista previa del mensaje</p>
-                  <div className="bg-[#F9F7F5] p-5 rounded-xl border border-[#D1C292]/30 space-y-4 text-[13px] leading-relaxed shadow-sm">
-                    <p>Estimado/a <strong className="text-[#21242E]">{clienteDataCompleta?.nombres}</strong>,</p>
-                    <p>Es un placer saludarle. Adjunto a este correo encontrará la propuesta de inversión estructurada para la <strong className="text-[#21242E]">Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero}</strong> en nuestro proyecto <strong className="text-[#21242E]">Arienzo Boutique Living</strong>.</p>
-                    <p>El documento en PDF incluye el desglose financiero detallado{incluirPlano ? <strong className="text-[#B94A36]"> y el diseño arquitectónico de la propiedad</strong> : ''}.</p>
-                    <p>Quedo a su entera disposición para cualquier consulta o para agendar una reunión.</p>
-                    
-                    {incluirFirmas && (
-                       <div className="mt-6 pt-5 border-t border-[#D1C292]/30">
-                          <p className="font-bold text-[#B94A36] text-[13px]">{nombreAsesor}</p>
-                          <p className="text-[11px] text-[#415364]/70 font-medium">Asesor Comercial - Arienzo Boutique Living</p>
-                          <p className="text-[11px] text-[#415364]/70 font-medium">Konkeri Developer Group</p>
-                       </div>
-                    )}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#21242E]/80 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl w-full max-w-[800px] max-h-[95vh] shadow-2xl flex flex-col animate-in fade-in zoom-in-95">
+            
+            {/* Header del Modal */}
+            <div className="px-6 py-5 border-b border-neutral-100 flex justify-between items-center bg-[#F9F7F5] shrink-0 rounded-t-2xl">
+              <div>
+                <h3 className="font-bold text-[#B94A36] uppercase tracking-widest text-sm flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                  Preparar Envío de Cotización
+                </h3>
+              </div>
+              <button onClick={() => setMostrarModalCorreo(false)} className="text-neutral-400 hover:text-[#ea0029] transition-colors p-1 bg-white rounded-md shadow-sm border border-neutral-200">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+            
+            {/* Cuerpo del Modal con Scroll */}
+            <div className="p-6 overflow-y-auto flex-1 grid grid-cols-1 md:grid-cols-2 gap-8 custom-scrollbar">
+              
+              {/* Columna Izquierda: Controles y Edición */}
+              <div className="space-y-6">
+                
+                <div className="space-y-3">
+                  <div className="bg-[#dce3eb]/30 border border-[#415364]/10 rounded-xl p-3.5">
+                    <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-0.5">Destinatario</p>
+                    <p className="text-sm font-bold text-[#415364]">{clienteDataCompleta?.nombres} {clienteDataCompleta?.apellidos} &lt;{clienteDataCompleta?.email}&gt;</p>
                   </div>
-               </div>
-             </div>
-             
-             {/* Modal Footer */}
-             <div className="px-6 py-5 bg-[#dce3eb]/30 border-t border-[#415364]/10 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-               <label className="flex items-center gap-2.5 cursor-pointer group">
-                  <input type="checkbox" checked={incluirFirmas} onChange={() => setIncluirFirmas(!incluirFirmas)} className="w-4 h-4 rounded border-[#415364]/30 text-[#ea0029] focus:ring-[#ea0029] cursor-pointer" />
-                  <span className="text-[11px] font-bold text-[#415364]/70 uppercase tracking-widest group-hover:text-[#21242E] transition-colors">Adjuntar mi firma comercial</span>
-               </label>
-               <div className="flex gap-3 w-full sm:w-auto">
-                 <button onClick={() => setMostrarModalCorreo(false)} className="px-4 py-2.5 w-full sm:w-auto text-[11px] font-bold text-[#415364]/60 uppercase tracking-widest hover:text-[#21242E] transition-colors">Cancelar</button>
-                 <button onClick={enviarCotizacionPorCorreo} disabled={enviandoCorreo} className="bg-[#ea0029] w-full sm:w-auto text-white px-6 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-[#c90022] shadow-md disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
-                   {enviandoCorreo ? 'Enviando...' : (
-                     <>
-                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
-                       Enviar Propuesta
-                     </>
-                   )}
-                 </button>
-               </div>
-             </div>
+                  
+                  <div className="bg-[#dce3eb]/30 border border-[#415364]/10 rounded-xl p-3.5">
+                    <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-0.5">Asunto del Correo</p>
+                    <p className="text-[13px] font-medium text-[#415364]">Propuesta de Inversión - Arienzo Boutique Living - Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero}</p>
+                  </div>
+                </div>
 
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-[#ea0029] uppercase tracking-widest flex justify-between items-center">
+                    Cuerpo del Mensaje (Editable)
+                    <svg className="w-3.5 h-3.5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                  </label>
+                  <textarea 
+                    value={mensajeCorreo}
+                    onChange={(e) => setMensajeCorreo(e.target.value)}
+                    className="w-full bg-white border border-[#415364]/20 rounded-xl p-4 text-[13px] text-[#415364] h-48 outline-none focus:border-[#ea0029] focus:ring-1 focus:ring-[#ea0029] resize-none leading-relaxed shadow-sm"
+                  />
+                </div>
+
+                <div className="border border-[#D1C292]/50 bg-[#F9F7F5] rounded-xl p-4 space-y-3">
+                  <p className="text-[10px] font-bold text-[#B94A36] uppercase tracking-widest">Opciones de Envío</p>
+                  
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <input type="checkbox" checked={incluirPlano} onChange={e => setIncluirPlano(e.target.checked)} className="w-4 h-4 text-[#ea0029] focus:ring-[#ea0029] rounded border-neutral-300" />
+                    <div>
+                      <p className="text-xs font-bold text-[#415364] group-hover:text-[#ea0029] transition-colors">Adjuntar Hoja 2 en el PDF</p>
+                      <p className="text-[9.5px] text-neutral-500 mt-0.5">Incluye el render y diseño arquitectónico.</p>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <input type="checkbox" checked={incluirFirmas} onChange={e => setIncluirFirmas(e.target.checked)} className="w-4 h-4 text-[#ea0029] focus:ring-[#ea0029] rounded border-neutral-300" />
+                    <div>
+                      <p className="text-xs font-bold text-[#415364] group-hover:text-[#ea0029] transition-colors">Estampar mi firma en el correo</p>
+                      <p className="text-[9.5px] text-neutral-500 mt-0.5">Añade tu nombre y cargo al final del mensaje de texto.</p>
+                    </div>
+                  </label>
+                </div>
+
+              </div>
+
+              {/* Columna Derecha: Vista Previa Real del Correo */}
+              <div className="flex flex-col">
+                <p className="text-[10px] font-bold text-[#415364]/50 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                  Vista previa del diseño del cliente
+                </p>
+                <div className="border border-neutral-200 rounded-xl overflow-hidden bg-[#F9F7F5] flex-1 flex flex-col shadow-sm">
+                  {/* Fake Email Header */}
+                  <div className="bg-white border-b border-neutral-200 px-4 py-3 flex gap-2 items-center shrink-0">
+                    <div className="w-2.5 h-2.5 rounded-full bg-red-400"></div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-amber-400"></div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-green-400"></div>
+                  </div>
+                  
+                  {/* Email Body Design */}
+                  <div className="p-4 overflow-y-auto custom-scrollbar bg-[#F3F4F6] flex-1">
+                    <div className="bg-white border border-neutral-200 rounded-lg overflow-hidden shadow-sm">
+                      <div className="bg-[#B94A36] p-4 text-center">
+                        <img src={LOGO_BLANCO} alt="Arienzo" className="h-5 mx-auto" />
+                      </div>
+                      <div className="p-5 text-[12px] text-[#415364] leading-relaxed">
+                        <p className="mb-4">Estimado/a <strong className="text-[#21242E]">{clienteDataCompleta?.nombres}</strong>,</p>
+                        <div className="whitespace-pre-wrap">{mensajeCorreo}</div>
+                        
+                        {incluirFirmas && (
+                          <div className="mt-5 pt-4 border-t border-neutral-100">
+                             <p className="font-bold text-[#B94A36] text-[13px] m-0">{nombreAsesor}</p>
+                             <p className="text-[10px] text-neutral-500 m-0 mt-0.5">Asesor Comercial - Arienzo Boutique Living</p>
+                             <p className="text-[10px] text-neutral-500 m-0">Konkeri Developer Group</p>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Fake Attachment */}
+                      <div className="bg-neutral-50 p-4 border-t border-neutral-100 flex items-center gap-3">
+                        <div className="bg-red-100 p-2 rounded-lg">
+                          <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd"></path></svg>
+                        </div>
+                        <div>
+                          <p className="text-[11px] font-bold text-neutral-700">Cotizacion_Unidad_{propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero}.pdf</p>
+                          <p className="text-[9px] text-neutral-500">{incluirPlano ? '2 Páginas' : '1 Página'} • Arienzo Boutique Living</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+            
+            {/* Footer del Modal */}
+            <div className="p-5 border-t border-neutral-100 bg-white flex justify-end gap-3 shrink-0 rounded-b-2xl">
+              <button onClick={() => setMostrarModalCorreo(false)} className="px-6 py-3 rounded-xl text-xs font-bold text-[#415364] hover:bg-neutral-100 transition-colors">Cancelar Envío</button>
+              <button onClick={enviarCotizacionPorCorreo} disabled={enviandoCorreo} className="bg-[#ea0029] text-white px-8 py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-[#c90022] transition-colors shadow-md shadow-[#ea0029]/20 flex items-center gap-2 disabled:opacity-50">
+                {enviandoCorreo ? 'Procesando Envío...' : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                    Confirmar y Enviar Correo
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -622,21 +718,21 @@ export default function CotizadorPage() {
             </div>
           ) : pestañaActiva === 'previsualizar' ? (
             
-            // --- CONTENEDOR PRINCIPAL DE PREVISUALIZACIÓN (VISOR PDF ESTILO ADOBE CON SCROLL NATURAL Y CENTRADO) ---
+            // --- CONTENEDOR PRINCIPAL DE PREVISUALIZACIÓN (VISOR PDF ESTILO ADOBE CON SCROLL NATURAL Y CENTRADO PERFECTO) ---
             <div className="bg-[#525659] w-full rounded-2xl shadow-inner border border-[#415364]/30 overflow-auto max-h-[85vh] custom-scrollbar">
               
-              {/* Este contenedor min-w-max asegura que si la pantalla es pequeña, no aplasta la hoja, sino que habilita el scroll */}
-              <div className="w-max mx-auto py-12 px-6 flex flex-col items-center">
+              {/* min-w-max asegura que si la pantalla es pequeña, no aplasta la hoja, sino que habilita el scroll mostrando márgenes completos */}
+              <div className="min-w-max flex justify-center p-4 sm:p-10">
                 
                 <div id="plantilla-pdf-arienzo" className="flex flex-col gap-10 print:gap-0" style={{ width: '210mm' }}>
                   
-                  {/* --- PÁGINA 1: COTIZACIÓN FINANCIERA (DISEÑO ORIGINAL LIMPIO SIN FONDOS TERRACOTA) --- */}
+                  {/* --- PÁGINA 1: COTIZACIÓN FINANCIERA (DISEÑO ORIGINAL LIMPIO CALCADO AL PDF) --- */}
                   <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm' }} className="pdf-page-container bg-white text-neutral-900 shadow-2xl print:shadow-none relative flex flex-col print:rounded-none overflow-hidden mx-auto shrink-0">
                     
-                    <div className="px-10 pt-10 pb-6 flex flex-col h-full">
+                    <div className="px-10 pt-10 pb-8 flex flex-col h-full">
                       
                       {/* Header P1 */}
-                      <div className="bg-[#B94A36] px-8 py-6 flex justify-between items-center mb-6 shrink-0 rounded-sm">
+                      <div className="bg-[#B94A36] px-8 py-5 flex justify-between items-center mb-6 shrink-0 rounded-[8px]">
                         <div className="flex items-center gap-3">
                           <img src="/logo-arienzo.png" alt="Arienzo Boutique Living" className="h-10 w-auto object-contain" />
                         </div>
@@ -654,7 +750,7 @@ export default function CotizadorPage() {
                       </div>
 
                       {/* Caja de Detalles (Diseño limpio original) */}
-                      <div className="mb-4 shrink-0 border border-neutral-200 rounded-xl p-3 bg-white shadow-sm">
+                      <div className="mb-5 shrink-0 border border-neutral-200/80 rounded-[8px] p-3.5 bg-white">
                         <div className="flex items-center justify-between text-[10px]">
                           <div className="flex-1 text-left border-r border-neutral-200 pr-2">
                             <span className="text-[7.5px] text-neutral-400 uppercase block mb-1">Unidad</span>
@@ -682,9 +778,9 @@ export default function CotizadorPage() {
                         </div>
                       </div>
 
-                      {/* Plan de Financiamiento Específico - Limpio y sin cajón oscurecido */}
-                      <div className="shrink-0 mb-3">
-                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#B94A36] mb-1">Plan de Financiamiento Específico</h4>
+                      {/* Plan de Financiamiento Específico - Sin cajón ni sombra, como el PDF */}
+                      <div className="shrink-0 mb-5">
+                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Plan de Financiamiento Específico</h4>
                         <table className="w-full text-left text-[11px] border-collapse">
                           <thead>
                             <tr className="border-b border-[#B94A36] text-[#B94A36] text-[8px] uppercase tracking-wider">
@@ -779,7 +875,7 @@ export default function CotizadorPage() {
                       )}
 
                       {/* Valores Agregados - ESTA es la única que lleva el fondo terracota sutil como en el PDF */}
-                      <div className="shrink-0 border border-[#EAE3DC] rounded-[8px] p-3.5 bg-[#FDF8F5] mb-4 shadow-sm">
+                      <div className="shrink-0 border border-[#EAE3DC] rounded-[8px] p-3.5 bg-[#FDF8F5] mb-4">
                         <h4 className="text-[9px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Valores Agregados a la Unidad</h4>
                         <ul className="text-[9px] text-neutral-700 space-y-1 pl-3 list-disc marker:text-[#DEB886]">
                           {esLocal ? (
@@ -793,7 +889,7 @@ export default function CotizadorPage() {
                         </ul>
                       </div>
 
-                      {/* Espacio Exacto para Firmas - Con mt-auto se empuja al fondo, dejando un GRAN espacio libre arriba */}
+                      {/* Espacio Exacto para Firmas - Con mt-auto se empuja al fondo */}
                       {incluirFirmas && (
                         <div className="mt-auto shrink-0 pt-6 pb-2">
                           <div className="grid grid-cols-2 gap-24 text-center text-[10px] px-10">
@@ -823,7 +919,7 @@ export default function CotizadorPage() {
                          {/* Contenedor central Arquitectura */}
                          <div className="flex-1 flex flex-col border border-neutral-300 rounded-[12px] overflow-hidden shadow-sm bg-white">
                             
-                            {/* Seccion 1: Render + Info - Render al borde exacto de la tarjeta */}
+                            {/* Seccion 1: Render + Info - Render TOPA el borde izquierdo y superior de la tarjeta */}
                             <div className="flex h-[150px] shrink-0 bg-white border-b border-neutral-200">
                                <div className="w-[230px] h-full shrink-0 bg-[#181A20]">
                                   <img src={RENDER_FACHADA} className="w-full h-full object-cover" alt="Fachada Arienzo" />
@@ -837,7 +933,7 @@ export default function CotizadorPage() {
                                </div>
                             </div>
 
-                            {/* Seccion 2: Iconos (Fondo F9F7F5 unificado) */}
+                            {/* Seccion 2: Iconos (Fondo F9F7F5) */}
                             <div className="bg-[#F9F7F5] px-4 py-3.5 grid grid-cols-7 gap-1 items-center shrink-0 border-b border-neutral-200">
                                <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
                                   <svg className="w-4 h-4 text-[#B94A36]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
@@ -896,7 +992,7 @@ export default function CotizadorPage() {
                                </div>
                             </div>
 
-                            {/* Footer P2: Franja terracota gruesa (55px) */}
+                            {/* Footer P2: Franja terracota gruesa */}
                             <div className="bg-[#B94A36] h-[55px] flex justify-center items-center shrink-0">
                                <img src={LOGO_BLANCO} alt="Arienzo Boutique Living" className="h-[14px] w-auto object-contain opacity-95" />
                             </div>
@@ -945,12 +1041,12 @@ export default function CotizadorPage() {
                     <h2 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest">3. Presentación de Extras y Anexos (PDF)</h2>
                   </div>
                   
-                  {/* 🔥 TOGGLE PARA EL PLANO ARQUITECTÓNICO - Controla lo que se ve y se manda */}
+                  {/* 🔥 TOGGLE PARA EL PLANO ARQUITECTÓNICO */}
                   <div className={`flex items-center gap-3 border p-4 rounded-xl cursor-pointer transition-colors ${incluirPlano ? 'bg-[#ea0029]/5 border-[#ea0029]/30' : 'bg-[#415364]/5 border-[#415364]/10 hover:border-[#ea0029]/40'}`} onClick={() => setIncluirPlano(!incluirPlano)}>
                     <input type="checkbox" checked={incluirPlano} onChange={e => setIncluirPlano(e.target.checked)} className="w-4 h-4 text-[#ea0029] rounded focus:ring-[#ea0029] cursor-pointer" />
                     <div>
                       <p className={`text-xs font-bold ${incluirPlano ? 'text-[#ea0029]' : 'text-[#415364]'}`}>Incluir Plano Arquitectónico en el PDF</p>
-                      <p className="text-[10px] font-medium text-[#415364]/60">Añade una segunda página al documento con el diseño de la tipología y el render de la fachada.</p>
+                      <p className="text-[10px] font-medium text-[#415364]/60">Añade la segunda página al documento con el diseño de la tipología y fachada.</p>
                     </div>
                   </div>
 
@@ -959,7 +1055,7 @@ export default function CotizadorPage() {
                     <input type="checkbox" checked={incluirFirmas} onChange={e => setIncluirFirmas(e.target.checked)} className="w-4 h-4 text-[#ea0029] rounded focus:ring-[#ea0029] cursor-pointer" />
                     <div>
                       <p className={`text-xs font-bold ${incluirFirmas ? 'text-[#ea0029]' : 'text-[#415364]'}`}>Incluir espacios de firmas</p>
-                      <p className="text-[10px] font-medium text-[#415364]/60">Añade las firmas de aceptación del cliente y del asesor en la Hoja 1.</p>
+                      <p className="text-[10px] font-medium text-[#415364]/60">Añade las firmas de aceptación del cliente y del asesor al final del documento.</p>
                     </div>
                   </div>
 
