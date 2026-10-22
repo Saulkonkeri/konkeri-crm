@@ -176,6 +176,7 @@ export default function GestorOperacionesPage() {
     }
     let cuotasGeneradas: CuotaMes[] = [];
 
+    // CUOTAS INICIALES (Abonos)
     if (calcInforme.saldoFirmaPromesa > 0 && mesesInicial > 0) {
       const valorAbono = Number((calcInforme.saldoFirmaPromesa / mesesInicial).toFixed(2));
       for (let i = 0; i < mesesInicial; i++) {
@@ -193,6 +194,7 @@ export default function GestorOperacionesPage() {
       }
     }
 
+    // CUOTAS DE CONSTRUCCIÓN
     if (mesesConstruccion > 0 && calcInforme.entradaDiferirTotal > 0) {
       const valorBaseCuota = Number((calcInforme.entradaDiferirTotal / mesesConstruccion).toFixed(2));
       const [y, m, d] = fechaInicioConstruccion.split('-');
@@ -262,6 +264,7 @@ export default function GestorOperacionesPage() {
     if (mesesExtra.length === 0) return;
     const saldoRef = calcInforme.entradaDiferirTotal - (base * (mesesConstruccion - mesesExtra.length));
     const valRef = Number((saldoRef / mesesExtra.length).toFixed(2));
+    
     setCronogramaCuotas(cronogramaCuotas.map(c => {
       if(c.tipo === 'construccion') {
          return { ...c, valor: mesesExtra.includes(Number(c.numeroCuota)) ? valRef : base, esEditable: true };
