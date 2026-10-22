@@ -177,7 +177,7 @@ export default function GestorOperacionesPage() {
     let cuotasGeneradas: CuotaMes[] = [];
 
     if (calcInforme.saldoFirmaPromesa > 0 && mesesInicial > 0) {
-      const valorAbono = calcInforme.saldoFirmaPromesa / mesesInicial;
+      const valorAbono = Number((calcInforme.saldoFirmaPromesa / mesesInicial).toFixed(2));
       for (let i = 0; i < mesesInicial; i++) {
         const d = new Date(fechaFirmaPromesa + "T12:00:00");
         d.setMonth(d.getMonth() + i);
@@ -194,7 +194,7 @@ export default function GestorOperacionesPage() {
     }
 
     if (mesesConstruccion > 0 && calcInforme.entradaDiferirTotal > 0) {
-      const valorBaseCuota = calcInforme.entradaDiferirTotal / mesesConstruccion;
+      const valorBaseCuota = Number((calcInforme.entradaDiferirTotal / mesesConstruccion).toFixed(2));
       const [y, m, d] = fechaInicioConstruccion.split('-');
       const baseDate = new Date(Number(y), Number(m) - 1, Number(d), 12, 0, 0);
 
@@ -224,7 +224,7 @@ export default function GestorOperacionesPage() {
     if (campo === 'fechaPago') {
        nuevoCrono[index].fechaPago = nuevoValor;
     } else if (campo === 'valor') {
-       nuevoCrono[index].valor = nuevoValor;
+       nuevoCrono[index].valor = Number(nuevoValor);
        nuevoCrono[index].esEditable = true;
 
        if (nuevoCrono[index].tipo === 'construccion') {
@@ -232,7 +232,7 @@ export default function GestorOperacionesPage() {
          const saldoRestante = calcInforme.entradaDiferirTotal - construccionCrono.filter(c => c.esEditable).reduce((acc, curr) => acc + curr.valor, 0);
          const automaticos = construccionCrono.filter(c => !c.esEditable);
          if (automaticos.length > 0) {
-           const valorRepartido = Math.max(0, saldoRestante / automaticos.length);
+           const valorRepartido = Number((Math.max(0, saldoRestante / automaticos.length)).toFixed(2));
            nuevoCrono = nuevoCrono.map(c => (c.tipo === 'construccion' && !c.esEditable) ? { ...c, valor: valorRepartido } : c);
          }
        }
@@ -241,7 +241,7 @@ export default function GestorOperacionesPage() {
          const saldoRestante = calcInforme.saldoFirmaPromesa - inicialCrono.filter(c => c.esEditable).reduce((acc, curr) => acc + curr.valor, 0);
          const automaticos = inicialCrono.filter(c => !c.esEditable);
          if (automaticos.length > 0) {
-           const valorRepartido = Math.max(0, saldoRestante / automaticos.length);
+           const valorRepartido = Number((Math.max(0, saldoRestante / automaticos.length)).toFixed(2));
            nuevoCrono = nuevoCrono.map(c => (c.tipo === 'inicial' && !c.esEditable) ? { ...c, valor: valorRepartido } : c);
          }
        }
@@ -261,7 +261,7 @@ export default function GestorOperacionesPage() {
     const mesesExtra = mesesRefuerzoRapido.split(',').map(m => parseInt(m.trim())).filter(m => !isNaN(m) && m > 0 && m <= mesesConstruccion);
     if (mesesExtra.length === 0) return;
     const saldoRef = calcInforme.entradaDiferirTotal - (base * (mesesConstruccion - mesesExtra.length));
-    const valRef = saldoRef / mesesExtra.length;
+    const valRef = Number((saldoRef / mesesExtra.length).toFixed(2));
     setCronogramaCuotas(cronogramaCuotas.map(c => {
       if(c.tipo === 'construccion') {
          return { ...c, valor: mesesExtra.includes(Number(c.numeroCuota)) ? valRef : base, esEditable: true };
@@ -630,7 +630,7 @@ export default function GestorOperacionesPage() {
                                   <span className="text-xs p-1.5 font-medium text-neutral-500 w-32 text-center">{fechaReservaInf}</span>
                                   <div className="flex items-center border-b border-dashed border-transparent pb-0.5 w-28 justify-end">
                                     <span className="text-xs mr-1 font-bold text-neutral-400">$</span>
-                                    <span className="text-right text-sm font-bold font-mono text-neutral-700">{infReservaValor.toLocaleString('en-US', {minimumFractionDigits:2})}</span>
+                                    <span className="text-right text-sm font-bold font-mono text-neutral-700">{infReservaValor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                                   </div>
                                </div>
                             </div>
@@ -664,7 +664,7 @@ export default function GestorOperacionesPage() {
                                     </span>
                                     <div className="flex items-center border-b border-dashed border-transparent pb-0.5 w-28 justify-end">
                                       <span className="text-xs mr-1 font-bold text-[#B94A36]/70">$</span>
-                                      <span className="text-right text-sm font-bold font-mono text-[#B94A36]">{calcInforme.contraEntrega.toLocaleString('en-US', {minimumFractionDigits:2})}</span>
+                                      <span className="text-right text-sm font-bold font-mono text-[#B94A36]">{calcInforme.contraEntrega.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                                     </div>
                                  </div>
                               </div>
@@ -737,14 +737,14 @@ export default function GestorOperacionesPage() {
                                         <div><span className="text-neutral-500 mr-1">TIPO FINANCIAMIENTO:</span> <strong className="text-neutral-800">{formaFinanciamiento}</strong></div>
                                         {calcInforme.montoDescuentoCalculado > 0 && (
                                           <>
-                                            <div><span className="text-neutral-500 mr-1">PRECIO BASE:</span> <strong className="font-mono">${calcInforme.precioListaOriginal.toLocaleString('en-US', {minimumFractionDigits:2})}</strong></div>
-                                            <div><span className="text-neutral-500 mr-1">DESCUENTO:</span> <strong className="font-mono text-[#ea0029]">-${calcInforme.montoDescuentoCalculado.toLocaleString('en-US', {minimumFractionDigits:2})}</strong></div>
+                                            <div><span className="text-neutral-500 mr-1">PRECIO BASE:</span> <strong className="font-mono">${calcInforme.precioListaOriginal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></div>
+                                            <div><span className="text-neutral-500 mr-1">DESCUENTO:</span> <strong className="font-mono text-[#ea0029]">-${calcInforme.montoDescuentoCalculado.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></div>
                                           </>
                                         )}
                                     </div>
                                     <div>
                                         <span className="font-bold text-[#B94A36] mr-2">VALOR TOTAL ACORDADO:</span> 
-                                        <strong className="font-mono text-[11pt] text-[#B94A36]">${calcInforme.precioTotal.toLocaleString('en-US', {minimumFractionDigits:2})}</strong>
+                                        <strong className="font-mono text-[11pt] text-[#B94A36]">${calcInforme.precioTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>
                                     </div>
                                 </div>
                             </div>
@@ -761,7 +761,7 @@ export default function GestorOperacionesPage() {
                                       <div key={c.id} className="flex justify-between text-[6.5pt] border-b border-[#333333]/20 pb-0.5 uppercase">
                                         <span className={`w-[45%] truncate ${c.isBold ? 'font-bold' : ''} ${c.isRed ? 'text-[#B94A36]' : 'text-neutral-800'}`}>{c.label}</span>
                                         <span className={`w-[25%] text-center font-mono ${c.isRed ? 'text-[#B94A36]' : 'text-neutral-600'}`}>{formatearFechaLegible(c.date)}</span>
-                                        <span className={`w-[30%] text-right font-mono ${c.isBold ? 'font-bold' : ''} ${c.isRed ? 'text-[#B94A36]' : 'text-neutral-900'}`}>${c.amount.toLocaleString('en-US', {minimumFractionDigits:2})}</span>
+                                        <span className={`w-[30%] text-right font-mono ${c.isBold ? 'font-bold' : ''} ${c.isRed ? 'text-[#B94A36]' : 'text-neutral-900'}`}>${c.amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                                       </div>
                                     ))}
                                   </div>
@@ -775,7 +775,7 @@ export default function GestorOperacionesPage() {
                                       <div key={c.id} className="flex justify-between text-[6.5pt] border-b border-[#333333]/20 pb-0.5 uppercase">
                                         <span className={`w-[45%] truncate ${c.isBold ? 'font-bold' : ''} ${c.isRed ? 'text-[#B94A36]' : 'text-neutral-800'}`}>{c.label}</span>
                                         <span className={`w-[25%] text-center font-mono ${c.isRed ? 'text-[#B94A36]' : 'text-neutral-600'}`}>{formatearFechaLegible(c.date)}</span>
-                                        <span className={`w-[30%] text-right font-mono ${c.isBold ? 'font-bold' : ''} ${c.isRed ? 'text-[#B94A36]' : 'text-neutral-900'}`}>${c.amount.toLocaleString('en-US', {minimumFractionDigits:2})}</span>
+                                        <span className={`w-[30%] text-right font-mono ${c.isBold ? 'font-bold' : ''} ${c.isRed ? 'text-[#B94A36]' : 'text-neutral-900'}`}>${c.amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                                       </div>
                                     ))}
                                   </div>
@@ -820,13 +820,13 @@ export default function GestorOperacionesPage() {
               <div className="xl:col-span-1 space-y-6">
                 <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-xl sticky top-6">
                   <h2 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest mb-3 border-b border-neutral-100 pb-2">Acuerdo Financiero</h2>
-                  <div className="text-4xl font-bold tracking-tight text-[#415364] font-mono">${calcInforme.precioTotal.toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
+                  <div className="text-4xl font-bold tracking-tight text-[#415364] font-mono">${calcInforme.precioTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
                   <p className="text-[10px] font-bold uppercase text-[#415364]/50 mt-1">Precio Final de Venta</p>
                   
                   <div className="space-y-4 pt-5 border-t border-[#415364]/10 text-sm mt-5">
-                    <div className="flex justify-between"><span className="text-[11px] font-bold uppercase">Cuota Inicial Total</span><span className="font-bold font-mono">${calcInforme.cuotaInicialTotal.toLocaleString('en-US',{minimumFractionDigits:2})}</span></div>
-                    <div className="flex justify-between pl-4 text-[10px] text-neutral-500"><span>Reserva:</span><span className="font-mono">${infReservaValor.toLocaleString('en-US',{minimumFractionDigits:2})}</span></div>
-                    <div className="flex justify-between pl-4 text-[10px] text-neutral-500"><span>Saldo Firma:</span><span className="font-mono">${calcInforme.saldoFirmaPromesa.toLocaleString('en-US',{minimumFractionDigits:2})}</span></div>
+                    <div className="flex justify-between"><span className="text-[11px] font-bold uppercase">Cuota Inicial Total</span><span className="font-bold font-mono">${calcInforme.cuotaInicialTotal.toLocaleString('en-US',{minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></div>
+                    <div className="flex justify-between pl-4 text-[10px] text-neutral-500"><span>Reserva:</span><span className="font-mono">${infReservaValor.toLocaleString('en-US',{minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></div>
+                    <div className="flex justify-between pl-4 text-[10px] text-neutral-500"><span>Saldo Firma:</span><span className="font-mono">${calcInforme.saldoFirmaPromesa.toLocaleString('en-US',{minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></div>
                     
                     {mesesInicial > 1 && calcInforme.saldoFirmaPromesa > 0 && (
                       <div className="flex justify-between pl-4 pr-3 py-2 text-[10px] font-bold text-[#ea0029] bg-[#ea0029]/5 rounded-lg border border-[#ea0029]/10 mt-1">
@@ -834,8 +834,8 @@ export default function GestorOperacionesPage() {
                       </div>
                     )}
 
-                    <div className="flex justify-between border-t border-neutral-100 pt-3"><span className="text-[11px] font-bold uppercase">Diferido Obra</span><span className="font-bold font-mono">${calcInforme.entradaDiferirTotal.toLocaleString('en-US',{minimumFractionDigits:2})}</span></div>
-                    <div className="flex justify-between border-t-2 border-[#21242E] pt-3 mt-2"><span className="text-[12px] font-bold uppercase">Contra Entrega</span><span className="font-bold text-[#B94A36] font-mono">${calcInforme.contraEntrega.toLocaleString('en-US',{minimumFractionDigits:2})}</span></div>
+                    <div className="flex justify-between border-t border-neutral-100 pt-3"><span className="text-[11px] font-bold uppercase">Diferido Obra</span><span className="font-bold font-mono">${calcInforme.entradaDiferirTotal.toLocaleString('en-US',{minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></div>
+                    <div className="flex justify-between border-t-2 border-[#21242E] pt-3 mt-2"><span className="text-[12px] font-bold uppercase">Contra Entrega</span><span className="font-bold text-[#B94A36] font-mono">${calcInforme.contraEntrega.toLocaleString('en-US',{minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></div>
                   </div>
 
                   <button onClick={() => imprimirDocumento('plantilla-pdf-arienzo', 'Informe_Negocio')} disabled={!propiedadActivaInforme} className="w-full bg-[#21242E] text-white rounded-xl p-3.5 text-[11px] font-bold uppercase tracking-widest hover:bg-neutral-800 transition-colors mt-8 disabled:opacity-50 flex items-center justify-center gap-2">
@@ -909,7 +909,7 @@ export default function GestorOperacionesPage() {
             </div>
             <div className="bg-white border border-[#EAE3DC] p-6 rounded-md shadow-sm">
               <div className="flex justify-between items-center border-b border-[#EAE3DC] pb-4 mb-4"><span className="text-[10px] uppercase font-bold text-[#8C8A87] tracking-wider">Fecha de Emisión:</span><span className="text-sm font-medium">{new Date().toLocaleDateString('es-ES')}</span></div>
-              <div className="flex justify-between items-center border-b border-[#EAE3DC] pb-4 mb-4"><span className="text-[10px] uppercase font-bold text-[#8C8A87] tracking-wider">Monto Recibido:</span><span className="text-xl font-mono font-bold text-[#B94A36]">${reservaForm.montoReserva.toLocaleString('en-US', {minimumFractionDigits: 2})}</span></div>
+              <div className="flex justify-between items-center border-b border-[#EAE3DC] pb-4 mb-4"><span className="text-[10px] uppercase font-bold text-[#8C8A87] tracking-wider">Monto Recibido:</span><span className="text-xl font-mono font-bold text-[#B94A36]">${reservaForm.montoReserva.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></div>
               <div className="flex justify-between items-center border-b border-[#EAE3DC] pb-4 mb-4"><span className="text-[10px] uppercase font-bold text-[#8C8A87] tracking-wider">Recibimos de:</span><span className="text-sm font-bold uppercase">{clienteActivoReserva?.nombres || ''} {clienteActivoReserva?.apellidos || ''}</span></div>
               <div className="flex flex-col border-b border-[#EAE3DC] pb-4 mb-4">
                 <span className="text-[10px] uppercase font-bold text-[#8C8A87] tracking-wider mb-2">Por Concepto de:</span>
