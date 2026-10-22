@@ -71,8 +71,6 @@ export default function GestorOperacionesPage() {
   // ================= ESTADOS: PESTAÑA 3 (EXPEDIENTE KYC) =================
   const [cierreForm, setCierreForm] = useState({ clienteId: '', propiedadId: '' });
 
-  const [nombreAsesor, setNombreAsesor] = useState<string>('Saúl Intriago / Debbi Mera');
-
   useEffect(() => {
     async function inicializarEcosistema() {
       try {
@@ -753,7 +751,7 @@ export default function GestorOperacionesPage() {
                               </div>
                               <div className="text-center border-t border-[#333333] pt-2">
                                   <p className="text-[7pt] font-bold uppercase tracking-widest text-neutral-800">Arienzo S.A.S.</p>
-                                  <p className="text-[6pt] text-neutral-500 mt-1">{nombreAsesor}</p>
+                                  <p className="text-[6pt] text-neutral-500 mt-1">RUC: 1391940037001</p>
                               </div>
                           </div>
                         </div>
@@ -850,7 +848,7 @@ export default function GestorOperacionesPage() {
             <div className="flex justify-between items-end border-b-2 border-[#B94A36] pb-4 mb-8">
               <div>
                 <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" alt="Arienzo" className="h-10 mb-2 object-contain" />
-                <p className="text-[8px] tracking-widest text-[#8C8A87] uppercase font-bold">RUC: 1391937895001</p>
+                <p className="text-[8px] tracking-widest text-[#8C8A87] uppercase font-bold">RUC: 1391940037001</p>
               </div>
               <div className="text-right"><h1 className="text-lg font-light text-[#B94A36] tracking-widest uppercase">Recibo de Caja</h1><p className="text-xs font-mono font-bold mt-1">N° {codigoReserva || 'RES-BORRADOR'}</p></div>
             </div>
@@ -884,7 +882,7 @@ export default function GestorOperacionesPage() {
               </div>
               <div className="text-center border-t border-[#8C8A87] pt-2">
                 <p className="text-[9px] font-bold uppercase tracking-wider">Arienzo S.A.S.</p>
-                <p className="text-[8px] text-[#8C8A87]">Recibí Conforme</p>
+                <p className="text-[8px] text-[#8C8A87]">RUC: 1391940037001</p>
               </div>
             </div>
             <div className="absolute bottom-6 left-0 right-0 text-center text-[7px] text-[#8C8A87] uppercase tracking-widest">Arienzo S.A.S. • Promotora Inmobiliaria • Página 1 de 1</div>
