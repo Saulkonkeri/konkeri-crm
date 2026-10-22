@@ -63,13 +63,13 @@ export default function GestorOperacionesPage() {
   const [cuotaBaseRapida, setCuotaBaseRapida] = useState<number | ''>('');
   const [mesesRefuerzoRapido, setMesesRefuerzoRapido] = useState<string>('');
 
-  // Detalles Manuales de la Propiedad (Editables en el Informe)
   const [detallesManuales, setDetallesManuales] = useState({
     unidad: '', area_interior: '', terraza_a: '', area_total: '', bodega: '', parqueo: '', terraza_b: '', dormitorios: ''
   });
 
   // ================= ESTADOS: PESTAÑA 3 (EXPEDIENTE KYC) =================
   const [cierreForm, setCierreForm] = useState({ clienteId: '', propiedadId: '' });
+  const [nombreAsesor, setNombreAsesor] = useState<string>('Saúl Intriago / Debbi Mera');
 
   useEffect(() => {
     async function inicializarEcosistema() {
@@ -105,7 +105,6 @@ export default function GestorOperacionesPage() {
   const clienteActivoInforme = clientes.find(c => c.id === informeForm.clienteId);
   const propiedadActivaInforme = propiedades.find(p => p.id.toString() === informeForm.propiedadId.toString());
 
-  // Auto-llenar campos manuales cuando se selecciona una propiedad
   useEffect(() => {
     if (propiedadActivaInforme) {
       setDetallesManuales({
@@ -271,6 +270,31 @@ export default function GestorOperacionesPage() {
     }));
     setMostrarCalculadoraRefuerzos(false); 
   };
+
+  // ================= CÁLCULO DE LA LISTA COMBINADA DE PAGOS (INCLUYE RESERVA Y SALDO FINAL) =================
+  const listadoMaestroPagos = useMemo(() => {
+    const ultConstruccion = cronogramaCuotas.filter(c => c.tipo === 'construccion').pop();
+    const fechaContraEntrega = ultConstruccion ? ultConstruccion.fechaPago : fechaFirmaPromesa;
+    const numeroContraEntrega = ultConstruccion ? Number(ultConstruccion.numeroCuota) + 1 : 1;
+
+    return [
+      { id: 'res_pdf', label: 'RESERVA COMERCIAL', date: fechaReservaInf, amount: infReservaValor, isBold: true, isRed: false },
+      ...cronogramaCuotas.map(c => ({
+         id: c.id,
+         label: c.tipo === 'inicial' ? `ABONO INICIAL ${c.numeroCuota}` : `CUOTA ${c.numeroCuota}`,
+         date: c.fechaPago,
+         amount: c.valor,
+         isBold: false,
+         isRed: false
+      })),
+      { id: 'sal_pdf', label: `CUOTA ${numeroContraEntrega} (SALDO FINAL)`, date: fechaContraEntrega, amount: calcInforme.contraEntrega, isBold: true, isRed: true }
+    ];
+  }, [cronogramaCuotas, fechaReservaInf, infReservaValor, fechaFirmaPromesa, calcInforme.contraEntrega]);
+
+  // División en 2 columnas para el PDF
+  const mitadPagos = Math.ceil(listadoMaestroPagos.length / 2);
+  const columnaPagosIzq = listadoMaestroPagos.slice(0, mitadPagos);
+  const columnaPagosDer = listadoMaestroPagos.slice(mitadPagos);
 
   // ================= IMPRESIÓN =================
   const imprimirDocumento = (idElemento: string, tituloVentana: string) => {
@@ -597,15 +621,29 @@ export default function GestorOperacionesPage() {
                             </div>
                           )}
 
-                          <div className="max-h-80 overflow-y-auto border border-[#415364]/10 rounded-xl divide-y divide-[#415364]/5 custom-scrollbar">
+                          <div className="max-h-80 overflow-y-auto border border-[#415364]/10 rounded-xl divide-y divide-[#415364]/5 custom-scrollbar bg-white">
+                            
+                            {/* Reserva Fija UI */}
+                            <div className="flex justify-between items-center p-3 bg-neutral-50">
+                               <span className="text-[11px] font-bold text-neutral-600 w-32">Reserva Inmediata</span>
+                               <div className="flex items-center gap-4">
+                                  <span className="text-xs p-1.5 font-medium text-neutral-500 w-32 text-center">{fechaReservaInf}</span>
+                                  <div className="flex items-center border-b border-dashed border-transparent pb-0.5 w-28 justify-end">
+                                    <span className="text-xs mr-1 font-bold text-neutral-400">$</span>
+                                    <span className="text-right text-sm font-bold font-mono text-neutral-700">{infReservaValor.toLocaleString('en-US', {minimumFractionDigits:2})}</span>
+                                  </div>
+                               </div>
+                            </div>
+
+                            {/* Cuotas Intermedias UI */}
                             {cronogramaCuotas.map(cuota => (
                               <div key={cuota.id} className={`flex justify-between items-center p-3 ${cuota.tipo === 'inicial' ? 'bg-[#D1C292]/10' : ''}`}>
                                 <span className={`text-[11px] font-bold ${cuota.tipo === 'inicial' ? 'text-[#D1C292] w-32' : 'text-[#415364] w-32'}`}>
-                                  {cuota.tipo === 'inicial' ? `Abono Inicial ${cuota.numeroCuota}` : `Dividendo ${cuota.numeroCuota}`}
+                                  {cuota.tipo === 'inicial' ? `Abono Inicial ${cuota.numeroCuota}` : `Cuota ${cuota.numeroCuota}`}
                                 </span>
                                 
                                 <div className="flex items-center gap-4">
-                                  <input type="date" value={cuota.fechaPago} onChange={(e) => actualizarAtributoCuota(cuota.id, 'fechaPago', e.target.value)} className="text-xs p-1.5 border border-transparent hover:border-[#415364]/20 rounded-md bg-transparent outline-none text-[#415364]/70 font-medium w-32" />
+                                  <input type="date" value={cuota.fechaPago} onChange={(e) => actualizarAtributoCuota(cuota.id, 'fechaPago', e.target.value)} className="text-xs p-1.5 border border-transparent hover:border-[#415364]/20 rounded-md bg-transparent outline-none text-[#415364]/70 font-medium w-32 text-center" />
                                   <div className="flex items-center border-b border-dashed border-[#415364]/30 pb-0.5 w-28 justify-end">
                                     <span className="text-xs mr-1 font-bold text-[#415364]/50">$</span>
                                     <input type="number" value={Number(cuota.valor.toFixed(2))} onChange={(e) => actualizarAtributoCuota(cuota.id, 'valor', Number(e.target.value))} className="w-full text-right text-sm font-bold font-mono outline-none bg-transparent" />
@@ -613,6 +651,25 @@ export default function GestorOperacionesPage() {
                                 </div>
                               </div>
                             ))}
+
+                            {/* Saldo Final Contraentrega UI */}
+                            {cronogramaCuotas.length > 0 && (
+                              <div className="flex justify-between items-center p-3 bg-[#B94A36]/10">
+                                 <span className="text-[11px] font-bold text-[#B94A36] w-32">
+                                   Cuota {(cronogramaCuotas.filter(c=>c.tipo==='construccion').pop()?.numeroCuota as number || 0) + 1} (Saldo)
+                                 </span>
+                                 <div className="flex items-center gap-4">
+                                    <span className="text-xs p-1.5 font-medium text-[#B94A36] w-32 text-center">
+                                      {cronogramaCuotas.filter(c=>c.tipo==='construccion').pop()?.fechaPago || fechaFirmaPromesa}
+                                    </span>
+                                    <div className="flex items-center border-b border-dashed border-transparent pb-0.5 w-28 justify-end">
+                                      <span className="text-xs mr-1 font-bold text-[#B94A36]/70">$</span>
+                                      <span className="text-right text-sm font-bold font-mono text-[#B94A36]">{calcInforme.contraEntrega.toLocaleString('en-US', {minimumFractionDigits:2})}</span>
+                                    </div>
+                                 </div>
+                              </div>
+                            )}
+
                           </div>
                         </div>
                       </>
@@ -621,7 +678,7 @@ export default function GestorOperacionesPage() {
                 ) : (
                   /* =========================================================================
                      PREVISUALIZADOR DEL INFORME DE NEGOCIO (PDF)
-                     Diseño Exacto A4, Márgenes amplios, 1 Página, Descuento Inteligente
+                     Diseño Exacto A4, Columnas Horizontales y Cronograma Dividido
                      ========================================================================= */
                   <div className="bg-[#1a1c23] py-10 rounded-2xl shadow-inner flex justify-center border border-[#415364]/30 overflow-x-auto min-h-[700px]">
                     <div id="plantilla-pdf-arienzo" className="bg-white mx-auto text-[#222222] shadow-2xl relative box-border scale-95 sm:scale-100 origin-top overflow-hidden p-[12mm]" style={{ width: '210mm', height: '297mm' }}>
@@ -653,7 +710,7 @@ export default function GestorOperacionesPage() {
 
                             {/* DESCRIPCIÓN DEL PRODUCTO */}
                             <div className="bg-[#F2EFEB] text-[#B94A36] font-bold text-[7pt] px-3 py-1.5 uppercase border-t border-l border-r border-[#333333] tracking-widest mt-4">Descripción del Producto</div>
-                            <div className="grid grid-cols-4 gap-y-2.5 gap-x-4 text-[7pt] border border-[#333333] p-4 uppercase">
+                            <div className="grid grid-cols-4 gap-y-2.5 gap-x-4 text-[7pt] border border-[#333333] p-4 uppercase mb-2">
                                 <div><strong>Departamento No.:</strong> <span className="text-neutral-700">{detallesManuales.unidad || '---'}</span></div>
                                 <div><strong>Área Útil:</strong> <span className="text-neutral-700">{detallesManuales.area_interior || '0.00'} m²</span></div>
                                 <div><strong>Terraza A:</strong> <span className="text-neutral-700">{detallesManuales.terraza_a || '0.00'} m²</span></div>
@@ -665,86 +722,84 @@ export default function GestorOperacionesPage() {
                             </div>
                           </div>
                           
-                          {/* NEGOCIO Y TABLA (BLOQUES FLEXIBLES) */}
-                          <div className="flex gap-5 mt-4 flex-1 min-h-0">
+                          {/* =========================================================
+                              NUEVA ESTRUCTURA: FILAS HORIZONTALES (PRECIOS -> PAGOS -> NOTAS)
+                              ========================================================= */}
+                          <div className="flex flex-col gap-3 mt-2 flex-1 min-h-0">
                             
-                            {/* COLUMNA IZQ: CONDICIONES */}
-                            <div className="w-1/2 flex flex-col h-full">
-                                <div className="flex-none bg-[#F2EFEB] text-[#B94A36] font-bold text-[7pt] px-3 py-1.5 uppercase border-t border-l border-r border-[#333333] tracking-widest">Condiciones de Negocio</div>
-                                <div className="border border-[#333333] p-4 text-[8pt] uppercase space-y-3 flex-1 flex flex-col overflow-hidden">
-                                    {calcInforme.montoDescuentoCalculado > 0 ? (
-                                      <>
-                                        <div className="flex justify-between items-center mb-1"><span>Precio Base:</span> <strong className="font-mono text-[9pt]">${calcInforme.precioListaOriginal.toLocaleString('en-US', {minimumFractionDigits:2})}</strong></div>
-                                        <div className="flex justify-between items-center mb-1"><span>Descuento Aplicado:</span> <strong className="font-mono text-[9pt] text-[#ea0029]">${calcInforme.montoDescuentoCalculado.toLocaleString('en-US', {minimumFractionDigits:2})}</strong></div>
-                                        <div className="flex justify-between items-center text-[9pt] border-t border-[#333333]/30 pt-3 mt-3">
-                                            <span className="font-bold text-[#B94A36]">PRECIO FINAL ACORDADO:</span> <strong className="font-mono text-[11pt] text-[#B94A36]">${calcInforme.precioTotal.toLocaleString('en-US', {minimumFractionDigits:2})}</strong>
-                                        </div>
-                                      </>
-                                    ) : (
-                                      <div className="flex justify-between items-center text-[9pt]">
-                                          <span className="font-bold text-[#B94A36]">VALOR DEL INMUEBLE:</span> <strong className="font-mono text-[11pt] text-[#B94A36]">${calcInforme.precioTotal.toLocaleString('en-US', {minimumFractionDigits:2})}</strong>
-                                      </div>
-                                    )}
-                                    
-                                    <div className="mt-8 pt-4 border-t border-[#333333]/20 flex-1">
-                                        <p className="font-bold text-[7pt] text-[#B94A36] mb-1">Tipo de Financiamiento:</p>
-                                        <p className="font-bold text-[8pt] mb-4 text-neutral-800">{formaFinanciamiento}</p>
-                                        
-                                        {/* SISTEMA DE NOTAS Y OBSERVACIONES IMPRESO */}
-                                        <p className="font-bold text-[7pt] text-[#B94A36] mb-1">Notas y Observaciones:</p>
-                                        <div className="space-y-1.5">
-                                          {observacionesNegocio && <p className="text-[7pt] text-neutral-700 leading-snug"><span className="font-bold text-neutral-900">- Distribución:</span> {observacionesNegocio}</p>}
-                                          {notas.map(n => (
-                                            <p key={n.id} className="text-[7pt] text-neutral-700 leading-snug normal-case">
-                                              <span className="font-bold uppercase text-[#ea0029]">- {n.titulo}: </span>
-                                              {n.descripcion}
-                                            </p>
-                                          ))}
-                                          {!observacionesNegocio && notas.length === 0 && <p className="text-[7pt] italic text-neutral-400">Sin observaciones especiales registradas.</p>}
-                                        </div>
+                            {/* 1. RESUMEN DE PRECIOS Y FINANCIAMIENTO */}
+                            <div className="border border-[#333333] flex-none">
+                                <div className="bg-[#F2EFEB] text-[#B94A36] font-bold text-[7pt] px-3 py-1.5 uppercase border-b border-[#333333] tracking-widest">
+                                  Condiciones de Negocio
+                                </div>
+                                <div className="flex justify-between items-center p-3 text-[7.5pt] uppercase">
+                                    <div className="flex gap-6 items-center">
+                                        <div><span className="text-neutral-500 mr-1">TIPO FINANCIAMIENTO:</span> <strong className="text-neutral-800">{formaFinanciamiento}</strong></div>
+                                        {calcInforme.montoDescuentoCalculado > 0 && (
+                                          <>
+                                            <div><span className="text-neutral-500 mr-1">PRECIO BASE:</span> <strong className="font-mono">${calcInforme.precioListaOriginal.toLocaleString('en-US', {minimumFractionDigits:2})}</strong></div>
+                                            <div><span className="text-neutral-500 mr-1">DESCUENTO:</span> <strong className="font-mono text-[#ea0029]">-${calcInforme.montoDescuentoCalculado.toLocaleString('en-US', {minimumFractionDigits:2})}</strong></div>
+                                          </>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <span className="font-bold text-[#B94A36] mr-2">VALOR TOTAL ACORDADO:</span> 
+                                        <strong className="font-mono text-[11pt] text-[#B94A36]">${calcInforme.precioTotal.toLocaleString('en-US', {minimumFractionDigits:2})}</strong>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* COLUMNA DER: TABLA PAGOS */}
-                            <div className="w-1/2 flex flex-col h-full">
-                                <div className="flex-none bg-[#F2EFEB] text-[#B94A36] font-bold text-[7pt] px-3 py-1.5 uppercase border-t border-l border-r border-[#333333] tracking-widest">Tabla de Pagos</div>
-                                <div className="border border-[#333333] flex-1 overflow-hidden">
-                                    <table className="w-full text-[7pt] text-left uppercase">
-                                        <thead>
-                                            <tr className="border-b border-[#333333] bg-neutral-50"><th className="px-2 py-1.5 border-r border-[#333333]/30 text-center w-[45%]">Detalle / Cuota</th><th className="px-2 py-1.5 border-r border-[#333333]/30 text-center w-[25%]">Fecha</th><th className="px-2 py-1.5 text-right w-[30%]">Monto $</th></tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-[#333333]/20">
-                                            <tr>
-                                              <td className="px-2 py-1 border-r border-[#333333]/30 font-bold text-neutral-800 text-center">Reserva</td>
-                                              <td className="px-2 py-1 border-r border-[#333333]/30 text-center font-mono text-neutral-700">{formatearFechaLegible(fechaReservaInf)}</td>
-                                              <td className="px-2 py-1 text-right font-mono font-bold text-neutral-900">${infReservaValor.toLocaleString('en-US', {minimumFractionDigits:2})}</td>
-                                            </tr>
-                                            
-                                            {/* RENDERIZADO DEL CRONOGRAMA COMBINADO */}
-                                            {cronogramaCuotas.map(c => (
-                                                <tr key={c.id}>
-                                                  <td className={`px-2 py-1 border-r border-[#333333]/30 pl-3 ${c.tipo === 'inicial' ? 'font-bold text-neutral-800' : 'text-[6pt] text-neutral-600'}`}>
-                                                    {c.tipo === 'inicial' ? `Abono Inicial ${c.numeroCuota}` : `Dividendo ${c.numeroCuota}`}
-                                                  </td>
-                                                  <td className="px-2 py-1 border-r border-[#333333]/30 text-center font-mono text-neutral-700">{formatearFechaLegible(c.fechaPago)}</td>
-                                                  <td className={`px-2 py-1 text-right font-mono ${c.tipo === 'inicial' ? 'font-bold text-neutral-900' : 'text-neutral-600'}`}>${c.valor.toLocaleString('en-US', {minimumFractionDigits:2})}</td>
-                                                </tr>
-                                            ))}
-                                            
-                                            <tr className="border-t-2 border-[#333333] bg-[#F2EFEB]/40">
-                                              <td className="px-2 py-1.5 border-r border-[#333333]/30 font-bold text-[#B94A36] text-center uppercase tracking-wider">Contraentrega</td>
-                                              <td className="px-2 py-1.5 border-r border-[#333333]/30 text-center font-mono font-bold text-[#B94A36]">FINAL</td>
-                                              <td className="px-2 py-1.5 text-right font-mono font-bold text-[#B94A36] text-[8pt]">${calcInforme.contraEntrega.toLocaleString('en-US', {minimumFractionDigits:2})}</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                            {/* 2. TABLA DE PAGOS (2 COLUMNAS FULL WIDTH) */}
+                            <div className="border border-[#333333] flex flex-col flex-1 overflow-hidden">
+                                <div className="bg-[#F2EFEB] text-[#B94A36] font-bold text-[7pt] px-3 py-1.5 uppercase border-b border-[#333333] tracking-widest">
+                                  Cronograma de Pagos
+                                </div>
+                                <div className="flex gap-6 w-full flex-1 p-3">
+                                  {/* Columna Izquierda */}
+                                  <div className="flex-1 flex flex-col gap-1">
+                                    {columnaPagosIzq.map(c => (
+                                      <div key={c.id} className="flex justify-between text-[6.5pt] border-b border-[#333333]/20 pb-0.5 uppercase">
+                                        <span className={`w-[45%] truncate ${c.isBold ? 'font-bold' : ''} ${c.isRed ? 'text-[#B94A36]' : 'text-neutral-800'}`}>{c.label}</span>
+                                        <span className={`w-[25%] text-center font-mono ${c.isRed ? 'text-[#B94A36]' : 'text-neutral-600'}`}>{formatearFechaLegible(c.date)}</span>
+                                        <span className={`w-[30%] text-right font-mono ${c.isBold ? 'font-bold' : ''} ${c.isRed ? 'text-[#B94A36]' : 'text-neutral-900'}`}>${c.amount.toLocaleString('en-US', {minimumFractionDigits:2})}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  
+                                  {/* Divisor Central */}
+                                  <div className="w-[1px] bg-[#333333]/20 my-1"></div>
+
+                                  {/* Columna Derecha */}
+                                  <div className="flex-1 flex flex-col gap-1">
+                                    {columnaPagosDer.map(c => (
+                                      <div key={c.id} className="flex justify-between text-[6.5pt] border-b border-[#333333]/20 pb-0.5 uppercase">
+                                        <span className={`w-[45%] truncate ${c.isBold ? 'font-bold' : ''} ${c.isRed ? 'text-[#B94A36]' : 'text-neutral-800'}`}>{c.label}</span>
+                                        <span className={`w-[25%] text-center font-mono ${c.isRed ? 'text-[#B94A36]' : 'text-neutral-600'}`}>{formatearFechaLegible(c.date)}</span>
+                                        <span className={`w-[30%] text-right font-mono ${c.isBold ? 'font-bold' : ''} ${c.isRed ? 'text-[#B94A36]' : 'text-neutral-900'}`}>${c.amount.toLocaleString('en-US', {minimumFractionDigits:2})}</span>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
                             </div>
+
+                            {/* 3. NOTAS Y OBSERVACIONES */}
+                            <div className="border border-[#333333] flex-none">
+                                <div className="bg-[#F2EFEB] text-[#B94A36] font-bold text-[7pt] px-3 py-1.5 uppercase border-b border-[#333333] tracking-widest">
+                                  Notas y Observaciones Adicionales
+                                </div>
+                                <div className="p-3 text-[7pt] text-neutral-700 leading-snug space-y-1.5 uppercase min-h-[50px]">
+                                  {observacionesNegocio && <p><span className="font-bold text-neutral-900">- DISTRIBUCIÓN:</span> {observacionesNegocio}</p>}
+                                  {notas.map(n => (
+                                    <p key={n.id}><span className="font-bold text-[#ea0029]">- {n.titulo}: </span> {n.descripcion}</p>
+                                  ))}
+                                  {!observacionesNegocio && notas.length === 0 && <p className="italic text-neutral-400 normal-case">Sin observaciones especiales registradas en este acuerdo.</p>}
+                                </div>
+                            </div>
+
                           </div>
 
-                          {/* FIRMAS INFORME (Con mayor espacio superior - mt-16 pt-8) */}
-                          <div className="flex-none mt-16 pt-8 grid grid-cols-2 gap-16 px-10">
+                          {/* FIRMAS INFORME */}
+                          <div className="flex-none mt-8 pt-4 grid grid-cols-2 gap-16 px-10">
                               <div className="text-center border-t border-[#333333] pt-2">
                                   <p className="text-[7pt] font-bold uppercase tracking-widest text-neutral-800">{clienteActivoInforme?.nombres || 'FIRMA DEL CLIENTE'} {clienteActivoInforme?.apellidos || ''}</p>
                                   <p className="text-[6pt] text-neutral-500 mt-1">C.C. {clienteActivoInforme?.cedula || clienteActivoInforme?.identificacion || '_______________'}</p>
