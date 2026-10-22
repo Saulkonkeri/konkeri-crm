@@ -1,4 +1,3 @@
-// Actualizacion para Vercel - Gestor de Operaciones v7 (Vectores, 1 Pagina y Descuento Condicional)
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -53,43 +52,36 @@ export default function GestorOperacionesPage() {
   
   const [fechaReservaInf, setFechaReservaInf] = useState(hoyStr);
   const [fechaFirmaPromesa, setFechaFirmaPromesa] = useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+  const [fechaInicioConstruccion, setFechaInicioConstruccion] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
   
   const [tipoEntrada, setTipoEntrada] = useState<'porcentaje' | 'valor'>('porcentaje');
   const [valorEntrada, setValorEntrada] = useState<number>(25); 
   const [mesesConstruccion, setMesesConstruccion] = useState(24);
-  const [diaPago, setDiaPago] = useState(5);
-  const [mesInicio, setMesInicio] = useState(new Date().getMonth() + 1); 
-  const [anioInicio, setAnioInicio] = useState(new Date().getFullYear());
   
   const [cronogramaCuotas, setCronogramaCuotas] = useState<CuotaMes[]>([]);
   const [mostrarCalculadoraRefuerzos, setMostrarCalculadoraRefuerzos] = useState(false);
   const [cuotaBaseRapida, setCuotaBaseRapida] = useState<number | ''>('');
   const [mesesRefuerzoRapido, setMesesRefuerzoRapido] = useState<string>('');
 
+  // Detalles Manuales de la Propiedad (Editables en el Informe)
+  const [detallesManuales, setDetallesManuales] = useState({
+    unidad: '', area_interior: '', terraza_a: '', area_total: '', bodega: '', parqueo: '', terraza_b: '', dormitorios: ''
+  });
+
   // ================= ESTADOS: PESTAÑA 3 (EXPEDIENTE KYC) =================
   const [cierreForm, setCierreForm] = useState({ clienteId: '', propiedadId: '' });
 
   const [nombreAsesor, setNombreAsesor] = useState<string>('Saúl Intriago / Debbi Mera');
-
-  const datosRespaldoClientes = [
-    { id: 'cli-1', nombres: 'ANA MARIA', apellidos: 'CEVALLOS TRUJILLO', cedula: '1304681393', estado_civil: 'CASADA', email: 'mariacevallos@hotmail.com', direccion_domicilio: 'VIA SAN MATEO, MZ B15', telefono: '0991234567', tipo: 'cliente' },
-    { id: 'cli-2', nombres: 'CARLOS ANDRES', apellidos: 'MENDOZA LOPEZ', cedula: '1312345678', estado_civil: 'SOLTERO', email: 'carlosm@ejemplo.com', direccion_domicilio: 'BARRIO UMIÑA, MANTA', telefono: '0987654321', tipo: 'cliente' }
-  ];
-  const datosRespaldoPropiedades = [
-    { id: 'prop-302', unidad: '302', precio_lista: 231044, area_total: 96.48, tipologia: '2 Dormitorios', estado: 'Disponible' },
-    { id: 'prop-405', unidad: '405', precio_lista: 250000, area_total: 105.00, tipologia: '3 Dormitorios', estado: 'Reservado' }
-  ];
 
   useEffect(() => {
     async function inicializarEcosistema() {
       try {
         const { data: props } = await supabase.from('propiedades').select('*').order('unidad', { ascending: true });
         const { data: clis } = await supabase.from('clientes').select('*').eq('tipo', 'cliente').order('nombres', { ascending: true });
-        setPropiedades(props && props.length > 0 ? props : datosRespaldoPropiedades);
-        setClientes(clis && clis.length > 0 ? clis : datosRespaldoClientes);
+        if (props) setPropiedades(props);
+        if (clis) setClientes(clis);
       } catch (error) {
-        setPropiedades(datosRespaldoPropiedades);
-        setClientes(datosRespaldoClientes);
+        console.error("Error cargando datos:", error);
       } finally {
         setCargando(false);
       }
@@ -108,8 +100,30 @@ export default function GestorOperacionesPage() {
   };
 
   useEffect(() => { setReservaExitosa(false); }, [reservaForm.propiedadId]);
+  
   const clienteActivoReserva = clientes.find(c => c.id === reservaForm.clienteId);
   const propiedadActivaReserva = propiedades.find(p => p.id.toString() === reservaForm.propiedadId.toString());
+  
+  const clienteActivoInforme = clientes.find(c => c.id === informeForm.clienteId);
+  const propiedadActivaInforme = propiedades.find(p => p.id.toString() === informeForm.propiedadId.toString());
+
+  // Auto-llenar campos manuales cuando se selecciona una propiedad
+  useEffect(() => {
+    if (propiedadActivaInforme) {
+      setDetallesManuales({
+        unidad: propiedadActivaInforme.unidad || propiedadActivaInforme.numero || '',
+        area_interior: propiedadActivaInforme.area_interior || propiedadActivaInforme.area_total || '',
+        terraza_a: propiedadActivaInforme.terraza_a || '',
+        area_total: propiedadActivaInforme.area_total || '',
+        bodega: propiedadActivaInforme.bodega_asignada || '',
+        parqueo: propiedadActivaInforme.parqueadero_asignado || '',
+        terraza_b: propiedadActivaInforme.terraza_b || '',
+        dormitorios: propiedadActivaInforme.no_dormitorios || propiedadActivaInforme.tipologia || ''
+      });
+    } else {
+      setDetallesManuales({ unidad: '', area_interior: '', terraza_a: '', area_total: '', bodega: '', parqueo: '', terraza_b: '', dormitorios: '' });
+    }
+  }, [informeForm.propiedadId, propiedades]);
 
   const procesarReserva = async () => {
     if (!reservaForm.clienteId || !reservaForm.propiedadId || !reservaForm.montoReserva) {
@@ -130,9 +144,6 @@ export default function GestorOperacionesPage() {
     setNotas(notas.map(n => n.id === id ? { ...n, [campo]: valor } : n));
   };
   const eliminarNota = (id: string) => setNotas(notas.filter(n => n.id !== id));
-
-  const clienteActivoInforme = clientes.find(c => c.id === informeForm.clienteId);
-  const propiedadActivaInforme = propiedades.find(p => p.id.toString() === informeForm.propiedadId.toString());
 
   const calcInforme = useMemo(() => {
     const listaOriginal = propiedadActivaInforme ? Number(propiedadActivaInforme.precio || propiedadActivaInforme.precio_lista) : 0;
@@ -187,10 +198,13 @@ export default function GestorOperacionesPage() {
 
     if (mesesConstruccion > 0 && calcInforme.entradaDiferirTotal > 0) {
       const valorBaseCuota = calcInforme.entradaDiferirTotal / mesesConstruccion;
+      const [y, m, d] = fechaInicioConstruccion.split('-');
+      const baseDate = new Date(Number(y), Number(m) - 1, Number(d), 12, 0, 0);
+
       for (let i = 0; i < mesesConstruccion; i++) {
-        const mesRelativo = (mesInicio - 1) + i;
-        const fechaCuota = new Date(anioInicio, mesRelativo, diaPago);
-        const dateStr = fechaCuota.toISOString().split('T')[0];
+        const currentDate = new Date(baseDate);
+        currentDate.setMonth(currentDate.getMonth() + i);
+        const dateStr = currentDate.toISOString().split('T')[0];
         cuotasGeneradas.push({
           id: `cons-${i}`,
           tipo: 'construccion',
@@ -203,7 +217,7 @@ export default function GestorOperacionesPage() {
     }
 
     setCronogramaCuotas(cuotasGeneradas);
-  }, [propiedadActivaInforme, mesesConstruccion, calcInforme.entradaDiferirTotal, calcInforme.saldoFirmaPromesa, diaPago, mesInicio, anioInicio, mesesInicial, fechaFirmaPromesa]);
+  }, [propiedadActivaInforme, mesesConstruccion, calcInforme.entradaDiferirTotal, calcInforme.saldoFirmaPromesa, fechaInicioConstruccion, mesesInicial, fechaFirmaPromesa]);
 
   const actualizarAtributoCuota = (id: string, campo: 'valor' | 'fechaPago', nuevoValor: any) => {
     let nuevoCrono = [...cronogramaCuotas];
@@ -433,6 +447,44 @@ export default function GestorOperacionesPage() {
 
                     {propiedadActivaInforme && (
                       <>
+                        <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-sm space-y-4">
+                          <h2 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest border-b border-neutral-100 pb-2">1B. Descripción Técnica (Editable)</h2>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                            <div>
+                              <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Dpto No.</label>
+                              <input type="text" value={detallesManuales.unidad} onChange={e=>setDetallesManuales({...detallesManuales, unidad: e.target.value})} className="w-full text-xs p-2 border border-[#415364]/20 rounded-md outline-none focus:border-[#ea0029]" />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Área Útil</label>
+                              <input type="text" value={detallesManuales.area_interior} onChange={e=>setDetallesManuales({...detallesManuales, area_interior: e.target.value})} className="w-full text-xs p-2 border border-[#415364]/20 rounded-md outline-none focus:border-[#ea0029]" />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Terraza A</label>
+                              <input type="text" value={detallesManuales.terraza_a} onChange={e=>setDetallesManuales({...detallesManuales, terraza_a: e.target.value})} className="w-full text-xs p-2 border border-[#415364]/20 rounded-md outline-none focus:border-[#ea0029]" />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Área Total</label>
+                              <input type="text" value={detallesManuales.area_total} onChange={e=>setDetallesManuales({...detallesManuales, area_total: e.target.value})} className="w-full text-xs p-2 border border-[#415364]/20 rounded-md outline-none focus:border-[#ea0029]" />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Bodega No.</label>
+                              <input type="text" value={detallesManuales.bodega} onChange={e=>setDetallesManuales({...detallesManuales, bodega: e.target.value})} className="w-full text-xs p-2 border border-[#415364]/20 rounded-md outline-none focus:border-[#ea0029]" />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Parqueo No.</label>
+                              <input type="text" value={detallesManuales.parqueo} onChange={e=>setDetallesManuales({...detallesManuales, parqueo: e.target.value})} className="w-full text-xs p-2 border border-[#415364]/20 rounded-md outline-none focus:border-[#ea0029]" />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Terraza B</label>
+                              <input type="text" value={detallesManuales.terraza_b} onChange={e=>setDetallesManuales({...detallesManuales, terraza_b: e.target.value})} className="w-full text-xs p-2 border border-[#415364]/20 rounded-md outline-none focus:border-[#ea0029]" />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Dormitorios</label>
+                              <input type="text" value={detallesManuales.dormitorios} onChange={e=>setDetallesManuales({...detallesManuales, dormitorios: e.target.value})} className="w-full text-xs p-2 border border-[#415364]/20 rounded-md outline-none focus:border-[#ea0029]" />
+                            </div>
+                          </div>
+                        </div>
+
                         <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-sm space-y-5">
                           <h2 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest border-b border-neutral-100 pb-2">2. Condiciones de Negocio</h2>
                           <div className="grid grid-cols-1 gap-5">
@@ -533,18 +585,17 @@ export default function GestorOperacionesPage() {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6 bg-[#F9F7F5] p-4 rounded-xl border border-neutral-100">
-                            <div><label className="block text-[10px] font-bold uppercase mb-1">Firma Reserva</label><input type="date" value={fechaReservaInf} onChange={(e)=>setFechaReservaInf(e.target.value)} className="w-full text-xs p-2 border rounded-md" /></div>
-                            <div><label className="block text-[10px] font-bold uppercase mb-1">Firma Promesa / Inicio Iniciales</label><input type="date" value={fechaFirmaPromesa} onChange={(e)=>setFechaFirmaPromesa(e.target.value)} className="w-full text-xs p-2 border rounded-md" /></div>
-                            <div><label className="block text-[10px] font-bold uppercase mb-1">Mes Inicio Construcción</label><input type="number" value={mesInicio} onChange={(e)=>setMesInicio(Number(e.target.value))} className="w-full text-xs p-2 border rounded-md" /></div>
-                            <div><label className="block text-[10px] font-bold uppercase mb-1">Día de Pago Fijo (Const)</label><input type="number" value={diaPago} onChange={(e)=>setDiaPago(Number(e.target.value))} className="w-full text-xs p-2 border rounded-md" /></div>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 bg-[#F9F7F5] p-4 rounded-xl border border-neutral-100">
+                            <div><label className="block text-[10px] font-bold uppercase mb-1">Firma Reserva</label><input type="date" value={fechaReservaInf} onChange={(e)=>setFechaReservaInf(e.target.value)} className="w-full text-xs p-2 border rounded-md outline-none focus:border-[#ea0029]" /></div>
+                            <div><label className="block text-[10px] font-bold uppercase mb-1">Inicio Cuota Inicial</label><input type="date" value={fechaFirmaPromesa} onChange={(e)=>setFechaFirmaPromesa(e.target.value)} className="w-full text-xs p-2 border rounded-md outline-none focus:border-[#ea0029]" /></div>
+                            <div><label className="block text-[10px] font-bold uppercase mb-1 text-[#ea0029]">Inicio Cuotas Construcción</label><input type="date" value={fechaInicioConstruccion} onChange={(e)=>setFechaInicioConstruccion(e.target.value)} className="w-full text-xs p-2 border border-[#ea0029]/40 rounded-md outline-none focus:border-[#ea0029]" /></div>
                           </div>
 
                           {mostrarCalculadoraRefuerzos && (
                             <div className="mb-5 p-5 bg-[#415364] border border-[#21242E] rounded-xl flex gap-4">
-                               <div className="flex-1"><label className="text-[9px] font-bold text-[#dce3eb]/70 uppercase mb-1.5 block">Cuota Fija Base ($)</label><input type="number" value={cuotaBaseRapida} onChange={e => setCuotaBaseRapida(e.target.value===''? '':Number(e.target.value))} className="w-full bg-white/10 p-2.5 text-xs text-white rounded-lg"/></div>
-                               <div className="flex-1"><label className="text-[9px] font-bold text-[#dce3eb]/70 uppercase mb-1.5 block">Meses Refuerzo (Ej: 12,24)</label><input type="text" value={mesesRefuerzoRapido} onChange={e => setMesesRefuerzoRapido(e.target.value)} className="w-full bg-white/10 p-2.5 text-xs text-white rounded-lg"/></div>
-                               <button onClick={aplicarPlanRefuerzos} className="bg-[#ea0029] text-white px-6 rounded-lg text-[11px] font-bold mt-5 h-10">Aplicar</button>
+                               <div className="flex-1"><label className="text-[9px] font-bold text-[#dce3eb]/70 uppercase mb-1.5 block">Cuota Fija Base ($)</label><input type="number" value={cuotaBaseRapida} onChange={e => setCuotaBaseRapida(e.target.value===''? '':Number(e.target.value))} className="w-full bg-white/10 p-2.5 text-xs text-white rounded-lg outline-none"/></div>
+                               <div className="flex-1"><label className="text-[9px] font-bold text-[#dce3eb]/70 uppercase mb-1.5 block">Meses Refuerzo (Ej: 12,24)</label><input type="text" value={mesesRefuerzoRapido} onChange={e => setMesesRefuerzoRapido(e.target.value)} className="w-full bg-white/10 p-2.5 text-xs text-white rounded-lg outline-none"/></div>
+                               <button onClick={aplicarPlanRefuerzos} className="bg-[#ea0029] text-white px-6 rounded-lg text-[11px] font-bold mt-5 h-10 hover:bg-[#c90022]">Aplicar</button>
                             </div>
                           )}
 
@@ -593,28 +644,26 @@ export default function GestorOperacionesPage() {
                             {/* INFORMACIÓN DEL CLIENTE */}
                             <div className="bg-[#F2EFEB] text-[#B94A36] font-bold text-[7pt] px-3 py-1.5 uppercase border-t border-l border-r border-[#333333] tracking-widest">Información del Cliente</div>
                             <div className="grid grid-cols-4 gap-y-2.5 gap-x-4 text-[7pt] border border-[#333333] p-4 uppercase">
-                                <div className="col-span-2"><strong>Empresa / Cliente:</strong> <span className="text-neutral-700">{clienteActivoInforme?.nombres || '---'} {clienteActivoInforme?.apellidos || ''}</span></div>
-                                <div className="col-span-2"><strong>RUC / Cédula / Pass:</strong> <span className="text-neutral-700">{clienteActivoInforme?.cedula || '---'}</span></div>
-                                <div className="col-span-2"><strong>Representante Legal:</strong> <span className="text-neutral-700">{clienteActivoInforme?.representante_legal || '---'}</span></div>
+                                <div className="col-span-2"><strong>Cliente / Titular:</strong> <span className="text-neutral-700">{clienteActivoInforme?.nombres || '---'} {clienteActivoInforme?.apellidos || ''}</span></div>
+                                <div className="col-span-2"><strong>RUC / Cédula / Pass:</strong> <span className="text-neutral-700">{clienteActivoInforme?.cedula || clienteActivoInforme?.identificacion || '---'}</span></div>
                                 <div className="col-span-2"><strong>Estado Civil:</strong> <span className="text-neutral-700">{clienteActivoInforme?.estado_civil || '---'}</span></div>
-                                <div className="col-span-2"><strong>Ciudad Residencia:</strong> <span className="text-neutral-700">{clienteActivoInforme?.ciudad || '---'}</span></div>
-                                <div className="col-span-2"><strong>Teléfono Fijo:</strong> <span className="text-neutral-700">{clienteActivoInforme?.telefono_domicilio || '---'}</span></div>
+                                <div className="col-span-2"><strong>Ciudad Residencia:</strong> <span className="text-neutral-700">{clienteActivoInforme?.ciudad || clienteActivoInforme?.ciudad_residencia || '---'}</span></div>
                                 <div className="col-span-4"><strong>Dirección:</strong> <span className="text-neutral-700">{clienteActivoInforme?.direccion_domicilio || '---'}</span></div>
                                 <div className="col-span-2"><strong>E-mail:</strong> <span className="lowercase text-neutral-700">{clienteActivoInforme?.email || '---'}</span></div>
-                                <div className="col-span-2"><strong>Celular:</strong> <span className="text-neutral-700">{clienteActivoInforme?.telefono || '---'}</span></div>
+                                <div className="col-span-2"><strong>Teléfono:</strong> <span className="text-neutral-700">{clienteActivoInforme?.telefono || clienteActivoInforme?.celular || '---'}</span></div>
                             </div>
 
                             {/* DESCRIPCIÓN DEL PRODUCTO */}
                             <div className="bg-[#F2EFEB] text-[#B94A36] font-bold text-[7pt] px-3 py-1.5 uppercase border-t border-l border-r border-[#333333] tracking-widest mt-4">Descripción del Producto</div>
                             <div className="grid grid-cols-4 gap-y-2.5 gap-x-4 text-[7pt] border border-[#333333] p-4 uppercase">
-                                <div><strong>Departamento No.:</strong> <span className="text-neutral-700">{propiedadActivaInforme?.unidad || propiedadActivaInforme?.numero}</span></div>
-                                <div><strong>Área Útil:</strong> <span className="text-neutral-700">{propiedadActivaInforme?.area_interior || propiedadActivaInforme?.area_total || '0.00'} m²</span></div>
-                                <div><strong>Terraza A:</strong> <span className="text-neutral-700">{propiedadActivaInforme?.terraza_a || '0.00'} m²</span></div>
-                                <div><strong>Área Total:</strong> <span className="text-neutral-700">{propiedadActivaInforme?.area_total || '0.00'} m²</span></div>
-                                <div><strong>Bodega No.:</strong> <span className="text-neutral-700">{propiedadActivaInforme?.bodega_asignada || '---'}</span></div>
-                                <div><strong>Parqueo No.:</strong> <span className="text-neutral-700">{propiedadActivaInforme?.parqueadero_asignado || '---'}</span></div>
-                                <div><strong>Terraza B:</strong> <span className="text-neutral-700">{propiedadActivaInforme?.terraza_b || '0.00'} m²</span></div>
-                                <div><strong>Dormitorios:</strong> <span className="text-neutral-700">{propiedadActivaInforme?.no_dormitorios || '---'}</span></div>
+                                <div><strong>Departamento No.:</strong> <span className="text-neutral-700">{detallesManuales.unidad || '---'}</span></div>
+                                <div><strong>Área Útil:</strong> <span className="text-neutral-700">{detallesManuales.area_interior || '0.00'} m²</span></div>
+                                <div><strong>Terraza A:</strong> <span className="text-neutral-700">{detallesManuales.terraza_a || '0.00'} m²</span></div>
+                                <div><strong>Área Total:</strong> <span className="text-neutral-700">{detallesManuales.area_total || '0.00'} m²</span></div>
+                                <div><strong>Bodega No.:</strong> <span className="text-neutral-700">{detallesManuales.bodega || '---'}</span></div>
+                                <div><strong>Parqueo No.:</strong> <span className="text-neutral-700">{detallesManuales.parqueo || '---'}</span></div>
+                                <div><strong>Terraza B:</strong> <span className="text-neutral-700">{detallesManuales.terraza_b || '0.00'} m²</span></div>
+                                <div><strong>Dormitorios:</strong> <span className="text-neutral-700">{detallesManuales.dormitorios || '---'}</span></div>
                             </div>
                           </div>
                           
@@ -696,11 +745,11 @@ export default function GestorOperacionesPage() {
                             </div>
                           </div>
 
-                          {/* FIRMAS INFORME (Fixed position at bottom of the main frame) */}
-                          <div className="flex-none mt-8 pt-4 grid grid-cols-2 gap-16 px-10">
+                          {/* FIRMAS INFORME (Con mayor espacio superior - mt-16 pt-8) */}
+                          <div className="flex-none mt-16 pt-8 grid grid-cols-2 gap-16 px-10">
                               <div className="text-center border-t border-[#333333] pt-2">
                                   <p className="text-[7pt] font-bold uppercase tracking-widest text-neutral-800">{clienteActivoInforme?.nombres || 'FIRMA DEL CLIENTE'} {clienteActivoInforme?.apellidos || ''}</p>
-                                  <p className="text-[6pt] text-neutral-500 mt-1">C.C. {clienteActivoInforme?.cedula || '_______________'}</p>
+                                  <p className="text-[6pt] text-neutral-500 mt-1">C.C. {clienteActivoInforme?.cedula || clienteActivoInforme?.identificacion || '_______________'}</p>
                               </div>
                               <div className="text-center border-t border-[#333333] pt-2">
                                   <p className="text-[7pt] font-bold uppercase tracking-widest text-neutral-800">Arienzo S.A.S.</p>
@@ -831,7 +880,7 @@ export default function GestorOperacionesPage() {
             <div className="mt-12 grid grid-cols-2 gap-16 px-12">
               <div className="text-center border-t border-[#8C8A87] pt-2">
                 <p className="text-[9px] font-bold uppercase tracking-wider">{clienteActivoReserva?.nombres || 'FIRMA DEL CLIENTE'} {clienteActivoReserva?.apellidos || ''}</p>
-                <p className="text-[8px] text-[#8C8A87]">C.C. {clienteActivoReserva?.cedula || '_______________'}</p>
+                <p className="text-[8px] text-[#8C8A87]">C.C. {clienteActivoReserva?.cedula || clienteActivoReserva?.identificacion || '_______________'}</p>
               </div>
               <div className="text-center border-t border-[#8C8A87] pt-2">
                 <p className="text-[9px] font-bold uppercase tracking-wider">Arienzo S.A.S.</p>
