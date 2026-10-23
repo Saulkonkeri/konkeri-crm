@@ -72,7 +72,7 @@ export default function GestorOperacionesPage() {
   const [cierreForm, setCierreForm] = useState({ clienteId: '', propiedadId: '' });
   const [nombreAsesor, setNombreAsesor] = useState<string>('Saúl Intriago / Debbi Mera');
 
-  // ================= ESTADOS: PESTAÑA 4 (HISTORIAL DE VENTAS) =================
+  // ================= ESTADOS: PESTAÑA 4 (HISTORIAL DE OPERACIONES) =================
   const [historialVentas, setHistorialVentas] = useState<any[]>([]);
   const [cargandoHistorial, setCargandoHistorial] = useState(false);
 
@@ -92,13 +92,18 @@ export default function GestorOperacionesPage() {
     inicializarEcosistema();
   }, []);
 
-  // Cargar historial de ventas al cambiar a la pestaña 4
+  // Cargar historial EXCLUSIVO de Operaciones Reales (Ignora cotizaciones simples)
   useEffect(() => {
     if (activeTab === 'historial') {
       const cargarHistorial = async () => {
         setCargandoHistorial(true);
         try {
-          const { data, error } = await supabase.from('cotizaciones').select('*').order('created_at', { ascending: false });
+          const { data, error } = await supabase
+            .from('cotizaciones')
+            .select('*')
+            .in('estado', ['Reserva Comercial', 'Informe de Negocio', 'Venta - En Cierre'])
+            .order('created_at', { ascending: false });
+            
           if (data) setHistorialVentas(data);
         } catch (error) {
           console.error("Error al cargar historial:", error);
@@ -145,7 +150,7 @@ export default function GestorOperacionesPage() {
     }
   }, [informeForm.propiedadId, propiedades]);
 
-  // ================= FUNCIONES DE GUARDADO Y CARGA =================
+  // ================= FUNCIONES DE GUARDADO EN NUBE =================
   
   const procesarReserva = async () => {
     if (!reservaForm.clienteId || !reservaForm.propiedadId || !reservaForm.montoReserva) {
@@ -154,21 +159,81 @@ export default function GestorOperacionesPage() {
     setGuardando(true);
     try {
       const codigoGenerado = `RES-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${Math.floor(1000 + Math.random() * 9000)}`;
+      
+      // Bloquear en tabla Propiedades
+      await supabase.from('propiedades').update({ estado: 'Reservado' }).eq('id', reservaForm.propiedadId);
+      
+      // Registrar la operación en Cotizaciones como Reserva
+      await supabase.from('cotizaciones').insert([{
+        cliente_id: reservaForm.clienteId,
+        unidad_id: reservaForm.propiedadId.toString(),
+        unidad_numero: propiedadActivaReserva?.unidad || propiedadActivaReserva?.numero || '',
+        precio_lista: propiedadActivaReserva?.precio_lista || 0,
+        precio_total: propiedadActivaReserva?.precio_lista || 0,
+        monto_inicial: reservaForm.montoReserva,
+        motivo_descuento: `Bloqueo con ${reservaForm.formaPago} - Ref: ${reservaForm.numeroComprobante}`,
+        estado: 'Reserva Comercial'
+      }]);
+
       setCodigoReserva(codigoGenerado);
       setPropiedades(prev => prev.map(p => p.id.toString() === reservaForm.propiedadId.toString() ? { ...p, estado: 'Reservado' } : p));
       setReservaExitosa(true);
-      alert("Unidad bloqueada.");
+      alert("✅ Unidad bloqueada y Reserva registrada en el historial.");
     } catch (err: any) { alert(`Error: ${err.message}`); } finally { setGuardando(false); }
   };
 
-  const cargarVentaEnGestor = (venta: any) => {
+  const registrarOperacion = async (estadoOp: 'Informe de Negocio' | 'Venta - En Cierre') => {
+    if (!informeForm.clienteId || !informeForm.propiedadId) {
+      alert("Por favor configure el negocio seleccionando Cliente y Unidad."); return;
+    }
+    setGuardandoVenta(true);
+    try {
+      const { error } = await supabase.from('cotizaciones').insert([{
+        cliente_id: informeForm.clienteId,
+        unidad_id: informeForm.propiedadId.toString(),
+        unidad_numero: detallesManuales.unidad || propiedadActivaInforme?.unidad || '',
+        precio_lista: calcInforme.precioListaOriginal,
+        monto_descuento: calcInforme.montoDescuentoCalculado,
+        motivo_descuento: observacionesNegocio || (estadoOp === 'Informe de Negocio' ? 'Informe de Negocio (Borrador/Aprobación)' : 'Cierre de Venta'),
+        precio_total: calcInforme.precioTotal,
+        monto_inicial: calcInforme.cuotaInicialTotal,
+        monto_entrada: calcInforme.entradaDiferirTotal,
+        meses_plazo: mesesConstruccion,
+        monto_contra_entrega: calcInforme.contraEntrega,
+        cronograma_pagos: listadoMaestroPagos,
+        estado: estadoOp
+      }]);
+
+      if (error) throw error;
+
+      if (estadoOp === 'Venta - En Cierre') {
+        await supabase.from('propiedades').update({ estado: 'En Cierre' }).eq('id', informeForm.propiedadId);
+        setPropiedades(prev => prev.map(p => p.id.toString() === informeForm.propiedadId.toString() ? { ...p, estado: 'En Cierre' } : p));
+      }
+      
+      alert(`✅ ¡${estadoOp} guardado exitosamente! Podrás revisarlo en el Historial de Operaciones.`);
+    } catch (err: any) {
+      alert(`❌ Error al guardar: ${err.message}`);
+    } finally {
+      setGuardandoVenta(false);
+    }
+  };
+
+  // Función para recrear Informes, Ventas o Reservas en el Gestor
+  const cargarOperacionEnGestor = (venta: any) => {
+    if (venta.estado === 'Reserva Comercial') {
+       setReservaForm({ ...reservaForm, clienteId: venta.cliente_id?.toString(), propiedadId: venta.unidad_id?.toString(), montoReserva: venta.monto_inicial || 2500 });
+       setActiveTab('reserva');
+       window.scrollTo({ top: 0, behavior: 'smooth' });
+       return;
+    }
+
     setInformeForm({ clienteId: venta.cliente_id?.toString(), propiedadId: venta.unidad_id?.toString() });
-    
     setValorDescuento(venta.monto_descuento || 0);
     setTipoDescuento('valor'); 
     setMesesConstruccion(venta.meses_plazo || 24);
     
-    if (venta.motivo_descuento && venta.motivo_descuento !== 'Cierre de Venta') {
+    if (venta.motivo_descuento && venta.motivo_descuento !== 'Cierre de Venta' && venta.motivo_descuento !== 'Informe de Negocio' && !venta.motivo_descuento.includes('Borrador')) {
       setObservacionesNegocio(venta.motivo_descuento);
     } else {
       setObservacionesNegocio('');
@@ -209,42 +274,7 @@ export default function GestorOperacionesPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const registrarVenta = async () => {
-    if (!informeForm.clienteId || !informeForm.propiedadId) {
-      alert("Por favor configure el negocio seleccionando Cliente y Unidad."); return;
-    }
-    setGuardandoVenta(true);
-    try {
-      const { error } = await supabase.from('cotizaciones').insert([{
-        cliente_id: informeForm.clienteId,
-        unidad_id: informeForm.propiedadId.toString(),
-        unidad_numero: detallesManuales.unidad || propiedadActivaInforme?.unidad || '',
-        precio_lista: calcInforme.precioListaOriginal,
-        monto_descuento: calcInforme.montoDescuentoCalculado,
-        motivo_descuento: observacionesNegocio || 'Cierre de Venta',
-        precio_total: calcInforme.precioTotal,
-        monto_inicial: calcInforme.cuotaInicialTotal,
-        monto_entrada: calcInforme.entradaDiferirTotal,
-        meses_plazo: mesesConstruccion,
-        monto_contra_entrega: calcInforme.contraEntrega,
-        cronograma_pagos: listadoMaestroPagos,
-        estado: 'Venta - En Cierre'
-      }]);
-
-      if (error) throw error;
-
-      await supabase.from('propiedades').update({ estado: 'En Cierre' }).eq('id', informeForm.propiedadId);
-      setPropiedades(prev => prev.map(p => p.id.toString() === informeForm.propiedadId.toString() ? { ...p, estado: 'En Cierre' } : p));
-      
-      alert("✅ ¡Venta registrada exitosamente! Podrás verla en el Historial de Ventas.");
-    } catch (err: any) {
-      alert(`❌ Error al registrar la venta: ${err.message}`);
-    } finally {
-      setGuardandoVenta(false);
-    }
-  };
-
-  // ================= LÓGICA DE NEGOCIO =================
+  // ================= CÁLCULO FINANCIERO =================
 
   const agregarNota = () => setNotas([...notas, { id: Date.now().toString(), titulo: '', descripcion: '' }]);
   const actualizarNota = (id: string, campo: 'titulo' | 'descripcion', valor: string) => {
@@ -461,7 +491,7 @@ export default function GestorOperacionesPage() {
               3. Expediente
             </button>
             <button onClick={() => setActiveTab('historial')} className={`px-4 md:px-5 py-2.5 text-[11px] md:text-xs font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'historial' ? 'bg-[#21242E] text-[#D1C292] shadow-md' : 'text-[#415364]/70 hover:text-[#21242E] hover:bg-white/50'}`}>
-              4. Historial Ventas
+              4. Historial Operaciones
             </button>
           </div>
         </div>
@@ -488,7 +518,7 @@ export default function GestorOperacionesPage() {
                   <label className="text-[10px] font-bold text-[#415364]/60 uppercase block mb-1.5">Unidad Disponible</label>
                   <select value={reservaForm.propiedadId} onChange={(e) => setReservaForm({...reservaForm, propiedadId: e.target.value})} className="w-full text-xs bg-white border border-[#415364]/20 p-3 rounded-xl outline-none font-bold text-[#415364] focus:border-[#ea0029]">
                     <option value="">-- Seleccionar Inventario --</option>
-                    {propiedades.filter(p => p.estado !== 'Reservado' && p.estado !== 'En Cierre' && p.estado !== 'Vendido').map(p => <option key={p.id} value={p.id}>Unidad {p.unidad || p.numero} (${p.precio_lista})</option>)}
+                    {propiedades.filter(p => p.estado !== 'Vendido').map(p => <option key={p.id} value={p.id}>Unidad {p.unidad || p.numero} (${p.precio_lista}) - {p.estado}</option>)}
                   </select>
                 </div>
               </div>
@@ -514,7 +544,7 @@ export default function GestorOperacionesPage() {
               </div>
               {!reservaExitosa ? (
                 <button onClick={procesarReserva} disabled={guardando} className="w-full bg-[#ea0029] text-white text-xs uppercase tracking-widest font-bold py-4 rounded-xl mt-4 shadow-md hover:bg-[#c90022] transition-colors disabled:opacity-50">
-                  {guardando ? 'Verificando...' : 'Aplicar Ingreso y Bloquear Unidad'}
+                  {guardando ? 'Verificando...' : 'Aplicar Ingreso, Bloquear y Registrar en Historial'}
                 </button>
               ) : (
                 <div className="mt-6 bg-[#21242E] p-6 rounded-2xl border border-neutral-800 flex flex-col md:flex-row items-center justify-between gap-4 text-white shadow-xl">
@@ -573,10 +603,10 @@ export default function GestorOperacionesPage() {
                           </select>
                         </div>
                         <div>
-                          <label className="text-[10px] font-bold text-[#415364]/60 uppercase block mb-1.5">Unidad Reservada</label>
+                          <label className="text-[10px] font-bold text-[#415364]/60 uppercase block mb-1.5">Unidad a Operar</label>
                           <select value={informeForm.propiedadId} onChange={(e) => setInformeForm({...informeForm, propiedadId: e.target.value})} className="w-full bg-[#F9F7F5] border border-[#D1C292]/50 rounded-xl p-3 text-xs font-bold focus:border-[#ea0029] outline-none">
-                            <option value="">— Seleccionar —</option>
-                            {propiedades.filter(p => p.estado === 'Reservado' || p.estado === 'En Cierre').map(p => <option key={p.id} value={p.id}>Unidad {p.unidad || p.numero} ({p.estado})</option>)}
+                            <option value="">— Seleccionar Inventario —</option>
+                            {propiedades.map(p => <option key={p.id} value={p.id}>Unidad {p.unidad || p.numero} ({p.estado})</option>)}
                           </select>
                         </div>
                       </div>
@@ -931,7 +961,7 @@ export default function GestorOperacionesPage() {
                 )}
               </div>
 
-              {/* RESUMEN DERECHA Y BOTÓN IMPRIMIR */}
+              {/* RESUMEN DERECHA Y BOTONES DE OPERACIÓN */}
               <div className="xl:col-span-1 space-y-6">
                 <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-xl sticky top-6">
                   <h2 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest mb-3 border-b border-neutral-100 pb-2">Acuerdo Financiero</h2>
@@ -953,15 +983,20 @@ export default function GestorOperacionesPage() {
                     <div className="flex justify-between border-t-2 border-[#21242E] pt-3 mt-2"><span className="text-[12px] font-bold uppercase">Contra Entrega</span><span className="font-bold text-[#B94A36] font-mono">${calcInforme.contraEntrega.toLocaleString('en-US',{minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 mt-8">
+                  <div className="flex flex-col gap-3 mt-8">
                     <button onClick={() => imprimirDocumento('plantilla-pdf-arienzo', 'Informe_Negocio')} disabled={!propiedadActivaInforme} className="w-full bg-[#21242E] text-white rounded-xl p-3.5 text-[10px] font-bold uppercase tracking-widest hover:bg-neutral-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                      Imprimir
+                      Imprimir Documento
                     </button>
-                    <button onClick={registrarVenta} disabled={!propiedadActivaInforme || guardandoVenta} className="w-full bg-[#ea0029] text-white rounded-xl p-3.5 text-[10px] font-bold uppercase tracking-widest hover:bg-[#c90022] transition-colors shadow-md disabled:opacity-50 flex items-center justify-center gap-2">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-                      {guardandoVenta ? 'Guardando...' : 'Registrar Venta'}
-                    </button>
+                    
+                    <div className="grid grid-cols-2 gap-2 mt-1">
+                      <button onClick={() => registrarOperacion('Informe de Negocio')} disabled={!propiedadActivaInforme || guardandoVenta} className="w-full bg-[#D1C292] text-[#21242E] rounded-xl p-3 text-[9px] font-bold uppercase tracking-widest hover:bg-[#c4b37f] transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-1.5">
+                        Guardar Informe
+                      </button>
+                      <button onClick={() => registrarOperacion('Venta - En Cierre')} disabled={!propiedadActivaInforme || guardandoVenta} className="w-full bg-[#ea0029] text-white rounded-xl p-3 text-[9px] font-bold uppercase tracking-widest hover:bg-[#c90022] transition-colors shadow-md disabled:opacity-50 flex items-center justify-center gap-1.5">
+                        {guardandoVenta ? '...' : 'Registrar Venta'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1018,16 +1053,16 @@ export default function GestorOperacionesPage() {
             TAB 4: HISTORIAL DE VENTAS (NUEVO)
            ======================================================= */}
         {activeTab === 'historial' && (
-          <div className="bg-white border border-neutral-200/60 rounded-2xl p-6 md:p-8 shadow-sm max-w-5xl mx-auto animate-in fade-in">
+          <div className="bg-white border border-neutral-200/60 rounded-2xl p-6 md:p-8 shadow-sm max-w-6xl mx-auto animate-in fade-in">
             <div className="mb-6 border-b border-neutral-100 pb-4">
-              <h3 className="text-sm font-bold text-[#415364] uppercase tracking-wider">Historial de Ventas Registradas</h3>
-              <p className="text-xs text-[#415364]/60 mt-1">Consulte los informes guardados y vuelva a cargarlos en el gestor para su edición o reimpresión.</p>
+              <h3 className="text-sm font-bold text-[#415364] uppercase tracking-wider">Historial de Operaciones (Reservas y Cierres)</h3>
+              <p className="text-xs text-[#415364]/60 mt-1">Consulte todas las operaciones comerciales registradas en el sistema para edición o impresión.</p>
             </div>
             
             {cargandoHistorial ? (
-              <div className="py-10 text-center text-xs font-bold text-[#415364]/50 uppercase tracking-widest animate-pulse">Cargando base de datos...</div>
+              <div className="py-10 text-center text-xs font-bold text-[#415364]/50 uppercase tracking-widest animate-pulse">Sincronizando base de datos...</div>
             ) : historialVentas.length === 0 ? (
-              <div className="py-10 text-center text-xs font-bold text-[#415364]/50 uppercase tracking-widest border border-dashed border-[#415364]/20 rounded-xl">No hay ventas registradas en el sistema.</div>
+              <div className="py-10 text-center text-xs font-bold text-[#415364]/50 uppercase tracking-widest border border-dashed border-[#415364]/20 rounded-xl">No hay operaciones registradas en el sistema.</div>
             ) : (
               <div className="overflow-x-auto rounded-xl border border-neutral-200">
                 <table className="w-full text-left text-[11px] whitespace-nowrap">
@@ -1035,6 +1070,7 @@ export default function GestorOperacionesPage() {
                     <tr className="text-[#415364] font-bold uppercase tracking-wider">
                       <th className="px-4 py-3">Unidad</th>
                       <th className="px-4 py-3">Inversionista Titular</th>
+                      <th className="px-4 py-3">Tipo / Estado</th>
                       <th className="px-4 py-3 text-right">Precio Final</th>
                       <th className="px-4 py-3 text-center">Registro</th>
                       <th className="px-4 py-3 text-center">Acción</th>
@@ -1049,12 +1085,21 @@ export default function GestorOperacionesPage() {
                         <tr key={venta.id} className="hover:bg-neutral-50 transition-colors">
                           <td className="px-4 py-3 font-bold text-[#ea0029]">Dpto. {venta.unidad_numero || '---'}</td>
                           <td className="px-4 py-3 font-bold text-[#415364]">{clienteNombres} {clienteApellidos}</td>
+                          <td className="px-4 py-3">
+                            <span className={`px-2 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider ${
+                              venta.estado === 'Venta - En Cierre' ? 'bg-[#ea0029]/10 text-[#ea0029]' : 
+                              venta.estado === 'Reserva Comercial' ? 'bg-[#415364]/10 text-[#415364]' : 
+                              'bg-[#D1C292]/20 text-[#B94A36]'
+                            }`}>
+                              {venta.estado || 'Informe de Negocio'}
+                            </span>
+                          </td>
                           <td className="px-4 py-3 font-mono font-bold text-[#415364] text-right">${(venta.precio_total || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
                           <td className="px-4 py-3 text-neutral-500 text-center font-mono">{new Date(venta.created_at).toLocaleDateString('es-ES')}</td>
                           <td className="px-4 py-3 text-center">
-                            <button onClick={() => cargarVentaEnGestor(venta)} className="text-[10px] font-bold bg-[#21242E] text-white px-3 py-1.5 rounded-md hover:bg-[#415364] transition-colors flex items-center justify-center gap-1 mx-auto shadow-sm">
+                            <button onClick={() => cargarOperacionEnGestor(venta)} className="text-[10px] font-bold bg-[#21242E] text-white px-3 py-1.5 rounded-md hover:bg-[#415364] transition-colors flex items-center justify-center gap-1 mx-auto shadow-sm">
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                              Cargar para Edición
+                              Cargar Operación
                             </button>
                           </td>
                         </tr>
