@@ -131,7 +131,7 @@ export default function CobranzasPage() {
           <style>
             @page { size: A4 portrait; margin: 0; }
             body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; margin: 0; background: #ffffff; font-family: ui-sans-serif, system-ui, sans-serif; }
-            .pagina-a4 { width: 210mm !important; height: 297mm !important; padding: 12mm 15mm; box-sizing: border-box; overflow: hidden; position: relative; margin: 0 auto; }
+            .pagina-a4 { width: 210mm !important; height: 297mm !important; padding: 15mm; box-sizing: border-box; position: relative; margin: 0 auto; }
           </style>
         </head>
         <body>${contenido}<script>setTimeout(() => { window.print(); window.close(); }, 700);</script></body>
@@ -412,12 +412,12 @@ export default function CobranzasPage() {
 
               </div>
 
-              {/* Nota Legal */}
+              {/* Nota Legal Ajustada a la Realidad de Konkeri */}
               <div className="mt-6 p-4 bg-neutral-50 border border-neutral-200 rounded-md text-[6.5pt] leading-tight text-justify text-neutral-500">
-                <p><strong>Nota importante / Condiciones de Cobro:</strong> Declaramos haber recibido los fondos especificados en este documento bajo la confirmación de la entidad bancaria respectiva. Este recibo no invalida letras de cambio, pagarés u otros documentos de garantía firmados por el cliente si el medio de pago reportara rechazo por fondos insuficientes, cuentas cerradas, o defectos de forma detectados posteriormente por parte de las entidades involucradas en la compensación.</p>
+                <p><strong>Nota importante / Condiciones de Cobro:</strong> Declaramos haber recibido los fondos especificados en este documento, sujetos a la confirmación y liquidación efectiva por parte de la entidad bancaria respectiva. La emisión de este recibo no exime al cliente de las obligaciones de pago estipuladas en su Contrato o Promesa de Compraventa, en caso de que el medio de transacción reporte rechazo por fondos insuficientes, cuentas cerradas o defectos de forma detectados posteriormente por las entidades financieras compensadoras.</p>
               </div>
 
-              {/* Firmas Espaciadas (Cambiadas de absolute a relativo para evitar bloqueos) */}
+              {/* Firmas Espaciadas */}
               <div className="mt-16 grid grid-cols-2 gap-16 px-12">
                 <div className="text-center border-t border-[#8C8A87] pt-2">
                   <p className="text-[9px] font-bold uppercase tracking-wider">{clienteActivo.nombres} {clienteActivo.apellidos}</p>
