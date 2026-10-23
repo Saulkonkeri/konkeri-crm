@@ -19,7 +19,7 @@ interface NotaObservacion {
 }
 
 export default function GestorOperacionesPage() {
-  const [activeTab, setActiveTab] = useState<'reserva' | 'informe_negocio' | 'expediente'>('reserva');
+  const [activeTab, setActiveTab] = useState<'reserva' | 'informe_negocio' | 'expediente' | 'historial'>('reserva');
   const [propiedades, setPropiedades] = useState<any[]>([]);
   const [clientes, setClientes] = useState<any[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -37,6 +37,7 @@ export default function GestorOperacionesPage() {
   const [informeForm, setInformeForm] = useState({ clienteId: '', propiedadId: '' });
   const [formaFinanciamiento, setFormaFinanciamiento] = useState('Crédito Directo');
   const [observacionesNegocio, setObservacionesNegocio] = useState('');
+  const [guardandoVenta, setGuardandoVenta] = useState(false);
   
   const [notas, setNotas] = useState<NotaObservacion[]>([]);
   
@@ -71,6 +72,10 @@ export default function GestorOperacionesPage() {
   const [cierreForm, setCierreForm] = useState({ clienteId: '', propiedadId: '' });
   const [nombreAsesor, setNombreAsesor] = useState<string>('Saúl Intriago / Debbi Mera');
 
+  // ================= ESTADOS: PESTAÑA 4 (HISTORIAL DE VENTAS) =================
+  const [historialVentas, setHistorialVentas] = useState<any[]>([]);
+  const [cargandoHistorial, setCargandoHistorial] = useState(false);
+
   useEffect(() => {
     async function inicializarEcosistema() {
       try {
@@ -86,6 +91,24 @@ export default function GestorOperacionesPage() {
     }
     inicializarEcosistema();
   }, []);
+
+  // Cargar historial de ventas al cambiar a la pestaña 4
+  useEffect(() => {
+    if (activeTab === 'historial') {
+      const cargarHistorial = async () => {
+        setCargandoHistorial(true);
+        try {
+          const { data, error } = await supabase.from('cotizaciones').select('*').order('created_at', { ascending: false });
+          if (data) setHistorialVentas(data);
+        } catch (error) {
+          console.error("Error al cargar historial:", error);
+        } finally {
+          setCargandoHistorial(false);
+        }
+      };
+      cargarHistorial();
+    }
+  }, [activeTab]);
 
   const formatearFechaLegible = (fechaIso: string) => {
     if (!fechaIso) return '---';
@@ -122,6 +145,8 @@ export default function GestorOperacionesPage() {
     }
   }, [informeForm.propiedadId, propiedades]);
 
+  // ================= FUNCIONES DE GUARDADO Y CARGA =================
+  
   const procesarReserva = async () => {
     if (!reservaForm.clienteId || !reservaForm.propiedadId || !reservaForm.montoReserva) {
       alert("Completar Cliente, Unidad y Monto."); return;
@@ -135,6 +160,91 @@ export default function GestorOperacionesPage() {
       alert("Unidad bloqueada.");
     } catch (err: any) { alert(`Error: ${err.message}`); } finally { setGuardando(false); }
   };
+
+  const cargarVentaEnGestor = (venta: any) => {
+    setInformeForm({ clienteId: venta.cliente_id?.toString(), propiedadId: venta.unidad_id?.toString() });
+    
+    setValorDescuento(venta.monto_descuento || 0);
+    setTipoDescuento('valor'); 
+    setMesesConstruccion(venta.meses_plazo || 24);
+    
+    if (venta.motivo_descuento && venta.motivo_descuento !== 'Cierre de Venta') {
+      setObservacionesNegocio(venta.motivo_descuento);
+    } else {
+      setObservacionesNegocio('');
+    }
+    
+    if (venta.cronograma_pagos && Array.isArray(venta.cronograma_pagos)) {
+       const resPdf = venta.cronograma_pagos.find((c:any) => c.id === 'res_pdf');
+       const cuotasIniciales = venta.cronograma_pagos.filter((c:any) => c.label && c.label.includes('INICIAL'));
+       const cuotasConst = venta.cronograma_pagos.filter((c:any) => c.label && c.label.includes('CUOTA') && !c.label.includes('SALDO'));
+       
+       if (resPdf) {
+         setInfReservaValor(resPdf.amount);
+         setFechaReservaInf(resPdf.date);
+       }
+
+       if (cuotasIniciales.length > 0) {
+         setMesesInicial(cuotasIniciales.length);
+         setFechaFirmaPromesa(cuotasIniciales[0].date);
+         const sumaAbonos = cuotasIniciales.reduce((acc: number, curr: any) => acc + curr.amount, 0);
+         setValorInicial(sumaAbonos + (resPdf ? resPdf.amount : 0));
+         setTipoInicial('valor');
+       } else {
+         setMesesInicial(1);
+         setValorInicial(resPdf ? resPdf.amount : 0);
+         setTipoInicial('valor');
+       }
+
+       if (cuotasConst.length > 0) {
+         setFechaInicioConstruccion(cuotasConst[0].date);
+       }
+       
+       setValorEntrada(venta.monto_entrada || 0);
+       setTipoEntrada('valor');
+    }
+
+    setActiveTab('informe_negocio');
+    setPestañaInforme('configurar');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const registrarVenta = async () => {
+    if (!informeForm.clienteId || !informeForm.propiedadId) {
+      alert("Por favor configure el negocio seleccionando Cliente y Unidad."); return;
+    }
+    setGuardandoVenta(true);
+    try {
+      const { error } = await supabase.from('cotizaciones').insert([{
+        cliente_id: informeForm.clienteId,
+        unidad_id: informeForm.propiedadId.toString(),
+        unidad_numero: detallesManuales.unidad || propiedadActivaInforme?.unidad || '',
+        precio_lista: calcInforme.precioListaOriginal,
+        monto_descuento: calcInforme.montoDescuentoCalculado,
+        motivo_descuento: observacionesNegocio || 'Cierre de Venta',
+        precio_total: calcInforme.precioTotal,
+        monto_inicial: calcInforme.cuotaInicialTotal,
+        monto_entrada: calcInforme.entradaDiferirTotal,
+        meses_plazo: mesesConstruccion,
+        monto_contra_entrega: calcInforme.contraEntrega,
+        cronograma_pagos: listadoMaestroPagos,
+        estado: 'Venta - En Cierre'
+      }]);
+
+      if (error) throw error;
+
+      await supabase.from('propiedades').update({ estado: 'En Cierre' }).eq('id', informeForm.propiedadId);
+      setPropiedades(prev => prev.map(p => p.id.toString() === informeForm.propiedadId.toString() ? { ...p, estado: 'En Cierre' } : p));
+      
+      alert("✅ ¡Venta registrada exitosamente! Podrás verla en el Historial de Ventas.");
+    } catch (err: any) {
+      alert(`❌ Error al registrar la venta: ${err.message}`);
+    } finally {
+      setGuardandoVenta(false);
+    }
+  };
+
+  // ================= LÓGICA DE NEGOCIO =================
 
   const agregarNota = () => setNotas([...notas, { id: Date.now().toString(), titulo: '', descripcion: '' }]);
   const actualizarNota = (id: string, campo: 'titulo' | 'descripcion', valor: string) => {
@@ -274,7 +384,7 @@ export default function GestorOperacionesPage() {
     setMostrarCalculadoraRefuerzos(false); 
   };
 
-  // ================= CÁLCULO DE LA LISTA COMBINADA DE PAGOS (INCLUYE RESERVA Y SALDO FINAL) =================
+  // ================= CÁLCULO DE LA LISTA COMBINADA DE PAGOS =================
   const listadoMaestroPagos = useMemo(() => {
     const ultConstruccion = cronogramaCuotas.filter(c => c.tipo === 'construccion').pop();
     const fechaContraEntrega = ultConstruccion ? ultConstruccion.fechaPago : fechaFirmaPromesa;
@@ -294,7 +404,6 @@ export default function GestorOperacionesPage() {
     ];
   }, [cronogramaCuotas, fechaReservaInf, infReservaValor, fechaFirmaPromesa, calcInforme.contraEntrega]);
 
-  // División en 2 columnas para el PDF
   const mitadPagos = Math.ceil(listadoMaestroPagos.length / 2);
   const columnaPagosIzq = listadoMaestroPagos.slice(0, mitadPagos);
   const columnaPagosDer = listadoMaestroPagos.slice(mitadPagos);
@@ -332,24 +441,27 @@ export default function GestorOperacionesPage() {
 
   return (
     <div className="min-h-screen bg-[#dce3eb] p-4 md:p-8 font-sans text-[#415364]">
-      <div className="max-w-6xl mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto space-y-8">
         
         {/* CABECERA GESTOR */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-[#415364]/10 pb-6 gap-4">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center border-b border-[#415364]/10 pb-6 gap-4">
           <div>
             <span className="text-[10px] font-bold tracking-widest text-[#ea0029] uppercase block">Gestor Comercial Inmobiliario</span>
             <h1 className="text-3xl font-bold tracking-tight text-[#415364] mt-1">Gestión de Operaciones</h1>
           </div>
 
-          <div className="flex bg-[#dce3eb]/50 p-1.5 rounded-xl w-full md:w-auto overflow-x-auto border border-[#415364]/10 shadow-inner gap-1">
-            <button onClick={() => setActiveTab('reserva')} className={`px-5 py-2.5 text-xs font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'reserva' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
-              1. Bloqueo y Reserva
+          <div className="flex bg-[#dce3eb]/50 p-1.5 rounded-xl w-full lg:w-auto overflow-x-auto border border-[#415364]/10 shadow-inner gap-1">
+            <button onClick={() => setActiveTab('reserva')} className={`px-4 md:px-5 py-2.5 text-[11px] md:text-xs font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'reserva' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
+              1. Bloqueo
             </button>
-            <button onClick={() => setActiveTab('informe_negocio')} className={`px-5 py-2.5 text-xs font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'informe_negocio' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
-              2. Informe Negocio
+            <button onClick={() => setActiveTab('informe_negocio')} className={`px-4 md:px-5 py-2.5 text-[11px] md:text-xs font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'informe_negocio' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
+              2. Negocio
             </button>
-            <button onClick={() => setActiveTab('expediente')} className={`px-5 py-2.5 text-xs font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'expediente' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
-              3. Doc. Expediente
+            <button onClick={() => setActiveTab('expediente')} className={`px-4 md:px-5 py-2.5 text-[11px] md:text-xs font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'expediente' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}>
+              3. Expediente
+            </button>
+            <button onClick={() => setActiveTab('historial')} className={`px-4 md:px-5 py-2.5 text-[11px] md:text-xs font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'historial' ? 'bg-[#21242E] text-[#D1C292] shadow-md' : 'text-[#415364]/70 hover:text-[#21242E] hover:bg-white/50'}`}>
+              4. Historial Ventas
             </button>
           </div>
         </div>
@@ -376,7 +488,7 @@ export default function GestorOperacionesPage() {
                   <label className="text-[10px] font-bold text-[#415364]/60 uppercase block mb-1.5">Unidad Disponible</label>
                   <select value={reservaForm.propiedadId} onChange={(e) => setReservaForm({...reservaForm, propiedadId: e.target.value})} className="w-full text-xs bg-white border border-[#415364]/20 p-3 rounded-xl outline-none font-bold text-[#415364] focus:border-[#ea0029]">
                     <option value="">-- Seleccionar Inventario --</option>
-                    {propiedades.filter(p => p.estado !== 'Reservado' && p.estado !== 'Vendido').map(p => <option key={p.id} value={p.id}>Unidad {p.unidad || p.numero} (${p.precio_lista})</option>)}
+                    {propiedades.filter(p => p.estado !== 'Reservado' && p.estado !== 'En Cierre' && p.estado !== 'Vendido').map(p => <option key={p.id} value={p.id}>Unidad {p.unidad || p.numero} (${p.precio_lista})</option>)}
                   </select>
                 </div>
               </div>
@@ -464,7 +576,7 @@ export default function GestorOperacionesPage() {
                           <label className="text-[10px] font-bold text-[#415364]/60 uppercase block mb-1.5">Unidad Reservada</label>
                           <select value={informeForm.propiedadId} onChange={(e) => setInformeForm({...informeForm, propiedadId: e.target.value})} className="w-full bg-[#F9F7F5] border border-[#D1C292]/50 rounded-xl p-3 text-xs font-bold focus:border-[#ea0029] outline-none">
                             <option value="">— Seleccionar —</option>
-                            {propiedades.filter(p => p.estado === 'Reservado').map(p => <option key={p.id} value={p.id}>Unidad {p.unidad || p.numero} (Reservada)</option>)}
+                            {propiedades.filter(p => p.estado === 'Reservado' || p.estado === 'En Cierre').map(p => <option key={p.id} value={p.id}>Unidad {p.unidad || p.numero} ({p.estado})</option>)}
                           </select>
                         </div>
                       </div>
@@ -841,10 +953,16 @@ export default function GestorOperacionesPage() {
                     <div className="flex justify-between border-t-2 border-[#21242E] pt-3 mt-2"><span className="text-[12px] font-bold uppercase">Contra Entrega</span><span className="font-bold text-[#B94A36] font-mono">${calcInforme.contraEntrega.toLocaleString('en-US',{minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></div>
                   </div>
 
-                  <button onClick={() => imprimirDocumento('plantilla-pdf-arienzo', 'Informe_Negocio')} disabled={!propiedadActivaInforme} className="w-full bg-[#21242E] text-white rounded-xl p-3.5 text-[11px] font-bold uppercase tracking-widest hover:bg-neutral-800 transition-colors mt-8 disabled:opacity-50 flex items-center justify-center gap-2">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                    Imprimir Informe Oficial
-                  </button>
+                  <div className="grid grid-cols-2 gap-3 mt-8">
+                    <button onClick={() => imprimirDocumento('plantilla-pdf-arienzo', 'Informe_Negocio')} disabled={!propiedadActivaInforme} className="w-full bg-[#21242E] text-white rounded-xl p-3.5 text-[10px] font-bold uppercase tracking-widest hover:bg-neutral-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                      Imprimir
+                    </button>
+                    <button onClick={registrarVenta} disabled={!propiedadActivaInforme || guardandoVenta} className="w-full bg-[#ea0029] text-white rounded-xl p-3.5 text-[10px] font-bold uppercase tracking-widest hover:bg-[#c90022] transition-colors shadow-md disabled:opacity-50 flex items-center justify-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                      {guardandoVenta ? 'Guardando...' : 'Registrar Venta'}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -873,7 +991,7 @@ export default function GestorOperacionesPage() {
                   <label className="text-[10px] font-bold text-[#415364]/60 uppercase block mb-1.5">2. Unidad Vinculada</label>
                   <select value={cierreForm.propiedadId} onChange={(e) => setCierreForm({...cierreForm, propiedadId: e.target.value})} className="w-full text-xs bg-white border border-[#415364]/20 p-3 rounded-xl outline-none font-bold text-[#ea0029]">
                     <option value="">-- Seleccione Unidad --</option>
-                    {propiedades.filter(p => p.estado === 'Reservado').map(p => <option key={p.id} value={p.id}>Unidad {p.unidad || p.numero}</option>)}
+                    {propiedades.filter(p => p.estado === 'Reservado' || p.estado === 'En Cierre').map(p => <option key={p.id} value={p.id}>Unidad {p.unidad || p.numero}</option>)}
                   </select>
                 </div>
               </div>
@@ -893,6 +1011,59 @@ export default function GestorOperacionesPage() {
                 <div className="mt-6 p-6 border-2 border-dashed border-[#415364]/20 rounded-2xl text-center"><p className="text-xs text-[#415364]/50 font-bold uppercase tracking-widest">Seleccione cliente y unidad para habilitar impresión</p></div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* =======================================================
+            TAB 4: HISTORIAL DE VENTAS (NUEVO)
+           ======================================================= */}
+        {activeTab === 'historial' && (
+          <div className="bg-white border border-neutral-200/60 rounded-2xl p-6 md:p-8 shadow-sm max-w-5xl mx-auto animate-in fade-in">
+            <div className="mb-6 border-b border-neutral-100 pb-4">
+              <h3 className="text-sm font-bold text-[#415364] uppercase tracking-wider">Historial de Ventas Registradas</h3>
+              <p className="text-xs text-[#415364]/60 mt-1">Consulte los informes guardados y vuelva a cargarlos en el gestor para su edición o reimpresión.</p>
+            </div>
+            
+            {cargandoHistorial ? (
+              <div className="py-10 text-center text-xs font-bold text-[#415364]/50 uppercase tracking-widest animate-pulse">Cargando base de datos...</div>
+            ) : historialVentas.length === 0 ? (
+              <div className="py-10 text-center text-xs font-bold text-[#415364]/50 uppercase tracking-widest border border-dashed border-[#415364]/20 rounded-xl">No hay ventas registradas en el sistema.</div>
+            ) : (
+              <div className="overflow-x-auto rounded-xl border border-neutral-200">
+                <table className="w-full text-left text-[11px] whitespace-nowrap">
+                  <thead className="bg-[#F9F7F5] border-b border-neutral-200">
+                    <tr className="text-[#415364] font-bold uppercase tracking-wider">
+                      <th className="px-4 py-3">Unidad</th>
+                      <th className="px-4 py-3">Inversionista Titular</th>
+                      <th className="px-4 py-3 text-right">Precio Final</th>
+                      <th className="px-4 py-3 text-center">Registro</th>
+                      <th className="px-4 py-3 text-center">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100">
+                    {historialVentas.map(venta => {
+                       const clienteNombres = clientes.find(c => c.id === venta.cliente_id)?.nombres || 'Cliente';
+                       const clienteApellidos = clientes.find(c => c.id === venta.cliente_id)?.apellidos || 'Desconocido';
+                       
+                       return (
+                        <tr key={venta.id} className="hover:bg-neutral-50 transition-colors">
+                          <td className="px-4 py-3 font-bold text-[#ea0029]">Dpto. {venta.unidad_numero || '---'}</td>
+                          <td className="px-4 py-3 font-bold text-[#415364]">{clienteNombres} {clienteApellidos}</td>
+                          <td className="px-4 py-3 font-mono font-bold text-[#415364] text-right">${(venta.precio_total || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                          <td className="px-4 py-3 text-neutral-500 text-center font-mono">{new Date(venta.created_at).toLocaleDateString('es-ES')}</td>
+                          <td className="px-4 py-3 text-center">
+                            <button onClick={() => cargarVentaEnGestor(venta)} className="text-[10px] font-bold bg-[#21242E] text-white px-3 py-1.5 rounded-md hover:bg-[#415364] transition-colors flex items-center justify-center gap-1 mx-auto shadow-sm">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                              Cargar para Edición
+                            </button>
+                          </td>
+                        </tr>
+                       )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
