@@ -27,10 +27,9 @@ export default function CobranzasPage() {
   const cargarDatosGenerales = async () => {
     setCargando(true);
     try {
-      // Cargamos solo las operaciones que son Ventas definitivas o en cierre
       const { data: vts } = await supabase.from('cotizaciones')
         .select('*')
-        .eq('estado', 'Venta - En Cierre')
+        .in('estado', ['Venta - En Cierre', 'Informe de Negocio', 'Reserva Comercial'])
         .order('created_at', { ascending: false });
         
       const { data: clis } = await supabase.from('clientes').select('*').eq('tipo', 'cliente');
@@ -65,7 +64,7 @@ export default function CobranzasPage() {
 
   const registrarPago = async () => {
     if (!pagoForm.referencia && pagoForm.metodo !== 'Efectivo') {
-      alert("La referencia del documento es obligatoria."); return;
+      alert("La referencia del documento es obligatoria para transferencias/cheques."); return;
     }
     setProcesando(true);
     try {
@@ -74,7 +73,7 @@ export default function CobranzasPage() {
       
       // 2. Encontrar la cuota y marcarla como pagada
       const index = cronogramaActualizado.findIndex(c => c.id === cuotaSeleccionada.id);
-      if (index === -1) throw new Error("Cuota no encontrada");
+      if (index === -1) throw new Error("Cuota no encontrada en el cronograma");
 
       const reciboId = `REC-${new Date().getFullYear()}${String(new Date().getMonth()+1).padStart(2, '0')}-${Math.floor(1000 + Math.random() * 9000)}`;
 
@@ -91,7 +90,7 @@ export default function CobranzasPage() {
         }
       };
 
-      // 3. Guardar en Supabase actualizando el JSON de la cotización
+      // 3. Guardar en Supabase actualizando el JSON de la operación
       const { error } = await supabase.from('cotizaciones')
         .update({ cronograma_pagos: cronogramaActualizado })
         .eq('id', ventaActiva.id);
@@ -110,10 +109,10 @@ export default function CobranzasPage() {
       });
       
       setCuotaSeleccionada(null);
-      alert("✅ Pago registrado exitosamente.");
+      alert("✅ Cobro registrado exitosamente en el Estado de Cuenta.");
 
     } catch (err: any) {
-      alert(`Error al registrar pago: ${err.message}`);
+      alert(`Error al registrar cobro: ${err.message}`);
     } finally {
       setProcesando(false);
     }
@@ -132,7 +131,7 @@ export default function CobranzasPage() {
           <style>
             @page { size: A4 portrait; margin: 0; }
             body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; margin: 0; background: #ffffff; font-family: ui-sans-serif, system-ui, sans-serif; }
-            .pagina-a4 { width: 210mm !important; height: 297mm !important; padding: 15mm; box-sizing: border-box; position: relative; margin: 0 auto; }
+            .pagina-a4 { width: 210mm !important; height: 297mm !important; padding: 12mm 15mm; box-sizing: border-box; overflow: hidden; position: relative; margin: 0 auto; }
           </style>
         </head>
         <body>${contenido}<script>setTimeout(() => { window.print(); window.close(); }, 700);</script></body>
@@ -171,10 +170,10 @@ export default function CobranzasPage() {
               <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-sm">
                 <label className="text-[10px] font-bold text-[#415364]/60 uppercase block mb-2">Seleccionar Unidad a Cobrar</label>
                 <select value={ventaSeleccionadaId} onChange={(e) => { setVentaSeleccionadaId(e.target.value); setReciboGenerado(null); }} className="w-full bg-[#F9F7F5] border border-neutral-200 rounded-xl p-3 text-sm font-bold focus:border-[#ea0029] outline-none">
-                  <option value="">— Buscar Operación Activa —</option>
+                  <option value="">— Buscar Operación —</option>
                   {ventas.map(v => {
                     const c = clientes.find(cl => cl.id === v.cliente_id);
-                    return <option key={v.id} value={v.id}>Dpto {v.unidad_numero} - {c?.nombres} {c?.apellidos}</option>
+                    return <option key={v.id} value={v.id}>Dpto {v.unidad_numero || 'N/A'} - {c?.nombres} {c?.apellidos} ({v.estado})</option>
                   })}
                 </select>
               </div>
@@ -184,11 +183,12 @@ export default function CobranzasPage() {
                   <h3 className="text-[10px] text-[#D1C292] font-bold uppercase tracking-widest mb-4 border-b border-white/10 pb-2">Resumen de Cartera</h3>
                   <div className="space-y-3 text-xs">
                     <div className="flex justify-between"><span className="text-white/60">Cliente:</span> <span className="font-bold truncate max-w-[150px]">{clienteActivo.nombres} {clienteActivo.apellidos}</span></div>
-                    <div className="flex justify-between"><span className="text-white/60">Unidad:</span> <span className="font-bold text-[#D1C292]">{ventaActiva.unidad_numero}</span></div>
-                    <div className="flex justify-between"><span className="text-white/60">C.I / RUC:</span> <span className="font-mono">{clienteActivo.cedula}</span></div>
+                    <div className="flex justify-between"><span className="text-white/60">Unidad:</span> <span className="font-bold text-[#D1C292]">{ventaActiva.unidad_numero || 'N/A'}</span></div>
+                    <div className="flex justify-between"><span className="text-white/60">C.I / RUC:</span> <span className="font-mono">{clienteActivo.cedula || clienteActivo.identificacion}</span></div>
+                    <div className="flex justify-between"><span className="text-white/60">Estatus:</span> <span className="font-bold text-[#ea0029]">{ventaActiva.estado}</span></div>
                     <div className="pt-3 mt-3 border-t border-white/10 flex justify-between items-center">
                       <span className="text-[10px] font-bold text-white/60 uppercase">Valor Total Negocio</span>
-                      <span className="font-mono font-bold text-lg">${ventaActiva.precio_total.toLocaleString('en-US', {minimumFractionDigits:2})}</span>
+                      <span className="font-mono font-bold text-lg">${(ventaActiva.precio_total || 0).toLocaleString('en-US', {minimumFractionDigits:2})}</span>
                     </div>
                   </div>
                 </div>
@@ -204,53 +204,60 @@ export default function CobranzasPage() {
                   </div>
                   
                   <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
-                    <table className="w-full text-left text-xs">
-                      <thead className="sticky top-0 bg-white shadow-sm z-10 text-[10px] text-neutral-500 uppercase tracking-wider">
-                        <tr>
-                          <th className="px-4 py-3">Concepto</th>
-                          <th className="px-4 py-3 text-center">Fecha Límite</th>
-                          <th className="px-4 py-3 text-right">Monto</th>
-                          <th className="px-4 py-3 text-center">Estado</th>
-                          <th className="px-4 py-3 text-center">Acción</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-neutral-100">
-                        {ventaActiva.cronograma_pagos?.map((cuota: any) => {
-                          const estaPagado = cuota.pagado === true;
-                          const esVencida = !estaPagado && new Date(cuota.date) < new Date();
-                          
-                          return (
-                            <tr key={cuota.id} className={`hover:bg-neutral-50 transition-colors ${estaPagado ? 'bg-[#D1C292]/5' : esVencida ? 'bg-red-50/50' : ''}`}>
-                              <td className={`px-4 py-3 font-bold ${estaPagado ? 'text-neutral-400' : 'text-[#415364]'}`}>{cuota.label}</td>
-                              <td className="px-4 py-3 text-center font-mono text-neutral-500">{formatearFecha(cuota.date)}</td>
-                              <td className={`px-4 py-3 text-right font-mono font-bold ${estaPagado ? 'text-neutral-400' : 'text-[#415364]'}`}>${cuota.amount.toLocaleString('en-US', {minimumFractionDigits:2})}</td>
-                              <td className="px-4 py-3 text-center">
-                                {estaPagado ? (
-                                  <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider">Cobrado</span>
-                                ) : esVencida ? (
-                                  <span className="bg-red-100 text-red-700 px-2 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider">Atrasado</span>
-                                ) : (
-                                  <span className="bg-amber-100 text-amber-700 px-2 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider">Pendiente</span>
-                                )}
-                              </td>
-                              <td className="px-4 py-3 text-center">
-                                {!estaPagado ? (
-                                  <button onClick={() => abrirModalPago(cuota)} className="bg-[#21242E] text-white px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest hover:bg-[#ea0029] transition-colors shadow-sm">
-                                    Cobrar
-                                  </button>
-                                ) : (
-                                  <button onClick={() => {
-                                      setReciboGenerado({ ...cuota.datos_pago, label_cuota: cuota.label, fecha_proyectada: cuota.date });
-                                  }} className="text-neutral-400 hover:text-[#415364] flex justify-center w-full">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                                  </button>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                    {ventaActiva.cronograma_pagos && ventaActiva.cronograma_pagos.length > 0 ? (
+                      <table className="w-full text-left text-xs">
+                        <thead className="sticky top-0 bg-white shadow-sm z-10 text-[10px] text-neutral-500 uppercase tracking-wider">
+                          <tr>
+                            <th className="px-4 py-3">Concepto</th>
+                            <th className="px-4 py-3 text-center">Fecha Límite</th>
+                            <th className="px-4 py-3 text-right">Monto</th>
+                            <th className="px-4 py-3 text-center">Estado</th>
+                            <th className="px-4 py-3 text-center">Acción</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neutral-100">
+                          {ventaActiva.cronograma_pagos.map((cuota: any) => {
+                            const estaPagado = cuota.pagado === true;
+                            const esVencida = !estaPagado && new Date(cuota.date) < new Date();
+                            
+                            return (
+                              <tr key={cuota.id} className={`hover:bg-neutral-50 transition-colors ${estaPagado ? 'bg-[#D1C292]/5' : esVencida ? 'bg-red-50/50' : ''}`}>
+                                <td className={`px-4 py-3 font-bold ${estaPagado ? 'text-neutral-400' : 'text-[#415364]'}`}>{cuota.label}</td>
+                                <td className="px-4 py-3 text-center font-mono text-neutral-500">{formatearFecha(cuota.date)}</td>
+                                <td className={`px-4 py-3 text-right font-mono font-bold ${estaPagado ? 'text-neutral-400' : 'text-[#415364]'}`}>${cuota.amount.toLocaleString('en-US', {minimumFractionDigits:2})}</td>
+                                <td className="px-4 py-3 text-center">
+                                  {estaPagado ? (
+                                    <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider">Cobrado</span>
+                                  ) : esVencida ? (
+                                    <span className="bg-red-100 text-red-700 px-2 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider">Atrasado</span>
+                                  ) : (
+                                    <span className="bg-amber-100 text-amber-700 px-2 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider">Pendiente</span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 text-center">
+                                  {!estaPagado ? (
+                                    <button onClick={() => abrirModalPago(cuota)} className="bg-[#21242E] text-white px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest hover:bg-[#ea0029] transition-colors shadow-sm">
+                                      Cobrar
+                                    </button>
+                                  ) : (
+                                    <button onClick={() => {
+                                        setReciboGenerado({ ...cuota.datos_pago, label_cuota: cuota.label, fecha_proyectada: cuota.date });
+                                    }} className="text-neutral-400 hover:text-[#415364] flex justify-center w-full" title="Ver Recibo">
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full text-neutral-400 p-10 text-center">
+                        <p className="text-sm font-bold uppercase tracking-widest">Operación sin cronograma</p>
+                        <p className="text-xs mt-2">Esta operación fue registrada sin un flujo de caja. Vuelve al Gestor, cárgala desde el historial, genérale las cuotas y guárdala de nuevo.</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -338,99 +345,97 @@ export default function CobranzasPage() {
           </div>
         )}
 
-        {/* PLANTILLA OCULTA: RECIBO DE COBRANZA EN FORMATO A4 */}
+        {/* PLANTILLA OCULTA: RECIBO DE COBRANZA (DISEÑO LIMPIO TIPO RESERVA) */}
         {reciboGenerado && clienteActivo && ventaActiva && (
           <div id="plantilla-recibo-cobro" className="hidden">
             <div className="pagina-a4">
-              <div className="border border-[#415364] p-10 h-full relative">
-                {/* MARCA DE AGUA */}
-                <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none z-0">
-                  <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" alt="Arienzo Watermark" className="w-[80%] -rotate-12" />
+              
+              {/* Encabezado */}
+              <div className="flex justify-between items-end border-b-2 border-[#B94A36] pb-4 mb-8">
+                <div>
+                  <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" alt="Arienzo" className="h-10 mb-2 object-contain" />
+                  <p className="text-[8px] tracking-widest text-[#8C8A87] uppercase font-bold">RUC: 1391940037001</p>
                 </div>
-                
-                <div className="relative z-10">
-                  <div className="flex justify-between items-start border-b-2 border-[#ea0029] pb-6 mb-8">
-                    <div>
-                      <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" alt="Arienzo" className="h-12 mb-3 object-contain" />
-                      <p className="text-[9px] tracking-widest text-[#415364] uppercase font-bold">Arienzo S.A.S.</p>
-                      <p className="text-[8px] tracking-widest text-neutral-500 uppercase mt-0.5">RUC: 1391940037001</p>
-                    </div>
-                    <div className="text-right bg-[#F9F7F5] border border-neutral-200 px-6 py-4 rounded-xl">
-                      <h1 className="text-xl font-bold text-[#415364] tracking-widest uppercase mb-1">Recibo de Caja</h1>
-                      <p className="text-sm font-mono font-bold text-[#ea0029]">{reciboGenerado.recibo_id}</p>
-                      <p className="text-[8px] text-neutral-500 uppercase tracking-widest mt-2">Copia Cliente</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-8 mb-8">
-                    <div>
-                      <h3 className="text-[8px] font-bold text-[#ea0029] uppercase tracking-widest border-b border-neutral-200 pb-1 mb-3">Datos del Cliente</h3>
-                      <div className="space-y-1.5 text-[10px] uppercase">
-                        <p><span className="font-bold text-neutral-500 w-20 inline-block">Titular:</span> <span className="font-bold text-[#415364]">{clienteActivo.nombres} {clienteActivo.apellidos}</span></p>
-                        <p><span className="font-bold text-neutral-500 w-20 inline-block">C.I / RUC:</span> <span className="font-mono">{clienteActivo.cedula}</span></p>
-                        <p><span className="font-bold text-neutral-500 w-20 inline-block">Teléfono:</span> <span>{clienteActivo.telefono}</span></p>
-                        <p><span className="font-bold text-neutral-500 w-20 inline-block">E-mail:</span> <span className="lowercase">{clienteActivo.email}</span></p>
-                      </div>
-                    </div>
-                    <div>
-                      <h3 className="text-[8px] font-bold text-[#ea0029] uppercase tracking-widest border-b border-neutral-200 pb-1 mb-3">Detalle Operación</h3>
-                      <div className="space-y-1.5 text-[10px] uppercase">
-                        <p><span className="font-bold text-neutral-500 w-20 inline-block">Fecha Cobro:</span> <span className="font-mono font-bold">{formatearFecha(reciboGenerado.fecha_pago_real)}</span></p>
-                        <p><span className="font-bold text-neutral-500 w-20 inline-block">Proyecto:</span> <span className="font-bold text-[#415364]">Arienzo Boutique Living</span></p>
-                        <p><span className="font-bold text-neutral-500 w-20 inline-block">Unidad Inm:</span> <span className="font-bold text-[#415364]">Dpto. {ventaActiva.unidad_numero}</span></p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* BLOQUE CENTRAL DE VALOR */}
-                  <div className="bg-[#415364] text-white rounded-xl p-8 mb-8 border-l-8 border-[#D1C292] shadow-sm flex items-center justify-between">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-[#D1C292] block mb-2">Importe Recibido</span>
-                      <span className="text-4xl font-mono font-bold">${Number(reciboGenerado.monto_cobrado).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="bg-white/10 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider inline-block">
-                        Concepto: {reciboGenerado.label_cuota}
-                      </span>
-                    </div>
-                  </div>
-
-                  <h3 className="text-[8px] font-bold text-[#ea0029] uppercase tracking-widest border-b border-neutral-200 pb-1 mb-4">Forma de Pago Registrada</h3>
-                  <div className="grid grid-cols-3 gap-4 text-[10px] uppercase bg-neutral-50 p-5 rounded-xl border border-neutral-200 mb-12">
-                    <div>
-                      <span className="font-bold text-neutral-400 block mb-1">Método de Ingreso</span>
-                      <span className="font-bold text-[#415364]">{reciboGenerado.metodo}</span>
-                    </div>
-                    <div>
-                      <span className="font-bold text-neutral-400 block mb-1">Entidad Bancaria</span>
-                      <span className="font-bold text-[#415364]">{reciboGenerado.banco || '---'}</span>
-                    </div>
-                    <div>
-                      <span className="font-bold text-neutral-400 block mb-1">Ref / Documento</span>
-                      <span className="font-mono font-bold text-[#415364]">{reciboGenerado.referencia || 'N/A'}</span>
-                    </div>
-                  </div>
-
-                  <div className="text-[8px] leading-relaxed text-justify text-neutral-500 mb-20 border-l-2 border-neutral-300 pl-4 py-1 italic">
-                    Declaramos haber recibido los fondos especificados en este documento. Este recibo no invalida letras de cambio, pagarés u otros documentos de garantía firmados por el cliente si el medio de pago reportara rechazo por fondos insuficientes o defectos de forma por parte de las entidades bancarias involucradas. 
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-16 px-16">
-                    <div className="text-center border-t border-[#415364] pt-3">
-                      <p className="text-[9px] font-bold uppercase tracking-widest text-[#415364] mb-1">{clienteActivo.nombres} {clienteActivo.apellidos}</p>
-                      <p className="text-[8px] text-neutral-400 uppercase tracking-widest">Titular / Entregué Conforme</p>
-                    </div>
-                    <div className="text-center border-t border-[#415364] pt-3">
-                      <p className="text-[9px] font-bold uppercase tracking-widest text-[#415364] mb-1">Arienzo S.A.S.</p>
-                      <p className="text-[8px] text-neutral-400 uppercase tracking-widest">Recibí Conforme / Departamento Cobranzas</p>
-                    </div>
-                  </div>
-
-                  <div className="absolute bottom-6 left-0 right-0 text-center text-[7px] text-neutral-400 uppercase tracking-widest">
-                    Impreso desde Ecosistema Konkeri • Documento Válido para Fines Comerciales
-                  </div>
+                <div className="text-right">
+                  <h1 className="text-lg font-light text-[#B94A36] tracking-widest uppercase">Recibo de Caja</h1>
+                  <p className="text-xs font-mono font-bold mt-1">N° {reciboGenerado.recibo_id}</p>
                 </div>
               </div>
+
+              {/* Cuerpo del Recibo (Caja Blanca Limpia) */}
+              <div className="bg-white border border-[#EAE3DC] p-6 rounded-md shadow-sm">
+                
+                <div className="flex justify-between items-center border-b border-[#EAE3DC] pb-4 mb-4">
+                  <span className="text-[10px] uppercase font-bold text-[#8C8A87] tracking-wider">Fecha de Cobro:</span>
+                  <span className="text-sm font-medium font-mono">{formatearFecha(reciboGenerado.fecha_pago_real)}</span>
+                </div>
+                
+                <div className="flex justify-between items-center border-b border-[#EAE3DC] pb-4 mb-4">
+                  <span className="text-[10px] uppercase font-bold text-[#8C8A87] tracking-wider">Importe Recibido:</span>
+                  <span className="text-xl font-mono font-bold text-[#B94A36]">${Number(reciboGenerado.monto_cobrado).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                </div>
+                
+                <div className="flex justify-between items-center border-b border-[#EAE3DC] pb-4 mb-4">
+                  <span className="text-[10px] uppercase font-bold text-[#8C8A87] tracking-wider">Recibimos de:</span>
+                  <span className="text-sm font-bold uppercase">{clienteActivo.nombres} {clienteActivo.apellidos}</span>
+                </div>
+
+                <div className="flex flex-col border-b border-[#EAE3DC] pb-4 mb-4">
+                  <span className="text-[10px] uppercase font-bold text-[#8C8A87] tracking-wider mb-2">Por Concepto de:</span>
+                  <span className="text-sm font-bold text-[#333333] mb-3">{reciboGenerado.label_cuota}</span>
+                  <div className="grid grid-cols-2 gap-3 bg-[#FCFBFA] border border-[#EAE3DC] p-3 rounded-md">
+                    <div>
+                      <span className="text-[8px] uppercase font-bold text-[#8C8A87] block mb-0.5">Proyecto</span>
+                      <span className="text-xs font-bold text-[#333333]">Arienzo Boutique Living</span>
+                    </div>
+                    <div>
+                      <span className="text-[8px] uppercase font-bold text-[#8C8A87] block mb-0.5">Unidad Inmobiliaria</span>
+                      <span className="text-xs font-bold text-[#333333]">Dpto. {ventaActiva.unidad_numero || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4 bg-[#F2EFEB] p-4 rounded-md">
+                  <div>
+                    <span className="text-[9px] uppercase font-bold text-[#8C8A87] block mb-1">Método de Ingreso:</span>
+                    <span className="text-[11px] font-medium">{reciboGenerado.metodo}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] uppercase font-bold text-[#8C8A87] block mb-1">Entidad Bancaria:</span>
+                    <span className="text-[11px] font-medium">{reciboGenerado.banco || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] uppercase font-bold text-[#8C8A87] block mb-1">Ref / Documento:</span>
+                    <span className="text-[11px] font-mono font-medium">{reciboGenerado.referencia || 'N/A'}</span>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Nota Legal */}
+              <div className="mt-6 p-4 bg-neutral-50 border border-neutral-200 rounded-md text-[6.5pt] leading-tight text-justify text-neutral-500">
+                <p><strong>Nota importante / Condiciones de Cobro:</strong> Declaramos haber recibido los fondos especificados en este documento bajo la confirmación de la entidad bancaria respectiva. Este recibo no invalida letras de cambio, pagarés u otros documentos de garantía firmados por el cliente si el medio de pago reportara rechazo por fondos insuficientes, cuentas cerradas, o defectos de forma detectados posteriormente por parte de las entidades involucradas en la compensación.</p>
+              </div>
+
+              {/* Firmas Espaciadas (Cambiadas de absolute a relativo para evitar bloqueos) */}
+              <div className="mt-16 grid grid-cols-2 gap-16 px-12">
+                <div className="text-center border-t border-[#8C8A87] pt-2">
+                  <p className="text-[9px] font-bold uppercase tracking-wider">{clienteActivo.nombres} {clienteActivo.apellidos}</p>
+                  <p className="text-[8px] text-[#8C8A87]">C.I / RUC: {clienteActivo.cedula || clienteActivo.identificacion || '_______________'}</p>
+                  <p className="text-[7px] text-[#8C8A87] mt-1 uppercase tracking-widest">Titular / Entregué Conforme</p>
+                </div>
+                <div className="text-center border-t border-[#8C8A87] pt-2">
+                  <p className="text-[9px] font-bold uppercase tracking-wider">Arienzo S.A.S.</p>
+                  <p className="text-[8px] text-[#8C8A87]">RUC: 1391940037001</p>
+                  <p className="text-[7px] text-[#8C8A87] mt-1 uppercase tracking-widest">Recibí Conforme / Depto. Cobranzas</p>
+                </div>
+              </div>
+
+              {/* Pie de página seguro */}
+              <div className="absolute bottom-6 left-0 right-0 text-center text-[7px] text-[#8C8A87] uppercase tracking-widest">
+                Arienzo S.A.S. • Ecosistema Konkeri • Copia Cliente • Documento Válido para Fines Comerciales
+              </div>
+
             </div>
           </div>
         )}
