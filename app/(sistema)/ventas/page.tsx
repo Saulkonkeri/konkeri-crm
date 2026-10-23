@@ -25,6 +25,9 @@ export default function GestorOperacionesPage() {
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   
+  // Memoria de edición para no duplicar registros en Supabase
+  const [operacionEdicionId, setOperacionEdicionId] = useState<string | null>(null);
+
   // ================= ESTADOS: PESTAÑA 1 (RESERVA) =================
   const [reservaExitosa, setReservaExitosa] = useState(false);
   const [codigoReserva, setCodigoReserva] = useState('');
@@ -92,7 +95,7 @@ export default function GestorOperacionesPage() {
     inicializarEcosistema();
   }, []);
 
-  // Cargar historial EXCLUSIVO de Operaciones Reales (Ignora cotizaciones simples)
+  // Cargar historial EXCLUSIVO de Operaciones Reales
   useEffect(() => {
     if (activeTab === 'historial') {
       const cargarHistorial = async () => {
@@ -160,11 +163,7 @@ export default function GestorOperacionesPage() {
     try {
       const codigoGenerado = `RES-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${Math.floor(1000 + Math.random() * 9000)}`;
       
-      // Bloquear en tabla Propiedades
-      await supabase.from('propiedades').update({ estado: 'Reservado' }).eq('id', reservaForm.propiedadId);
-      
-      // Registrar la operación en Cotizaciones como Reserva
-      await supabase.from('cotizaciones').insert([{
+      const payload = {
         cliente_id: reservaForm.clienteId,
         unidad_id: reservaForm.propiedadId.toString(),
         unidad_numero: propiedadActivaReserva?.unidad || propiedadActivaReserva?.numero || '',
@@ -173,12 +172,20 @@ export default function GestorOperacionesPage() {
         monto_inicial: reservaForm.montoReserva,
         motivo_descuento: `Bloqueo con ${reservaForm.formaPago} - Ref: ${reservaForm.numeroComprobante}`,
         estado: 'Reserva Comercial'
-      }]);
+      };
 
+      if (operacionEdicionId) {
+        await supabase.from('cotizaciones').update(payload).eq('id', operacionEdicionId);
+      } else {
+        await supabase.from('cotizaciones').insert([payload]);
+      }
+
+      await supabase.from('propiedades').update({ estado: 'Reservado' }).eq('id', reservaForm.propiedadId);
+      
       setCodigoReserva(codigoGenerado);
       setPropiedades(prev => prev.map(p => p.id.toString() === reservaForm.propiedadId.toString() ? { ...p, estado: 'Reservado' } : p));
       setReservaExitosa(true);
-      alert("✅ Unidad bloqueada y Reserva registrada en el historial.");
+      alert("✅ Unidad bloqueada y Reserva guardada/actualizada en el historial.");
     } catch (err: any) { alert(`Error: ${err.message}`); } finally { setGuardando(false); }
   };
 
@@ -188,7 +195,7 @@ export default function GestorOperacionesPage() {
     }
     setGuardandoVenta(true);
     try {
-      const { error } = await supabase.from('cotizaciones').insert([{
+      const payload = {
         cliente_id: informeForm.clienteId,
         unidad_id: informeForm.propiedadId.toString(),
         unidad_numero: detallesManuales.unidad || propiedadActivaInforme?.unidad || '',
@@ -202,16 +209,22 @@ export default function GestorOperacionesPage() {
         monto_contra_entrega: calcInforme.contraEntrega,
         cronograma_pagos: listadoMaestroPagos,
         estado: estadoOp
-      }]);
+      };
 
-      if (error) throw error;
+      if (operacionEdicionId) {
+        await supabase.from('cotizaciones').update(payload).eq('id', operacionEdicionId);
+      } else {
+        await supabase.from('cotizaciones').insert([payload]);
+      }
 
       if (estadoOp === 'Venta - En Cierre') {
         await supabase.from('propiedades').update({ estado: 'En Cierre' }).eq('id', informeForm.propiedadId);
         setPropiedades(prev => prev.map(p => p.id.toString() === informeForm.propiedadId.toString() ? { ...p, estado: 'En Cierre' } : p));
       }
       
-      alert(`✅ ¡${estadoOp} guardado exitosamente! Podrás revisarlo en el Historial de Operaciones.`);
+      alert(`✅ ¡${estadoOp} guardado exitosamente!`);
+      // Reseteamos el id de edición para evitar sobreescribir si luego hacen otra nueva desde cero
+      setOperacionEdicionId(null);
     } catch (err: any) {
       alert(`❌ Error al guardar: ${err.message}`);
     } finally {
@@ -221,6 +234,8 @@ export default function GestorOperacionesPage() {
 
   // Función para recrear Informes, Ventas o Reservas en el Gestor
   const cargarOperacionEnGestor = (venta: any) => {
+    setOperacionEdicionId(venta.id); // Guardamos el ID para hacer UPDATE en lugar de INSERT
+
     if (venta.estado === 'Reserva Comercial') {
        setReservaForm({ ...reservaForm, clienteId: venta.cliente_id?.toString(), propiedadId: venta.unidad_id?.toString(), montoReserva: venta.monto_inicial || 2500 });
        setActiveTab('reserva');
@@ -509,14 +524,14 @@ export default function GestorOperacionesPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-[#dce3eb]/30 p-5 rounded-xl border border-[#415364]/10">
                 <div>
                   <label className="text-[10px] font-bold text-[#415364]/60 uppercase block mb-1.5">Cliente Titular</label>
-                  <select value={reservaForm.clienteId} onChange={(e) => setReservaForm({...reservaForm, clienteId: e.target.value})} className="w-full text-xs bg-white border border-[#415364]/20 p-3 rounded-xl outline-none font-bold text-[#415364] focus:border-[#ea0029]">
+                  <select value={reservaForm.clienteId} onChange={(e) => { setReservaForm({...reservaForm, clienteId: e.target.value}); setOperacionEdicionId(null); }} className="w-full text-xs bg-white border border-[#415364]/20 p-3 rounded-xl outline-none font-bold text-[#415364] focus:border-[#ea0029]">
                     <option value="">-- Seleccionar de Cartera --</option>
                     {clientes.map(c => <option key={c.id} value={c.id}>{c.nombres} {c.apellidos}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="text-[10px] font-bold text-[#415364]/60 uppercase block mb-1.5">Unidad Disponible</label>
-                  <select value={reservaForm.propiedadId} onChange={(e) => setReservaForm({...reservaForm, propiedadId: e.target.value})} className="w-full text-xs bg-white border border-[#415364]/20 p-3 rounded-xl outline-none font-bold text-[#415364] focus:border-[#ea0029]">
+                  <select value={reservaForm.propiedadId} onChange={(e) => { setReservaForm({...reservaForm, propiedadId: e.target.value}); setOperacionEdicionId(null); }} className="w-full text-xs bg-white border border-[#415364]/20 p-3 rounded-xl outline-none font-bold text-[#415364] focus:border-[#ea0029]">
                     <option value="">-- Seleccionar Inventario --</option>
                     {propiedades.filter(p => p.estado !== 'Vendido').map(p => <option key={p.id} value={p.id}>Unidad {p.unidad || p.numero} (${p.precio_lista}) - {p.estado}</option>)}
                   </select>
@@ -597,14 +612,14 @@ export default function GestorOperacionesPage() {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="text-[10px] font-bold text-[#415364]/60 uppercase block mb-1.5">Cliente Titular</label>
-                          <select value={informeForm.clienteId} onChange={(e) => setInformeForm({...informeForm, clienteId: e.target.value})} className="w-full bg-[#F9F7F5] border border-[#D1C292]/50 rounded-xl p-3 text-xs font-bold focus:border-[#ea0029] outline-none">
+                          <select value={informeForm.clienteId} onChange={(e) => { setInformeForm({...informeForm, clienteId: e.target.value}); setOperacionEdicionId(null); }} className="w-full bg-[#F9F7F5] border border-[#D1C292]/50 rounded-xl p-3 text-xs font-bold focus:border-[#ea0029] outline-none">
                             <option value="">— Seleccionar —</option>
                             {clientes.map(c => <option key={c.id} value={c.id}>{c.nombres} {c.apellidos}</option>)}
                           </select>
                         </div>
                         <div>
                           <label className="text-[10px] font-bold text-[#415364]/60 uppercase block mb-1.5">Unidad a Operar</label>
-                          <select value={informeForm.propiedadId} onChange={(e) => setInformeForm({...informeForm, propiedadId: e.target.value})} className="w-full bg-[#F9F7F5] border border-[#D1C292]/50 rounded-xl p-3 text-xs font-bold focus:border-[#ea0029] outline-none">
+                          <select value={informeForm.propiedadId} onChange={(e) => { setInformeForm({...informeForm, propiedadId: e.target.value}); setOperacionEdicionId(null); }} className="w-full bg-[#F9F7F5] border border-[#D1C292]/50 rounded-xl p-3 text-xs font-bold focus:border-[#ea0029] outline-none">
                             <option value="">— Seleccionar Inventario —</option>
                             {propiedades.map(p => <option key={p.id} value={p.id}>Unidad {p.unidad || p.numero} ({p.estado})</option>)}
                           </select>
