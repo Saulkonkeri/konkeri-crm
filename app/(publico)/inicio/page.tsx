@@ -109,7 +109,6 @@ export default function ArienzoLandingPremium() {
       }, 200);
     }
 
-    // OPTIMIZACIÓN MÓVIL: Retrasamos la carga de los planos pesados para que el Hero renderice de golpe en 0.5 seg
     const preloadImages = () => {
       const imagesToPreload = [...modelosArienzo.map(m => m.imagen)];
       imagesToPreload.forEach((src) => {
@@ -320,13 +319,13 @@ export default function ArienzoLandingPremium() {
         `}
       </Script>
 
-      {/* NAVEGACIÓN */}
+      {/* NAVEGACIÓN (Logo Ligeramente Más Grande) */}
       <header className={`fixed top-0 w-full z-40 transition-all duration-500 ${scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm py-5 md:py-6' : 'bg-transparent py-6 md:py-8'}`}>
         <div className="max-w-7xl mx-auto px-5 md:px-12 flex justify-between items-center">
           <img 
             src={scrolled ? "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" : "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-blanco.svg"} 
             alt="Arienzo Logo"
-            className="w-[120px] md:w-[160px] h-auto transition-all duration-500"
+            className="w-[135px] md:w-[185px] h-auto transition-all duration-500"
           />
           <button 
             onClick={() => abrirModalVIP()}
@@ -337,13 +336,14 @@ export default function ArienzoLandingPremium() {
         </div>
       </header>
 
-      {/* 1. HERO INMERSIVO: DISEÑO MEJORADO PARA LEGIBILIDAD */}
+      {/* 1. HERO INMERSIVO: CARGA OPTIMIZADA */}
       <section className="relative h-[100vh] min-h-[650px] flex flex-col items-center justify-center">
         <img 
           src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Derecho-A4.jpg" 
           alt="Arienzo Fachada"
           className="absolute inset-0 w-full h-full object-cover z-0"
           fetchPriority="high"
+          loading="eager"
           decoding="sync"
         />
         {/* Filtro suavizado para mantener lectura pero aclarar la imagen */}
@@ -534,25 +534,34 @@ export default function ArienzoLandingPremium() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 4.5. ESPACIOS DE AUTOR                                                    */}
+      {/* 4.5. ESPACIOS DE AUTOR (DISEÑO REFINADO Y ELEGANTE)                       */}
       {/* ========================================================================= */}
-      <section className="py-20 md:py-28 px-4 md:px-8 bg-[#F9F7F5] border-b border-[#EAE3DC] font-sans relative overflow-hidden">
+      <section className="py-24 md:py-32 px-4 md:px-8 bg-[#F9F7F5] border-y border-[#EAE3DC] font-sans relative overflow-hidden">
         
-        {/* Luces de fondo arquitectónicas para dar emoción y profundidad */}
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#D1C292]/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[#964B36]/5 rounded-full blur-[100px] pointer-events-none z-0"></div>
+        {/* Fondo arquitectónico elegante (Grid de puntos sutil) */}
+        <div className="absolute inset-0 opacity-[0.03] z-0" style={{ backgroundImage: 'radial-gradient(#21242E 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-[#F9F7F5] via-transparent to-[#F9F7F5] z-0 pointer-events-none"></div>
 
-        <div className="max-w-4xl mx-auto relative z-10">
+        {/* Círculos de luz suaves para profundidad */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#D1C292]/15 rounded-full blur-[120px] pointer-events-none z-0"></div>
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[#964B36]/10 rounded-full blur-[100px] pointer-events-none z-0"></div>
+
+        <div className="max-w-5xl mx-auto relative z-10">
           
-          <div className="text-center mb-12 md:mb-16">
-            <span className="inline-block px-5 py-2 rounded-full border border-[#964B36]/20 bg-white shadow-sm text-[10px] md:text-[11px] font-bold tracking-[0.3em] text-[#964B36] uppercase mb-5">
+          <div className="text-center mb-16 md:mb-20">
+            <div className="flex items-center justify-center gap-4 mb-6">
+              <div className="h-[1px] w-12 bg-[#D1C292]"></div>
+              <span className="text-[10px] md:text-[11px] font-bold tracking-[0.3em] text-[#964B36] uppercase">
+                Colección de Planos
+              </span>
+              <div className="h-[1px] w-12 bg-[#D1C292]"></div>
+            </div>
+            
+            <h2 className="text-[#21242E] text-3xl md:text-5xl font-medium tracking-tight mb-6 leading-tight">
               Espacios de Autor
-            </span>
-            <h2 className="text-[#21242E] text-3xl md:text-5xl font-medium tracking-tight mb-5 leading-tight">
-              Departamentos de 1, 2 y <br className="hidden md:block" /> 3 dormitorios
             </h2>
-            <p className="max-w-2xl mx-auto text-sm md:text-[17px] text-neutral-500 font-medium leading-relaxed">
-              Explore las diferentes áreas y distribuciones, y encuentre el departamento que mejor se adapte a sus requerimientos.
+            <p className="max-w-2xl mx-auto text-sm md:text-[16px] text-neutral-500 font-medium leading-relaxed">
+              Explore nuestras tipologías exclusivas. Descubra la distribución ideal para su estilo de vida y seleccione un modelo para visualizar sus detalles o <strong className="text-[#964B36] font-semibold">cotizar en tiempo real</strong>.
             </p>
           </div>
 
@@ -796,7 +805,7 @@ export default function ArienzoLandingPremium() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16 md:mb-20">
             <span className="text-[13px] font-bold tracking-[0.3em] text-[#D1C292] uppercase mb-4 block">Trayectoria Sólida</span>
-            <h3 className="text-3xl md:text-4xl font-medium text-white tracking-tight">Respaldo Inmobiliario</h3>
+            <h3 className="text-3xl md:text-4xl font-medium text-white tracking-tight">Respaldo Institucional</h3>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 md:divide-x divide-white/10 max-w-5xl mx-auto">
@@ -820,7 +829,6 @@ export default function ArienzoLandingPremium() {
 
       {/* 8. CERRADA FINAL */}
       <section className="py-20 md:py-28 bg-[#F9F7F5] text-center px-6 relative border-b-[2px] border-[#D1C292] overflow-hidden">
-        {/* En lugar del "22" gigante, ponemos un círculo abstracto elegante que da profundidad */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] md:w-[600px] h-[300px] md:h-[600px] bg-[#D1C292]/20 rounded-full blur-[80px] pointer-events-none select-none z-0"></div>
         
         <div className="max-w-2xl mx-auto flex flex-col items-center relative z-10">
@@ -1004,7 +1012,7 @@ export default function ArienzoLandingPremium() {
             ) : (
               <div className="text-center py-8">
                 <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl shadow-inner">
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                 </div>
                 <h3 className="text-2xl font-medium text-neutral-900 mb-3 tracking-tight">¡Descarga en curso!</h3>
                 <p className="text-sm text-neutral-500 font-medium leading-relaxed mb-8">
