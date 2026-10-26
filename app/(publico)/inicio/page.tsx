@@ -340,14 +340,14 @@ export default function ArienzoLandingPremium() {
       {/* 1. HERO INMERSIVO: DISEÑO MEJORADO PARA LEGIBILIDAD */}
       <section className="relative h-[100vh] min-h-[650px] flex flex-col items-center justify-center">
         <img 
-          src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Frontal.jpg" 
+          src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Derecho-A4.jpg" 
           alt="Arienzo Fachada"
           className="absolute inset-0 w-full h-full object-cover z-0"
           fetchPriority="high"
           decoding="sync"
         />
-        {/* Filtro más oscuro y elegante para que resalte la letra blanca en móviles */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/30 to-black/80 z-0"></div>
+        {/* Filtro suavizado para mantener lectura pero aclarar la imagen */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/20 to-black/60 z-0"></div>
 
         <div className="relative z-10 text-center px-6 w-full max-w-4xl mx-auto pt-20">
           <div className="inline-block px-5 py-2 border border-[#D1C292]/60 backdrop-blur-md rounded-full mb-6 md:mb-8 shadow-[0_0_15px_rgba(209,194,146,0.3)] bg-black/10">
@@ -455,7 +455,7 @@ export default function ArienzoLandingPremium() {
         <div className="relative z-10 w-[200px] md:w-[300px] h-[60px] md:h-[90px] hover:scale-105 transition-transform duration-700">
           <img 
             src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/logo-dorado-arienzo.svg" 
-            alt="Arienzo Boutique Living" 
+            alt="Arienzo Living" 
             className="w-full h-full object-contain drop-shadow-2xl" 
             loading="lazy"
           />
@@ -799,26 +799,19 @@ export default function ArienzoLandingPremium() {
             <h3 className="text-3xl md:text-4xl font-medium text-white tracking-tight">Respaldo Inmobiliario</h3>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8 md:divide-x divide-white/10">
-            <div className="md:px-8 text-center group">
-              <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#D1C292] block mb-3">Arquitectura</span>
-              <h4 className="text-lg md:text-xl font-medium text-white mb-4">DIEZ + MULLER</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 md:divide-x divide-white/10 max-w-5xl mx-auto">
+            <div className="md:px-10 text-center group">
+              <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#D1C292] block mb-3">Diseño Arquitectónico</span>
+              <h4 className="text-xl md:text-2xl font-medium text-white mb-5">DIEZ + MULLER</h4>
               <p className="text-sm text-neutral-400 font-medium leading-relaxed">
-                Reconocido y premiado estudio quiteño. Autores de grandes proyectos en la capital y de su exclusivo proyecto en la costa, el edificio Serene en Manta.
+                Estudio quiteño reconocido entre los más destacados del Ecuador por su trayectoria y la calidad de sus proyectos. Con una amplia experiencia en desarrollos residenciales y corporativos, son los autores de Serene en Marina Blue, reflejando su arquitectura contemporánea y meticulosa atención al detalle.
               </p>
             </div>
-            <div className="md:px-8 text-center group border-t border-white/10 md:border-t-0 pt-8 md:pt-0">
-              <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#D1C292] block mb-3">Construcción</span>
-              <h4 className="text-lg md:text-xl font-medium text-white mb-4">CARRASCO SUAREZ</h4>
-              <p className="text-sm text-neutral-400 font-medium leading-relaxed">
-                Constructora con sólida trayectoria desde 1992. Amplia experiencia ejecutando obras residenciales premium en la costa ecuatoriana.
-              </p>
-            </div>
-            <div className="md:px-8 text-center group border-t border-white/10 md:border-t-0 pt-8 md:pt-0">
+            <div className="md:px-10 text-center group border-t border-white/10 md:border-t-0 pt-8 md:pt-0">
               <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#D1C292] block mb-3">Desarrollo y Ventas</span>
-              <h4 className="text-lg md:text-xl font-medium text-white mb-4">KONKERI</h4>
+              <h4 className="text-xl md:text-2xl font-medium text-white mb-5">KONKERI</h4>
               <p className="text-sm text-neutral-400 font-medium leading-relaxed">
-                Promotora enfocada en el desarrollo integral de proyectos con visión a largo plazo y tecnología avanzada.
+                Promotora inmobiliaria con base en Manta que concibe, estructura y desarrolla proyectos bajo una visión integral. Integra estrategia, planificación y diseño apoyándose en aliados especializados e innovación tecnológica para entregar obras alineadas con las verdaderas necesidades del mercado.
               </p>
             </div>
           </div>
@@ -1062,7 +1055,7 @@ export default function ArienzoLandingPremium() {
           <div className="flex justify-center order-2 md:order-2">
             <img 
               src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/logo-dorado-arienzo.svg" 
-              alt="Arienzo" 
+              alt="Arienzo Living" 
               className="w-[140px] md:w-[170px] h-auto opacity-90" 
             />
           </div>
