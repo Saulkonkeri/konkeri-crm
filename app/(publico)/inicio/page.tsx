@@ -109,7 +109,7 @@ export default function ArienzoLandingPremium() {
       }, 200);
     }
 
-    // OPTIMIZACIÓN MÓVIL: Retrasamos la carga de los planos pesados para que el Hero renderice de golpe en 0.5 seg
+    // Carga de imágenes pesadas retrasada para priorizar el LCP de la primera vista
     const preloadImages = () => {
       const imagesToPreload = [...modelosArienzo.map(m => m.imagen)];
       imagesToPreload.forEach((src) => {
@@ -320,7 +320,7 @@ export default function ArienzoLandingPremium() {
         `}
       </Script>
 
-      {/* NAVEGACIÓN (Logo Ligeramente Más Grande) */}
+      {/* NAVEGACIÓN */}
       <header className={`fixed top-0 w-full z-40 transition-all duration-500 ${scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm py-5 md:py-6' : 'bg-transparent py-6 md:py-8'}`}>
         <div className="max-w-7xl mx-auto px-5 md:px-12 flex justify-between items-center">
           <img 
@@ -337,7 +337,7 @@ export default function ArienzoLandingPremium() {
         </div>
       </header>
 
-      {/* 1. HERO INMERSIVO: CARGA OPTIMIZADA */}
+      {/* 1. HERO INMERSIVO: CARGA SUPER OPTIMIZADA */}
       <section className="relative h-[100vh] min-h-[650px] flex flex-col items-center justify-center">
         <img 
           src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Derecho-A4.jpg" 
@@ -434,6 +434,7 @@ export default function ArienzoLandingPremium() {
                     alt="Ubicación Manta" 
                     className="absolute inset-0 w-full h-full object-cover"
                     loading="lazy"
+                    decoding="async"
                   />
                   <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors duration-500"></div>
                 </div>
@@ -451,6 +452,7 @@ export default function ArienzoLandingPremium() {
           alt="Familia en Arienzo" 
           className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-30"
           loading="lazy"
+          decoding="async"
         />
         <div className="absolute inset-0 bg-[#964B36]/70"></div>
         <div className="relative z-10 w-[200px] md:w-[300px] h-[60px] md:h-[90px] hover:scale-105 transition-transform duration-700">
@@ -459,6 +461,7 @@ export default function ArienzoLandingPremium() {
             alt="Arienzo Living" 
             className="w-full h-full object-contain drop-shadow-2xl" 
             loading="lazy"
+            decoding="async"
           />
         </div>
       </div>
@@ -484,6 +487,7 @@ export default function ArienzoLandingPremium() {
                   alt="Piscina" 
                   className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
                   loading="lazy" 
+                  decoding="async"
                 />
               </div>
               <div className="p-8">
@@ -502,6 +506,7 @@ export default function ArienzoLandingPremium() {
                   alt="Living" 
                   className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
                   loading="lazy" 
+                  decoding="async"
                 />
               </div>
               <div className="p-8">
@@ -520,6 +525,7 @@ export default function ArienzoLandingPremium() {
                   alt="Comercial" 
                   className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
                   loading="lazy" 
+                  decoding="async"
                 />
               </div>
               <div className="p-8">
@@ -535,38 +541,38 @@ export default function ArienzoLandingPremium() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 4.5. ESPACIOS DE AUTOR (FONDO ELEGANTE + TARJETAS ORIGINALES CON HOVER)   */}
+      {/* 4.5. ESPACIOS DE AUTOR (FONDO REDISEÑADO CON TIPOGRAFÍA ELEGANTE)         */}
       {/* ========================================================================= */}
-      <section className="py-24 md:py-32 px-4 md:px-8 bg-[#F9F7F5] border-y border-[#EAE3DC] font-sans relative overflow-hidden">
+      <section className="py-24 md:py-32 px-4 md:px-8 bg-[#FDFCFB] border-y border-[#EAE3DC] font-sans relative overflow-hidden">
         
-        {/* Fondo arquitectónico elegante (Grid de puntos sutil) */}
-        <div className="absolute inset-0 opacity-[0.04] z-0" style={{ backgroundImage: 'radial-gradient(#21242E 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-[#F9F7F5] via-transparent to-[#F9F7F5] z-0 pointer-events-none"></div>
+        {/* Fondo Arquitectónico Premium: Grid muy sutil y luces radiales suaves */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:48px_48px] z-0"></div>
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-[1px] bg-gradient-to-r from-transparent via-[#D1C292]/50 to-transparent z-0"></div>
+        
+        <div className="absolute -left-20 top-20 w-[500px] h-[500px] bg-[#964B36]/5 rounded-full blur-[100px] pointer-events-none z-0"></div>
+        <div className="absolute -right-20 bottom-10 w-[500px] h-[500px] bg-[#D1C292]/10 rounded-full blur-[100px] pointer-events-none z-0"></div>
 
-        {/* Círculos de luz suaves para profundidad */}
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#D1C292]/15 rounded-full blur-[120px] pointer-events-none z-0"></div>
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[#964B36]/10 rounded-full blur-[100px] pointer-events-none z-0"></div>
-
-        <div className="max-w-6xl mx-auto relative z-10">
+        <div className="max-w-5xl mx-auto relative z-10">
           
           <div className="text-center mb-16 md:mb-20">
             <div className="flex items-center justify-center gap-4 mb-6">
-              <div className="h-[1px] w-12 bg-[#D1C292]"></div>
-              <span className="text-[10px] md:text-[11px] font-bold tracking-[0.3em] text-[#964B36] uppercase">
+              <div className="h-[1px] w-8 md:w-12 bg-[#964B36]/40"></div>
+              <span className="text-[10px] md:text-[11px] font-bold tracking-[0.35em] text-[#964B36] uppercase">
                 Colección de Planos
               </span>
-              <div className="h-[1px] w-12 bg-[#D1C292]"></div>
+              <div className="h-[1px] w-8 md:w-12 bg-[#964B36]/40"></div>
             </div>
             
-            <h2 className="text-[#21242E] text-3xl md:text-5xl font-medium tracking-tight mb-6 leading-tight">
-              Espacios de Autor
+            <h2 className="text-[#21242E] text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-6 leading-tight drop-shadow-sm">
+              Tipologías <span className="font-light italic text-neutral-400">de Autor</span>
             </h2>
-            <p className="max-w-2xl mx-auto text-sm md:text-[16px] text-neutral-500 font-medium leading-relaxed">
-              Explore nuestras tipologías exclusivas. Descubra la distribución ideal para su estilo de vida, visualice los detalles arquitectónicos y <strong className="text-[#964B36] font-semibold">cotice su inversión en tiempo real</strong>.
+            <p className="max-w-2xl mx-auto text-sm md:text-lg text-neutral-500 font-medium leading-relaxed">
+              Descubra la distribución ideal para su estilo de vida. Seleccione un modelo para visualizar sus detalles arquitectónicos y <strong className="text-[#964B36] font-semibold">cotizar su inversión</strong> en tiempo real.
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 max-w-3xl mx-auto">
+          {/* TARJETAS ORIGINALES (LOS CUADRITOS LIMPIOS Y MINIMALISTAS) */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5 max-w-4xl mx-auto">
             {modelosArienzo.map((mod) => (
               <button
                 key={mod.id}
@@ -711,6 +717,7 @@ export default function ArienzoLandingPremium() {
                   alt={`Render ${(index % imagenesGaleria.length) + 1}`} 
                   className="absolute inset-0 w-full h-full object-cover opacity-85 group-hover:opacity-100 transition-opacity duration-500" 
                   loading="lazy"
+                  decoding="async"
                 />
                 <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-300"></div>
                 
@@ -820,11 +827,9 @@ export default function ArienzoLandingPremium() {
             <div className="md:px-10 text-center group border-t border-white/10 md:border-t-0 pt-8 md:pt-0">
               <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#D1C292] block mb-3">Desarrollo y Ventas</span>
               <h4 className="text-xl md:text-2xl font-medium text-white mb-5">KONKERI</h4>
-              <div className="text-sm text-neutral-400 font-medium leading-relaxed space-y-4">
-                <p>Somos una promotora inmobiliaria con oficinas en Manta, Ecuador.</p>
-                <p>En Konkeri concebimos, estructuramos y desarrollamos proyectos inmobiliarios bajo una visión integral, donde estrategia, planificación y diseño se integran para crear desarrollos sólidos y con valor a largo plazo.</p>
-                <p>Nuestra experiencia en el sector, junto con el apoyo de herramientas tecnológicas y aliados especializados, nos permite desarrollar proyectos bien planificados y alineados con las necesidades del mercado.</p>
-              </div>
+              <p className="text-sm text-neutral-400 font-medium leading-relaxed">
+                Promotora inmobiliaria con base en Manta que concibe, estructura y desarrolla proyectos bajo una visión integral. Nuestra experiencia en el sector y enfoque en innovación tecnológica nos permite entregar desarrollos sólidos, bien planificados y alineados con las verdaderas necesidades del mercado actual.
+              </p>
             </div>
           </div>
         </div>
