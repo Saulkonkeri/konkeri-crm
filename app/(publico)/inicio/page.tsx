@@ -109,6 +109,7 @@ export default function ArienzoLandingPremium() {
       }, 200);
     }
 
+    // OPTIMIZACIÓN MÓVIL: Retrasamos la carga de los planos pesados para que el Hero renderice de golpe en 0.5 seg
     const preloadImages = () => {
       const imagesToPreload = [...modelosArienzo.map(m => m.imagen)];
       imagesToPreload.forEach((src) => {
@@ -534,13 +535,13 @@ export default function ArienzoLandingPremium() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 4.5. ESPACIOS DE AUTOR (DISEÑO REFINADO, MOSTRANDO EL PRODUCTO)           */}
+      {/* 4.5. ESPACIOS DE AUTOR (FONDO ELEGANTE + TARJETAS ORIGINALES CON HOVER)   */}
       {/* ========================================================================= */}
-      <section className="py-24 md:py-32 px-4 md:px-8 bg-[#FDFCFB] border-y border-[#EAE3DC] font-sans relative overflow-hidden">
+      <section className="py-24 md:py-32 px-4 md:px-8 bg-[#F9F7F5] border-y border-[#EAE3DC] font-sans relative overflow-hidden">
         
         {/* Fondo arquitectónico elegante (Grid de puntos sutil) */}
-        <div className="absolute inset-0 opacity-[0.03] z-0" style={{ backgroundImage: 'radial-gradient(#21242E 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-[#FDFCFB] via-transparent to-[#FDFCFB] z-0 pointer-events-none"></div>
+        <div className="absolute inset-0 opacity-[0.04] z-0" style={{ backgroundImage: 'radial-gradient(#21242E 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-[#F9F7F5] via-transparent to-[#F9F7F5] z-0 pointer-events-none"></div>
 
         {/* Círculos de luz suaves para profundidad */}
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#D1C292]/15 rounded-full blur-[120px] pointer-events-none z-0"></div>
@@ -558,49 +559,32 @@ export default function ArienzoLandingPremium() {
             </div>
             
             <h2 className="text-[#21242E] text-3xl md:text-5xl font-medium tracking-tight mb-6 leading-tight">
-              Tipologías de Autor
+              Espacios de Autor
             </h2>
             <p className="max-w-2xl mx-auto text-sm md:text-[16px] text-neutral-500 font-medium leading-relaxed">
-              Explore nuestras distribuciones exclusivas. Seleccione el modelo que se adapte a su estilo de vida para visualizar los detalles arquitectónicos y <strong className="text-[#964B36] font-semibold">cotizar su inversión en tiempo real</strong>.
+              Explore nuestras tipologías exclusivas. Descubra la distribución ideal para su estilo de vida, visualice los detalles arquitectónicos y <strong className="text-[#964B36] font-semibold">cotice su inversión en tiempo real</strong>.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 max-w-3xl mx-auto">
             {modelosArienzo.map((mod) => (
               <button
                 key={mod.id}
                 onClick={() => abrirPlanoInteractivo(mod)}
-                className="group relative flex flex-col text-left justify-between p-5 md:p-6 w-full h-40 md:h-48 rounded-2xl transition-all duration-500 border border-[#EAE3DC] bg-white shadow-sm hover:border-[#964B36]/50 hover:shadow-[0_15px_35px_rgba(150,75,54,0.12)] hover:-translate-y-2 overflow-hidden"
+                className="group relative flex flex-col items-center justify-center py-4 px-2 w-full h-20 md:h-24 rounded-2xl transition-all duration-500 border-[2px] border-dashed border-[#D1C292]/70 bg-white/90 backdrop-blur-sm shadow-[0_8px_20px_rgba(0,0,0,0.03)] hover:bg-white hover:border-solid hover:border-[#964B36]/70 hover:shadow-[0_20px_40px_rgba(150,75,54,0.15)] hover:-translate-y-2 overflow-hidden"
               >
-                {/* Marca de agua arquitectónica (Plano real del departamento en el fondo) */}
-                <div className="absolute -right-6 -bottom-6 w-36 md:w-44 h-36 md:h-44 opacity-[0.06] group-hover:opacity-[0.15] transition-opacity duration-500 mix-blend-multiply pointer-events-none">
-                  <img src={mod.imagen} alt="plano" className="w-full h-full object-contain" />
-                </div>
-
-                {/* Cabecera de la tarjeta */}
-                <div className="relative z-10 w-full flex justify-between items-start">
-                  <span className="text-[#21242E] group-hover:text-[#964B36] text-2xl md:text-3xl font-bold tracking-tight transition-colors">
-                    {mod.area.replace('m²', '')}
-                    <span className="text-xs font-normal text-neutral-400 ml-0.5 group-hover:text-[#964B36]/70">m²</span>
-                  </span>
-                  <div className="w-8 h-8 rounded-full bg-[#F9F7F5] group-hover:bg-[#964B36] flex items-center justify-center transition-colors shadow-sm">
-                    <svg className="w-4 h-4 text-[#964B36] group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                  </div>
-                </div>
-
-                {/* Detalles de la Tipología */}
-                <div className="relative z-10 flex flex-col gap-1.5 mt-auto pb-5 group-hover:pb-0 transition-all duration-300">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-neutral-800 text-[11px] font-bold uppercase tracking-[0.2em]">{mod.dorms} Dormitorio{mod.dorms > 1 ? 's' : ''}</span>
-                  </div>
-                  <div className="text-[9px] text-neutral-400 uppercase tracking-widest font-medium">
-                    {mod.banos} • {mod.extras}
-                  </div>
-                </div>
-
-                {/* Overlap Deslizante de Cotización (Aparece en hover) */}
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#964B36] to-[#964B36]/95 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out z-20 flex justify-center items-center">
-                   <span className="text-white text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em]">Ver Tipología & Cotizar</span>
+                <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[#D1C292] to-[#964B36] scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-500 ease-out"></div>
+                
+                <span className="text-[#415364] group-hover:text-[#964B36] text-xl md:text-2xl font-bold tracking-tight transition-colors mb-1.5">
+                  {mod.area.replace('m²', '')}
+                  <span className="text-xs font-normal text-neutral-400 ml-0.5 group-hover:text-[#964B36]/70">m²</span>
+                </span>
+                
+                <div className="flex items-center gap-1.5">
+                  <svg className="w-3.5 h-3.5 text-[#D1C292] group-hover:text-[#964B36] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18M3 16h18M5 12V8a2 2 0 012-2h10a2 2 0 012 2v4M7 16v2m10-2v2"></path>
+                  </svg>
+                  <span className="text-neutral-500 group-hover:text-[#964B36] text-[10px] font-bold uppercase tracking-[0.2em] transition-colors">{mod.dorms} Dorm.</span>
                 </div>
               </button>
             ))}
@@ -821,7 +805,7 @@ export default function ArienzoLandingPremium() {
       <section className="py-20 md:py-28 px-6 bg-[#21242E] text-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16 md:mb-20">
-            <span className="text-[13px] font-bold tracking-[0.3em] text-[#D1C292] uppercase mb-4 block">Trayectoria Sólida</span>
+            <span className="text-[13px] font-bold tracking-[0.3em] text-[#D1C292] uppercase mb-4 block">Confianza y Experiencia</span>
             <h3 className="text-3xl md:text-4xl font-medium text-white tracking-tight">Respaldo Institucional</h3>
           </div>
           
@@ -830,15 +814,17 @@ export default function ArienzoLandingPremium() {
               <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#D1C292] block mb-3">Diseño Arquitectónico</span>
               <h4 className="text-xl md:text-2xl font-medium text-white mb-5">DIEZ + MULLER</h4>
               <p className="text-sm text-neutral-400 font-medium leading-relaxed">
-                Estudio quiteño reconocido entre los más destacados del Ecuador por su trayectoria y la calidad de sus proyectos. Con una amplia experiencia en desarrollos residenciales y corporativos, son los autores de Serene en Marina Blue, reflejando su arquitectura contemporánea y meticulosa atención al detalle.
+                Estudio quiteño reconocido, considerado entre los más destacados del Ecuador por su trayectoria y la calidad de sus proyectos. Con una amplia experiencia en proyectos residenciales y corporativos, son los autores de Serene en Marina Blue, un proyecto que refleja su arquitectura contemporánea y atención al detalle.
               </p>
             </div>
             <div className="md:px-10 text-center group border-t border-white/10 md:border-t-0 pt-8 md:pt-0">
               <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#D1C292] block mb-3">Desarrollo y Ventas</span>
               <h4 className="text-xl md:text-2xl font-medium text-white mb-5">KONKERI</h4>
-              <p className="text-sm text-neutral-400 font-medium leading-relaxed">
-                Promotora inmobiliaria con base en Manta que concibe, estructura y desarrolla proyectos bajo una visión integral. Integra estrategia, planificación y diseño apoyándose en aliados especializados e innovación tecnológica para entregar obras alineadas con las verdaderas necesidades del mercado.
-              </p>
+              <div className="text-sm text-neutral-400 font-medium leading-relaxed space-y-4">
+                <p>Somos una promotora inmobiliaria con oficinas en Manta, Ecuador.</p>
+                <p>En Konkeri concebimos, estructuramos y desarrollamos proyectos inmobiliarios bajo una visión integral, donde estrategia, planificación y diseño se integran para crear desarrollos sólidos y con valor a largo plazo.</p>
+                <p>Nuestra experiencia en el sector, junto con el apoyo de herramientas tecnológicas y aliados especializados, nos permite desarrollar proyectos bien planificados y alineados con las necesidades del mercado.</p>
+              </div>
             </div>
           </div>
         </div>
