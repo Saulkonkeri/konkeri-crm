@@ -320,7 +320,7 @@ export default function ArienzoLandingPremium() {
         `}
       </Script>
 
-      {/* NAVEGACIÓN */}
+      {/* NAVEGACIÓN (Logo Ligeramente Más Grande) */}
       <header className={`fixed top-0 w-full z-40 transition-all duration-500 ${scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm py-5 md:py-6' : 'bg-transparent py-6 md:py-8'}`}>
         <div className="max-w-7xl mx-auto px-5 md:px-12 flex justify-between items-center">
           <img 
@@ -457,7 +457,7 @@ export default function ArienzoLandingPremium() {
         <div className="absolute inset-0 bg-[#964B36]/70"></div>
         <div className="relative z-10 w-[200px] md:w-[300px] h-[60px] md:h-[90px] hover:scale-105 transition-transform duration-700">
           <img 
-            src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/logo-dorado-arienzo.svg" 
+            src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/logo%20arienzo%20living%20dorado_Mesa%20de%20trabajo%201.svg" 
             alt="Arienzo Living" 
             className="w-full h-full object-contain drop-shadow-2xl" 
             loading="lazy"
@@ -1077,7 +1077,7 @@ export default function ArienzoLandingPremium() {
           </div>
           <div className="flex justify-center order-2 md:order-2">
             <img 
-              src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/logo-dorado-arienzo.svg" 
+              src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/logo%20arienzo%20living%20dorado_Mesa%20de%20trabajo%201.svg" 
               alt="Arienzo Living" 
               className="w-[140px] md:w-[170px] h-auto opacity-90" 
             />
