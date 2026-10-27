@@ -49,15 +49,15 @@ const PLANTILLAS_CORREO = [
   {
     id: 'seguimiento_premium',
     nombre: '🌟 Presentación y Venta en Planos',
-    asunto: 'Oportunidad de Inversión - Arienzo Boutique Living',
-    cuerpo: 'Estimado(a) {nombre},\n\nQuiero contarte acerca de Arienzo Boutique Living. Sé que estás interesado en el proyecto y no queremos que te quedes fuera de este increíble desarrollo con la mejor ubicación.\n\nA continuación, te detallo las razones por las que Arienzo es la mejor decisión inmobiliaria de la ciudad.',
+    asunto: 'Oportunidad de Inversión - Arienzo Living',
+    cuerpo: 'Estimado(a) {nombre},\n\nQuiero contarte acerca de Arienzo Living. Sé que estás interesado en el proyecto y no queremos que te quedes fuera de este increíble desarrollo con la mejor ubicación.\n\nA continuación, te detallo las razones por las que Arienzo es la mejor decisión inmobiliaria de la ciudad.',
     layout: 'full'
   },
   {
     id: 'invitacion_zoom',
     nombre: '🤝 Invitación a Reunión / Videollamada Zoom',
-    asunto: 'Invitación Exclusiva: Conoce Arienzo Boutique Living',
-    cuerpo: 'Hola {nombre},\n\nMe encantaría presentarte en detalle el estilo de vida y las amenidades que ofrece Arienzo Boutique Living.\n\nContamos con un diseño enfocado en el confort, con un Social Living y Gym Panorámico espectaculares. Me gustaría agendar una breve videollamada por Zoom para mostrarte los planos y la disponibilidad de unidades antes de que se agoten.',
+    asunto: 'Invitación Exclusiva: Conoce Arienzo Living',
+    cuerpo: 'Hola {nombre},\n\nMe encantaría presentarte en detalle el estilo de vida y las amenidades que ofrece Arienzo Living.\n\nContamos con un diseño enfocado en el confort, con un Social Living y Gym Panorámico espectaculares. Me gustaría agendar una breve videollamada por Zoom para mostrarte los planos y la disponibilidad de unidades antes de que se agoten.',
     layout: 'simple'
   },
   {
@@ -84,8 +84,8 @@ export default function CRMPage() {
   const [filtroCiudad, setFiltroCiudad] = useState('Todas');
   const [filtroTipologia, setFiltroTipologia] = useState('Todas');
   const [filtroOrigen, setFiltroOrigen] = useState('Todos');
-  const [filtroPendientes, setFiltroPendientes] = useState(false);
-  const [filtroCalientes, setFiltroCalientes] = useState(false); // NUEVO FILTRO CALIENTES
+  const [filtroCalientes, setFiltroCalientes] = useState(false);
+  const [filtroTareas, setFiltroTareas] = useState<'todas' | 'vencidas' | 'hoy' | 'proximas'>('todas');
 
   const [vista, setVista] = useState<'lista' | 'kanban' | 'actividad'>('kanban');
   const [columnasExpandidas, setColumnasExpandidas] = useState<Record<string, boolean>>({
@@ -159,8 +159,8 @@ export default function CRMPage() {
   const [busquedaLlamada, setBusquedaLlamada] = useState('');
   const [mostrarOpcionesLlamada, setMostrarOpcionesLlamada] = useState(false);
 
-  const [plantillaMensaje, setPlantillaMensaje] = useState("Hola {nombre}, le saluda Saúl Intriago de Arienzo Boutique Living. Recibí su solicitud de información y le comparto el brochure del proyecto. ¿A qué hora le viene bien que conversemos unos minutos?");
-  const [plantillaCampana, setPlantillaCampana] = useState("Hola {nombre}, le escribo de Arienzo Boutique Living. Hoy lanzamos un beneficio especial para elegir las mejores unidades. ¿Le gustaría que le envíe el inventario actualizado?");
+  const [plantillaMensaje, setPlantillaMensaje] = useState("Hola {nombre}, le saluda Saúl Intriago de Arienzo Living. Recibí su solicitud de información y le comparto el brochure del proyecto. ¿A qué hora le viene bien que conversemos unos minutos?");
+  const [plantillaCampana, setPlantillaCampana] = useState("Hola {nombre}, le escribo de Arienzo Living. Hoy lanzamos un beneficio especial para elegir las mejores unidades. ¿Le gustaría que le envíe el inventario actualizado?");
 
   const [activandoVIP, setActivandoVIP] = useState(false);
   const [tiempoVIP, setTiempoVIP] = useState<number>(24);
@@ -294,10 +294,13 @@ export default function CRMPage() {
   const esFechaVencida = (fecha?: string | null) => {
     if (!fecha) return false;
     const hoy = new Date(); hoy.setHours(0,0,0,0);
-    return new Date(fecha + 'T00:00:00') <= hoy;
+    return new Date(fecha + 'T00:00:00') < hoy;
   };
 
   const clientesFiltrados = useMemo(() => {
+    const hoyStr = new Date().toISOString().split('T')[0];
+    const hoyMs = new Date(hoyStr + 'T00:00:00').getTime();
+
     return clientes.filter(c => {
       const b = busqueda.toLowerCase();
       const busquedaNum = b.replace(/\D/g, '');
@@ -311,23 +314,26 @@ export default function CRMPage() {
       const coincideTipologia = filtroTipologia === 'Todas' || (c.tipologia_interes && c.tipologia_interes.toLowerCase().trim() === filtroTipologia.toLowerCase().trim());
       const coincideOrigen = filtroOrigen === 'Todos' || (c.origen_captacion && c.origen_captacion.toLowerCase().trim() === filtroOrigen.toLowerCase().trim());
       
-      let coincidePendiente = true;
-      if (filtroPendientes) {
-        if (!c.proximo_contacto) coincidePendiente = false;
-        else {
-          const hoy = new Date(); hoy.setHours(23, 59, 59, 999);
-          coincidePendiente = new Date(c.proximo_contacto + 'T00:00:00') <= hoy;
-        }
-      }
-
       let coincideCaliente = true;
       if (filtroCalientes) {
         coincideCaliente = c.temperatura?.includes('Caliente') || false;
       }
 
-      return coincidenciaBusqueda && coincideCiudad && coincideTipologia && coincideOrigen && coincidePendiente && coincideCaliente;
+      let coincideTarea = true;
+      if (filtroTareas !== 'todas') {
+        if (!c.proximo_contacto) {
+          coincideTarea = false;
+        } else {
+          const tareaMs = new Date(c.proximo_contacto + 'T00:00:00').getTime();
+          if (filtroTareas === 'vencidas') coincideTarea = tareaMs < hoyMs;
+          if (filtroTareas === 'hoy') coincideTarea = tareaMs === hoyMs;
+          if (filtroTareas === 'proximas') coincideTarea = tareaMs > hoyMs;
+        }
+      }
+
+      return coincidenciaBusqueda && coincideCiudad && coincideTipologia && coincideOrigen && coincideCaliente && coincideTarea;
     });
-  }, [clientes, busqueda, filtroCiudad, filtroTipologia, filtroOrigen, filtroPendientes, filtroCalientes]);
+  }, [clientes, busqueda, filtroCiudad, filtroTipologia, filtroOrigen, filtroCalientes, filtroTareas]);
 
   const prospectosFiltradosParaLlamada = useMemo(() => {
     if (!busquedaLlamada) return clientes.slice(0, 50);
@@ -598,7 +604,7 @@ export default function CRMPage() {
       colorAcento = '#D1C292'; 
       colorBoton = '#21242E'; 
       colorTextoBoton = '#ffffff';
-      logoCabecera = 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg';
+      logoCabecera = 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/logo%20arienzo%20living%20dorado_Mesa%20de%20trabajo%201.svg';
     } 
     else if (temaColor === 'navy') { 
       colorFondoCabecera = '#21242E'; 
@@ -640,14 +646,14 @@ export default function CRMPage() {
     ` : `
                 <tr>
                   <td style="padding: 30px 40px; text-align: center;">
-                    <p style="margin: 0; font-size: 13px; font-weight: bold; color: #21242E; text-transform: uppercase; letter-spacing: 2px;">Arienzo Boutique Living</p>
+                    <p style="margin: 0; font-size: 13px; font-weight: bold; color: #21242E; text-transform: uppercase; letter-spacing: 2px;">Arienzo Living</p>
                     <p style="margin: 4px 0 0 0; font-size: 11px; color: ${temaColor === 'dorado' ? '#964B36' : colorAcento};">arienzoliving.com</p>
                   </td>
                 </tr>
     `;
 
     const htmlFooter = `
-                <tr><td align="center" style="background-color: #21242E; padding: 20px; text-align: center;"><p style="margin: 0; font-size: 10px; color: #ffffff; opacity: 0.5; text-transform: uppercase; letter-spacing: 1px;">© ${new Date().getFullYear()} Arienzo Boutique Living. Manta, Ecuador.</p></td></tr>
+                <tr><td align="center" style="background-color: #21242E; padding: 20px; text-align: center;"><p style="margin: 0; font-size: 10px; color: #ffffff; opacity: 0.5; text-transform: uppercase; letter-spacing: 1px;">© ${new Date().getFullYear()} Arienzo Living. Manta, Ecuador.</p></td></tr>
               </table>
             </td>
           </tr>
@@ -767,6 +773,7 @@ export default function CRMPage() {
           </div>
         </div>
 
+        {/* BARRA DE BÚSQUEDA Y FILTROS INTELIGENTES */}
         <div className="bg-white p-4 rounded-2xl border border-neutral-200/60 shadow-sm flex flex-wrap items-center gap-4">
           <div className="relative flex-1 min-w-[220px]">
             <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-[#415364]/40">
@@ -789,6 +796,7 @@ export default function CRMPage() {
             </select>
           </div>
 
+          {/* NUEVOS FILTROS DE AGENDA Y PRIORIDAD */}
           <div className="flex items-center border-l border-[#415364]/10 pl-4 gap-2">
             <button 
               onClick={() => setFiltroCalientes(!filtroCalientes)}
@@ -797,13 +805,34 @@ export default function CRMPage() {
             >
               🔥 Calientes
             </button>
-            <button 
-              onClick={() => setFiltroPendientes(!filtroPendientes)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all border ${filtroPendientes ? 'bg-[#ea0029]/10 text-[#ea0029] border-[#ea0029]/30 shadow-sm' : 'bg-white text-[#415364]/60 border-[#415364]/20 hover:bg-[#415364]/5'}`}
-            >
-              <svg className={`w-4 h-4 ${filtroPendientes ? 'animate-pulse' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-              Cacería (Tareas Hoy)
-            </button>
+            
+            <div className="flex bg-neutral-100 rounded-xl p-1 border border-neutral-200">
+              <button 
+                onClick={() => setFiltroTareas('todas')}
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${filtroTareas === 'todas' ? 'bg-white text-[#415364] shadow-sm' : 'text-[#415364]/50 hover:text-[#415364]'}`}
+              >
+                Todas
+              </button>
+              <button 
+                onClick={() => setFiltroTareas('vencidas')}
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all flex items-center gap-1 ${filtroTareas === 'vencidas' ? 'bg-[#ea0029] text-white shadow-sm' : 'text-[#ea0029]/70 hover:text-[#ea0029]'}`}
+              >
+                {filtroTareas === 'vencidas' && <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>}
+                Atrasadas
+              </button>
+              <button 
+                onClick={() => setFiltroTareas('hoy')}
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${filtroTareas === 'hoy' ? 'bg-[#21242E] text-white shadow-sm' : 'text-[#415364]/50 hover:text-[#415364]'}`}
+              >
+                Para Hoy
+              </button>
+              <button 
+                onClick={() => setFiltroTareas('proximas')}
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${filtroTareas === 'proximas' ? 'bg-[#415364] text-white shadow-sm' : 'text-[#415364]/50 hover:text-[#415364]'}`}
+              >
+                Próximas
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -856,7 +885,7 @@ export default function CRMPage() {
                           {cliente.proximo_contacto && (
                             <div className={`mt-2 text-[9px] font-bold px-2.5 py-1 flex items-center gap-1.5 rounded-md border ${agendadoVencido ? 'bg-[#ea0029]/10 text-[#ea0029] border-[#ea0029]/20' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                              <span>Agendado: {new Date(cliente.proximo_contacto).toLocaleDateString('es-EC', {day:'2-digit', month:'short'})}</span>
+                              <span>Agendado: {new Date(cliente.proximo_contacto + 'T00:00:00').toLocaleDateString('es-EC', {day:'2-digit', month:'short'})}</span>
                             </div>
                           )}
 
@@ -887,14 +916,15 @@ export default function CRMPage() {
         )}
 
         {vista === 'lista' && (
-          <div className="bg-white rounded-2xl border border-neutral-200/60 shadow-sm h-full overflow-auto w-full">
+          <div className="bg-white rounded-2xl border border-neutral-200/60 shadow-sm h-full overflow-auto w-full custom-scrollbar">
             <table className="w-full text-left text-sm border-collapse min-w-[800px]">
               <thead className="sticky top-0 bg-[#21242E] z-10 shadow-sm">
                 <tr className="text-white text-[10px] uppercase tracking-widest">
                   <th className="px-5 py-4 font-bold">Prospecto</th>
-                  <th className="px-5 py-4 font-bold">Interés</th>
-                  <th className="px-5 py-4 font-bold">Fase de Venta</th>
-                  <th className="px-5 py-4 font-bold">Tarea Pendiente</th>
+                  <th className="px-5 py-4 font-bold">Interés / Tipología</th>
+                  <th className="px-5 py-4 font-bold">Fase Embudo</th>
+                  <th className="px-5 py-4 font-bold">Temperatura</th>
+                  <th className="px-5 py-4 font-bold">Tarea Agendada</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 text-[#415364]">
@@ -911,10 +941,11 @@ export default function CRMPage() {
                       </td>
                       <td className="px-5 py-4 text-xs font-bold text-[#ea0029]">{cliente.tipologia_interes}</td>
                       <td className="px-5 py-4"><div className="text-[10px] font-bold text-[#415364] bg-[#415364]/10 inline-block px-2.5 py-1 rounded-md uppercase tracking-wider">{cliente.estado}</div></td>
+                      <td className="px-5 py-4 text-xs">{cliente.temperatura || '❄️ Frío'}</td>
                       <td className="px-5 py-4">
                         {cliente.proximo_contacto ? (
                            <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider ${esFechaVencida(cliente.proximo_contacto) ? 'bg-[#ea0029]/10 text-[#ea0029]' : 'bg-blue-50 text-blue-700'}`}>
-                             {new Date(cliente.proximo_contacto).toLocaleDateString('es-EC')}
+                             {new Date(cliente.proximo_contacto + 'T00:00:00').toLocaleDateString('es-EC')} - {cliente.tipo_accion}
                            </span>
                         ) : <span className="text-[10px] text-[#415364]/40 font-bold uppercase tracking-wider">Sin agendar</span>}
                       </td>
