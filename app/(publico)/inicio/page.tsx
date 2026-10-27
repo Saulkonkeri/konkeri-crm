@@ -320,7 +320,7 @@ export default function ArienzoLandingPremium() {
         `}
       </Script>
 
-      {/* NAVEGACIÓN */}
+      {/* NAVEGACIÓN (Logo Ligeramente Más Grande) */}
       <header className={`fixed top-0 w-full z-40 transition-all duration-500 ${scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm py-5 md:py-6' : 'bg-transparent py-6 md:py-8'}`}>
         <div className="max-w-7xl mx-auto px-5 md:px-12 flex justify-between items-center">
           <img 
@@ -337,10 +337,10 @@ export default function ArienzoLandingPremium() {
         </div>
       </header>
 
-      {/* 1. HERO INMERSIVO: CARGA SUPER OPTIMIZADA */}
+      {/* 1. HERO INMERSIVO: CARGA SUPER OPTIMIZADA CON FOTO PISCINA */}
       <section className="relative h-[100vh] min-h-[650px] flex flex-col items-center justify-center">
         <img 
-          src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Derecho-A4.jpg" 
+          src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-PISCINA-PARA-PAGINA.jpg" 
           alt="Arienzo Fachada"
           className="absolute inset-0 w-full h-full object-cover z-0"
           fetchPriority="high"
@@ -541,7 +541,7 @@ export default function ArienzoLandingPremium() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 4.5. ESPACIOS DE AUTOR (FONDO REDISEÑADO CON TIPOGRAFÍA ELEGANTE)         */}
+      {/* 4.5. ESPACIOS DE AUTOR (FONDO REDISEÑADO CON TIPOGRAFÍA ELEGANTE Y CUADRITOS ORIGINALES) */}
       {/* ========================================================================= */}
       <section className="py-24 md:py-32 px-4 md:px-8 bg-[#FDFCFB] border-y border-[#EAE3DC] font-sans relative overflow-hidden">
         
@@ -816,19 +816,26 @@ export default function ArienzoLandingPremium() {
             <h3 className="text-3xl md:text-4xl font-medium text-white tracking-tight">Respaldo Institucional</h3>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 md:divide-x divide-white/10 max-w-5xl mx-auto">
-            <div className="md:px-10 text-center group">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8 md:divide-x divide-white/10 max-w-7xl mx-auto">
+            <div className="md:px-8 text-center group">
               <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#D1C292] block mb-3">Diseño Arquitectónico</span>
               <h4 className="text-xl md:text-2xl font-medium text-white mb-5">DIEZ + MULLER</h4>
               <p className="text-sm text-neutral-400 font-medium leading-relaxed">
                 Estudio quiteño reconocido, considerado entre los más destacados del Ecuador por su trayectoria y la calidad de sus proyectos. Con una amplia experiencia en proyectos residenciales y corporativos, son los autores de Serene en Marina Blue, un proyecto que refleja su arquitectura contemporánea y atención al detalle.
               </p>
             </div>
-            <div className="md:px-10 text-center group border-t border-white/10 md:border-t-0 pt-8 md:pt-0">
+            <div className="md:px-8 text-center group border-t border-white/10 md:border-t-0 pt-8 md:pt-0">
+              <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#D1C292] block mb-3">Construcción</span>
+              <h4 className="text-xl md:text-2xl font-medium text-white mb-5">CARRASCO SUAREZ</h4>
+              <p className="text-sm text-neutral-400 font-medium leading-relaxed">
+                Constructora con sólida trayectoria desde 1992. Amplia experiencia ejecutando obras residenciales premium en la costa ecuatoriana, garantizando altos estándares de calidad, seguridad y cumplimiento en cada proyecto asignado.
+              </p>
+            </div>
+            <div className="md:px-8 text-center group border-t border-white/10 md:border-t-0 pt-8 md:pt-0">
               <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#D1C292] block mb-3">Desarrollo y Ventas</span>
               <h4 className="text-xl md:text-2xl font-medium text-white mb-5">KONKERI</h4>
               <p className="text-sm text-neutral-400 font-medium leading-relaxed">
-                Promotora inmobiliaria con base en Manta que concibe, estructura y desarrolla proyectos bajo una visión integral. Nuestra experiencia en el sector y enfoque en innovación tecnológica nos permite entregar desarrollos sólidos, bien planificados y alineados con las verdaderas necesidades del mercado actual.
+                Promotora inmobiliaria con base en Manta que concibe, estructura y desarrolla proyectos bajo una visión integral. Nuestra experiencia en el sector y enfoque en innovación tecnológica nos permite entregar desarrollos sólidos, bien planificados y alineados con las verdaderas necesidades del mercado.
               </p>
             </div>
           </div>
