@@ -27,7 +27,7 @@ interface ActividadReciente {
 export default function CentroOperacionesPage() {
   const [totalLeads, setTotalLeads] = useState(0);
   const [leadsCalientes, setLeadsCalientes] = useState(0);
-  const [tareasHoy, setTareasHoy] = useState<TareaHoy[]>([]);
+  const [todasLasTareas, setTodasLasTareas] = useState<TareaHoy[]>([]);
   const [actividadReciente, setActividadReciente] = useState<ActividadReciente[]>([]);
   const [cargando, setCargando] = useState(true);
 
@@ -36,11 +36,18 @@ export default function CentroOperacionesPage() {
   const [inventarioDisponible, setInventarioDisponible] = useState(0);
   const [inventarioColocado, setInventarioColocado] = useState(0);
 
+  // Estados para la nueva Agenda con Pestañas
+  const [tabAgenda, setTabAgenda] = useState<'hoy' | 'vencidas' | 'proximas'>('hoy');
+  const [tareaActiva, setTareaActiva] = useState<TareaHoy | null>(null);
+  const [resolucionForm, setResolucionForm] = useState({ accion: 'completar', nuevaFecha: '', nota: '' });
+  const [guardandoTarea, setGuardandoTarea] = useState(false);
+
   useEffect(() => {
     cargarDatosDashboard();
   }, []);
 
   const cargarDatosDashboard = async () => {
+    setCargando(true);
     try {
       // 1. CARGA DE CLIENTES Y TAREAS
       const { data: clientesActivos, error: errorClientes } = await supabase
@@ -55,17 +62,20 @@ export default function CentroOperacionesPage() {
         const calientes = clientesActivos.filter(c => c.temperatura?.includes('Caliente')).length;
         setLeadsCalientes(calientes);
 
-        const fechaHoy = new Date();
-        fechaHoy.setHours(0, 0, 0, 0);
+        // Agrupar todas las tareas programadas
+        const tareasConFecha = clientesActivos.filter(c => c.proximo_contacto);
+        
+        // Ordenar por prioridad: 1ro Fecha, 2do Temperatura (Calientes primero)
+        const tareasOrdenadas = tareasConFecha.sort((a, b) => {
+          const dateA = new Date(a.proximo_contacto).getTime();
+          const dateB = new Date(b.proximo_contacto).getTime();
+          if (dateA !== dateB) return dateA - dateB;
+          
+          const tempWeight = (t: string) => t?.includes('Caliente') ? 3 : t?.includes('Tibio') ? 2 : 1;
+          return tempWeight(b.temperatura) - tempWeight(a.temperatura);
+        });
 
-        const agendaHoyYVencida = clientesActivos.filter(c => {
-          if (!c.proximo_contacto) return false;
-          const fechaContacto = new Date(c.proximo_contacto + 'T00:00:00');
-          // Incluimos tareas de hoy y tareas vencidas
-          return fechaContacto.getTime() <= fechaHoy.getTime();
-        }).sort((a, b) => new Date(a.proximo_contacto).getTime() - new Date(b.proximo_contacto).getTime());
-
-        setTareasHoy(agendaHoyYVencida);
+        setTodasLasTareas(tareasOrdenadas);
       }
 
       // 2. CARGA DE COTIZACIONES DEL MES
@@ -95,7 +105,7 @@ export default function CentroOperacionesPage() {
         setInventarioColocado(colocadas);
       }
 
-      // 4. CARGA DE ACTIVIDAD RECIENTE (Mini Radar)
+      // 4. CARGA DE ACTIVIDAD RECIENTE
       const accionesValiosas = ['DESCARGA_BROCHURE', 'CLIC_WHATSAPP', 'INICIO_COTIZACION', 'REGISTRO_COMPLETADO', 'USO_FILTRO', 'CLIC_DISPONIBILIDAD'];
       const { data: trackData } = await supabase
         .from('tracking_inventario')
@@ -105,7 +115,6 @@ export default function CentroOperacionesPage() {
         .limit(20);
 
       if (trackData && trackData.length > 0) {
-        // Enriquecer con nombres si los hay
         const emails = Array.from(new Set(trackData.map(t => t.email_cliente).filter(e => e && e.includes('@'))));
         let lookup: Record<string, string> = {};
         if (emails.length > 0) {
@@ -118,7 +127,6 @@ export default function CentroOperacionesPage() {
           nombres: t.email_cliente ? lookup[t.email_cliente.toLowerCase()] : 'Anónimo'
         }));
         
-        // Filtramos duplicados rápidos
         const actUnicas = actividadesConNombre.filter((v,i,a) => a.findIndex(t => (t.email_cliente === v.email_cliente && t.accion === v.accion)) === i).slice(0, 5);
         setActividadReciente(actUnicas);
       }
@@ -127,6 +135,37 @@ export default function CentroOperacionesPage() {
       console.error('Error cargando el dashboard:', error);
     } finally {
       setCargando(false);
+    }
+  };
+
+  const resolverTarea = async () => {
+    if (!tareaActiva) return;
+    setGuardandoTarea(true);
+
+    try {
+      const payload: any = {};
+      
+      if (resolucionForm.accion === 'completar') {
+        payload.proximo_contacto = null;
+        payload.tipo_accion = null;
+        payload.detalle_accion = null;
+      } else if (resolucionForm.accion === 'reprogramar') {
+        if (!resolucionForm.nuevaFecha) { alert("Selecciona una nueva fecha"); setGuardandoTarea(false); return; }
+        payload.proximo_contacto = resolucionForm.nuevaFecha;
+      }
+      
+      const { error } = await supabase.from('clientes').update(payload).eq('id', tareaActiva.id);
+      if (error) throw error;
+
+      alert(`✅ Tarea de ${tareaActiva.nombres} gestionada con éxito.`);
+      setTareaActiva(null);
+      setResolucionForm({ accion: 'completar', nuevaFecha: '', nota: '' });
+      cargarDatosDashboard();
+
+    } catch (error: any) {
+      alert(`Error al actualizar tarea: ${error.message}`);
+    } finally {
+      setGuardandoTarea(false);
     }
   };
 
@@ -142,6 +181,24 @@ export default function CentroOperacionesPage() {
     return 'Ayer';
   };
 
+  // Filtrado de Tareas para las Pestañas
+  const hoyStr = new Date().toISOString().split('T')[0];
+  const hoyMs = new Date(hoyStr + 'T00:00:00').getTime();
+
+  const tareasFiltradas = todasLasTareas.filter(tarea => {
+    const tareaMs = new Date(tarea.proximo_contacto + 'T00:00:00').getTime();
+    if (tabAgenda === 'hoy') return tareaMs === hoyMs;
+    if (tabAgenda === 'vencidas') return tareaMs < hoyMs;
+    if (tabAgenda === 'proximas') return tareaMs > hoyMs;
+    return false;
+  });
+
+  const contadoresAgenda = {
+    hoy: todasLasTareas.filter(t => new Date(t.proximo_contacto + 'T00:00:00').getTime() === hoyMs).length,
+    vencidas: todasLasTareas.filter(t => new Date(t.proximo_contacto + 'T00:00:00').getTime() < hoyMs).length,
+    proximas: todasLasTareas.filter(t => new Date(t.proximo_contacto + 'T00:00:00').getTime() > hoyMs).length,
+  };
+
   if (cargando) {
     return (
       <div className="flex h-full items-center justify-center bg-[#dce3eb]">
@@ -153,11 +210,8 @@ export default function CentroOperacionesPage() {
     );
   }
 
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
-
   return (
-    <div className="p-4 md:p-8 font-sans text-[#415364] w-full max-w-7xl mx-auto min-h-[calc(100vh-2rem)] flex flex-col">
+    <div className="p-4 md:p-8 font-sans text-[#415364] w-full max-w-7xl mx-auto min-h-[calc(100vh-2rem)] flex flex-col relative">
       
       {/* ENCABEZADO EJECUTIVO */}
       <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#415364]/10 pb-6">
@@ -176,10 +230,8 @@ export default function CentroOperacionesPage() {
         </div>
       </div>
 
-      {/* MÉTRICAS PRINCIPALES (TARJETAS MODERNAS) */}
+      {/* MÉTRICAS PRINCIPALES */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-        
-        {/* Tarjeta 1: Leads Activos */}
         <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group hover:-translate-y-1">
           <div className="absolute top-0 left-0 w-1 h-full bg-[#415364] transition-all group-hover:w-1.5"></div>
           <p className="text-[10px] font-bold text-[#415364]/50 uppercase tracking-widest mb-1">Base CRM Activa</p>
@@ -192,7 +244,6 @@ export default function CentroOperacionesPage() {
           </div>
         </div>
 
-        {/* Tarjeta 2: Termómetro (Destacada) */}
         <div className="bg-[#FDFCFB] rounded-2xl border border-[#ea0029]/20 p-6 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group hover:-translate-y-1">
           <div className="absolute top-0 left-0 w-1 h-full bg-[#ea0029] transition-all group-hover:w-1.5"></div>
           <p className="text-[10px] font-bold text-[#ea0029] uppercase tracking-widest mb-1 flex items-center gap-1.5">
@@ -204,7 +255,6 @@ export default function CentroOperacionesPage() {
           </div>
         </div>
 
-        {/* Tarjeta 3: Dinero en Mesa */}
         <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group hover:-translate-y-1">
           <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500 transition-all group-hover:w-1.5"></div>
           <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Cotizado (Mes)</p>
@@ -214,7 +264,6 @@ export default function CentroOperacionesPage() {
           <p className="text-[9px] text-[#415364]/40 font-bold uppercase tracking-widest mt-1">En propuestas enviadas</p>
         </div>
 
-        {/* Tarjeta 4: Inventario */}
         <div className="bg-[#21242E] rounded-2xl border border-neutral-800 p-6 shadow-xl transition-all duration-300 relative overflow-hidden group hover:-translate-y-1">
           <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-1">Absorción Arienzo</p>
           <div className="flex items-baseline gap-2 mt-2">
@@ -228,55 +277,81 @@ export default function CentroOperacionesPage() {
         </div>
       </div>
 
-      {/* PANELES DE ACCIÓN (ABAJO) */}
+      {/* PANELES DE ACCIÓN */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
         
-        {/* AGENDA DEL DÍA (Ocupa 8 columnas) */}
-        <div className="lg:col-span-8 bg-white rounded-2xl border border-neutral-200/60 shadow-sm flex flex-col h-[450px]">
-          <div className="p-6 border-b border-neutral-100 flex justify-between items-center bg-[#F9F7F5] rounded-t-2xl">
-            <div>
-              <h2 className="text-sm font-bold text-[#415364] uppercase tracking-widest flex items-center gap-2">
-                <svg className="w-5 h-5 text-[#ea0029]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                Agenda Estratégica
-              </h2>
-              <p className="text-[10px] font-bold text-[#415364]/50 uppercase tracking-widest mt-1">Seguimientos para Hoy y Atrasados.</p>
-            </div>
-            {tareasHoy.length > 0 && (
-              <div className="bg-[#ea0029] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-sm">
-                {tareasHoy.length} Tareas Activas
+        {/* AGENDA INTELIGENTE CON PESTAÑAS (8 columnas) */}
+        <div className="lg:col-span-8 bg-white rounded-2xl border border-neutral-200/60 shadow-sm flex flex-col h-[500px]">
+          
+          <div className="px-6 pt-6 pb-4 border-b border-neutral-100 bg-[#F9F7F5] rounded-t-2xl flex flex-col gap-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-sm font-bold text-[#415364] uppercase tracking-widest flex items-center gap-2">
+                  <svg className="w-5 h-5 text-[#ea0029]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                  Agenda Comercial
+                </h2>
+                <p className="text-[10px] font-bold text-[#415364]/50 uppercase tracking-widest mt-1">Organiza tus seguimientos y llamadas.</p>
               </div>
-            )}
+            </div>
+
+            {/* Pestañas de Navegación de Tareas */}
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setTabAgenda('vencidas')}
+                className={`flex-1 py-2 px-3 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${tabAgenda === 'vencidas' ? 'bg-[#ea0029] text-white shadow-md' : 'bg-white border border-neutral-200 text-neutral-500 hover:bg-neutral-50'}`}
+              >
+                Atrasadas {contadoresAgenda.vencidas > 0 && `(${contadoresAgenda.vencidas})`}
+              </button>
+              <button 
+                onClick={() => setTabAgenda('hoy')}
+                className={`flex-1 py-2 px-3 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${tabAgenda === 'hoy' ? 'bg-[#21242E] text-white shadow-md' : 'bg-white border border-neutral-200 text-neutral-500 hover:bg-neutral-50'}`}
+              >
+                Para Hoy {contadoresAgenda.hoy > 0 && `(${contadoresAgenda.hoy})`}
+              </button>
+              <button 
+                onClick={() => setTabAgenda('proximas')}
+                className={`flex-1 py-2 px-3 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${tabAgenda === 'proximas' ? 'bg-[#415364] text-white shadow-md' : 'bg-white border border-neutral-200 text-neutral-500 hover:bg-neutral-50'}`}
+              >
+                Próximas {contadoresAgenda.proximas > 0 && `(${contadoresAgenda.proximas})`}
+              </button>
+            </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
-            {tareasHoy.length === 0 ? (
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-3">
+            {tareasFiltradas.length === 0 ? (
               <div className="p-12 text-center flex flex-col items-center justify-center h-full">
-                <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mb-4 border border-green-100">
-                  <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                <div className="w-16 h-16 bg-neutral-50 rounded-full flex items-center justify-center mb-4 border border-neutral-100">
+                  <svg className="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
                 </div>
-                <h3 className="text-[#415364] font-bold mb-1">Día despejado</h3>
-                <p className="text-xs font-medium text-[#415364]/60">No tienes tareas pendientes ni atrasadas.</p>
-                <Link href="/crm" className="mt-4 text-[10px] font-bold text-[#ea0029] uppercase tracking-widest hover:underline">Ir a prospectar →</Link>
+                <h3 className="text-[#415364] font-bold mb-1">Sin tareas {tabAgenda}</h3>
+                <p className="text-xs font-medium text-[#415364]/60">No tienes seguimientos programados en esta sección.</p>
               </div>
             ) : (
-              <div className="space-y-2">
-                {tareasHoy.map((tarea) => {
-                  const fechaTarea = new Date(tarea.proximo_contacto + 'T00:00:00');
-                  const esAtrasada = fechaTarea.getTime() < hoy.getTime();
+              <div className="space-y-3">
+                {tareasFiltradas.map((tarea) => {
+                  const indicadorColor = tabAgenda === 'vencidas' ? 'bg-red-500 border-red-200' : tabAgenda === 'hoy' ? 'bg-emerald-400 border-emerald-100' : 'bg-blue-400 border-blue-100';
 
                   return (
-                    <div key={tarea.id} className="p-4 bg-white hover:bg-[#F9F7F5] border border-neutral-100 rounded-xl transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
+                    <div key={tarea.id} className="p-4 bg-white hover:bg-[#F9F7F5] border border-neutral-200 rounded-xl transition-all shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
                       <div className="flex items-start gap-4">
-                        <div className={`mt-1 shrink-0 w-2.5 h-2.5 rounded-full ${esAtrasada ? 'bg-[#ea0029] shadow-[0_0_8px_rgba(234,0,41,0.5)] animate-pulse' : 'bg-emerald-400'}`} title={esAtrasada ? 'Tarea Atrasada' : 'Tarea para Hoy'}></div>
+                        <div className={`mt-1.5 shrink-0 w-3 h-3 rounded-full border-2 ${indicadorColor} ${tabAgenda === 'vencidas' ? 'animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]' : ''}`}></div>
                         <div>
                           <div className="flex items-center gap-2 mb-1">
                             <h3 className="text-sm font-bold text-[#415364]">{tarea.nombres} {tarea.apellidos}</h3>
-                            <span className="text-[9px] text-[#415364]/40 font-mono font-bold">| {tarea.telefono}</span>
+                            <a href={`https://wa.me/${tarea.telefono.replace('+', '')}`} target="_blank" className="text-[10px] text-[#25D366] font-bold tracking-widest hover:underline flex items-center gap-1">
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+                              Contactar
+                            </a>
+                            {tabAgenda === 'proximas' && (
+                              <span className="text-[9px] text-[#415364]/50 font-bold bg-neutral-100 px-2 py-0.5 rounded">
+                                {new Date(tarea.proximo_contacto + 'T00:00:00').toLocaleDateString('es-EC', { day: '2-digit', month: 'short' })}
+                              </span>
+                            )}
                           </div>
                           <p className="text-xs text-[#415364]/80 font-medium line-clamp-1">{tarea.detalle_accion || `Acción requerida: ${tarea.tipo_accion}`}</p>
                           <div className="flex items-center gap-2 mt-2">
-                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-widest border ${esAtrasada ? 'bg-[#ea0029]/5 text-[#ea0029] border-[#ea0029]/20' : 'bg-[#415364]/5 text-[#415364]/70 border-[#415364]/10'}`}>
-                              {tarea.tipo_accion}
+                            <span className="bg-[#415364]/5 text-[#415364]/70 border border-[#415364]/10 text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-widest">
+                              {tarea.tipo_accion || 'Seguimiento'}
                             </span>
                             {tarea.temperatura && (
                               <span className="text-[10px]">{tarea.temperatura.includes('Caliente') ? '🔥' : tarea.temperatura.includes('Tibio') ? '☀️' : '❄️'}</span>
@@ -285,9 +360,14 @@ export default function CentroOperacionesPage() {
                         </div>
                       </div>
                       
-                      <Link href="/crm" className="px-5 py-2.5 bg-white border border-[#415364]/20 text-[#415364] rounded-lg text-[10px] font-bold uppercase tracking-widest hover:border-[#ea0029] hover:bg-[#ea0029] hover:text-white transition-all shadow-sm text-center flex-shrink-0">
-                        Gestionar
-                      </Link>
+                      <div className="flex gap-2 shrink-0">
+                        <button 
+                          onClick={() => setTareaActiva(tarea)}
+                          className="px-5 py-2.5 bg-[#21242E] text-white rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-[#ea0029] transition-all shadow-sm"
+                        >
+                          Resolver
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -314,7 +394,7 @@ export default function CentroOperacionesPage() {
                   </div>
                   <div>
                     <h3 className="text-[13px] font-bold text-white group-hover:text-white transition-colors">Base CRM</h3>
-                    <p className="text-[9px] text-white/50 uppercase tracking-widest mt-0.5">Prospectos</p>
+                    <p className="text-[9px] text-white/50 uppercase tracking-widest mt-0.5">Gestor de Prospectos</p>
                   </div>
                 </div>
                 <svg className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
@@ -327,7 +407,7 @@ export default function CentroOperacionesPage() {
                   </div>
                   <div>
                     <h3 className="text-[13px] font-bold text-white group-hover:text-white transition-colors">Cotizador</h3>
-                    <p className="text-[9px] text-white/50 uppercase tracking-widest mt-0.5">Simulador</p>
+                    <p className="text-[9px] text-white/50 uppercase tracking-widest mt-0.5">Simulador Financiero</p>
                   </div>
                 </div>
                 <svg className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
@@ -367,6 +447,69 @@ export default function CentroOperacionesPage() {
 
         </div>
       </div>
+
+      {/* MODAL GESTOR DE RESOLUCIÓN RÁPIDA */}
+      {tareaActiva && (
+        <div className="fixed inset-0 bg-[#415364]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95">
+            <div className="bg-[#21242E] p-5 flex justify-between items-center text-white">
+              <div>
+                <h3 className="text-[10px] font-bold text-[#ea0029] uppercase tracking-widest">Resolver Seguimiento</h3>
+                <p className="text-sm font-bold">{tareaActiva.nombres} {tareaActiva.apellidos}</p>
+              </div>
+              <button onClick={() => setTareaActiva(null)} className="text-white/50 hover:text-white">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-5">
+              
+              <div className="bg-[#F9F7F5] border border-neutral-200 p-4 rounded-xl">
+                <span className="text-[10px] uppercase font-bold text-neutral-500 block mb-1">Acción Pendiente</span>
+                <span className="text-xs font-bold text-[#415364]">{tareaActiva.detalle_accion || tareaActiva.tipo_accion}</span>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-[#415364]/60 uppercase block mb-2">Decisión Comercial</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button 
+                    onClick={() => setResolucionForm({...resolucionForm, accion: 'completar'})}
+                    className={`py-3 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all border ${resolucionForm.accion === 'completar' ? 'bg-emerald-50 text-emerald-600 border-emerald-200 shadow-inner' : 'bg-white text-neutral-400 hover:bg-neutral-50'}`}
+                  >
+                    Completar Hoy
+                  </button>
+                  <button 
+                    onClick={() => setResolucionForm({...resolucionForm, accion: 'reprogramar'})}
+                    className={`py-3 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all border ${resolucionForm.accion === 'reprogramar' ? 'bg-amber-50 text-amber-600 border-amber-200 shadow-inner' : 'bg-white text-neutral-400 hover:bg-neutral-50'}`}
+                  >
+                    Reprogramar
+                  </button>
+                </div>
+              </div>
+
+              {resolucionForm.accion === 'reprogramar' && (
+                <div className="animate-in fade-in slide-in-from-top-2">
+                  <label className="text-[10px] font-bold text-[#415364]/60 uppercase block mb-1.5">Nueva Fecha</label>
+                  <input 
+                    type="date" 
+                    value={resolucionForm.nuevaFecha} 
+                    onChange={(e) => setResolucionForm({...resolucionForm, nuevaFecha: e.target.value})} 
+                    className="w-full text-xs p-3 border border-neutral-300 rounded-xl outline-none focus:border-[#ea0029] font-mono text-[#415364]" 
+                  />
+                </div>
+              )}
+
+              <button 
+                onClick={resolverTarea} 
+                disabled={guardandoTarea} 
+                className="w-full bg-[#ea0029] text-white py-4 rounded-xl text-xs font-bold uppercase tracking-widest shadow-md hover:bg-[#c90022] transition-colors mt-2"
+              >
+                {guardandoTarea ? 'Sincronizando...' : 'Guardar y Cerrar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
