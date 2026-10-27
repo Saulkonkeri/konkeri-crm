@@ -325,12 +325,9 @@ export default function CotizadorPage() {
         const ventanaImpresion = window.open('', '_blank');
         if (!ventanaImpresion) return alert("Por favor, permite las ventanas emergentes.");
 
-        const tOpen = "<scr" + "ipt src='https://cdn.tailwindcss.com'>";
-        const tClose = "</scr" + "ipt>";
-        const pOpen = "<scr" + "ipt>";
-        
-        const tailwindCode = tOpen + tClose;
-        const printCode = pOpen + "setTimeout(() => { window.print(); window.close(); }, 800);" + tClose;
+        // Separamos las etiquetas para que VS Code no marque error
+        const tailwindCode = "<scr" + "ipt src='https://cdn.tailwindcss.com'></scr" + "ipt>";
+        const printCode = "<scr" + "ipt>setTimeout(() => { window.print(); window.close(); }, 800);</scr" + "ipt>";
 
         ventanaImpresion.document.write(`
           <html>
@@ -384,9 +381,8 @@ export default function CotizadorPage() {
       const elemento = document.getElementById('plantilla-pdf-arienzo');
       if (!elemento) throw new Error("No se encontró el diseño de la cotización");
 
-      const tOpen = "<scr" + "ipt src='https://cdn.tailwindcss.com'>";
-      const tClose = "</scr" + "ipt>";
-      const tailwindCode = tOpen + tClose;
+      // Separamos las etiquetas para evitar error en el parser de React
+      const tailwindCode = "<scr" + "ipt src='https://cdn.tailwindcss.com'></scr" + "ipt>";
 
       const htmlContent = `
         <!DOCTYPE html>
@@ -409,7 +405,7 @@ export default function CotizadorPage() {
 
       const emailHtmlBody = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #EAE3DC; border-radius: 8px; overflow: hidden;">
-          <div style="background-color: #21242E; padding: 25px; text-align: center;">
+          <div style="background-color: #B94A36; padding: 25px; text-align: center;">
             <img src="${LOGO_BLANCO}" height="35" alt="Arienzo Living" style="display: block; margin: 0 auto;" />
           </div>
           <div style="padding: 35px 30px; color: #415364; font-size: 14px; line-height: 1.6; background-color: #ffffff;">
@@ -473,21 +469,18 @@ export default function CotizadorPage() {
       {mostrarModalCorreo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#21242E]/80 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[95vh] shadow-2xl flex flex-col animate-in fade-in zoom-in-95">
-            
             <div className="px-6 py-5 border-b border-neutral-100 flex justify-between items-center bg-[#F9F7F5] shrink-0 rounded-t-2xl">
               <div>
                 <h3 className="font-bold text-[#B94A36] uppercase tracking-widest text-sm flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                   Preparar Envío de Cotización
                 </h3>
               </div>
               <button onClick={() => setMostrarModalCorreo(false)} className="text-neutral-400 hover:text-[#ea0029] transition-colors p-1 bg-white rounded-md shadow-sm border border-neutral-200">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                &times;
               </button>
             </div>
             
             <div className="p-6 overflow-y-auto flex-1 grid grid-cols-1 lg:grid-cols-2 gap-8 custom-scrollbar">
-              
               <div className="space-y-6">
                 <div className="space-y-3">
                   <div className="bg-[#dce3eb]/30 border border-[#415364]/10 rounded-xl p-3.5">
@@ -505,7 +498,6 @@ export default function CotizadorPage() {
                       </span>
                     </div>
                   </div>
-                  
                   <div className="bg-[#dce3eb]/30 border border-[#415364]/10 rounded-xl p-3.5">
                     <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-0.5">Asunto del Correo</p>
                     <p className="text-[13px] font-medium text-[#415364]">Propuesta de Inversión - Arienzo Living - Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero}</p>
@@ -544,13 +536,13 @@ export default function CotizadorPage() {
 
               {/* Vista Previa Correo */}
               <div className="flex flex-col">
-                <p className="text-[10px] font-bold text-[#415364]/50 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <p className="text-[10px] font-bold text-[#415364]/50 uppercase tracking-widest mb-3">
                   Vista previa del diseño del cliente
                 </p>
                 <div className="border border-neutral-200 rounded-xl overflow-hidden bg-[#F9F7F5] flex-1 flex flex-col shadow-sm">
                   <div className="p-4 overflow-y-auto custom-scrollbar bg-[#F3F4F6] flex-1">
                     <div className="bg-white border border-neutral-200 rounded-lg overflow-hidden shadow-sm">
-                      <div className="bg-[#21242E] p-4 text-center">
+                      <div className="bg-[#B94A36] p-4 text-center">
                         <img src={LOGO_BLANCO} alt="Arienzo" className="h-5 mx-auto" />
                       </div>
                       <div className="p-5 text-[12px] text-[#415364] leading-relaxed">
@@ -653,7 +645,7 @@ export default function CotizadorPage() {
 
           <div className="bg-white rounded-2xl border border-[#D1C292] p-6 shadow-sm relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1.5 h-full bg-[#D1C292]"></div>
-            <h2 className="text-[11px] font-bold text-[#21242E] uppercase tracking-widest mb-4 flex items-center gap-2">
+            <h2 className="text-[11px] font-bold text-[#21242E] uppercase tracking-widest mb-4">
               1. Selección de Inventario
             </h2>
             <select
@@ -713,7 +705,7 @@ export default function CotizadorPage() {
                   <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm' }} className="pdf-page-container bg-white text-neutral-900 shadow-2xl print:shadow-none relative flex flex-col print:rounded-none overflow-hidden mx-auto shrink-0">
                     <div className="px-10 pt-10 pb-6 flex flex-col h-full">
                       
-                      <div className="bg-[#21242E] px-8 py-5 flex justify-between items-center mb-6 shrink-0 rounded-[8px]">
+                      <div className="bg-[#B94A36] px-8 py-5 flex justify-between items-center mb-6 shrink-0 rounded-[8px]">
                         <div className="flex items-center gap-3">
                           <img src={LOGO_BLANCO} alt="Arienzo Living" className="h-10 w-auto object-contain" />
                         </div>
@@ -962,7 +954,7 @@ export default function CotizadorPage() {
                                </div>
                             </div>
 
-                            <div className="bg-[#21242E] h-[55px] flex justify-center items-center shrink-0">
+                            <div className="bg-[#B94A36] h-[55px] flex justify-center items-center shrink-0">
                                <img src={LOGO_BLANCO} alt="Arienzo Living" className="h-[22px] w-auto object-contain opacity-95" />
                             </div>
 
