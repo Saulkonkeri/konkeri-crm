@@ -320,7 +320,7 @@ export default function ArienzoLandingPremium() {
         `}
       </Script>
 
-      {/* NAVEGACIÓN (Logo Ligeramente Más Grande) */}
+      {/* NAVEGACIÓN */}
       <header className={`fixed top-0 w-full z-40 transition-all duration-500 ${scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm py-5 md:py-6' : 'bg-transparent py-6 md:py-8'}`}>
         <div className="max-w-7xl mx-auto px-5 md:px-12 flex justify-between items-center">
           <img 
@@ -567,7 +567,7 @@ export default function ArienzoLandingPremium() {
               Tipologías <span className="font-light italic text-neutral-400">de Autor</span>
             </h2>
             <p className="max-w-2xl mx-auto text-sm md:text-lg text-neutral-500 font-medium leading-relaxed">
-              Descubra la distribución ideal para su estilo de vida. Seleccione un modelo para visualizar sus detalles arquitectónicos y <strong className="text-[#964B36] font-semibold">cotizar su inversión</strong> en tiempo real.
+              Explore nuestra exclusiva colección de <strong className="text-neutral-800 font-semibold">departamentos de 1, 2 y 3 dormitorios</strong>. Seleccione el modelo ideal para visualizar sus detalles y <strong className="text-[#964B36] font-semibold">cotizar su inversión</strong> en tiempo real.
             </p>
           </div>
 
