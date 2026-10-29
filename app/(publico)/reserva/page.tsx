@@ -15,10 +15,14 @@ const INVENTARIO_FALLBACK = [
   { id: '503', piso: 5, tipo: '3 Dorms (Esquinero)', vista: 'Panorámica a La Quadra / Umiña / Mar', precio: 290840, area: 152.72, estado: 'DISPONIBLE' },
   { id: '502', piso: 5, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 165702, area: 86.60, estado: 'DISPONIBLE' },
   { id: '501', piso: 5, tipo: '3 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 303228, area: 158.54, estado: 'DISPONIBLE' },
-  { id: '404', piso: 4, tipo: '2 Dormitorios', vista: 'Wyndham Poseidón / Mar', precio: 199677, area: 106.65, estado: 'DISPONIBLE' },
-  { id: '403', piso: 4, tipo: '3 Dorms (Esquinero)', vista: 'Panorámica a La Quadra / Umiña / Mar', precio: 287042, area: 152.72, estado: 'DISPONIBLE' },
-  { id: '402', piso: 4, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 163257, area: 86.60, estado: 'DISPONIBLE' },
-  { id: '401', piso: 4, tipo: '3 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 299079, area: 158.54, estado: 'RESERVADO' },
+  
+  // PISO 4 - ACTUALIZADO CON 5 UNIDADES (Mismo diseño que 3 y 2)
+  { id: '401', piso: 4, tipo: '1 Dormitorio', vista: 'Vista a la Ciudad', precio: 132000, area: 70.25, estado: 'DISPONIBLE' },
+  { id: '405', piso: 4, tipo: '2 Dormitorios', vista: 'Wyndham Poseidón / Mar', precio: 154000, area: 78.87, estado: 'DISPONIBLE' },
+  { id: '404', piso: 4, tipo: '2 Dormitorios', vista: 'Panorámica a La Quadra / Umiña / Mar', precio: 286000, area: 152.68, estado: 'DISPONIBLE' },
+  { id: '403', piso: 4, tipo: '1 Dormitorio', vista: 'La Quadra / Umiña / Mar', precio: 163000, area: 86.76, estado: 'DISPONIBLE' },
+  { id: '402', piso: 4, tipo: '2 Dormitorios', vista: 'La Quadra / Umiña / Mar', precio: 223000, area: 121.61, estado: 'DISPONIBLE' },
+
   { id: '301', piso: 3, tipo: '1 Dormitorio', vista: 'Vista a la Ciudad', precio: 131529, area: 70.25, estado: 'DISPONIBLE' },
   { id: '305', piso: 3, tipo: '2 Dormitorios', vista: 'Wyndham Poseidón / Mar', precio: 152779, area: 78.87, estado: 'DISPONIBLE' },
   { id: '304', piso: 3, tipo: '2 Dormitorios', vista: 'Panorámica a La Quadra / Umiña / Mar', precio: 284732, area: 152.68, estado: 'DISPONIBLE' },
@@ -34,7 +38,7 @@ const INVENTARIO_FALLBACK = [
 const LAYOUT_FACHADA: Record<number, string[]> = {
   6: ['604', '603', '602', '601'],
   5: ['504', '503', '502', '501'],
-  4: ['404', '403', '402', '401'],
+  4: ['401', '405', '404', '403', '402'], // ACTUALIZADO PARA TENER 5 UNIDADES
   3: ['301', '305', '304', '303', '302'],
   2: ['201', '205', '204', '203', '202'],
 };
@@ -50,7 +54,8 @@ const obtenerKeyVista = (unidad: any) => {
   if (!unidad) return 'panoramica';
   const idUnidad = String(unidad.id);
   
-  if (['604', '504', '404', '305', '205'].includes(idUnidad)) {
+  // ACTUALIZADO: La 405 toma el lugar lateral, igual que 305 y 205.
+  if (['604', '504', '405', '305', '205'].includes(idUnidad)) {
     return 'wyndham';
   }
 
@@ -282,7 +287,7 @@ export default function ReservaExpressPage() {
   const enviarNotificacionReservaWhatsApp = () => {
     registrarAccion('CLIC_WHATSAPP_NOTIFICAR_RESERVA', unidadSeleccionada?.id, 'Avisó a asesor por WhatsApp sobre el bloqueo');
     const telefonoDebbi = "593979469472"; 
-    const mensaje = `🚨 *¡NUEVA RESERVA EN LÍNEA (Soft Block)!* 🚨\n\nEl cliente *${formData.nombres}* acaba de realizar una solicitud de bloqueo web:\n\n🏢 *Unidad:* ${unidadSeleccionada?.id} (${unidadSeleccionada?.tipo})\n💵 *Precio:* ` + '\$' + `${unidadSeleccionada?.precio.toLocaleString('en-US')}\n🆔 *Cédula:* ${formData.cedula}\n📱 *WhatsApp:* ${formData.telefono}\n📧 *Email:* ${formData.email}\n\n¡Comunícate con el cliente y valida el pago de ` + '\$' + `2,500 para bloquear oficialmente la unidad en el CRM!`;
+    const mensaje = `🚨 *¡NUEVA RESERVA EN LÍNEA (Soft Block)!* 🚨\n\nEl cliente *${formData.nombres}* acaba de realizar una solicitud de bloqueo web:\n\n🏢 *Unidad:* ${unidadSeleccionada?.id} (${unidadSeleccionada?.tipo})\n💵 *Precio:* $${unidadSeleccionada?.precio.toLocaleString('en-US')}\n🆔 *Cédula:* ${formData.cedula}\n📱 *WhatsApp:* ${formData.telefono}\n📧 *Email:* ${formData.email}\n\n¡Comunícate con el cliente y valida el pago de $2,500 para bloquear oficialmente la unidad en el CRM!`;
     window.open(`https://wa.me/${telefonoDebbi}?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
 
@@ -413,9 +418,9 @@ export default function ReservaExpressPage() {
 
                 {/* PISOS */}
                 {PISOS_EDIFICIO.map(piso => {
-                  const isPisoAlto = piso >= 4;
+                  // ACTUALIZADO: Solo el piso 5 y 6 se mantienen con 4 unidades. 
+                  const isPisoAlto = piso >= 5;
                   
-                  // GRID INDEPENDIENTE, BASADO EXACTAMENTE EN LA FÓRMULA DEL CLIENTE:
                   const gridCols = isPisoAlto 
                     ? '22fr 33fr 15fr 30fr' 
                     : '12fr 18fr 25fr 15fr 30fr';
@@ -496,7 +501,6 @@ export default function ReservaExpressPage() {
             <div className="relative w-full max-w-3xl bg-white p-2 md:p-4 rounded-2xl shadow-2xl flex flex-col items-center animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
               <button onClick={() => setPlanoUrlActivo(null)} className="absolute top-4 right-4 bg-white/90 text-[#21242E] w-8 h-8 rounded-full flex items-center justify-center font-bold hover:bg-neutral-100 z-10 shadow-sm transition-colors">&times;</button>
               <div className="w-full rounded-xl overflow-hidden bg-[#F9F7F5] flex items-center justify-center min-h-[400px]">
-                {/* EFECTO DE ALTA GAMA: mix-blend-multiply elimina el fondo blanco del PNG y lo fusiona con el fondo crema del modal */}
                 <img src={planoUrlActivo} alt="Plano de Distribución" className="w-full max-h-[75vh] object-contain mix-blend-multiply drop-shadow-md" />
               </div>
               <div className="mt-4 text-center pb-2 w-full">
