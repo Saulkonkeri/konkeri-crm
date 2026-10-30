@@ -9,6 +9,8 @@ interface Proyecto {
   ubicacion: string;
 }
 
+const LOGO_ARIENZO_DORADO = 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/logo%20arienzo%20living%20dorado_Mesa%20de%20trabajo%201.svg';
+
 export default function InventarioPage() {
   const [proyectoSeleccionado, setProyectoSeleccionado] = useState<string | null>(null);
   const [propiedades, setPropiedades] = useState<any[]>([]);
@@ -21,7 +23,7 @@ export default function InventarioPage() {
   const proyectos: Proyecto[] = [
     {
       id: 'arienzo',
-      nombre: 'Arienzo',
+      nombre: 'Arienzo Living',
       ubicacion: 'Barbasquillo, Manta'
     }
   ];
@@ -147,7 +149,6 @@ export default function InventarioPage() {
           return;
         }
 
-        const urlLogo = `${window.location.origin}/logo-arienzo.png`;
         const fechaActual = new Date().toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: 'numeric' });
         const tituloSeccion = tipoSeccion === 'locales' ? 'Locales Comerciales (Planta Baja)' : 'Departamentos Residenciales (Pisos 2 al 6)';
 
@@ -164,7 +165,7 @@ export default function InventarioPage() {
 
           filasHTML += `
             <tr class="bg-[#dce3eb]/40">
-              <td colspan="8" class="px-1.5 py-[2px] text-[7px] font-bold text-[#ea0029] uppercase tracking-widest border-y border-[#415364]/10 leading-none">
+              <td colspan="10" class="px-1.5 py-[2px] text-[7px] font-bold text-[#ea0029] uppercase tracking-widest border-y border-[#415364]/10 leading-none">
                 ${piso}
               </td>
             </tr>
@@ -182,6 +183,9 @@ export default function InventarioPage() {
               .replace(/unidad/gi, '')
               .replace(/u\./gi, '')
               .trim();
+              
+            const parqueo = unidad.parqueadero_asignado || '---';
+            const bodega = unidad.bodega_asignada || '---';
 
             const estado = String(unidad.estado || 'Disponible').replace(/['"]/g, '').trim();
             const colorEstado = estado.toLowerCase() === 'disponible' ? 'text-emerald-600' : 
@@ -190,35 +194,43 @@ export default function InventarioPage() {
 
             filasHTML += `
               <tr class="border-b border-neutral-100">
-                <td class="px-1.5 py-[2px] font-bold text-neutral-900 leading-none text-[8px]">${nombreUnidad}</td>
-                <td class="px-1.5 py-[2px] text-neutral-600 leading-none truncate max-w-[80px] text-[8px]">${unidad.tipologia || '---'}</td>
-                <td class="px-1.5 py-[2px] font-medium text-center leading-none text-[8px]">${unidad.area_total} m²</td>
+                <td class="px-1.5 py-[3px] font-bold text-neutral-900 leading-none text-[8px]">${nombreUnidad}</td>
+                <td class="px-1.5 py-[3px] text-neutral-600 leading-none truncate max-w-[80px] text-[8px]">${unidad.tipologia || '---'}</td>
                 
-                <td class="px-1.5 py-[2px] text-right font-bold text-emerald-800 font-mono bg-emerald-50/50 leading-none text-[8px]">
+                <!-- NUEVAS COLUMNAS EN PDF -->
+                <td class="px-1.5 py-[3px] text-neutral-600 text-center leading-none text-[7.5px] font-medium border-l border-neutral-100">${parqueo}</td>
+                <td class="px-1.5 py-[3px] text-neutral-600 text-center leading-none text-[7.5px] font-medium border-r border-neutral-100">${bodega}</td>
+                
+                <td class="px-1.5 py-[3px] font-medium text-center leading-none text-[8px]">${unidad.area_total} m²</td>
+                
+                <td class="px-1.5 py-[3px] text-right font-bold text-emerald-800 font-mono bg-emerald-50/50 leading-none text-[8px]">
                   $${precioL0.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0})}
                 </td>
-                <td class="px-1.5 py-[2px] text-right font-mono text-emerald-700/80 bg-emerald-50/30 leading-none text-[7.5px]">
+                <td class="px-1.5 py-[3px] text-right font-mono text-emerald-700/80 bg-emerald-50/30 leading-none text-[7.5px]">
                   ${m2L0.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0})} <span class="text-[6px] text-neutral-400">$/m²</span>
                 </td>
 
-                <td class="px-1.5 py-[2px] text-right font-bold text-neutral-900 font-mono leading-none text-[8px] border-l border-neutral-200">
+                <td class="px-1.5 py-[3px] text-right font-bold text-neutral-900 font-mono leading-none text-[8px] border-l border-neutral-200">
                   $${precioL1.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0})}
                 </td>
-                <td class="px-1.5 py-[2px] text-right font-mono text-neutral-500 leading-none text-[7.5px]">
+                <td class="px-1.5 py-[3px] text-right font-mono text-neutral-500 leading-none text-[7.5px]">
                   ${m2L1.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0})} <span class="text-[6px] text-neutral-400">$/m²</span>
                 </td>
                 
-                <td class="px-1.5 py-[2px] text-center font-bold ${colorEstado} text-[7px] uppercase tracking-wider leading-none">${estado}</td>
+                <td class="px-1.5 py-[3px] text-center font-bold ${colorEstado} text-[7px] uppercase tracking-wider leading-none">${estado}</td>
               </tr>
             `;
           });
         });
 
+        const tailwindScript = "<scr" + "ipt src='https://cdn.tailwindcss.com'></scr" + "ipt>";
+        const autoPrintScript = "<scr" + "ipt>setTimeout(() => { window.print(); window.close(); }, 800);</scr" + "ipt>";
+
         ventanaImpresion.document.write(`
           <html>
             <head>
               <title>Inventario_${tipoSeccion}_Arienzo</title>
-              <script src="https://cdn.tailwindcss.com"></script>
+              ${tailwindScript}
               <style>
                 @page { size: A4 landscape; margin: 5mm 8mm; }
                 body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; font-family: ui-sans-serif, system-ui, sans-serif; }
@@ -226,41 +238,49 @@ export default function InventarioPage() {
             </head>
             <body class="bg-white text-neutral-900 p-0 m-0 text-[7px]">
               <div class="w-full">
-                <div class="flex justify-between items-end border-b border-[#ea0029] pb-1 mb-1.5">
-                  <div class="flex items-center gap-2.5">
-                    <img src="${urlLogo}" alt="Arienzo Logo" class="h-5 w-auto object-contain" />
-                    <div class="border-l pl-2.5 border-neutral-300">
-                      <h1 class="text-[8.5px] font-bold tracking-widest text-neutral-800 uppercase leading-none">Matriz de Precios — ${tituloSeccion}</h1>
-                      <p class="text-[6px] text-neutral-500 uppercase tracking-widest mt-0.5 leading-none">Arienzo Boutique Living</p>
+                <div class="flex justify-between items-end border-b-2 border-[#B94A36] pb-2 mb-2">
+                  <div class="flex items-center gap-3">
+                    <!-- CABECERA DEL PDF CON LOGO DORADO Y FONDO TERRACOTA -->
+                    <div class="bg-[#B94A36] p-2 rounded-lg flex items-center justify-center h-8 w-auto">
+                      <img src="${LOGO_ARIENZO_DORADO}" alt="Arienzo Logo" class="h-full w-auto object-contain" />
+                    </div>
+                    <div class="border-l-2 pl-3 border-neutral-200">
+                      <h1 class="text-[10px] font-bold tracking-widest text-neutral-800 uppercase leading-none">Matriz de Precios e Inventario</h1>
+                      <p class="text-[7px] text-neutral-500 uppercase tracking-widest mt-1 leading-none">${tituloSeccion}</p>
                     </div>
                   </div>
                   <div class="flex items-end gap-5 text-[7px]">
                     <div class="flex items-center gap-1 mb-0.5">
-                      <div class="w-2 h-2 bg-emerald-100 border border-emerald-200 rounded-sm"></div>
+                      <div class="w-2.5 h-2.5 bg-emerald-100 border border-emerald-200 rounded-sm"></div>
                       <span class="font-medium text-neutral-600"><strong class="text-neutral-900">Lista 0:</strong> Descuento 5%</span>
                     </div>
                     <div class="flex items-center gap-1 mb-0.5">
-                      <div class="w-2 h-2 bg-white border border-neutral-200 rounded-sm"></div>
+                      <div class="w-2.5 h-2.5 bg-white border border-neutral-200 rounded-sm"></div>
                       <span class="font-medium text-neutral-600"><strong class="text-neutral-900">Lista 1:</strong> Precio Base</span>
                     </div>
-                    <div class="text-right ml-3">
-                      <p class="text-[7px] font-bold text-[#ea0029] uppercase tracking-widest leading-none">Konkeri Real Estate Group</p>
-                      <p class="text-[6px] text-neutral-500 mt-0.5 leading-none">Emisión: ${fechaActual}</p>
+                    <div class="text-right ml-4">
+                      <p class="text-[8px] font-bold text-[#ea0029] uppercase tracking-widest leading-none">Konkeri Real Estate Group</p>
+                      <p class="text-[7px] text-neutral-500 mt-1 leading-none">Emisión: ${fechaActual}</p>
                     </div>
                   </div>
                 </div>
 
-                <table class="w-full text-left border-collapse border border-neutral-200">
+                <table class="w-full text-left border-collapse border border-neutral-200 mt-1">
                   <thead>
                     <tr class="bg-[#21242E] text-white text-[7px] uppercase tracking-wider leading-tight">
-                      <th class="px-1.5 py-1 font-semibold w-1/12 border border-neutral-700">Unidad</th>
-                      <th class="px-1.5 py-1 font-semibold w-2/12 border border-neutral-700">Tipología</th>
-                      <th class="px-1.5 py-1 font-semibold text-center border border-neutral-700">Área</th>
-                      <th class="px-1.5 py-1 font-semibold text-right border border-emerald-800 bg-emerald-900 text-emerald-100">Precio Lista 0</th>
-                      <th class="px-1.5 py-1 font-semibold text-right border border-emerald-800 bg-emerald-900 text-emerald-100">$/m² (L0)</th>
-                      <th class="px-1.5 py-1 font-semibold text-right border border-neutral-700">Precio Lista 1</th>
-                      <th class="px-1.5 py-1 font-semibold text-right border border-neutral-700">$/m² (L1)</th>
-                      <th class="px-1.5 py-1 font-semibold text-center border border-neutral-700">Estado</th>
+                      <th class="px-1.5 py-1.5 font-semibold w-1/12 border border-neutral-700">Unidad</th>
+                      <th class="px-1.5 py-1.5 font-semibold w-2/12 border border-neutral-700">Tipología</th>
+                      
+                      <!-- CABECERAS NUEVAS -->
+                      <th class="px-1.5 py-1.5 font-semibold text-center border border-neutral-700 bg-neutral-800">Parqueo</th>
+                      <th class="px-1.5 py-1.5 font-semibold text-center border border-neutral-700 bg-neutral-800">Bodega</th>
+                      
+                      <th class="px-1.5 py-1.5 font-semibold text-center border border-neutral-700">Área Total</th>
+                      <th class="px-1.5 py-1.5 font-semibold text-right border border-emerald-800 bg-emerald-900 text-emerald-100">Precio Lista 0</th>
+                      <th class="px-1.5 py-1.5 font-semibold text-right border border-emerald-800 bg-emerald-900 text-emerald-100">$/m² (L0)</th>
+                      <th class="px-1.5 py-1.5 font-semibold text-right border border-neutral-700">Precio Lista 1</th>
+                      <th class="px-1.5 py-1.5 font-semibold text-right border border-neutral-700">$/m² (L1)</th>
+                      <th class="px-1.5 py-1.5 font-semibold text-center border border-neutral-700">Estado</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -268,9 +288,7 @@ export default function InventarioPage() {
                   </tbody>
                 </table>
               </div>
-              <script>
-                setTimeout(() => { window.print(); window.close(); }, 800);
-              </script>
+              ${autoPrintScript}
             </body>
           </html>
         `);
@@ -360,9 +378,16 @@ export default function InventarioPage() {
                   className="group relative bg-white border border-neutral-200/60 rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-[#ea0029]/40 cursor-pointer transition-all duration-300 flex flex-col justify-between min-h-[190px]"
                 >
                   <div className="space-y-4">
-                    <div className="w-14 h-14 rounded-xl bg-[#415364]/5 border border-[#415364]/10 flex items-center justify-center text-[#415364] font-mono text-[10px] tracking-widest group-hover:bg-[#ea0029] group-hover:text-white group-hover:border-transparent transition-all uppercase font-bold">
-                      [ Logo ]
-                    </div>
+                    {/* LOGO MEJORADO CON LA IDENTIDAD VISUAL DE ARIENZO */}
+                    {proy.id === 'arienzo' ? (
+                      <div className="w-16 h-16 rounded-xl bg-[#B94A36] flex items-center justify-center shadow-inner p-2.5 transition-all">
+                        <img src={LOGO_ARIENZO_DORADO} alt="Arienzo Living" className="w-full h-full object-contain drop-shadow-sm" />
+                      </div>
+                    ) : (
+                      <div className="w-16 h-16 rounded-xl bg-[#415364]/5 border border-[#415364]/10 flex items-center justify-center text-[#415364] font-mono text-[10px] tracking-widest group-hover:bg-[#ea0029] group-hover:text-white group-hover:border-transparent transition-all uppercase font-bold">
+                        [ Logo ]
+                      </div>
+                    )}
                     <div>
                       <h3 className="text-lg font-bold text-[#415364] group-hover:text-[#ea0029] transition-colors">
                         {proy.nombre}
@@ -400,18 +425,20 @@ export default function InventarioPage() {
                     </div>
 
                     <div className="overflow-x-auto custom-scrollbar">
-                      <table className="w-full text-left text-xs border-collapse">
+                      <table className="w-full text-left text-xs border-collapse min-w-[900px]">
                         <thead>
                           <tr className="border-b border-neutral-100 text-[#415364]/60 text-[9px] uppercase tracking-widest bg-neutral-50/50">
-                            <th className="px-5 py-3.5 font-bold">Unidad</th>
-                            <th className="px-5 py-3.5 font-bold">Tipología</th>
-                            <th className="px-5 py-3.5 font-bold text-center">Área</th>
-                            <th className="px-5 py-3.5 font-bold text-right text-emerald-800 bg-emerald-50/40">Lista 0 (-5%)</th>
-                            <th className="px-5 py-3.5 font-bold text-right text-emerald-800 bg-emerald-50/20">$/m² L0</th>
-                            <th className="px-5 py-3.5 font-bold text-right border-l border-neutral-200/60">Lista 1 (Base)</th>
-                            <th className="px-5 py-3.5 font-bold text-right">$/m² L1</th>
-                            <th className="px-5 py-3.5 font-bold text-center">Estado</th>
-                            <th className="px-5 py-3.5 font-bold text-right">Acción</th>
+                            <th className="px-3 py-3.5 font-bold">Unidad</th>
+                            <th className="px-3 py-3.5 font-bold">Tipología</th>
+                            <th className="px-3 py-3.5 font-bold text-center border-l border-neutral-100 bg-neutral-100/50">Parqueo</th>
+                            <th className="px-3 py-3.5 font-bold text-center border-r border-neutral-100 bg-neutral-100/50">Bodega</th>
+                            <th className="px-3 py-3.5 font-bold text-center">Área Total</th>
+                            <th className="px-3 py-3.5 font-bold text-right text-emerald-800 bg-emerald-50/40">Lista 0 (-5%)</th>
+                            <th className="px-3 py-3.5 font-bold text-right text-emerald-800 bg-emerald-50/20">$/m² L0</th>
+                            <th className="px-3 py-3.5 font-bold text-right border-l border-neutral-200/60">Lista 1 (Base)</th>
+                            <th className="px-3 py-3.5 font-bold text-right">$/m² L1</th>
+                            <th className="px-3 py-3.5 font-bold text-center">Estado</th>
+                            <th className="px-3 py-3.5 font-bold text-right">Acción</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-neutral-100 text-[#415364] bg-white">
@@ -429,32 +456,37 @@ export default function InventarioPage() {
                                 key={unidad.id} 
                                 className={`transition-colors ${estaSeleccionado ? 'bg-[#ea0029]/5' : 'hover:bg-[#dce3eb]/30'}`}
                               >
-                                <td className="px-5 py-4 font-bold text-[#415364] whitespace-nowrap text-xs">
+                                <td className="px-3 py-4 font-bold text-[#415364] whitespace-nowrap text-xs">
                                   {unidad.unidad.toUpperCase().startsWith('LOCAL') || unidad.unidad.toUpperCase().startsWith('PB') 
                                     ? unidad.unidad 
                                     : `Unidad ${unidad.unidad}`}
                                 </td>
-                                <td className="px-5 py-4 text-[#415364]/70 font-medium truncate max-w-[120px]" title={unidad.tipologia}>{unidad.tipologia || '---'}</td>
-                                <td className="px-5 py-4 font-bold text-center">{unidad.area_total}m²</td>
+                                <td className="px-3 py-4 text-[#415364]/70 font-medium truncate max-w-[110px]" title={unidad.tipologia}>{unidad.tipologia || '---'}</td>
                                 
-                                <td className="px-5 py-4 text-right font-bold text-emerald-800 bg-emerald-50/40 font-mono text-xs">
+                                {/* CELDAS DE ANEXOS VISIBLES EN PANTALLA */}
+                                <td className="px-3 py-4 text-center font-medium text-[#415364]/70 text-[11px] whitespace-nowrap border-l border-neutral-100">{unidad.parqueadero_asignado || '---'}</td>
+                                <td className="px-3 py-4 text-center font-medium text-[#415364]/70 text-[11px] whitespace-nowrap border-r border-neutral-100">{unidad.bodega_asignada || '---'}</td>
+                                
+                                <td className="px-3 py-4 font-bold text-center">{unidad.area_total}m²</td>
+                                
+                                <td className="px-3 py-4 text-right font-bold text-emerald-800 bg-emerald-50/40 font-mono text-xs">
                                   ${precioL0.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                                 </td>
-                                <td className="px-5 py-4 text-right font-mono text-emerald-700/80 bg-emerald-50/20 text-[11px] font-bold">
+                                <td className="px-3 py-4 text-right font-mono text-emerald-700/80 bg-emerald-50/20 text-[11px] font-bold">
                                   ${m2L0.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0})}
                                 </td>
 
-                                <td className="px-5 py-4 text-right font-bold text-[#415364] border-l border-neutral-200/60 font-mono text-xs">
+                                <td className="px-3 py-4 text-right font-bold text-[#415364] border-l border-neutral-200/60 font-mono text-xs">
                                   ${precioL1.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                                 </td>
-                                <td className="px-5 py-4 text-right font-mono text-[#415364]/50 text-[11px] font-bold">
+                                <td className="px-3 py-4 text-right font-mono text-[#415364]/50 text-[11px] font-bold">
                                   ${m2L1.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0})}
                                 </td>
                                 
-                                <td className="px-5 py-4 text-center">
+                                <td className="px-3 py-4 text-center">
                                   {obtenerBadgeEstado(unidad.estado)}
                                 </td>
-                                <td className="px-5 py-4 text-right">
+                                <td className="px-3 py-4 text-right">
                                   <button
                                     onClick={() => setUnidadAEditar(unidad)}
                                     className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-xl transition-all whitespace-nowrap ${
@@ -502,6 +534,9 @@ export default function InventarioPage() {
                   <div className="space-y-3 bg-[#dce3eb]/30 p-5 rounded-xl border border-[#415364]/10 text-xs">
                     <div className="flex justify-between"><span className="text-[#415364]/60 font-bold uppercase tracking-wider text-[9px]">Área Total:</span><span className="font-bold text-[#415364]">{unidadAEditar.area_total} m²</span></div>
                     <div className="flex justify-between"><span className="text-[#415364]/60 font-bold uppercase tracking-wider text-[9px]">Distribución:</span><span className="font-bold text-[#415364] truncate max-w-[150px]" title={unidadAEditar.tipologia}>{unidadAEditar.tipologia || '---'}</span></div>
+                    
+                    <div className="flex justify-between pt-3 mt-3 border-t border-[#415364]/10"><span className="text-[#415364]/60 font-bold uppercase tracking-wider text-[9px]">Parqueo Asignado:</span><span className="font-bold text-[#415364]">{unidadAEditar.parqueadero_asignado || '---'}</span></div>
+                    <div className="flex justify-between"><span className="text-[#415364]/60 font-bold uppercase tracking-wider text-[9px]">Bodega Asignada:</span><span className="font-bold text-[#415364]">{unidadAEditar.bodega_asignada || '---'}</span></div>
                     
                     <div className="flex justify-between border-t border-[#415364]/10 pt-3 mt-3">
                       <span className="text-emerald-800 font-bold uppercase tracking-wider text-[9px]">Lista 0 (-5%):</span>
