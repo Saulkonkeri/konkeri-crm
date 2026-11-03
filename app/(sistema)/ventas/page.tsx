@@ -38,7 +38,11 @@ export default function GestorOperacionesPage() {
   // ================= ESTADOS: PESTAÑA 2 (INFORME NEGOCIO) =================
   const [pestañaInforme, setPestañaInforme] = useState<'configurar' | 'previsualizar'>('configurar');
   const [informeForm, setInformeForm] = useState({ clienteId: '', propiedadId: '' });
-  const [formaFinanciamiento, setFormaFinanciamiento] = useState('Crédito Directo');
+  
+  // MEJORA: Claridad en el Método de Pago (Inicial vs Saldo)
+  const [formaPagoInicial, setFormaPagoInicial] = useState('Transferencias Bancarias (Crédito Directo)');
+  const [formaFinanciamientoSaldo, setFormaFinanciamientoSaldo] = useState('Crédito Hipotecario (Banco)');
+  
   const [observacionesNegocio, setObservacionesNegocio] = useState('');
   const [guardandoVenta, setGuardandoVenta] = useState(false);
   
@@ -195,13 +199,23 @@ export default function GestorOperacionesPage() {
     }
     setGuardandoVenta(true);
     try {
+      
+      // MEJORA: Empaquetar todo el cronograma actual y la meta-información para que no se pierda al recuperar
+      const metadataAdicional = {
+        forma_pago_inicial: formaPagoInicial,
+        forma_pago_saldo: formaFinanciamientoSaldo,
+        observaciones_json: notas,
+        observaciones_texto: observacionesNegocio,
+        cuotas_db: cronogramaCuotas // Aquí guardamos el estado exacto de tu cuadrícula editable
+      };
+
       const payload = {
         cliente_id: informeForm.clienteId,
         unidad_id: informeForm.propiedadId.toString(),
         unidad_numero: detallesManuales.unidad || propiedadActivaInforme?.unidad || '',
         precio_lista: calcInforme.precioListaOriginal,
         monto_descuento: calcInforme.montoDescuentoCalculado,
-        motivo_descuento: observacionesNegocio || (estadoOp === 'Informe de Negocio' ? 'Informe de Negocio (Borrador/Aprobación)' : 'Cierre de Venta'),
+        motivo_descuento: JSON.stringify(metadataAdicional), // Serializamos toda la metadata de pago aquí para no crear más columnas
         precio_total: calcInforme.precioTotal,
         monto_inicial: calcInforme.cuotaInicialTotal,
         monto_entrada: calcInforme.entradaDiferirTotal,
@@ -248,10 +262,29 @@ export default function GestorOperacionesPage() {
     setTipoDescuento('valor'); 
     setMesesConstruccion(venta.meses_plazo || 24);
     
-    if (venta.motivo_descuento && venta.motivo_descuento !== 'Cierre de Venta' && venta.motivo_descuento !== 'Informe de Negocio' && !venta.motivo_descuento.includes('Borrador')) {
-      setObservacionesNegocio(venta.motivo_descuento);
+    // MEJORA: Restaurar toda la Metadata Compleja (Métodos de Pago, Cuotas Editadas, Notas)
+    let parsedMeta = null;
+    try {
+      if (venta.motivo_descuento && venta.motivo_descuento.includes('{')) {
+        parsedMeta = JSON.parse(venta.motivo_descuento);
+      }
+    } catch(e) {}
+
+    if (parsedMeta) {
+      setFormaPagoInicial(parsedMeta.forma_pago_inicial || 'Transferencias Bancarias (Crédito Directo)');
+      setFormaFinanciamientoSaldo(parsedMeta.forma_pago_saldo || 'Crédito Hipotecario (Banco)');
+      setObservacionesNegocio(parsedMeta.observaciones_texto || '');
+      setNotas(parsedMeta.observaciones_json || []);
+      
+      if (parsedMeta.cuotas_db && Array.isArray(parsedMeta.cuotas_db)) {
+        setCronogramaCuotas(parsedMeta.cuotas_db);
+      }
     } else {
-      setObservacionesNegocio('');
+      if (venta.motivo_descuento && venta.motivo_descuento !== 'Cierre de Venta' && venta.motivo_descuento !== 'Informe de Negocio' && !venta.motivo_descuento.includes('Borrador')) {
+        setObservacionesNegocio(venta.motivo_descuento);
+      } else {
+        setObservacionesNegocio('');
+      }
     }
     
     if (venta.cronograma_pagos && Array.isArray(venta.cronograma_pagos)) {
@@ -325,7 +358,11 @@ export default function GestorOperacionesPage() {
     };
   }, [propiedadActivaInforme, tipoInicial, valorInicial, tipoEntrada, valorEntrada, tipoDescuento, valorDescuento, infReservaValor]);
 
+  // Modificamos el useEffect para que NO SOBREESCRIBA las cuotas si venimos de Cargar Historial
   useEffect(() => {
+    // Si operacionEdicionId está activo y ya tenemos cuotas, evitamos regenerar de cero para no perder lo que el usuario customizó antes.
+    if (operacionEdicionId && cronogramaCuotas.length > 0) return;
+
     if (!propiedadActivaInforme || (calcInforme.entradaDiferirTotal <= 0 && calcInforme.saldoFirmaPromesa <= 0) ) {
       setCronogramaCuotas([]); return;
     }
@@ -409,6 +446,8 @@ export default function GestorOperacionesPage() {
   const reiniciarCuotas = () => {
     const prevMeses = mesesConstruccion;
     setMesesConstruccion(0);
+    // Borramos el seguro para que el useEffect pase limpio y regenere todo
+    setOperacionEdicionId(null);
     setTimeout(() => setMesesConstruccion(prevMeses), 10);
   };
 
@@ -460,11 +499,20 @@ export default function GestorOperacionesPage() {
     if (!contenido) return;
     const ventana = window.open('', '_blank');
     if (!ventana) return;
+    
+    // Separamos las etiquetas para evitar error rojo del JSX Parser en VS Code
+    const tOpen = "<scr" + "ipt src='https://cdn.tailwindcss.com'>";
+    const tClose = "</scr" + "ipt>";
+    const pOpen = "<scr" + "ipt>";
+    
+    const tailwindCode = tOpen + tClose;
+    const printCode = pOpen + "setTimeout(() => { window.print(); window.close(); }, 800);" + tClose;
+
     ventana.document.write(`
       <html>
         <head>
           <title>${tituloVentana}</title>
-          <script src="https://cdn.tailwindcss.com"></script>
+          ${tailwindCode}
           <style>
             @page { size: A4 portrait; margin: 0; }
             body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; margin: 0; background: #ffffff; font-family: ui-sans-serif, system-ui, sans-serif; }
@@ -476,7 +524,7 @@ export default function GestorOperacionesPage() {
             #plantilla-pdf-arienzo { transform: none !important; box-shadow: none !important; border: none !important; margin: 0 !important; }
           </style>
         </head>
-        <body>${contenido}<script>setTimeout(() => { window.print(); window.close(); }, 700);</script></body>
+        <body>${contenido}${printCode}</body>
       </html>
     `);
     ventana.document.close();
@@ -670,11 +718,32 @@ export default function GestorOperacionesPage() {
                         <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-sm space-y-5">
                           <h2 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest border-b border-neutral-100 pb-2">2. Condiciones de Negocio</h2>
                           <div className="grid grid-cols-1 gap-5">
-                            <div>
-                              <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Tipo de Financiamiento</label>
-                              <select value={formaFinanciamiento} onChange={(e) => setFormaFinanciamiento(e.target.value)} className="w-full md:w-1/2 bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs font-bold outline-none">
-                                 <option>Crédito Directo</option><option>Contado</option><option>Crédito Hipotecario (Banco)</option><option>BIESS</option><option>Canje</option><option>Estructura Mixta</option>
-                              </select>
+                            
+                            {/* MEJORA 2: División Clara de Tipos de Financiamiento */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                               <div>
+                                 <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5 text-justify">
+                                   Forma de Pago del 40% <br/>(Inicial / Obra)
+                                 </label>
+                                 <select value={formaPagoInicial} onChange={(e) => setFormaPagoInicial(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs font-bold outline-none text-[#ea0029]">
+                                    <option>Transferencias Bancarias (Crédito Directo)</option>
+                                    <option>Depósitos Efectivo</option>
+                                    <option>Cheques Certificados</option>
+                                    <option>Pagos con Tarjeta de Crédito</option>
+                                    <option>Canje Inmobiliario / Bienes</option>
+                                 </select>
+                               </div>
+                               <div>
+                                 <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5 text-justify">
+                                   Forma de Pago del 60% <br/>(Saldo Contra Entrega)
+                                 </label>
+                                 <select value={formaFinanciamientoSaldo} onChange={(e) => setFormaFinanciamientoSaldo(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs font-bold outline-none text-[#415364]">
+                                    <option>Crédito Hipotecario (Banco)</option>
+                                    <option>Crédito BIESS</option>
+                                    <option>Transferencia (Fondos Propios)</option>
+                                    <option>Estructura Mixta</option>
+                                 </select>
+                               </div>
                             </div>
                             
                             <div className="bg-[#415364]/5 border border-[#415364]/10 rounded-xl p-4 mt-2">
@@ -892,14 +961,28 @@ export default function GestorOperacionesPage() {
                                 <div className="bg-[#F2EFEB] text-[#B94A36] font-bold text-[7pt] px-3 py-1.5 uppercase border-b border-[#333333] tracking-widest">
                                   Condiciones de Negocio
                                 </div>
+                                
+                                {/* MEJORA 2: Vista en PDF de Método Inicial y Método Saldo */}
+                                <div className="grid grid-cols-2 p-2 border-b border-[#333333]/10 text-[6.5pt] uppercase bg-neutral-50/50">
+                                   <div className="border-r border-[#333333]/10 px-2">
+                                      <span className="text-neutral-500 block mb-0.5">MÉTODO PAGO INICIAL (40%):</span> 
+                                      <strong className="text-neutral-800">{formaPagoInicial}</strong>
+                                   </div>
+                                   <div className="px-3">
+                                      <span className="text-neutral-500 block mb-0.5">MÉTODO PAGO SALDO FINAL (60%):</span> 
+                                      <strong className="text-neutral-800">{formaFinanciamientoSaldo}</strong>
+                                   </div>
+                                </div>
+
                                 <div className="flex justify-between items-center p-3 text-[7.5pt] uppercase">
                                     <div className="flex gap-6 items-center">
-                                        <div><span className="text-neutral-500 mr-1">TIPO FINANCIAMIENTO:</span> <strong className="text-neutral-800">{formaFinanciamiento}</strong></div>
-                                        {calcInforme.montoDescuentoCalculado > 0 && (
+                                        {calcInforme.montoDescuentoCalculado > 0 ? (
                                           <>
                                             <div><span className="text-neutral-500 mr-1">PRECIO BASE:</span> <strong className="font-mono">${calcInforme.precioListaOriginal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></div>
                                             <div><span className="text-neutral-500 mr-1">DESCUENTO:</span> <strong className="font-mono text-[#ea0029]">-${calcInforme.montoDescuentoCalculado.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></div>
                                           </>
+                                        ) : (
+                                          <div><span className="text-neutral-500 mr-1">PRECIO BASE SIN DESCUENTOS APLICADOS</span></div>
                                         )}
                                     </div>
                                     <div>
@@ -1065,7 +1148,7 @@ export default function GestorOperacionesPage() {
         )}
 
         {/* =======================================================
-            TAB 4: HISTORIAL DE VENTAS (NUEVO)
+            TAB 4: HISTORIAL DE VENTAS
            ======================================================= */}
         {activeTab === 'historial' && (
           <div className="bg-white border border-neutral-200/60 rounded-2xl p-6 md:p-8 shadow-sm max-w-6xl mx-auto animate-in fade-in">
