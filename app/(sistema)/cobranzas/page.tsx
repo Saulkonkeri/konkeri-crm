@@ -27,9 +27,10 @@ export default function CobranzasPage() {
   const cargarDatosGenerales = async () => {
     setCargando(true);
     try {
+      // FILTRO MAESTRO: Solo trae operaciones con estatus de venta oficial en firme
       const { data: vts } = await supabase.from('cotizaciones')
         .select('*')
-        .in('estado', ['Venta - En Cierre', 'Informe de Negocio', 'Reserva Comercial'])
+        .eq('estado', 'Venta - En Cierre')
         .order('created_at', { ascending: false });
         
       const { data: clis } = await supabase.from('clientes').select('*').eq('tipo', 'cliente');
@@ -54,7 +55,7 @@ export default function CobranzasPage() {
   };
 
   const abrirModalPago = (cuota: any) => {
-    if (cuota.pagado) return; // Si ya está pagada, no hacemos nada
+    if (cuota.pagado) return;
     setCuotaSeleccionada(cuota);
     setReciboGenerado(null);
     setPagoForm({
@@ -68,10 +69,7 @@ export default function CobranzasPage() {
     }
     setProcesando(true);
     try {
-      // 1. Clonar el cronograma actual
       const cronogramaActualizado = [...ventaActiva.cronograma_pagos];
-      
-      // 2. Encontrar la cuota y marcarla como pagada
       const index = cronogramaActualizado.findIndex(c => c.id === cuotaSeleccionada.id);
       if (index === -1) throw new Error("Cuota no encontrada en el cronograma");
 
@@ -90,18 +88,15 @@ export default function CobranzasPage() {
         }
       };
 
-      // 3. Guardar en Supabase actualizando el JSON de la operación
       const { error } = await supabase.from('cotizaciones')
         .update({ cronograma_pagos: cronogramaActualizado })
         .eq('id', ventaActiva.id);
 
       if (error) throw error;
 
-      // 4. Actualizar estado local
       const ventasActualizadas = ventas.map(v => v.id === ventaActiva.id ? { ...v, cronograma_pagos: cronogramaActualizado } : v);
       setVentas(ventasActualizadas);
       
-      // 5. Preparar datos para imprimir el recibo
       setReciboGenerado({
         ...cronogramaActualizado[index].datos_pago,
         label_cuota: cuotaSeleccionada.label,
@@ -170,10 +165,10 @@ export default function CobranzasPage() {
               <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-sm">
                 <label className="text-[10px] font-bold text-[#415364]/60 uppercase block mb-2">Seleccionar Unidad a Cobrar</label>
                 <select value={ventaSeleccionadaId} onChange={(e) => { setVentaSeleccionadaId(e.target.value); setReciboGenerado(null); }} className="w-full bg-[#F9F7F5] border border-neutral-200 rounded-xl p-3 text-sm font-bold focus:border-[#ea0029] outline-none">
-                  <option value="">— Buscar Operación —</option>
+                  <option value="">— Buscar Venta en Firme —</option>
                   {ventas.map(v => {
                     const c = clientes.find(cl => cl.id === v.cliente_id);
-                    return <option key={v.id} value={v.id}>Dpto {v.unidad_numero || 'N/A'} - {c?.nombres} {c?.apellidos} ({v.estado})</option>
+                    return <option key={v.id} value={v.id}>Dpto {v.unidad_numero || 'N/A'} - {c ? `${c.nombres} ${c.apellidos}` : 'Sin Cliente'}</option>
                   })}
                 </select>
               </div>
@@ -255,7 +250,7 @@ export default function CobranzasPage() {
                     ) : (
                       <div className="flex flex-col items-center justify-center h-full text-neutral-400 p-10 text-center">
                         <p className="text-sm font-bold uppercase tracking-widest">Operación sin cronograma</p>
-                        <p className="text-xs mt-2">Esta operación fue registrada sin un flujo de caja. Vuelve al Gestor, cárgala desde el historial, genérale las cuotas y guárdala de nuevo.</p>
+                        <p className="text-xs mt-2">Esta venta fue registrada sin un flujo de caja. Vuelve al Gestor, cárgala desde el historial, genérale las cuotas y guárdala de nuevo.</p>
                       </div>
                     )}
                   </div>
@@ -265,8 +260,8 @@ export default function CobranzasPage() {
                   <div className="w-16 h-16 bg-[#F9F7F5] rounded-full flex items-center justify-center mb-4 border border-neutral-200">
                     <svg className="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                   </div>
-                  <h3 className="text-sm font-bold text-[#415364] uppercase tracking-widest">Sin Operación Seleccionada</h3>
-                  <p className="text-xs text-neutral-500 mt-2 max-w-xs">Busque un cliente en el panel izquierdo para visualizar su cronograma y procesar cobros.</p>
+                  <h3 className="text-sm font-bold text-[#415364] uppercase tracking-widest">Sin Venta Seleccionada</h3>
+                  <p className="text-xs text-neutral-500 mt-2 max-w-xs">Seleccione una venta en firme en el panel izquierdo para visualizar su cronograma y procesar cobros.</p>
                 </div>
               )}
             </div>
@@ -345,12 +340,10 @@ export default function CobranzasPage() {
           </div>
         )}
 
-        {/* PLANTILLA OCULTA: RECIBO DE COBRANZA (DISEÑO LIMPIO TIPO RESERVA) */}
+        {/* PLANTILLA OCULTA: RECIBO DE COBRANZA */}
         {reciboGenerado && clienteActivo && ventaActiva && (
           <div id="plantilla-recibo-cobro" className="hidden">
             <div className="pagina-a4">
-              
-              {/* Encabezado */}
               <div className="flex justify-between items-end border-b-2 border-[#B94A36] pb-4 mb-8">
                 <div>
                   <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-terracota.svg" alt="Arienzo" className="h-10 mb-2 object-contain" />
@@ -362,62 +355,29 @@ export default function CobranzasPage() {
                 </div>
               </div>
 
-              {/* Cuerpo del Recibo (Caja Blanca Limpia) */}
               <div className="bg-white border border-[#EAE3DC] p-6 rounded-md shadow-sm">
-                
-                <div className="flex justify-between items-center border-b border-[#EAE3DC] pb-4 mb-4">
-                  <span className="text-[10px] uppercase font-bold text-[#8C8A87] tracking-wider">Fecha de Cobro:</span>
-                  <span className="text-sm font-medium font-mono">{formatearFecha(reciboGenerado.fecha_pago_real)}</span>
-                </div>
-                
-                <div className="flex justify-between items-center border-b border-[#EAE3DC] pb-4 mb-4">
-                  <span className="text-[10px] uppercase font-bold text-[#8C8A87] tracking-wider">Importe Recibido:</span>
-                  <span className="text-xl font-mono font-bold text-[#B94A36]">${Number(reciboGenerado.monto_cobrado).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                </div>
-                
-                <div className="flex justify-between items-center border-b border-[#EAE3DC] pb-4 mb-4">
-                  <span className="text-[10px] uppercase font-bold text-[#8C8A87] tracking-wider">Recibimos de:</span>
-                  <span className="text-sm font-bold uppercase">{clienteActivo.nombres} {clienteActivo.apellidos}</span>
-                </div>
-
+                <div className="flex justify-between items-center border-b border-[#EAE3DC] pb-4 mb-4"><span className="text-[10px] uppercase font-bold text-[#8C8A87] tracking-wider">Fecha de Cobro:</span><span className="text-sm font-medium font-mono">{formatearFecha(reciboGenerado.fecha_pago_real)}</span></div>
+                <div className="flex justify-between items-center border-b border-[#EAE3DC] pb-4 mb-4"><span className="text-[10px] uppercase font-bold text-[#8C8A87] tracking-wider">Importe Recibido:</span><span className="text-xl font-mono font-bold text-[#B94A36]">${Number(reciboGenerado.monto_cobrado).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></div>
+                <div className="flex justify-between items-center border-b border-[#EAE3DC] pb-4 mb-4"><span className="text-[10px] uppercase font-bold text-[#8C8A87] tracking-wider">Recibimos de:</span><span className="text-sm font-bold uppercase">{clienteActivo.nombres} {clienteActivo.apellidos}</span></div>
                 <div className="flex flex-col border-b border-[#EAE3DC] pb-4 mb-4">
                   <span className="text-[10px] uppercase font-bold text-[#8C8A87] tracking-wider mb-2">Por Concepto de:</span>
                   <span className="text-sm font-bold text-[#333333] mb-3">{reciboGenerado.label_cuota}</span>
                   <div className="grid grid-cols-2 gap-3 bg-[#FCFBFA] border border-[#EAE3DC] p-3 rounded-md">
-                    <div>
-                      <span className="text-[8px] uppercase font-bold text-[#8C8A87] block mb-0.5">Proyecto</span>
-                      <span className="text-xs font-bold text-[#333333]">Arienzo Boutique Living</span>
-                    </div>
-                    <div>
-                      <span className="text-[8px] uppercase font-bold text-[#8C8A87] block mb-0.5">Unidad Inmobiliaria</span>
-                      <span className="text-xs font-bold text-[#333333]">Dpto. {ventaActiva.unidad_numero || 'N/A'}</span>
-                    </div>
+                    <div><span className="text-[8px] uppercase font-bold text-[#8C8A87] block mb-0.5">Proyecto</span><span className="text-xs font-bold text-[#333333]">Arienzo Boutique Living</span></div>
+                    <div><span className="text-[8px] uppercase font-bold text-[#8C8A87] block mb-0.5">Unidad Inmobiliaria</span><span className="text-xs font-bold text-[#333333]">Dpto. {ventaActiva.unidad_numero || 'N/A'}</span></div>
                   </div>
                 </div>
-
                 <div className="grid grid-cols-3 gap-4 bg-[#F2EFEB] p-4 rounded-md">
-                  <div>
-                    <span className="text-[9px] uppercase font-bold text-[#8C8A87] block mb-1">Método de Ingreso:</span>
-                    <span className="text-[11px] font-medium">{reciboGenerado.metodo}</span>
-                  </div>
-                  <div>
-                    <span className="text-[9px] uppercase font-bold text-[#8C8A87] block mb-1">Entidad Bancaria:</span>
-                    <span className="text-[11px] font-medium">{reciboGenerado.banco || 'N/A'}</span>
-                  </div>
-                  <div>
-                    <span className="text-[9px] uppercase font-bold text-[#8C8A87] block mb-1">Ref / Documento:</span>
-                    <span className="text-[11px] font-mono font-medium">{reciboGenerado.referencia || 'N/A'}</span>
-                  </div>
+                  <div><span className="text-[9px] uppercase font-bold text-[#8C8A87] block mb-1">Método de Ingreso:</span><span className="text-[11px] font-medium">{reciboGenerado.metodo}</span></div>
+                  <div><span className="text-[9px] uppercase font-bold text-[#8C8A87] block mb-1">Entidad Bancaria:</span><span className="text-[11px] font-medium">{reciboGenerado.banco || 'N/A'}</span></div>
+                  <div><span className="text-[9px] uppercase font-bold text-[#8C8A87] block mb-1">Ref / Documento:</span><span className="text-[11px] font-mono font-medium">{reciboGenerado.referencia || 'N/A'}</span></div>
                 </div>
-
               </div>
 
-              {/* Nota Legal Ajustada a la Realidad de Konkeri */}
               <div className="mt-6 p-4 bg-neutral-50 border border-neutral-200 rounded-md text-[6.5pt] leading-tight text-justify text-neutral-500">
                 <p><strong>Nota importante / Condiciones de Cobro:</strong> Declaramos haber recibido los fondos especificados en este documento, sujetos a la confirmación y liquidación efectiva por parte de la entidad bancaria respectiva. La emisión de este recibo no exime al cliente de las obligaciones de pago estipuladas en su Contrato o Promesa de Compraventa, en caso de que el medio de transacción reporte rechazo por fondos insuficientes, cuentas cerradas o defectos de forma detectados posteriormente por las entidades financieras compensadoras.</p>
               </div>
 
-              {/* Firmas Espaciadas */}
               <div className="mt-16 grid grid-cols-2 gap-16 px-12">
                 <div className="text-center border-t border-[#8C8A87] pt-2">
                   <p className="text-[9px] font-bold uppercase tracking-wider">{clienteActivo.nombres} {clienteActivo.apellidos}</p>
@@ -431,11 +391,9 @@ export default function CobranzasPage() {
                 </div>
               </div>
 
-              {/* Pie de página seguro */}
               <div className="absolute bottom-6 left-0 right-0 text-center text-[7px] text-[#8C8A87] uppercase tracking-widest">
                 Arienzo S.A.S. • Ecosistema Konkeri • Copia Cliente • Documento Válido para Fines Comerciales
               </div>
-
             </div>
           </div>
         )}
