@@ -23,7 +23,9 @@ export default function FinanzasDashboardPage() {
     ingresosCapital: 0,
     ingresosVentas: 0,
     egresosTotalesHistoricos: 0,
-    ingresosCronogramaHastaFecha: 0, // 👈 Cuotas programadas hasta el mes elegido (sin duplicar lo ya pagado en caja)
+    cobradoVentasFirme: 0,      // 👈 Lo que ya se cobró (reservas, iniciales, cuotas pagadas)
+    porCobrarVentasFirme: 0,    // 👈 Lo pendiente por cobrar según cronograma hasta la fecha elegida
+    totalVentasFirmeCombinado: 0, // 👈 Cobrado + Por cobrar hasta la fecha
     totalEgresosProyectadosPresupuesto: 0,
     totalClientesAbonadoReal: 0,
     inversionProyectada: 0,
@@ -100,34 +102,36 @@ export default function FinanzasDashboardPage() {
       const presupuestoFiltrado = presData.filter(p => !p.fecha_estimada || p.fecha_estimada <= mesProyeccion);
       const totalInvProy = presupuestoFiltrado.reduce((acc, curr) => acc + Number(curr.monto_estimado), 0);
 
-      // 🎯 CÁLCULO INTELIGENTE HASTA LA FECHA (SIN DUPLICAR):
-      // Suma las cuotas del cronograma hasta el mes seleccionado (ej. Diciembre 2026), 
-      // pero EXCLUYE las que ya están marcadas como pagadas (porque esas ya entraron a la caja real).
-      let sumaCronogramaPendienteHastaFecha = 0;
-      let totalCobradoVentasFirme = 0;
+      // 🎯 ANÁLISIS DE CRONOGRAMA DE VENTAS EN FIRME:
+      let sumCobrado = 0;
+      let sumPorCobrarHastaFecha = 0;
       const fechaLimiteFiltro = `${mesProyeccion}-31`; // Ej: "2026-12-31"
 
       ventasData.forEach(v => {
         if (v.cronograma_pagos && Array.isArray(v.cronograma_pagos)) {
           v.cronograma_pagos.forEach((cuota: any) => {
+            const montoCuota = Number(cuota.amount || 0);
             if (cuota.pagado === true) {
-              totalCobradoVentasFirme += Number(cuota.amount || 0);
+              sumCobrado += montoCuota;
             } else if (cuota.date && cuota.date <= fechaLimiteFiltro) {
-              // Solo sumamos lo que está pendiente por cobrar cuya fecha es <= a diciembre
-              sumaCronogramaPendienteHastaFecha += Number(cuota.amount || 0);
+              // Pendiente por cobrar cuya fecha es menor o igual al mes seleccionado
+              sumPorCobrarHastaFecha += montoCuota;
             }
           });
         }
       });
 
-      const totalClientesAbonado = totalCobradoVentasFirme + reservasManualesIngresadas;
+      const totalClientesAbonado = sumCobrado + reservasManualesIngresadas;
+      const totalCombinadoVentas = sumCobrado + sumPorCobrarHastaFecha;
 
       setMetricas({
         cajaTotal: cajaReal,
         ingresosCapital: inCapital,
         ingresosVentas: inVentas,
         egresosTotalesHistoricos: egresosTotales,
-        ingresosCronogramaHastaFecha: sumaCronogramaPendienteHastaFecha, // 👈 Lo que falta por ingresar hasta la fecha elegida
+        cobradoVentasFirme: sumCobrado,
+        porCobrarVentasFirme: sumPorCobrarHastaFecha,
+        totalVentasFirmeCombinado: totalCombinadoVentas, // 👈 Lo ya cobrado + lo por cobrar hasta la fecha
         totalEgresosProyectadosPresupuesto: totalInvProy,
         totalClientesAbonadoReal: totalClientesAbonado,
         inversionProyectada: totalInvProy,
@@ -225,7 +229,7 @@ export default function FinanzasDashboardPage() {
         {activeTab === 'resumen' && (
           <div className="space-y-6 animate-in fade-in max-w-6xl mx-auto">
             
-            {/* CAJA REAL VS CRONOGRAMA PENDIENTE HASTA LA FECHA */}
+            {/* CAJA REAL VS TOTAL COMBINADO HASTA LA FECHA */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                <div className="bg-white p-8 rounded-2xl shadow-sm border border-neutral-200 flex flex-col justify-center">
                   <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block mb-2">Efectivo Total en Cuentas (Caja Real Actual)</span>
@@ -235,34 +239,34 @@ export default function FinanzasDashboardPage() {
                <div className="bg-[#21242E] p-8 rounded-2xl shadow-lg border border-neutral-800 flex flex-col justify-center relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-[#D1C292] opacity-10 rounded-full blur-2xl -mr-10 -mt-10"></div>
                   <div className="flex justify-between items-center mb-2 relative z-10">
-                    <span className="text-[10px] font-bold text-[#D1C292] uppercase tracking-widest block">Por Cobrar en Cronograma (Futuro)</span>
+                    <span className="text-[10px] font-bold text-[#D1C292] uppercase tracking-widest block">Total Ventas Cerradas (Cobrado + Por Cobrar)</span>
                     <div className="flex items-center gap-2">
                       <span className="text-[9px] font-bold text-neutral-400 uppercase">Hasta:</span>
                       <input type="month" value={mesProyeccion} onChange={e => setMesProyeccion(e.target.value)} className="text-[10px] font-bold text-white border border-neutral-600 rounded p-1.5 outline-none bg-neutral-800" />
                     </div>
                   </div>
-                  <span className="text-4xl font-mono font-bold text-white relative z-10">+${metricas.ingresosCronogramaHastaFecha.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                  <span className="text-4xl font-mono font-bold text-white relative z-10">${metricas.totalVentasFirmeCombinado.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                </div>
             </div>
 
             {/* ANÁLISIS DE TESORERÍA PROYECTADA (MATCHING) */}
             <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 p-6">
-              <h2 className="text-xs font-bold text-[#21242E] uppercase tracking-widest mb-4 border-b border-neutral-100 pb-3">Análisis de Tesorería Proyectada (Hasta {mesProyeccion})</h2>
+              <h2 className="text-xs font-bold text-[#21242E] uppercase tracking-widest mb-4 border-b border-neutral-100 pb-3">Desglose de Ventas Cerradas (Hasta {mesProyeccion})</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-100">
-                  <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest block mb-1">(+) Por Cobrar (Cronograma Pendiente)</span>
-                  <span className="text-2xl font-mono font-bold text-emerald-700">${metricas.ingresosCronogramaHastaFecha.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                  <p className="text-[9px] text-emerald-600 mt-1">Cuotas futuras programadas hasta esta fecha.</p>
+                <div className="p-4 rounded-xl bg-sky-50/50 border border-sky-100">
+                  <span className="text-[10px] font-bold text-sky-800 uppercase tracking-widest block mb-1">1. Ya Cobrado (Histórico CRM)</span>
+                  <span className="text-2xl font-mono font-bold text-sky-700">${metricas.cobradoVentasFirme.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                  <p className="text-[9px] text-sky-600 mt-1">Reservas, iniciales y cuotas ya recaudadas.</p>
                 </div>
-                <div className="p-4 rounded-xl bg-amber-50/50 border border-amber-100">
-                  <span className="text-[10px] font-bold text-amber-800 uppercase tracking-widest block mb-1">(-) Presupuesto / Egresos Obra</span>
-                  <span className="text-2xl font-mono font-bold text-amber-700">-${metricas.totalEgresosProyectadosPresupuesto.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                  <p className="text-[9px] text-amber-600 mt-1">Obligaciones planificadas hasta el periodo.</p>
+                <div className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-100">
+                  <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest block mb-1">2. Por Cobrar (Hasta {mesProyeccion})</span>
+                  <span className="text-2xl font-mono font-bold text-emerald-700">${metricas.porCobrarVentasFirme.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                  <p className="text-[9px] text-emerald-600 mt-1">Cuotas pendientes programadas hasta el mes elegido.</p>
                 </div>
                 <div className="p-4 rounded-xl bg-neutral-900 text-white shadow-md">
-                  <span className="text-[10px] font-bold text-[#D1C292] uppercase tracking-widest block mb-1">(=) Caja + Futuro - Obra</span>
-                  <span className="text-2xl font-mono font-bold text-white">${(metricas.cajaTotal + metricas.ingresosCronogramaHastaFecha - metricas.totalEgresosProyectadosPresupuesto).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                  <p className="text-[9px] text-white/60 mt-1">Liquidez real sumando lo pendiente menos egresos.</p>
+                  <span className="text-[10px] font-bold text-[#D1C292] uppercase tracking-widest block mb-1">3. Total Ingresos Esperados (1 + 2)</span>
+                  <span className="text-2xl font-mono font-bold text-white">${metricas.totalVentasFirmeCombinado.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                  <p className="text-[9px] text-white/60 mt-1">Todo lo recaudado + lo proyectado en fecha.</p>
                 </div>
               </div>
             </div>
@@ -331,15 +335,8 @@ export default function FinanzasDashboardPage() {
 
               <div className="space-y-6 flex flex-col">
                 <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden flex-1">
-                  <div className="bg-sky-50 p-4 border-b border-sky-100"><h2 className="text-[11px] font-bold text-sky-900 uppercase tracking-widest">Resumen Cronograma (CRM)</h2></div>
+                  <div className="bg-sky-50 p-4 border-b border-sky-100"><h2 className="text-[11px] font-bold text-sky-900 uppercase tracking-widest">Resumen Presupuesto (Obra)</h2></div>
                   <div className="p-6 space-y-4">
-                    <div className="p-4 border border-neutral-100 rounded-xl bg-neutral-50 flex justify-between items-center">
-                      <div>
-                        <span className="text-[10px] font-bold text-neutral-500 uppercase block">Pendiente por Cobrar hasta {mesProyeccion}</span>
-                        <span className="text-[9px] text-neutral-400">Cuotas futuras acumuladas sin duplicar caja</span>
-                      </div>
-                      <span className="text-lg font-mono font-bold text-sky-600">+${metricas.ingresosCronogramaHastaFecha.toLocaleString()}</span>
-                    </div>
                     <div className="p-4 border border-neutral-100 rounded-xl bg-neutral-50 flex justify-between items-center">
                       <div>
                         <span className="text-[10px] font-bold text-neutral-500 uppercase block">Obligaciones (Presupuesto)</span>
