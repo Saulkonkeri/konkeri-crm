@@ -32,7 +32,7 @@ export default function FinanzasDashboardPage() {
     porCobrarCRM: 0,
     presupuestoFuturo: 0,
     comisionesManualesIngresadas: 0,
-    comisionesKonkeriDevengadas: 0,  
+    comisionesKonkeriGanadas: 0,  // 🎯 Cambiado a Ganadas
     anticiposRealesKonkeri: 0,
     aportesEspeciePendientes: 0,
     totalClientesAbonadoReal: 0
@@ -112,20 +112,18 @@ export default function FinanzasDashboardPage() {
         }
         if (m.tipo === 'Egreso') {
           outTesoreria += monto;
-          // 🎯 AQUÍ BUSCAMOS SOLO LA PALABRA "ANTICIPO" PARA NO PERDER TUS REGISTROS VIEJOS
           if (m.categoria.includes('Anticipo')) antKonk += monto;
         }
       });
 
       let cobradoCRM = 0;
       let porCobrarCRM = 0;
-      let comisionesDevengadasTotal = 0; 
+      let comisionesGanadasTotal = 0; 
       const limitePresupuesto = `${mesProyeccion}-31`;
 
       ventasData.forEach(v => {
-        // Política de Comisiones Konkeri: 4% del total, 70% pagadero a la firma
         const valorNegocio = Number(v.precio_total || v.precio_final || 0);
-        comisionesDevengadasTotal += (valorNegocio * 0.04) * 0.70;
+        comisionesGanadasTotal += (valorNegocio * 0.04) * 0.70;
 
         if (v.cronograma_pagos && Array.isArray(v.cronograma_pagos)) {
           v.cronograma_pagos.forEach((cuota: any) => {
@@ -160,7 +158,7 @@ export default function FinanzasDashboardPage() {
         porCobrarCRM,
         presupuestoFuturo,
         comisionesManualesIngresadas,
-        comisionesKonkeriDevengadas: comisionesDevengadasTotal,
+        comisionesKonkeriGanadas: comisionesGanadasTotal,
         anticiposRealesKonkeri: antKonk,
         aportesEspeciePendientes: sumAportesPendientes,
         totalClientesAbonadoReal
@@ -327,16 +325,19 @@ export default function FinanzasDashboardPage() {
     <div className="min-h-screen bg-[#F9F7F5] p-4 md:p-8 font-sans text-[#415364]">
       <div className="max-w-7xl mx-auto space-y-8">
         
+        {/* CABECERA */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center border-b border-neutral-200 pb-6 gap-4">
           <div>
             <span className="text-[10px] font-bold tracking-widest text-[#B94A36] uppercase block">Módulo Financiero Integrado</span>
             <h1 className="text-3xl font-bold tracking-tight text-[#21242E] mt-1">Centro de Control de Capital</h1>
           </div>
+          
+          {/* 🎯 BOTONES DE PESTAÑAS (DISEÑO UNIFICADO) */}
           <div className="flex bg-white p-1.5 rounded-xl border border-neutral-200 shadow-sm gap-1 overflow-x-auto w-full lg:w-auto">
             <button onClick={() => setActiveTab('resumen')} className={`px-4 py-2.5 text-[11px] font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'resumen' ? 'bg-[#21242E] text-white shadow-md' : 'text-[#415364]/70 hover:bg-neutral-50'}`}>Dashboard Gerencial</button>
             <button onClick={() => setActiveTab('tesoreria')} className={`px-4 py-2.5 text-[11px] font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'tesoreria' ? 'bg-[#21242E] text-white shadow-md' : 'text-[#415364]/70 hover:bg-neutral-50'}`}>Tesorería y Caja</button>
             <button onClick={() => setActiveTab('presupuesto')} className={`px-4 py-2.5 text-[11px] font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'presupuesto' ? 'bg-[#21242E] text-white shadow-md' : 'text-[#415364]/70 hover:bg-neutral-50'}`}>Presupuestos</button>
-            <button onClick={() => setActiveTab('intercompania')} className={`px-4 py-2.5 text-[11px] font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'intercompania' ? 'bg-white border border-neutral-300 text-[#21242E] shadow-sm' : 'text-neutral-50 hover:bg-white'}`}>Cuentas Intercompañía</button>
+            <button onClick={() => setActiveTab('intercompania')} className={`px-4 py-2.5 text-[11px] font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'intercompania' ? 'bg-[#21242E] text-white shadow-md' : 'text-[#415364]/70 hover:bg-neutral-50'}`}>Cuentas Intercompañía</button>
           </div>
         </div>
 
@@ -549,7 +550,6 @@ export default function FinanzasDashboardPage() {
                       ) : (
                         <>
                           <option>Costos Comerciales (Marketing, Renders)</option>
-                          {/* 🎯 AQUÍ ES DONDE AHORA DICE "ANTICIPO DE COMISIONES" */}
                           <option>Anticipo de Comisiones (Konkeri)</option>
                           <option>Inversión Obra / Permisos Municipales</option>
                           <option>Gastos Legales y Notariales</option>
@@ -559,7 +559,7 @@ export default function FinanzasDashboardPage() {
                   </div>
                   <div>
                     <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Detalle</label>
-                    <input type="text" required value={movForm.descripcion} onChange={e => setMovForm({...movForm, descripcion: e.target.value})} className="w-full text-xs p-2.5 rounded-lg border outline-none" placeholder="Ej. Pago Notaría" />
+                    <input type="text" required value={movForm.descripcion} onChange={e => setMovForm({...movForm, descripcion: e.target.value})} className="w-full text-xs p-2.5 rounded-lg border outline-none" placeholder="Ej. Pago Municipio" />
                   </div>
                   <div>
                     <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Monto ($)</label>
@@ -709,7 +709,7 @@ export default function FinanzasDashboardPage() {
           </div>
         )}
 
-        {/* PESTAÑA 4: INTERCOMPAÑÍA & APORTES (COMISIONES AUTOMATIZADAS) */}
+        {/* PESTAÑA 4: INTERCOMPAÑÍA & APORTES */}
         {activeTab === 'intercompania' && (
           <div className="space-y-8 animate-in fade-in max-w-6xl mx-auto">
             
@@ -720,8 +720,8 @@ export default function FinanzasDashboardPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="bg-white p-5 rounded-xl border border-neutral-200 shadow-sm flex flex-col justify-center border-l-4 border-l-sky-500">
-                <span className="text-[9px] font-bold text-sky-800 uppercase tracking-widest block mb-1">1. Comisiones Devengadas</span>
-                <span className="text-2xl font-mono font-bold text-sky-700">${metricas.comisionesKonkeriDevengadas.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                <span className="text-[9px] font-bold text-sky-800 uppercase tracking-widest block mb-1">1. Comisiones Ganadas</span>
+                <span className="text-2xl font-mono font-bold text-sky-700">${metricas.comisionesKonkeriGanadas.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                 <p className="text-[8px] text-neutral-400 mt-1 uppercase">Calculado Automático (CRM)</p>
               </div>
               <div className="bg-white p-5 rounded-xl border border-neutral-200 shadow-sm flex flex-col justify-center">
@@ -736,7 +736,7 @@ export default function FinanzasDashboardPage() {
               </div>
               <div className="bg-[#21242E] p-5 rounded-xl shadow-md flex flex-col justify-center">
                 <span className="text-[9px] font-bold text-[#D1C292] uppercase tracking-widest block mb-1">Total Arienzo Debe (1 - 2 + 3)</span>
-                <span className="text-2xl font-mono font-bold text-white">${(metricas.comisionesKonkeriDevengadas - metricas.anticiposRealesKonkeri + metricas.aportesEspeciePendientes).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                <span className="text-2xl font-mono font-bold text-white">${(metricas.comisionesKonkeriGanadas - metricas.anticiposRealesKonkeri + metricas.aportesEspeciePendientes).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
               </div>
             </div>
 
