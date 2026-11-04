@@ -11,8 +11,8 @@ export default function FinanzasDashboardPage() {
 
   // ================= ESTADOS DE DATOS Y EDICIÓN =================
   const [editandoMovId, setEditandoMovId] = useState<string | null>(null);
-  const [editandoPresupuestoId, setEditandoPresupuestoId] = useState<string | null>(null); // 👈 Nuevo
-  const [editandoDeudaId, setEditandoDeudaId] = useState<string | null>(null);             // 👈 Nuevo
+  const [editandoPresupuestoId, setEditandoPresupuestoId] = useState<string | null>(null);
+  const [editandoDeudaId, setEditandoDeudaId] = useState<string | null>(null);
   
   const [movimientos, setMovimientos] = useState<any[]>([]);
   const [inversionesPorHacer, setInversionesPorHacer] = useState<any[]>([]);
@@ -53,7 +53,7 @@ export default function FinanzasDashboardPage() {
     categoria: 'Trámites y Permisos',
     detalle: '',
     monto_estimado: '',
-    fecha_estimada: new Date().toISOString().split('T')[0] // 👈 Ahora pide un día específico
+    fecha_estimada: new Date().toISOString().split('T')[0]
   });
 
   const [deudaForm, setDeudaForm] = useState({
@@ -315,7 +315,7 @@ export default function FinanzasDashboardPage() {
           </div>
         </div>
 
-        {/* PESTAÑA 1: DASHBOARD GERENCIAL (Mantenida idéntica y limpia) */}
+        {/* PESTAÑA 1: DASHBOARD GERENCIAL */}
         {activeTab === 'resumen' && (
           <div className="space-y-6 animate-in fade-in max-w-6xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -498,7 +498,19 @@ export default function FinanzasDashboardPage() {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Tipo</label>
-                      <select value={movForm.tipo} onChange={e => setMovForm({...movForm, tipo: e.target.value})} className="w-full text-xs font-bold p-2.5 rounded-lg border outline-none">
+                      {/* 🎯 AQUÍ ESTÁ EL PARCHE PARA RESETEAR LA CATEGORÍA AL CAMBIAR DE INGRESO/EGRESO */}
+                      <select 
+                        value={movForm.tipo} 
+                        onChange={e => {
+                          const nuevoTipo = e.target.value;
+                          setMovForm({
+                            ...movForm, 
+                            tipo: nuevoTipo,
+                            categoria: nuevoTipo === 'Ingreso' ? 'Aporte de Socios / Capital' : 'Costos Comerciales (Marketing, Renders)'
+                          });
+                        }} 
+                        className="w-full text-xs font-bold p-2.5 rounded-lg border outline-none"
+                      >
                         <option value="Ingreso">INGRESO (+)</option>
                         <option value="Egreso">EGRESO (-)</option>
                       </select>
@@ -617,7 +629,6 @@ export default function FinanzasDashboardPage() {
                     <input type="number" step="0.01" required value={proyeccionForm.monto_estimado} onChange={e => setProyeccionForm({...proyeccionForm, monto_estimado: e.target.value})} className="w-full text-sm font-mono font-bold p-2.5 rounded-lg border outline-none" />
                   </div>
                   <div>
-                    {/* 🎯 AQUÍ SE CAMBIÓ A type="date" PARA PONER EL DÍA EXACTO */}
                     <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Día Exacto</label>
                     <input type="date" required value={proyeccionForm.fecha_estimada} onChange={e => setProyeccionForm({...proyeccionForm, fecha_estimada: e.target.value})} className="w-full text-[11px] font-bold p-2.5 rounded-lg border outline-none" />
                   </div>
@@ -663,7 +674,7 @@ export default function FinanzasDashboardPage() {
           </div>
         )}
 
-        {/* 🎯 PESTAÑA 4: INTERCOMPAÑÍA & APORTES EN ESPECIE */}
+        {/* PESTAÑA 4: INTERCOMPAÑÍA & APORTES EN ESPECIE */}
         {activeTab === 'intercompania' && (
           <div className="space-y-8 animate-in fade-in max-w-6xl mx-auto">
             
@@ -760,7 +771,6 @@ export default function FinanzasDashboardPage() {
                                  {d.estado === 'Pendiente' && (
                                    <button onClick={() => saldarDeudaSocio(d.id)} className="text-emerald-600 font-bold text-[9px] uppercase hover:underline" title="Marcar como pagado">Saldar</button>
                                  )}
-                                 {/* 🎯 BOTÓN PARA EDITAR DEUDA/APORTE */}
                                  <button onClick={() => cargarParaEditarDeuda(d)} className="text-neutral-400 hover:text-[#415364]" title="Editar">✏️</button>
                                  <button onClick={() => eliminarDeudaSocio(d.id)} className="text-neutral-400 hover:text-[#ea0029]" title="Eliminar permanentemente">🗑️</button>
                                </div>
