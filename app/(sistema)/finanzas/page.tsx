@@ -25,11 +25,11 @@ export default function FinanzasDashboardPage() {
     egresosComerciales: 0,
     cuentasPorCobrarCRM: 0, 
     inversionProyectada: 0,
-    serviciosDevengados: 0, 
-    anticiposOperativos: 0
+    comisionesRealesKonkeri: 0, 
+    anticiposRealesKonkeri: 0
   });
 
-  // ================= FORMULARIO UNIFICADO (TESORERÍA Y COMISIONES) =================
+  // ================= FORMULARIO UNIFICADO =================
   const [movForm, setMovForm] = useState({
     fecha_transaccion: new Date().toISOString().split('T')[0],
     cuenta_bancaria: 'Cta. Arienzo S.A.S.',
@@ -60,38 +60,37 @@ export default function FinanzasDashboardPage() {
     try {
       const { data: movs } = await supabase.from('finanzas_movimientos').select('*').order('fecha_transaccion', { ascending: false });
       const { data: pres } = await supabase.from('finanzas_presupuestos').select('*').order('fecha_estimada', { ascending: true });
-      const { data: ventas } = await supabase.from('cotizaciones').select('*').eq('estado', 'Ganada'); 
+      const { data: ventas } = await supabase.from('cotizaciones').select('*').eq('estado', 'Venta - En Cierre'); 
 
       const movsData = movs || [];
       const presData = pres || [];
-      const ventasData = (ventas && ventas.length > 0) ? ventas : [
-        { id: '1', unidad: 'Dpto 601 (Prueba)', precio_final: 120000, cliente: 'Juan Pérez' },
-        { id: '2', unidad: 'Dpto 604 (Prueba)', precio_final: 145000, cliente: 'María López' }
-      ];
+      const ventasData = ventas || [];
 
       setMovimientos(movsData);
       setInversionesPorHacer(presData);
       setUnidadesVendidas(ventasData);
 
       let inCapital = 0, inVentas = 0;
-      let egObra = 0, egComercial = 0, anticipos = 0;
+      let egObra = 0, egComercial = 0;
+      let comisionesKonkeri = 0, anticiposKonkeri = 0;
 
       movsData.forEach(m => {
         const monto = Number(m.monto);
         if (m.tipo === 'Ingreso') {
           if (m.categoria.includes('Capital') || m.categoria.includes('Socios')) inCapital += monto;
+          else if (m.categoria.includes('Comisiones')) comisionesKonkeri += monto;
           else inVentas += monto;
         }
         if (m.tipo === 'Egreso') {
           if (m.categoria.includes('Obra') || m.categoria.includes('Permisos')) egObra += monto;
-          else if (m.categoria.includes('Anticipo Operativo')) anticipos += monto;
+          else if (m.categoria.includes('Anticipo Operativo')) anticiposKonkeri += monto;
           else egComercial += monto;
         }
       });
 
-      const cajaReal = (inCapital + inVentas) - (egObra + egComercial + anticipos);
+      const cajaReal = (inCapital + inVentas + comisionesKonkeri) - (egObra + egComercial + anticiposKonkeri);
       const totalInvProy = presData.filter(p => p.fecha_estimada <= mesProyeccion).reduce((acc, curr) => acc + Number(curr.monto_estimado), 0);
-      const totalVentasCerradas = ventasData.reduce((acc, curr) => acc + Number(curr.precio_final || 0), 0);
+      const totalVentasCerradas = ventasData.reduce((acc, curr) => acc + Number(curr.precio_total || curr.precio_final || 0), 0);
       
       setMetricas({
         cajaTotal: cajaReal,
@@ -101,12 +100,12 @@ export default function FinanzasDashboardPage() {
         egresosComerciales: egComercial,
         cuentasPorCobrarCRM: totalVentasCerradas * 0.40,
         inversionProyectada: totalInvProy,
-        serviciosDevengados: totalVentasCerradas * 0.04,
-        anticiposOperativos: anticipos
+        comisionesRealesKonkeri: comisionesKonkeri,
+        anticiposRealesKonkeri: anticiposKonkeri
       });
 
       if (ventasData.length > 0 && !movForm.comision_unidad) {
-        setMovForm(prev => ({ ...prev, comision_unidad: ventasData[0].unidad }));
+        setMovForm(prev => ({ ...prev, comision_unidad: ventasData[0].unidad_numero || 'Dpto' }));
       }
     } catch (error) {
       console.error("Error cargando finanzas:", error);
@@ -115,7 +114,6 @@ export default function FinanzasDashboardPage() {
     }
   };
 
-  // ================= LÓGICA CALCULADORA DE COMISIONES =================
   const esModoComision = movForm.cuenta_bancaria === 'Cta. Konkeri S.A.S.' && movForm.tipo === 'Ingreso' && movForm.categoria === 'Cobro de Comisiones (Ventas)';
 
   const handleComisionChange = (field: string, value: string) => {
@@ -130,7 +128,6 @@ export default function FinanzasDashboardPage() {
     setMovForm(updated);
   };
 
-  // ================= GUARDAR Y EDITAR =================
   const registrarMovimiento = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!movForm.monto || Number(movForm.monto) <= 0) return alert("Ingrese un monto válido.");
@@ -190,12 +187,13 @@ export default function FinanzasDashboardPage() {
   const liquidezProyectada = metricas.cajaTotal + metricas.cuentasPorCobrarCRM - metricas.inversionProyectada;
   const bancoReal = Number(saldoBancarioReal) || 0;
   const diferenciaConciliacion = bancoReal - metricas.cajaTotal;
+  const saldoIntercompaniaReal = metricas.comisionesRealesKonkeri - metricas.anticiposRealesKonkeri;
 
   return (
     <div className="min-h-screen bg-[#F9F7F5] p-4 md:p-8 font-sans text-[#415364]">
       <div className="max-w-7xl mx-auto space-y-8">
         
-        {/* ================= CABECERA ================= */}
+        {/* CABECERA */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center border-b border-neutral-200 pb-6 gap-4">
           <div>
             <span className="text-[10px] font-bold tracking-widest text-[#B94A36] uppercase block">Módulo Financiero Integrado</span>
@@ -210,11 +208,9 @@ export default function FinanzasDashboardPage() {
           </div>
         </div>
 
-        {/* ================= PESTAÑA 1: DASHBOARD GERENCIAL ================= */}
+        {/* PESTAÑA 1: DASHBOARD GERENCIAL */}
         {activeTab === 'resumen' && (
           <div className="space-y-6 animate-in fade-in max-w-6xl mx-auto">
-            
-            {/* KPI PRINCIPALES */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                <div className="bg-white p-8 rounded-2xl shadow-sm border border-neutral-200 flex flex-col justify-center">
                   <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block mb-2">Efectivo Total en Cuentas (Caja)</span>
@@ -234,9 +230,7 @@ export default function FinanzasDashboardPage() {
                </div>
             </div>
 
-            {/* ORIGEN Y USO DE FONDOS (ANÁLISIS PROFUNDO) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
               <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden">
                 <div className="bg-neutral-50 p-4 border-b border-neutral-200"><h2 className="text-[11px] font-bold text-[#415364] uppercase tracking-widest">Origen y Uso de Fondos (Histórico)</h2></div>
                 <div className="p-6 space-y-6">
@@ -245,33 +239,25 @@ export default function FinanzasDashboardPage() {
                     <div className="space-y-2">
                       <div className="flex justify-between text-xs"><span className="text-neutral-600">Aportes y Capital Propio</span><span className="font-mono font-bold text-emerald-600">${metricas.ingresosCapital.toLocaleString()}</span></div>
                       <div className="flex justify-between text-xs"><span className="text-neutral-600">Preventas y Reservas</span><span className="font-mono font-bold text-emerald-600">${metricas.ingresosVentas.toLocaleString()}</span></div>
-                      <div className="w-full bg-neutral-100 h-1.5 rounded-full overflow-hidden mt-1 flex">
-                        <div className="bg-emerald-600 h-full" style={{ width: `${(metricas.ingresosCapital / (metricas.ingresosCapital + metricas.ingresosVentas || 1)) * 100}%` }}></div>
-                        <div className="bg-emerald-400 h-full" style={{ width: `${(metricas.ingresosVentas / (metricas.ingresosCapital + metricas.ingresosVentas || 1)) * 100}%` }}></div>
-                      </div>
                     </div>
                   </div>
                   <div>
                     <h3 className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest mb-3">Aplicaciones (Egresos)</h3>
                     <div className="space-y-2">
                       <div className="flex justify-between text-xs"><span className="text-neutral-600">CAPEX (Obra, Suelos, Permisos)</span><span className="font-mono font-bold text-[#ea0029]">-${metricas.egresosObra.toLocaleString()}</span></div>
-                      <div className="flex justify-between text-xs"><span className="text-neutral-600">OPEX (Comercial, Marketing, Anticipos)</span><span className="font-mono font-bold text-[#ea0029]">-${(metricas.egresosComerciales + metricas.anticiposOperativos).toLocaleString()}</span></div>
-                      <div className="w-full bg-neutral-100 h-1.5 rounded-full overflow-hidden mt-1 flex">
-                        <div className="bg-[#ea0029] h-full" style={{ width: `${(metricas.egresosObra / (metricas.egresosObra + metricas.egresosComerciales + metricas.anticiposOperativos || 1)) * 100}%` }}></div>
-                        <div className="bg-rose-400 h-full" style={{ width: `${((metricas.egresosComerciales + metricas.anticiposOperativos) / (metricas.egresosObra + metricas.egresosComerciales + metricas.anticiposOperativos || 1)) * 100}%` }}></div>
-                      </div>
+                      <div className="flex justify-between text-xs"><span className="text-neutral-600">OPEX (Comercial, Anticipos)</span><span className="font-mono font-bold text-[#ea0029]">-${(metricas.egresosComerciales + metricas.anticiposRealesKonkeri).toLocaleString()}</span></div>
                     </div>
                   </div>
                 </div>
               </div>
 
               <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden">
-                <div className="bg-sky-50 p-4 border-b border-sky-100"><h2 className="text-[11px] font-bold text-sky-900 uppercase tracking-widest">Pipeline Financiero (Futuro)</h2></div>
+                <div className="bg-sky-50 p-4 border-b border-sky-100"><h2 className="text-[11px] font-bold text-sky-900 uppercase tracking-widest">Pipeline Financiero (Basado en Ventas en Firme)</h2></div>
                 <div className="p-6 space-y-4">
                   <div className="p-4 border border-neutral-100 rounded-xl bg-neutral-50 flex justify-between items-center">
                     <div>
-                      <span className="text-[10px] font-bold text-neutral-500 uppercase block">Cuentas por Cobrar (CRM)</span>
-                      <span className="text-[9px] text-neutral-400">Cuotas pendientes de ventas firmadas</span>
+                      <span className="text-[10px] font-bold text-neutral-500 uppercase block">Cuentas por Cobrar (Ventas Oficiales)</span>
+                      <span className="text-[9px] text-neutral-400">Calculado de unidades en 'Venta - En Cierre'</span>
                     </div>
                     <span className="text-lg font-mono font-bold text-sky-600">${metricas.cuentasPorCobrarCRM.toLocaleString()}</span>
                   </div>
@@ -284,21 +270,17 @@ export default function FinanzasDashboardPage() {
                   </div>
                 </div>
               </div>
-
             </div>
           </div>
         )}
 
-        {/* ================= PESTAÑA 2: TESORERÍA (CAJA, COMISIONES Y AUDITOR) ================= */}
+        {/* PESTAÑA 2: TESORERÍA */}
         {activeTab === 'tesoreria' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in">
-            
             <div className="lg:col-span-1 space-y-6">
-              
-              {/* AUDITOR DE CAJA BANCARIA */}
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
                 <h2 className="text-[11px] font-bold text-[#21242E] uppercase tracking-widest border-b border-neutral-100 pb-3 mb-4 flex justify-between items-center">
-                  <span>Auditor de Caja (Conciliación)</span><span className="text-[16px]">⚖️</span>
+                  <span>Auditor de Caja</span><span>⚖️</span>
                 </h2>
                 <div className="space-y-4">
                   <div>
@@ -314,19 +296,14 @@ export default function FinanzasDashboardPage() {
                     <span className={`text-2xl font-mono font-bold ${saldoBancarioReal === '' ? 'text-neutral-400' : diferenciaConciliacion === 0 ? 'text-emerald-600' : 'text-[#ea0029]'}`}>
                       ${Math.abs(diferenciaConciliacion).toLocaleString('en-US', {minimumFractionDigits: 2})}
                     </span>
-                    {saldoBancarioReal !== '' && diferenciaConciliacion !== 0 && (
-                      <p className="text-[9px] text-neutral-600 mt-2 font-medium">Usa el formulario de abajo para registrar el {diferenciaConciliacion > 0 ? 'Ingreso (o Saldo Inicial)' : 'Egreso'} faltante.</p>
-                    )}
                   </div>
                 </div>
               </div>
 
-              {/* FORMULARIO DINÁMICO */}
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
                 <h2 className="text-[11px] font-bold text-[#21242E] uppercase tracking-widest border-b border-neutral-100 pb-3 mb-5">
                   {editandoMovId ? 'Editar Registro' : 'Registrar Movimiento'}
                 </h2>
-                
                 <form onSubmit={registrarMovimiento} className="space-y-4">
                   <div>
                     <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Cuenta Bancaria</label>
@@ -339,29 +316,27 @@ export default function FinanzasDashboardPage() {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Tipo</label>
-                      <select value={movForm.tipo} onChange={e => setMovForm({...movForm, tipo: e.target.value})} className={`w-full text-xs font-bold p-2.5 rounded-lg border outline-none ${movForm.tipo === 'Ingreso' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+                      <select value={movForm.tipo} onChange={e => setMovForm({...movForm, tipo: e.target.value})} className="w-full text-xs font-bold p-2.5 rounded-lg border outline-none">
                         <option value="Ingreso">INGRESO (+)</option>
                         <option value="Egreso">EGRESO (-)</option>
                       </select>
                     </div>
                     <div>
                       <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Estado Factura</label>
-                      <select value={movForm.estado_comprobante} onChange={e => setMovForm({...movForm, estado_comprobante: e.target.value})} className="w-full text-[10px] font-bold p-2.5 rounded-lg border border-neutral-200 bg-white outline-none">
+                      <select value={movForm.estado_comprobante} onChange={e => setMovForm({...movForm, estado_comprobante: e.target.value})} className="w-full text-[10px] font-bold p-2.5 rounded-lg border outline-none">
                         <option>Recibo Interno</option>
                         <option>Facturado SRI</option>
                       </select>
                     </div>
                   </div>
-                  
                   <div>
                     <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Categoría</label>
-                    <select value={movForm.categoria} onChange={e => setMovForm({...movForm, categoria: e.target.value})} className="w-full text-xs font-medium p-2.5 rounded-lg border border-neutral-200 bg-neutral-50 outline-none">
+                    <select value={movForm.categoria} onChange={e => setMovForm({...movForm, categoria: e.target.value})} className="w-full text-xs font-medium p-2.5 rounded-lg border border-neutral-200 bg-white outline-none">
                       {movForm.tipo === 'Ingreso' ? (
                         <>
                           <option>Aporte de Socios / Capital</option>
                           <option>Reserva Manual (Sin contrato)</option>
                           {movForm.cuenta_bancaria === 'Cta. Konkeri S.A.S.' && <option>Cobro de Comisiones (Ventas)</option>}
-                          <option>Cobro Cuota Cliente (CRM)</option>
                           <option>Saldo Inicial de Cuenta</option>
                         </>
                       ) : (
@@ -369,61 +344,48 @@ export default function FinanzasDashboardPage() {
                           <option>Costos Comerciales (Marketing, Renders)</option>
                           <option>Anticipo Operativo (Konkeri)</option>
                           <option>Inversión Obra / Permisos Municipales</option>
-                          <option>Honorarios y Proveedores</option>
                         </>
                       )}
                     </select>
                   </div>
 
-                  {/* CALCULADORA DE COMISIONES INTEGRADA */}
                   {esModoComision ? (
                     <div className="bg-[#D1C292]/10 border border-[#D1C292]/30 p-4 rounded-xl space-y-4">
                       <h3 className="text-[10px] font-bold text-[#8A7A55] uppercase tracking-widest">Estructura de Comisión</h3>
                       <div>
-                        <label className="text-[9px] font-bold text-[#8A7A55] uppercase block mb-1">Unidad / Cliente</label>
+                        <label className="text-[9px] font-bold text-[#8A7A55] uppercase block mb-1">Unidad / Venta</label>
                         <select value={movForm.comision_unidad} onChange={e => handleComisionChange('comision_unidad', e.target.value)} className="w-full text-xs font-bold p-2 rounded border border-[#D1C292]/40 bg-white outline-none">
-                          {unidadesVendidas.map(u => <option key={u.id} value={u.unidad}>{u.unidad} - {u.cliente}</option>)}
+                          {unidadesVendidas.map(u => <option key={u.id} value={u.unidad_numero}>Dpto {u.unidad_numero}</option>)}
                         </select>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label className="text-[9px] font-bold text-[#8A7A55] uppercase block mb-1">Total ($)</label>
-                          <input type="number" value={movForm.comision_total} onChange={e => handleComisionChange('comision_total', e.target.value)} className="w-full text-sm font-mono font-bold p-2 rounded border border-[#D1C292]/40 bg-white" placeholder="Ej. 4000" />
+                          <input type="number" value={movForm.comision_total} onChange={e => handleComisionChange('comision_total', e.target.value)} className="w-full text-sm font-mono font-bold p-2 rounded border bg-white" placeholder="Ej. 4000" />
                         </div>
                         <div>
-                          <label className="text-[9px] font-bold text-[#8A7A55] uppercase block mb-1">% a Cobrar Hoy</label>
-                          <div className="flex items-center">
-                            <input type="number" value={movForm.comision_porcentaje} onChange={e => handleComisionChange('comision_porcentaje', e.target.value)} className="w-full text-sm font-mono font-bold p-2 rounded-l border border-[#D1C292]/40 bg-white" />
-                            <span className="bg-[#D1C292]/20 px-2 py-1.5 text-xs font-bold text-[#8A7A55] rounded-r border border-l-0 border-[#D1C292]/40">%</span>
-                          </div>
+                          <label className="text-[9px] font-bold text-[#8A7A55] uppercase block mb-1">% Hoy</label>
+                          <input type="number" value={movForm.comision_porcentaje} onChange={e => handleComisionChange('comision_porcentaje', e.target.value)} className="w-full text-sm font-mono font-bold p-2 rounded border bg-white" />
                         </div>
                       </div>
                     </div>
                   ) : (
                     <div>
-                      <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Detalle del Movimiento</label>
-                      <input type="text" required value={movForm.descripcion} onChange={e => setMovForm({...movForm, descripcion: e.target.value})} className="w-full text-xs font-medium p-2.5 rounded-lg border border-neutral-200 bg-white outline-none" placeholder="Ej. Pago Municipio / Reserva Juan" />
+                      <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Detalle</label>
+                      <input type="text" required value={movForm.descripcion} onChange={e => setMovForm({...movForm, descripcion: e.target.value})} className="w-full text-xs p-2.5 rounded-lg border outline-none" placeholder="Ej. Pago Municipio" />
                     </div>
                   )}
 
                   <div>
-                    <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Monto a {movForm.tipo === 'Ingreso' ? 'Ingresar' : 'Egresar'} ($)</label>
-                    <input type="number" step="0.01" required value={movForm.monto} onChange={e => setMovForm({...movForm, monto: e.target.value})} readOnly={esModoComision} className={`w-full text-xl font-mono font-bold p-2.5 rounded-lg border outline-none ${esModoComision ? 'bg-neutral-100 text-emerald-700 cursor-not-allowed' : 'bg-white text-[#21242E] focus:border-[#415364]'}`} placeholder="0.00" />
+                    <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Monto ($)</label>
+                    <input type="number" step="0.01" required value={movForm.monto} onChange={e => setMovForm({...movForm, monto: e.target.value})} readOnly={esModoComision} className="w-full text-xl font-mono font-bold p-2.5 rounded-lg border outline-none bg-white" placeholder="0.00" />
                   </div>
 
-                  <div className="pt-2 flex gap-2">
-                    <button type="submit" className={`flex-1 text-white font-bold uppercase tracking-widest text-[10px] py-3.5 rounded-xl shadow-sm transition-all ${editandoMovId ? 'bg-neutral-800' : 'bg-[#21242E] hover:bg-black'}`}>
-                      {editandoMovId ? 'Actualizar' : 'Guardar en Libro'}
-                    </button>
-                    {editandoMovId && (
-                      <button type="button" onClick={() => { setEditandoMovId(null); setMovForm({ ...movForm, descripcion: '', monto: '' }); }} className="px-4 bg-neutral-200 text-neutral-600 font-bold uppercase text-[10px] rounded-xl hover:bg-neutral-300">Cancelar</button>
-                    )}
-                  </div>
+                  <button type="submit" className="w-full bg-[#21242E] text-white font-bold uppercase tracking-widest text-[10px] py-3.5 rounded-xl">Guardar en Libro</button>
                 </form>
               </div>
             </div>
             
-            {/* TABLA DE MOVIMIENTOS */}
             <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-neutral-200 flex flex-col">
                <h2 className="text-[11px] font-bold text-[#415364] uppercase tracking-widest border-b border-neutral-100 pb-3 mb-4">Libro de Entradas y Salidas</h2>
                <div className="overflow-auto custom-scrollbar flex-1 -mx-2 px-2">
@@ -464,7 +426,7 @@ export default function FinanzasDashboardPage() {
           </div>
         )}
 
-        {/* ================= PESTAÑA 3: OBLIGACIONES Y PRESUPUESTO ================= */}
+        {/* PESTAÑA 3: PRESUPUESTO */}
         {activeTab === 'presupuesto' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in">
             <div className="lg:col-span-1 bg-white rounded-2xl p-6 shadow-sm border border-neutral-200 h-fit sticky top-6">
@@ -478,7 +440,7 @@ export default function FinanzasDashboardPage() {
               }} className="space-y-4">
                 <div>
                   <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Categoría</label>
-                  <select value={proyeccionForm.categoria} onChange={e => setProyeccionForm({...proyeccionForm, categoria: e.target.value})} className="w-full text-xs font-bold p-2.5 rounded-lg border border-neutral-200 outline-none">
+                  <select value={proyeccionForm.categoria} onChange={e => setProyeccionForm({...proyeccionForm, categoria: e.target.value})} className="w-full text-xs font-bold p-2.5 rounded-lg border outline-none">
                     <option>Trámites y Permisos</option>
                     <option>Costos de Obra</option>
                     <option>Marketing y Ventas</option>
@@ -486,16 +448,16 @@ export default function FinanzasDashboardPage() {
                 </div>
                 <div>
                   <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Detalle</label>
-                  <input type="text" required value={proyeccionForm.detalle} onChange={e => setProyeccionForm({...proyeccionForm, detalle: e.target.value})} className="w-full text-xs p-2.5 rounded-lg border border-neutral-200 outline-none" />
+                  <input type="text" required value={proyeccionForm.detalle} onChange={e => setProyeccionForm({...proyeccionForm, detalle: e.target.value})} className="w-full text-xs p-2.5 rounded-lg border outline-none" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Monto ($)</label>
-                    <input type="number" step="0.01" required value={proyeccionForm.monto_estimado} onChange={e => setProyeccionForm({...proyeccionForm, monto_estimado: e.target.value})} className="w-full text-sm font-mono font-bold p-2.5 rounded-lg border border-neutral-200 outline-none" />
+                    <input type="number" step="0.01" required value={proyeccionForm.monto_estimado} onChange={e => setProyeccionForm({...proyeccionForm, monto_estimado: e.target.value})} className="w-full text-sm font-mono font-bold p-2.5 rounded-lg border outline-none" />
                   </div>
                   <div>
                     <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Mes Est.</label>
-                    <input type="month" required value={proyeccionForm.fecha_estimada} onChange={e => setProyeccionForm({...proyeccionForm, fecha_estimada: e.target.value})} className="w-full text-xs p-2.5 rounded-lg border border-neutral-200 outline-none" />
+                    <input type="month" required value={proyeccionForm.fecha_estimada} onChange={e => setProyeccionForm({...proyeccionForm, fecha_estimada: e.target.value})} className="w-full text-xs p-2.5 rounded-lg border outline-none" />
                   </div>
                 </div>
                 <button type="submit" className="w-full bg-[#B94A36] text-white font-bold uppercase text-[10px] py-3.5 rounded-xl">Agregar al Presupuesto</button>
@@ -528,31 +490,31 @@ export default function FinanzasDashboardPage() {
           </div>
         )}
 
-        {/* ================= PESTAÑA 4: CONCILIACIÓN INTERCOMPAÑÍA ================= */}
+        {/* PESTAÑA 4: CONCILIACIÓN INTERCOMPAÑÍA */}
         {activeTab === 'intercompania' && (
           <div className="space-y-6 animate-in fade-in max-w-5xl mx-auto">
             <div className="bg-white p-8 rounded-2xl border border-neutral-200 shadow-sm">
                <div className="mb-8 border-b border-neutral-100 pb-6">
                  <h2 className="text-xl font-bold text-[#21242E] mb-2">Reporte Intercompañía: Arienzo vs Konkeri</h2>
                  <p className="text-xs text-neutral-500 max-w-3xl leading-relaxed text-justify">
-                   Reporte formal de validación interna. Contrapone las comisiones devengadas (calculadas sobre ventas en firme del CRM) versus los giros realizados desde Tesorería bajo la categoría "Anticipo Operativo (Konkeri)". Este saldo sustenta la relación comercial entre la SPV y la Promotora de forma previa a la facturación definitiva.
+                   Contrapone estrictamente los cobros de comisiones reales ingresados en la cuenta de Konkeri versus los anticipos operativos girados desde Tesorería. Cero cálculos fantasmas: todo se basa en movimientos reales registrados.
                  </p>
                </div>
                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                  <div className="border border-neutral-200 p-6 rounded-xl bg-neutral-50">
-                   <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest block mb-2">Comisiones Devengadas (CRM)</span>
-                   <span className="text-3xl font-mono font-bold text-[#21242E]">${metricas.serviciosDevengados.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                   <p className="text-[10px] text-neutral-400 mt-3 uppercase leading-relaxed font-bold">Provisión a favor de la promotora.</p>
+                   <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest block mb-2">Comisiones Ingresadas (Tesorería)</span>
+                   <span className="text-3xl font-mono font-bold text-[#21242E]">${metricas.comisionesRealesKonkeri.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                   <p className="text-[10px] text-neutral-400 mt-3 uppercase font-bold">Cobros registrados a mano en Konkeri.</p>
                  </div>
                  <div className="border border-neutral-200 p-6 rounded-xl bg-neutral-50">
                    <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest block mb-2">(-) Anticipos Girados (Caja)</span>
-                   <span className="text-3xl font-mono font-bold text-[#ea0029]">-${metricas.anticiposOperativos.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                   <p className="text-[10px] text-neutral-400 mt-3 uppercase leading-relaxed font-bold">Fondos transferidos a Konkeri.</p>
+                   <span className="text-3xl font-mono font-bold text-[#ea0029]">-${metricas.anticiposRealesKonkeri.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                   <p className="text-[10px] text-neutral-400 mt-3 uppercase font-bold">Fondos transferidos a la operadora.</p>
                  </div>
                  <div className="border border-neutral-300 p-6 rounded-xl bg-white shadow-sm">
                    <span className="text-[10px] text-[#415364] font-bold uppercase tracking-widest block mb-2">(=) Saldo Intercompañía a Favor</span>
-                   <span className="text-3xl font-mono font-bold text-[#415364]">${(metricas.serviciosDevengados - metricas.anticiposOperativos).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                   <p className="text-[10px] text-[#415364]/70 mt-3 uppercase font-bold leading-relaxed">Deuda pendiente de liquidación.</p>
+                   <span className="text-3xl font-mono font-bold text-[#415364]">${saldoIntercompaniaReal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                   <p className="text-[10px] text-[#415364]/70 mt-3 uppercase font-bold">Diferencia neta registrada.</p>
                  </div>
                </div>
             </div>
