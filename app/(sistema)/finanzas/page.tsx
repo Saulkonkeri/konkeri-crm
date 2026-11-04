@@ -23,9 +23,9 @@ export default function FinanzasDashboardPage() {
     ingresosCapital: 0,
     ingresosVentas: 0,
     egresosTotalesHistoricos: 0,
-    cobradoVentasFirme: 0,      // 👈 Lo que ya se cobró (reservas, iniciales, cuotas pagadas)
-    porCobrarVentasFirme: 0,    // 👈 Lo pendiente por cobrar según cronograma hasta la fecha elegida
-    totalVentasFirmeCombinado: 0, // 👈 Cobrado + Por cobrar hasta la fecha
+    cobradoVentasFirme: 0,
+    porCobrarVentasFirme: 0,
+    totalVentasFirmeCombinado: 0,
     totalEgresosProyectadosPresupuesto: 0,
     totalClientesAbonadoReal: 0,
     inversionProyectada: 0,
@@ -33,9 +33,9 @@ export default function FinanzasDashboardPage() {
     anticiposRealesKonkeri: 0
   });
 
-  // ================= FORMULARIO UNIFICADO =================
+  // ================= FORMULARIO UNIFICADO CON FECHA ACTIVA =================
   const [movForm, setMovForm] = useState({
-    fecha_transaccion: new Date().toISOString().split('T')[0],
+    fecha_transaccion: new Date().toISOString().split('T')[0], // 👈 Fecha por defecto hoy, editable
     cuenta_bancaria: 'Cta. Arienzo S.A.S.',
     tipo: 'Ingreso',
     categoria: 'Aporte de Socios / Capital',
@@ -102,10 +102,9 @@ export default function FinanzasDashboardPage() {
       const presupuestoFiltrado = presData.filter(p => !p.fecha_estimada || p.fecha_estimada <= mesProyeccion);
       const totalInvProy = presupuestoFiltrado.reduce((acc, curr) => acc + Number(curr.monto_estimado), 0);
 
-      // 🎯 ANÁLISIS DE CRONOGRAMA DE VENTAS EN FIRME:
       let sumCobrado = 0;
       let sumPorCobrarHastaFecha = 0;
-      const fechaLimiteFiltro = `${mesProyeccion}-31`; // Ej: "2026-12-31"
+      const fechaLimiteFiltro = `${mesProyeccion}-31`;
 
       ventasData.forEach(v => {
         if (v.cronograma_pagos && Array.isArray(v.cronograma_pagos)) {
@@ -114,7 +113,6 @@ export default function FinanzasDashboardPage() {
             if (cuota.pagado === true) {
               sumCobrado += montoCuota;
             } else if (cuota.date && cuota.date <= fechaLimiteFiltro) {
-              // Pendiente por cobrar cuya fecha es menor o igual al mes seleccionado
               sumPorCobrarHastaFecha += montoCuota;
             }
           });
@@ -131,7 +129,7 @@ export default function FinanzasDashboardPage() {
         egresosTotalesHistoricos: egresosTotales,
         cobradoVentasFirme: sumCobrado,
         porCobrarVentasFirme: sumPorCobrarHastaFecha,
-        totalVentasFirmeCombinado: totalCombinadoVentas, // 👈 Lo ya cobrado + lo por cobrar hasta la fecha
+        totalVentasFirmeCombinado: totalCombinadoVentas,
         totalEgresosProyectadosPresupuesto: totalInvProy,
         totalClientesAbonadoReal: totalClientesAbonado,
         inversionProyectada: totalInvProy,
@@ -152,7 +150,7 @@ export default function FinanzasDashboardPage() {
     
     try {
       const datosAGuardar = {
-        fecha_transaccion: movForm.fecha_transaccion,
+        fecha_transaccion: movForm.fecha_transaccion, // 👈 Guarda la fecha seleccionada por el usuario
         entidad: movForm.cuenta_bancaria,
         tipo: movForm.tipo,
         categoria: movForm.categoria,
@@ -162,16 +160,30 @@ export default function FinanzasDashboardPage() {
       };
 
       if (editandoMovId) {
-        await supabase.from('finanzas_movimientos').update(datosAGuardar).eq('id', editandoMovId);
+        // 🎯 ACTUALIZAR REGISTRO EXISTENTE
+        const { error } = await supabase.from('finanzas_movimientos').update(datosAGuardar).eq('id', editandoMovId);
+        if (error) throw error;
         setEditandoMovId(null);
       } else {
-        await supabase.from('finanzas_movimientos').insert([datosAGuardar]);
+        // 🎯 INSERTAR NUEVO REGISTRO
+        const { error } = await supabase.from('finanzas_movimientos').insert([datosAGuardar]);
+        if (error) throw error;
       }
       
-      setMovForm({ ...movForm, descripcion: '', monto: '' });
+      // Limpiar formulario reseteando la fecha a hoy
+      setMovForm({
+        fecha_transaccion: new Date().toISOString().split('T')[0],
+        cuenta_bancaria: 'Cta. Arienzo S.A.S.',
+        tipo: 'Ingreso',
+        categoria: 'Aporte de Socios / Capital',
+        descripcion: '',
+        monto: '',
+        estado_comprobante: 'Recibo Interno',
+      });
+      
       cargarDatos();
-    } catch (err) {
-      alert("Error al guardar en el servidor.");
+    } catch (err: any) {
+      alert("Error al guardar en el servidor: " + (err.message || err));
     }
   };
 
@@ -181,12 +193,25 @@ export default function FinanzasDashboardPage() {
       cuenta_bancaria: mov.entidad,
       tipo: mov.tipo,
       categoria: mov.categoria,
-      descripcion: mov.descripcion,
+      descripcion: mov.descripcion || '',
       monto: mov.monto.toString(),
       estado_comprobante: mov.estado_facturacion || 'Recibo Interno',
     });
     setEditandoMovId(mov.id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelarEdicion = () => {
+    setEditandoMovId(null);
+    setMovForm({
+      fecha_transaccion: new Date().toISOString().split('T')[0],
+      cuenta_bancaria: 'Cta. Arienzo S.A.S.',
+      tipo: 'Ingreso',
+      categoria: 'Aporte de Socios / Capital',
+      descripcion: '',
+      monto: '',
+      estado_comprobante: 'Recibo Interno',
+    });
   };
 
   const eliminarMovimiento = async (id: string) => {
@@ -228,8 +253,6 @@ export default function FinanzasDashboardPage() {
         {/* PESTAÑA 1: DASHBOARD GERENCIAL */}
         {activeTab === 'resumen' && (
           <div className="space-y-6 animate-in fade-in max-w-6xl mx-auto">
-            
-            {/* CAJA REAL VS TOTAL COMBINADO HASTA LA FECHA */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                <div className="bg-white p-8 rounded-2xl shadow-sm border border-neutral-200 flex flex-col justify-center">
                   <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block mb-2">Efectivo Total en Cuentas (Caja Real Actual)</span>
@@ -249,7 +272,6 @@ export default function FinanzasDashboardPage() {
                </div>
             </div>
 
-            {/* ANÁLISIS DE TESORERÍA PROYECTADA (MATCHING) */}
             <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 p-6">
               <h2 className="text-xs font-bold text-[#21242E] uppercase tracking-widest mb-4 border-b border-neutral-100 pb-3">Desglose de Ventas Cerradas (Hasta {mesProyeccion})</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -271,7 +293,6 @@ export default function FinanzasDashboardPage() {
               </div>
             </div>
 
-            {/* SECCIÓN AUDITORA: DESGLOSE DE VENTAS */}
             <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden">
               <div className="bg-neutral-50 p-4 border-b border-neutral-200 flex justify-between items-center">
                 <h2 className="text-[11px] font-bold text-[#415364] uppercase tracking-widest">Auditoría: Ventas en Firme ({unidadesVendidas.length})</h2>
@@ -310,8 +331,6 @@ export default function FinanzasDashboardPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
-              {/* BALANCE GENERAL HISTÓRICO */}
               <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden flex flex-col justify-between">
                 <div className="bg-neutral-50 p-4 border-b border-neutral-200"><h2 className="text-[11px] font-bold text-[#415364] uppercase tracking-widest">Balance General Histórico (Ingresos vs Egresos)</h2></div>
                 <div className="p-6 space-y-4 flex-1 flex flex-col justify-around">
@@ -347,7 +366,6 @@ export default function FinanzasDashboardPage() {
                   </div>
                 </div>
 
-                {/* RATIO DE COBERTURA / FONDO DE GARANTÍA */}
                 <div className="bg-neutral-900 text-white p-5 rounded-2xl border border-neutral-800 flex justify-between items-center shadow-md">
                   <div>
                     <span className="text-[9px] font-bold text-[#D1C292] uppercase tracking-widest block">Ratio de Cobertura de Clientes</span>
@@ -393,10 +411,21 @@ export default function FinanzasDashboardPage() {
               </div>
 
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
-                <h2 className="text-[11px] font-bold text-[#21242E] uppercase tracking-widest border-b border-neutral-100 pb-3 mb-5">
-                  {editandoMovId ? 'Editar Registro' : 'Registrar Movimiento'}
-                </h2>
+                <div className="flex justify-between items-center border-b border-neutral-100 pb-3 mb-5">
+                  <h2 className="text-[11px] font-bold text-[#21242E] uppercase tracking-widest">
+                    {editandoMovId ? '✏️ Editando Movimiento' : 'Registrar Movimiento'}
+                  </h2>
+                  {editandoMovId && (
+                    <button onClick={cancelarEdicion} className="text-[9px] font-bold text-red-600 uppercase underline">Cancelar</button>
+                  )}
+                </div>
+
                 <form onSubmit={registrarMovimiento} className="space-y-4">
+                  <div>
+                    <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Fecha del Movimiento</label>
+                    <input type="date" required value={movForm.fecha_transaccion} onChange={e => setMovForm({...movForm, fecha_transaccion: e.target.value})} className="w-full text-xs font-bold p-2.5 rounded-lg border border-neutral-200 bg-white outline-none" />
+                  </div>
+
                   <div>
                     <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Cuenta Bancaria</label>
                     <select value={movForm.cuenta_bancaria} onChange={e => setMovForm({...movForm, cuenta_bancaria: e.target.value})} className="w-full text-xs font-bold p-2.5 rounded-lg border border-neutral-200 bg-white outline-none">
@@ -405,6 +434,7 @@ export default function FinanzasDashboardPage() {
                       <option>Caja Chica (Efectivo)</option>
                     </select>
                   </div>
+                  
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Tipo</label>
@@ -421,6 +451,7 @@ export default function FinanzasDashboardPage() {
                       </select>
                     </div>
                   </div>
+
                   <div>
                     <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Categoría</label>
                     <select value={movForm.categoria} onChange={e => setMovForm({...movForm, categoria: e.target.value})} className="w-full text-xs font-medium p-2.5 rounded-lg border border-neutral-200 bg-white outline-none">
@@ -451,7 +482,9 @@ export default function FinanzasDashboardPage() {
                     <input type="number" step="0.01" required value={movForm.monto} onChange={e => setMovForm({...movForm, monto: e.target.value})} className="w-full text-xl font-mono font-bold p-2.5 rounded-lg border outline-none bg-white" placeholder="0.00" />
                   </div>
 
-                  <button type="submit" className="w-full bg-[#21242E] text-white font-bold uppercase tracking-widest text-[10px] py-3.5 rounded-xl">Guardar en Libro</button>
+                  <button type="submit" className={`w-full text-white font-bold uppercase tracking-widest text-[10px] py-3.5 rounded-xl ${editandoMovId ? 'bg-amber-600' : 'bg-[#21242E]'}`}>
+                    {editandoMovId ? 'Actualizar Movimiento' : 'Guardar en Libro'}
+                  </button>
                 </form>
               </div>
             </div>
@@ -483,8 +516,8 @@ export default function FinanzasDashboardPage() {
                          </td>
                          <td className="py-3 px-2 text-center opacity-0 group-hover:opacity-100 transition-opacity">
                            <div className="flex justify-center gap-3">
-                             <button onClick={() => cargarParaEditarMov(mov)} className="text-neutral-400 hover:text-[#415364]">✏️</button>
-                             <button onClick={() => eliminarMovimiento(mov.id)} className="text-neutral-400 hover:text-[#ea0029]">🗑️</button>
+                             <button onClick={() => cargarParaEditarMov(mov)} className="text-neutral-400 hover:text-[#415364]" title="Editar">✏️</button>
+                             <button onClick={() => eliminarMovimiento(mov.id)} className="text-neutral-400 hover:text-[#ea0029]" title="Eliminar">🗑️</button>
                            </div>
                          </td>
                        </tr>
