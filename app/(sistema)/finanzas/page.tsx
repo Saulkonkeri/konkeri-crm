@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 export default function FinanzasDashboardPage() {
   const [activeTab, setActiveTab] = useState<'resumen' | 'tesoreria' | 'presupuesto' | 'intercompania'>('resumen');
   
-  const [mesProyeccion, setMesProyeccion] = useState('2026-12');
+  const [mesProyeccion, setMesProyeccion] = useState('2026-12'); // Formato YYYY-MM
   const [cargando, setCargando] = useState(true);
 
   // ================= ESTADOS DE DATOS =================
@@ -23,7 +23,7 @@ export default function FinanzasDashboardPage() {
     ingresosVentas: 0,
     egresosObra: 0,
     egresosComerciales: 0,
-    cuentasPorCobrarCRM: 0, 
+    ingresosProyectadosAcumulados: 0, // 👈 Suma todo (reservas, iniciales, cuotas) hasta la fecha límite
     inversionProyectada: 0,
     comisionesRealesKonkeri: 0, 
     anticiposRealesKonkeri: 0
@@ -90,15 +90,29 @@ export default function FinanzasDashboardPage() {
 
       const cajaReal = (inCapital + inVentas + comisionesKonkeri) - (egObra + egComercial + anticiposKonkeri);
       const totalInvProy = presData.filter(p => p.fecha_estimada <= mesProyeccion).reduce((acc, curr) => acc + Number(curr.monto_estimado), 0);
-      const totalVentasCerradas = ventasData.reduce((acc, curr) => acc + Number(curr.precio_total || curr.precio_final || 0), 0);
-      
+
+      // 🎯 CONEXIÓN ACUMULADA CON EL PLAN DE PAGOS (Reservas + Iniciales + Cuotas hasta el mes seleccionado):
+      let ingresosAcumuladosProyectados = 0;
+      const fechaLimiteStr = `${mesProyeccion}-31`; // Ejemplo: "2026-12-31"
+
+      ventasData.forEach(v => {
+        if (v.cronograma_pagos && Array.isArray(v.cronograma_pagos)) {
+          v.cronograma_pagos.forEach((cuota: any) => {
+            // Suma todo lo que NO esté pagado y cuya fecha de vencimiento sea menor o igual al fin del mes seleccionado
+            if (!cuota.pagado && cuota.date && cuota.date <= fechaLimiteStr) {
+              ingresosAcumuladosProyectados += Number(cuota.amount || 0);
+            }
+          });
+        }
+      });
+
       setMetricas({
         cajaTotal: cajaReal,
         ingresosCapital: inCapital,
         ingresosVentas: inVentas,
         egresosObra: egObra,
         egresosComerciales: egComercial,
-        cuentasPorCobrarCRM: totalVentasCerradas * 0.40,
+        ingresosProyectadosAcumulados: ingresosAcumuladosProyectados, // 👈 Todo sumado (reservas + iniciales + cuotas)
         inversionProyectada: totalInvProy,
         comisionesRealesKonkeri: comisionesKonkeri,
         anticiposRealesKonkeri: anticiposKonkeri
@@ -184,7 +198,8 @@ export default function FinanzasDashboardPage() {
 
   if (cargando) return <div className="flex items-center justify-center min-h-screen"><div className="text-sm font-bold text-[#415364] uppercase tracking-widest animate-pulse">Estructurando Finanzas...</div></div>;
 
-  const liquidezProyectada = metricas.cajaTotal + metricas.cuentasPorCobrarCRM - metricas.inversionProyectada;
+  // 🎯 LÍQUIDEZ PROYECTADA ACUMULADA: Caja Real + Todo lo pendiente por cobrar (reservas+iniciales+cuotas) hasta la fecha - Inversiones
+  const liquidezProyectadaAcumulada = metricas.cajaTotal + metricas.ingresosProyectadosAcumulados - metricas.inversionProyectada;
   const bancoReal = Number(saldoBancarioReal) || 0;
   const diferenciaConciliacion = bancoReal - metricas.cajaTotal;
   const saldoIntercompaniaReal = metricas.comisionesRealesKonkeri - metricas.anticiposRealesKonkeri;
@@ -213,20 +228,20 @@ export default function FinanzasDashboardPage() {
           <div className="space-y-6 animate-in fade-in max-w-6xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                <div className="bg-white p-8 rounded-2xl shadow-sm border border-neutral-200 flex flex-col justify-center">
-                  <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block mb-2">Efectivo Total en Cuentas (Caja)</span>
+                  <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block mb-2">Efectivo Total en Cuentas (Caja Real)</span>
                   <span className="text-4xl font-mono font-bold text-[#21242E]">${metricas.cajaTotal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                </div>
                
                <div className="bg-[#21242E] p-8 rounded-2xl shadow-lg border border-neutral-800 flex flex-col justify-center relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-[#D1C292] opacity-10 rounded-full blur-2xl -mr-10 -mt-10"></div>
                   <div className="flex justify-between items-center mb-2 relative z-10">
-                    <span className="text-[10px] font-bold text-[#D1C292] uppercase tracking-widest block">Flujo de Liquidez Proyectada</span>
+                    <span className="text-[10px] font-bold text-[#D1C292] uppercase tracking-widest block">Liquidez Acumulada Proyectada</span>
                     <div className="flex items-center gap-2">
-                      <span className="text-[9px] font-bold text-neutral-400 uppercase">Proyectar a:</span>
+                      <span className="text-[9px] font-bold text-neutral-400 uppercase">Hasta:</span>
                       <input type="month" value={mesProyeccion} onChange={e => setMesProyeccion(e.target.value)} className="text-[10px] font-bold text-white border border-neutral-600 rounded p-1.5 outline-none bg-neutral-800" />
                     </div>
                   </div>
-                  <span className="text-4xl font-mono font-bold text-white relative z-10">${liquidezProyectada.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                  <span className="text-4xl font-mono font-bold text-white relative z-10">${liquidezProyectadaAcumulada.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                </div>
             </div>
 
@@ -252,19 +267,19 @@ export default function FinanzasDashboardPage() {
               </div>
 
               <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden">
-                <div className="bg-sky-50 p-4 border-b border-sky-100"><h2 className="text-[11px] font-bold text-sky-900 uppercase tracking-widest">Pipeline Financiero (Basado en Ventas en Firme)</h2></div>
+                <div className="bg-sky-50 p-4 border-b border-sky-100"><h2 className="text-[11px] font-bold text-sky-900 uppercase tracking-widest">Detalle Proyectado (Hasta {mesProyeccion})</h2></div>
                 <div className="p-6 space-y-4">
                   <div className="p-4 border border-neutral-100 rounded-xl bg-neutral-50 flex justify-between items-center">
                     <div>
-                      <span className="text-[10px] font-bold text-neutral-500 uppercase block">Cuentas por Cobrar (Ventas Oficiales)</span>
-                      <span className="text-[9px] text-neutral-400">Calculado de unidades en 'Venta - En Cierre'</span>
+                      <span className="text-[10px] font-bold text-neutral-500 uppercase block">Total por Cobrar (Reservas + Iniciales + Cuotas)</span>
+                      <span className="text-[9px] text-neutral-400">Suma acumulada de todo el plan de pagos hasta la fecha</span>
                     </div>
-                    <span className="text-lg font-mono font-bold text-sky-600">${metricas.cuentasPorCobrarCRM.toLocaleString()}</span>
+                    <span className="text-lg font-mono font-bold text-sky-600">+${metricas.ingresosProyectadosAcumulados.toLocaleString()}</span>
                   </div>
                   <div className="p-4 border border-neutral-100 rounded-xl bg-neutral-50 flex justify-between items-center">
                     <div>
                       <span className="text-[10px] font-bold text-neutral-500 uppercase block">Obligaciones (Presupuesto)</span>
-                      <span className="text-[9px] text-neutral-400">Inversiones planificadas hasta {mesProyeccion}</span>
+                      <span className="text-[9px] text-neutral-400">Inversiones planificadas hasta esta fecha</span>
                     </div>
                     <span className="text-lg font-mono font-bold text-amber-600">-${metricas.inversionProyectada.toLocaleString()}</span>
                   </div>
