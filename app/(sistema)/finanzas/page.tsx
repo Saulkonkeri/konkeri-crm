@@ -15,6 +15,7 @@ export default function FinanzasDashboardPage() {
   const [inversionesPorHacer, setInversionesPorHacer] = useState<any[]>([]);
   const [unidadesVendidas, setUnidadesVendidas] = useState<any[]>([]);
   const [clientes, setClientes] = useState<any[]>([]);
+  const [deudasSocios, setDeudasSocios] = useState<any[]>([]); // 👈 Estado para aportes en especie/bolsillo
   
   const [saldoBancarioReal, setSaldoBancarioReal] = useState<string>('');
 
@@ -30,12 +31,13 @@ export default function FinanzasDashboardPage() {
     totalClientesAbonadoReal: 0,
     inversionProyectada: 0,
     comisionesRealesKonkeri: 0, 
-    anticiposRealesKonkeri: 0
+    anticiposRealesKonkeri: 0,
+    aportesEspeciePendientes: 0 // 👈 Total de deudas pendientes a socios
   });
 
-  // ================= FORMULARIO UNIFICADO CON FECHA ACTIVA =================
+  // ================= FORMULARIOS =================
   const [movForm, setMovForm] = useState({
-    fecha_transaccion: new Date().toISOString().split('T')[0], // 👈 Fecha por defecto hoy, editable
+    fecha_transaccion: new Date().toISOString().split('T')[0],
     cuenta_bancaria: 'Cta. Arienzo S.A.S.',
     tipo: 'Ingreso',
     categoria: 'Aporte de Socios / Capital',
@@ -51,6 +53,13 @@ export default function FinanzasDashboardPage() {
     fecha_estimada: ''
   });
 
+  const [deudaForm, setDeudaForm] = useState({
+    fecha_registro: new Date().toISOString().split('T')[0],
+    acreedor: 'Saúl Intriago (Socio)',
+    concepto: '',
+    monto: ''
+  });
+
   // ================= CEREBRO FINANCIERO =================
   useEffect(() => {
     cargarDatos();
@@ -63,16 +72,19 @@ export default function FinanzasDashboardPage() {
       const { data: pres } = await supabase.from('finanzas_presupuestos').select('*').order('fecha_estimada', { ascending: true });
       const { data: ventas } = await supabase.from('cotizaciones').select('*').eq('estado', 'Venta - En Cierre'); 
       const { data: clis } = await supabase.from('clientes').select('*');
+      const { data: deudas } = await supabase.from('finanzas_deudas_intercompania').select('*').order('fecha_registro', { ascending: false });
 
       const movsData = movs || [];
       const presData = pres || [];
       const ventasData = ventas || [];
       const clisData = clis || [];
+      const deudasData = deudas || [];
 
       setMovimientos(movsData);
       setInversionesPorHacer(presData);
       setUnidadesVendidas(ventasData);
       setClientes(clisData);
+      setDeudasSocios(deudasData);
 
       let inCapital = 0, inVentas = 0;
       let egObra = 0, egComercial = 0, egresosTotales = 0;
@@ -98,7 +110,6 @@ export default function FinanzasDashboardPage() {
       });
 
       const cajaReal = (inCapital + inVentas + comisionesKonkeri) - egresosTotales;
-      
       const presupuestoFiltrado = presData.filter(p => !p.fecha_estimada || p.fecha_estimada <= mesProyeccion);
       const totalInvProy = presupuestoFiltrado.reduce((acc, curr) => acc + Number(curr.monto_estimado), 0);
 
@@ -119,6 +130,11 @@ export default function FinanzasDashboardPage() {
         }
       });
 
+      let sumAportesPendientes = 0;
+      deudasData.forEach(d => {
+        if (d.estado === 'Pendiente') sumAportesPendientes += Number(d.monto);
+      });
+
       const totalClientesAbonado = sumCobrado + reservasManualesIngresadas;
       const totalCombinadoVentas = sumCobrado + sumPorCobrarHastaFecha;
 
@@ -134,7 +150,8 @@ export default function FinanzasDashboardPage() {
         totalClientesAbonadoReal: totalClientesAbonado,
         inversionProyectada: totalInvProy,
         comisionesRealesKonkeri: comisionesKonkeri,
-        anticiposRealesKonkeri: anticiposKonkeri
+        anticiposRealesKonkeri: anticiposKonkeri,
+        aportesEspeciePendientes: sumAportesPendientes
       });
 
     } catch (error) {
@@ -150,7 +167,7 @@ export default function FinanzasDashboardPage() {
     
     try {
       const datosAGuardar = {
-        fecha_transaccion: movForm.fecha_transaccion, // 👈 Guarda la fecha seleccionada por el usuario
+        fecha_transaccion: movForm.fecha_transaccion,
         entidad: movForm.cuenta_bancaria,
         tipo: movForm.tipo,
         categoria: movForm.categoria,
@@ -160,30 +177,16 @@ export default function FinanzasDashboardPage() {
       };
 
       if (editandoMovId) {
-        // 🎯 ACTUALIZAR REGISTRO EXISTENTE
-        const { error } = await supabase.from('finanzas_movimientos').update(datosAGuardar).eq('id', editandoMovId);
-        if (error) throw error;
+        await supabase.from('finanzas_movimientos').update(datosAGuardar).eq('id', editandoMovId);
         setEditandoMovId(null);
       } else {
-        // 🎯 INSERTAR NUEVO REGISTRO
-        const { error } = await supabase.from('finanzas_movimientos').insert([datosAGuardar]);
-        if (error) throw error;
+        await supabase.from('finanzas_movimientos').insert([datosAGuardar]);
       }
       
-      // Limpiar formulario reseteando la fecha a hoy
-      setMovForm({
-        fecha_transaccion: new Date().toISOString().split('T')[0],
-        cuenta_bancaria: 'Cta. Arienzo S.A.S.',
-        tipo: 'Ingreso',
-        categoria: 'Aporte de Socios / Capital',
-        descripcion: '',
-        monto: '',
-        estado_comprobante: 'Recibo Interno',
-      });
-      
+      setMovForm({ ...movForm, descripcion: '', monto: '' });
       cargarDatos();
-    } catch (err: any) {
-      alert("Error al guardar en el servidor: " + (err.message || err));
+    } catch (err) {
+      alert("Error al guardar en el servidor.");
     }
   };
 
@@ -218,6 +221,45 @@ export default function FinanzasDashboardPage() {
     if (!window.confirm("¿Confirma la eliminación? Esto recalculará los saldos.")) return;
     try {
       await supabase.from('finanzas_movimientos').delete().eq('id', id);
+      cargarDatos();
+    } catch (err) {
+      alert("Error al eliminar.");
+    }
+  };
+
+  // 🎯 FUNCIONES PARA DEUDAS/APORTES INTERCOMPAÑÍA
+  const registrarDeudaSocio = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!deudaForm.monto || Number(deudaForm.monto) <= 0) return alert("Ingrese un monto válido.");
+    try {
+      await supabase.from('finanzas_deudas_intercompania').insert([{
+        fecha_registro: deudaForm.fecha_registro,
+        acreedor: deudaForm.acreedor,
+        concepto: deudaForm.concepto,
+        monto: Number(deudaForm.monto),
+        estado: 'Pendiente'
+      }]);
+      setDeudaForm({ ...deudaForm, concepto: '', monto: '' });
+      cargarDatos();
+    } catch (err) {
+      alert("Error al guardar el aporte.");
+    }
+  };
+
+  const saldarDeudaSocio = async (id: string) => {
+    if (!window.confirm("¿Confirma que Arienzo ya pagó o reembolsó este valor?\n\nRecuerde que debe registrar un EGRESO en la pestaña de Tesorería para que el saldo de la caja baje.")) return;
+    try {
+      await supabase.from('finanzas_deudas_intercompania').update({ estado: 'Saldado' }).eq('id', id);
+      cargarDatos();
+    } catch (err) {
+      alert("Error al actualizar.");
+    }
+  };
+
+  const eliminarDeudaSocio = async (id: string) => {
+    if (!window.confirm("¿Desea eliminar este registro de forma permanente?")) return;
+    try {
+      await supabase.from('finanzas_deudas_intercompania').delete().eq('id', id);
       cargarDatos();
     } catch (err) {
       alert("Error al eliminar.");
@@ -380,7 +422,6 @@ export default function FinanzasDashboardPage() {
                 </div>
               </div>
             </div>
-
           </div>
         )}
 
@@ -425,7 +466,6 @@ export default function FinanzasDashboardPage() {
                     <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Fecha del Movimiento</label>
                     <input type="date" required value={movForm.fecha_transaccion} onChange={e => setMovForm({...movForm, fecha_transaccion: e.target.value})} className="w-full text-xs font-bold p-2.5 rounded-lg border border-neutral-200 bg-white outline-none" />
                   </div>
-
                   <div>
                     <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Cuenta Bancaria</label>
                     <select value={movForm.cuenta_bancaria} onChange={e => setMovForm({...movForm, cuenta_bancaria: e.target.value})} className="w-full text-xs font-bold p-2.5 rounded-lg border border-neutral-200 bg-white outline-none">
@@ -434,7 +474,6 @@ export default function FinanzasDashboardPage() {
                       <option>Caja Chica (Efectivo)</option>
                     </select>
                   </div>
-                  
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Tipo</label>
@@ -451,7 +490,6 @@ export default function FinanzasDashboardPage() {
                       </select>
                     </div>
                   </div>
-
                   <div>
                     <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Categoría</label>
                     <select value={movForm.categoria} onChange={e => setMovForm({...movForm, categoria: e.target.value})} className="w-full text-xs font-medium p-2.5 rounded-lg border border-neutral-200 bg-white outline-none">
@@ -471,17 +509,14 @@ export default function FinanzasDashboardPage() {
                       )}
                     </select>
                   </div>
-
                   <div>
                     <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Detalle</label>
                     <input type="text" required value={movForm.descripcion} onChange={e => setMovForm({...movForm, descripcion: e.target.value})} className="w-full text-xs p-2.5 rounded-lg border outline-none" placeholder="Ej. Pago Municipio" />
                   </div>
-
                   <div>
                     <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Monto ($)</label>
                     <input type="number" step="0.01" required value={movForm.monto} onChange={e => setMovForm({...movForm, monto: e.target.value})} className="w-full text-xl font-mono font-bold p-2.5 rounded-lg border outline-none bg-white" placeholder="0.00" />
                   </div>
-
                   <button type="submit" className={`w-full text-white font-bold uppercase tracking-widest text-[10px] py-3.5 rounded-xl ${editandoMovId ? 'bg-amber-600' : 'bg-[#21242E]'}`}>
                     {editandoMovId ? 'Actualizar Movimiento' : 'Guardar en Libro'}
                   </button>
@@ -593,33 +628,109 @@ export default function FinanzasDashboardPage() {
           </div>
         )}
 
-        {/* PESTAÑA 4: CONCILIACIÓN INTERCOMPAÑÍA */}
+        {/* 🎯 PESTAÑA 4: INTERCOMPAÑÍA & APORTES EN ESPECIE */}
         {activeTab === 'intercompania' && (
-          <div className="space-y-6 animate-in fade-in max-w-5xl mx-auto">
-            <div className="bg-white p-8 rounded-2xl border border-neutral-200 shadow-sm">
-               <div className="mb-8 border-b border-neutral-100 pb-6">
-                 <h2 className="text-xl font-bold text-[#21242E] mb-2">Reporte Intercompañía: Arienzo vs Konkeri</h2>
-                 <p className="text-xs text-neutral-500 max-w-3xl leading-relaxed text-justify">
-                   Contrapone estrictamente los cobros de comisiones reales ingresados en la cuenta de Konkeri versus los anticipos operativos girados desde Tesorería. Cero cálculos fantasmas: todo se basa en movimientos reales registrados.
-                 </p>
-               </div>
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                 <div className="border border-neutral-200 p-6 rounded-xl bg-neutral-50">
-                   <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest block mb-2">Comisiones Ingresadas (Tesorería)</span>
-                   <span className="text-3xl font-mono font-bold text-[#21242E]">${metricas.comisionesRealesKonkeri.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                   <p className="text-[10px] text-neutral-400 mt-3 uppercase font-bold">Cobros registrados a mano en Konkeri.</p>
+          <div className="space-y-8 animate-in fade-in max-w-6xl mx-auto">
+            
+            {/* Tarjetas de Resumen Global */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-white p-5 rounded-xl border border-neutral-200 shadow-sm flex flex-col justify-center">
+                <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest block mb-1">1. Comisiones Konkeri</span>
+                <span className="text-2xl font-mono font-bold text-[#21242E]">${metricas.comisionesRealesKonkeri.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+              </div>
+              <div className="bg-white p-5 rounded-xl border border-neutral-200 shadow-sm flex flex-col justify-center">
+                <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest block mb-1">2. Anticipos Girados</span>
+                <span className="text-2xl font-mono font-bold text-[#ea0029]">-${metricas.anticiposRealesKonkeri.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+              </div>
+              <div className="bg-white p-5 rounded-xl border border-neutral-200 shadow-sm flex flex-col justify-center border-l-4 border-l-sky-500">
+                <span className="text-[9px] font-bold text-sky-600 uppercase tracking-widest block mb-1">3. Aportes / Bolsillo Pendiente</span>
+                <span className="text-2xl font-mono font-bold text-sky-700">${metricas.aportesEspeciePendientes.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+              </div>
+              <div className="bg-[#21242E] p-5 rounded-xl shadow-md flex flex-col justify-center">
+                <span className="text-[9px] font-bold text-[#D1C292] uppercase tracking-widest block mb-1">Total que Arienzo Debe (1 - 2 + 3)</span>
+                <span className="text-2xl font-mono font-bold text-white">${(metricas.comisionesRealesKonkeri - metricas.anticiposRealesKonkeri + metricas.aportesEspeciePendientes).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Formulario de Aportes/Deudas */}
+              <div className="lg:col-span-1 bg-white rounded-2xl p-6 shadow-sm border border-neutral-200 h-fit sticky top-6">
+                <h2 className="text-[11px] font-bold text-[#21242E] uppercase tracking-widest border-b border-neutral-100 pb-3 mb-5">Registrar Gasto de Bolsillo / Trabajo</h2>
+                <form onSubmit={registrarDeudaSocio} className="space-y-4">
+                  <div>
+                    <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Fecha</label>
+                    <input type="date" required value={deudaForm.fecha_registro} onChange={e => setDeudaForm({...deudaForm, fecha_registro: e.target.value})} className="w-full text-xs font-bold p-2.5 rounded-lg border outline-none" />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">¿Quién lo pagó / ejecutó?</label>
+                    <select value={deudaForm.acreedor} onChange={e => setDeudaForm({...deudaForm, acreedor: e.target.value})} className="w-full text-xs font-bold p-2.5 rounded-lg border outline-none">
+                      <option>Saúl Intriago (Socio)</option>
+                      <option>Debbi (Socia)</option>
+                      <option>Konkeri S.A.S.</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Concepto del Trabajo o Gasto</label>
+                    <input type="text" required value={deudaForm.concepto} onChange={e => setDeudaForm({...deudaForm, concepto: e.target.value})} placeholder="Ej: Pago de Cuadros, Diseño de Renders..." className="w-full text-xs p-2.5 rounded-lg border outline-none" />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Valorización ($)</label>
+                    <input type="number" step="0.01" required value={deudaForm.monto} onChange={e => setDeudaForm({...deudaForm, monto: e.target.value})} className="w-full text-sm font-mono font-bold p-2.5 rounded-lg border outline-none" placeholder="0.00" />
+                  </div>
+                  <button type="submit" className="w-full bg-sky-700 text-white font-bold uppercase tracking-widest text-[10px] py-3.5 rounded-xl hover:bg-sky-800 transition-colors">Registrar Cta. Por Pagar</button>
+                </form>
+              </div>
+              
+              {/* Tabla de Aportes Registrados */}
+              <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-neutral-200 flex flex-col">
+                 <h2 className="text-[11px] font-bold text-[#415364] uppercase tracking-widest border-b border-neutral-100 pb-3 mb-4">Cuentas por Pagar (Aportes en Especie y Bolsillo)</h2>
+                 <div className="overflow-auto custom-scrollbar flex-1 -mx-2 px-2">
+                   <table className="w-full text-left text-[11px] whitespace-nowrap">
+                     <thead>
+                       <tr className="border-b border-neutral-200 text-neutral-400 uppercase tracking-wider">
+                         <th className="py-3 px-2 font-semibold">Fecha / Acreedor</th>
+                         <th className="py-3 px-2 font-semibold">Concepto Registrado</th>
+                         <th className="py-3 px-2 font-semibold text-center">Estado</th>
+                         <th className="py-3 px-2 font-semibold text-right">Valor</th>
+                         <th className="py-3 px-2 font-semibold text-center">Acciones</th>
+                       </tr>
+                     </thead>
+                     <tbody className="divide-y divide-neutral-100">
+                       {deudasSocios.length > 0 ? (
+                         deudasSocios.map(d => (
+                           <tr key={d.id} className="hover:bg-neutral-50 group">
+                             <td className="py-4 px-2">
+                               <p className="font-mono text-neutral-500 text-[10px]">{new Date(d.fecha_registro).toLocaleDateString('es-ES')}</p>
+                               <p className="font-bold text-[#21242E]">{d.acreedor}</p>
+                             </td>
+                             <td className="py-4 px-2 text-neutral-600 truncate max-w-[200px]">{d.concepto}</td>
+                             <td className="py-4 px-2 text-center">
+                               {d.estado === 'Pendiente' ? (
+                                 <span className="bg-amber-100 text-amber-800 px-2 py-0.5 rounded text-[9px] font-bold uppercase">Deuda</span>
+                               ) : (
+                                 <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[9px] font-bold uppercase">Saldado</span>
+                               )}
+                             </td>
+                             <td className="py-4 px-2 text-right font-mono font-bold text-sky-700">${Number(d.monto).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                             <td className="py-4 px-2 text-center">
+                               <div className="flex justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                 {d.estado === 'Pendiente' && (
+                                   <button onClick={() => saldarDeudaSocio(d.id)} className="text-emerald-600 font-bold text-[9px] uppercase hover:underline" title="Marcar como pagado">Saldar</button>
+                                 )}
+                                 <button onClick={() => eliminarDeudaSocio(d.id)} className="text-neutral-400 hover:text-[#ea0029]" title="Eliminar permanentemente">🗑️</button>
+                               </div>
+                             </td>
+                           </tr>
+                         ))
+                       ) : (
+                         <tr>
+                           <td colSpan={5} className="py-8 text-center text-neutral-400 text-xs italic">No hay aportes ni gastos pendientes registrados.</td>
+                         </tr>
+                       )}
+                     </tbody>
+                   </table>
                  </div>
-                 <div className="border border-neutral-200 p-6 rounded-xl bg-neutral-50">
-                   <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest block mb-2">(-) Anticipos Girados (Caja Real)</span>
-                   <span className="text-3xl font-mono font-bold text-[#ea0029]">-${metricas.anticiposRealesKonkeri.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                   <p className="text-[10px] text-neutral-400 mt-3 uppercase font-bold">Fondos transferidos a la operadora.</p>
-                 </div>
-                 <div className="border border-neutral-300 p-6 rounded-xl bg-white shadow-sm">
-                   <span className="text-[10px] text-[#415364] font-bold uppercase tracking-widest block mb-2">(=) Saldo Intercompañía a Favor</span>
-                   <span className="text-3xl font-mono font-bold text-[#415364]">${saldoIntercompaniaReal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                   <p className="text-[10px] text-[#415364]/70 mt-3 uppercase font-bold">Diferencia neta registrada.</p>
-                 </div>
-               </div>
+              </div>
             </div>
           </div>
         )}
