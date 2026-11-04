@@ -20,7 +20,7 @@ export default function FinanzasDashboardPage() {
   const [clientes, setClientes] = useState<any[]>([]);
   const [deudasSocios, setDeudasSocios] = useState<any[]>([]);
   
-  const [saldoBancarioReal, setSaldoBancarioReal] = useState<string>(''); // 👈 Inicial vacío
+  const [saldoBancarioReal, setSaldoBancarioReal] = useState<string>(''); 
   const [guardandoSaldo, setGuardandoSaldo] = useState(false);
 
   const [metricas, setMetricas] = useState({
@@ -76,13 +76,12 @@ export default function FinanzasDashboardPage() {
       const { data: clis } = await supabase.from('clientes').select('*');
       const { data: deudas } = await supabase.from('finanzas_deudas_intercompania').select('*').order('fecha_registro', { ascending: false });
       
-      // 🎯 FORZAMOS LA LECTURA DEL SALDO BANCARIO DIRECTO DE SUPABASE
-      const { data: config, error: configError } = await supabase.from('finanzas_configuracion').select('valor').eq('id', 'saldo_bancario_real').maybeSingle();
+      const { data: config } = await supabase.from('finanzas_configuracion').select('valor').eq('id', 'saldo_bancario_real').maybeSingle();
 
       if (config && config.valor) {
-        setSaldoBancarioReal(config.valor); // Cargamos el valor real del servidor
+        setSaldoBancarioReal(config.valor);
       } else {
-        setSaldoBancarioReal('0'); // Si no hay nada, forzamos a 0 para que no se quede en blanco
+        setSaldoBancarioReal('0');
       }
 
       const movsData = movs || [];
@@ -166,34 +165,26 @@ export default function FinanzasDashboardPage() {
     }
   };
 
-  // 🎯 FUNCIÓN CORREGIDA PARA GUARDAR EL SALDO BANCARIO
   const guardarSaldoBancario = async () => {
     setGuardandoSaldo(true);
     try {
-      // Usamos onConflict para asegurarnos de que sobrescriba el valor si ya existe el ID
       const { error } = await supabase
         .from('finanzas_configuracion')
         .upsert(
           { id: 'saldo_bancario_real', valor: saldoBancarioReal || '0' },
-          { onConflict: 'id' } // 👈 ESTO ES LA CLAVE PARA QUE NO FALLE
+          { onConflict: 'id' } 
         );
       
-      if (error) {
-        throw error;
-      }
-      
+      if (error) throw error;
       alert('¡Saldo bancario guardado correctamente en la nube!');
-      // Forzamos una recarga silenciosa para asegurar que el estado está sincronizado
       cargarDatos(); 
     } catch (err: any) {
-      console.error("Error guardando saldo:", err);
       alert('Error al guardar el saldo: ' + (err.message || 'Fallo desconocido'));
     } finally {
       setGuardandoSaldo(false);
     }
   };
 
-  // 🎯 FUNCIONES PARA TESORERÍA (MOVIMIENTOS)
   const registrarMovimiento = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!movForm.monto) return alert("Ingrese un monto válido.");
@@ -235,7 +226,6 @@ export default function FinanzasDashboardPage() {
     cargarDatos();
   };
 
-  // 🎯 FUNCIONES PARA PRESUPUESTO
   const registrarPresupuesto = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!proyeccionForm.monto_estimado) return alert("Ingrese un monto.");
@@ -274,7 +264,7 @@ export default function FinanzasDashboardPage() {
     cargarDatos();
   };
 
-  // 🎯 FUNCIONES PARA DEUDAS/APORTES INTERCOMPAÑÍA
+  // 🎯 FUNCIÓN DE INTERCOMPAÑÍA REPARADA CON MANEJO DE ERRORES
   const registrarDeudaSocio = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!deudaForm.monto) return alert("Ingrese un monto.");
@@ -286,14 +276,19 @@ export default function FinanzasDashboardPage() {
         monto: Number(deudaForm.monto)
       };
       if (editandoDeudaId) {
-        await supabase.from('finanzas_deudas_intercompania').update(datos).eq('id', editandoDeudaId);
+        const { error } = await supabase.from('finanzas_deudas_intercompania').update(datos).eq('id', editandoDeudaId);
+        if (error) throw error;
         setEditandoDeudaId(null);
       } else {
-        await supabase.from('finanzas_deudas_intercompania').insert([{ ...datos, estado: 'Pendiente' }]);
+        const { error } = await supabase.from('finanzas_deudas_intercompania').insert([{ ...datos, estado: 'Pendiente' }]);
+        if (error) throw error;
       }
       setDeudaForm({ fecha_registro: new Date().toISOString().split('T')[0], acreedor: 'Konkeri S.A.S.', concepto: '', monto: '' });
       cargarDatos();
-    } catch (err) { alert("Error al guardar registro intercompañía."); }
+    } catch (err: any) { 
+      console.error(err);
+      alert("Error al guardar: " + (err.message || 'La tabla puede no existir o tener bloqueos de seguridad.')); 
+    }
   };
 
   const cargarParaEditarDeuda = (deuda: any) => {
@@ -329,7 +324,6 @@ export default function FinanzasDashboardPage() {
     <div className="min-h-screen bg-[#F9F7F5] p-4 md:p-8 font-sans text-[#415364]">
       <div className="max-w-7xl mx-auto space-y-8">
         
-        {/* CABECERA */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center border-b border-neutral-200 pb-6 gap-4">
           <div>
             <span className="text-[10px] font-bold tracking-widest text-[#B94A36] uppercase block">Módulo Financiero Integrado</span>
@@ -343,26 +337,37 @@ export default function FinanzasDashboardPage() {
           </div>
         </div>
 
-        {/* PESTAÑA 1: DASHBOARD GERENCIAL */}
+        {/* PESTAÑA 1: DASHBOARD GERENCIAL REESTRUCTURADO */}
         {activeTab === 'resumen' && (
           <div className="space-y-6 animate-in fade-in max-w-6xl mx-auto">
             
+            {/* 🎯 1. PROYECCIÓN EN BANCO (EL FLUJO LÓGICO QUE PEDISTE) */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-200 flex flex-col justify-center">
-                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block mb-2">Caja Real en Bancos</span>
+                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block mb-2">Caja Real Hoy</span>
                 <span className="text-3xl font-mono font-bold text-[#21242E]">${bancoReal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
               </div>
-              <div className="bg-sky-50/50 p-6 rounded-2xl border border-sky-100 flex flex-col justify-center">
-                <span className="text-[10px] font-bold text-sky-800 uppercase tracking-widest block mb-2">Cobrado (Ventas Cerradas)</span>
-                <span className="text-2xl font-mono font-bold text-sky-700">${metricas.cobradoCRM.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-              </div>
               <div className="bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100 flex flex-col justify-center">
-                <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest block mb-2">Por Cobrar (Ventas Cerradas)</span>
-                <span className="text-2xl font-mono font-bold text-emerald-700">${metricas.porCobrarCRM.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest block">(+) Por Cobrar CRM</span>
+                </div>
+                <span className="text-2xl font-mono font-bold text-emerald-700">+${metricas.porCobrarCRM.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
               </div>
-              <div className="bg-[#21242E] p-6 rounded-2xl shadow-md flex flex-col justify-center">
-                <span className="text-[10px] font-bold text-[#D1C292] uppercase tracking-widest block mb-2">Balance Proyectado Ventas</span>
-                <span className="text-2xl font-mono font-bold text-white">${(metricas.cobradoCRM + metricas.porCobrarCRM).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+              <div className="bg-amber-50/50 p-6 rounded-2xl border border-amber-100 flex flex-col justify-center">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[10px] font-bold text-amber-800 uppercase tracking-widest block">(-) Presupuestos Futuros</span>
+                </div>
+                <span className="text-2xl font-mono font-bold text-amber-700">-${metricas.presupuestoFuturo.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+              </div>
+              <div className="bg-[#21242E] p-6 rounded-2xl shadow-md flex flex-col justify-center relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[#D1C292] opacity-10 rounded-full blur-2xl -mr-10 -mt-10"></div>
+                <div className="flex justify-between items-center mb-2 relative z-10">
+                  <span className="text-[10px] font-bold text-[#D1C292] uppercase tracking-widest block">Liquidez Proyectada</span>
+                  <input type="month" value={mesProyeccion} onChange={e => setMesProyeccion(e.target.value)} className="text-[9px] font-bold text-white border border-neutral-600 rounded p-1 outline-none bg-neutral-800" />
+                </div>
+                <span className="text-3xl font-mono font-bold text-white relative z-10">
+                  ${(bancoReal + metricas.porCobrarCRM - metricas.presupuestoFuturo).toLocaleString('en-US', {minimumFractionDigits: 2})}
+                </span>
               </div>
             </div>
 
@@ -403,38 +408,22 @@ export default function FinanzasDashboardPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="md:col-span-2 space-y-6">
-                <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden flex flex-col justify-between">
-                  <div className="bg-neutral-50 p-4 border-b border-neutral-200"><h2 className="text-[11px] font-bold text-[#415364] uppercase tracking-widest">Balance General Histórico</h2></div>
-                  <div className="p-6 space-y-4">
+                <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden flex flex-col justify-between h-full">
+                  <div className="bg-neutral-50 p-4 border-b border-neutral-200"><h2 className="text-[11px] font-bold text-[#415364] uppercase tracking-widest">Balance Histórico Acumulado</h2></div>
+                  <div className="p-6 space-y-4 flex-1 flex flex-col justify-center">
                     <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100 flex justify-between items-center">
                       <div>
-                        <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest block">Total Ingresos Totales</span>
-                        <span className="text-[9px] text-emerald-600">Todo lo ingresado al proyecto</span>
+                        <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest block">Total Ingresos Históricos</span>
+                        <span className="text-[9px] text-emerald-600">Todo el capital que ha entrado (Ventas + Aportes)</span>
                       </div>
                       <span className="text-xl font-mono font-bold text-emerald-700">+${metricas.totalIngresosHistoricos.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                     </div>
                     <div className="p-4 rounded-xl bg-red-50 border border-red-100 flex justify-between items-center">
                       <div>
                         <span className="text-[10px] font-bold text-[#ea0029] uppercase tracking-widest block">Total Histórico Gastado</span>
-                        <span className="text-[9px] text-[#ea0029]/70">Todo el capital utilizado hasta la fecha</span>
+                        <span className="text-[9px] text-[#ea0029]/70">Todo el capital utilizado (Obras, comisiones, etc)</span>
                       </div>
                       <span className="text-xl font-mono font-bold text-[#ea0029]">-${metricas.egresosTesoreria.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden flex flex-col justify-between">
-                  <div className="bg-neutral-50 p-4 border-b border-neutral-200 flex justify-between items-center">
-                    <h2 className="text-[11px] font-bold text-[#415364] uppercase tracking-widest">Presupuestos Futuros</h2>
-                    <input type="month" value={mesProyeccion} onChange={e => setMesProyeccion(e.target.value)} className="text-[10px] font-bold text-[#21242E] border border-neutral-300 rounded p-1 outline-none bg-white" />
-                  </div>
-                  <div className="p-6 space-y-4">
-                    <div className="p-4 rounded-xl bg-amber-50 border border-amber-100 flex justify-between items-center">
-                      <div>
-                        <span className="text-[10px] font-bold text-amber-800 uppercase tracking-widest block">Inversiones Proyectadas</span>
-                        <span className="text-[9px] text-amber-600">Obligaciones planificadas hasta {mesProyeccion}</span>
-                      </div>
-                      <span className="text-xl font-mono font-bold text-amber-700">-${metricas.presupuestoFuturo.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                     </div>
                   </div>
                 </div>
@@ -442,14 +431,14 @@ export default function FinanzasDashboardPage() {
 
               <div className="md:col-span-1">
                 <div className="bg-neutral-900 text-white p-6 rounded-2xl shadow-lg border border-neutral-800 h-full flex flex-col">
-                  <span className="text-[10px] font-bold text-[#D1C292] uppercase tracking-widest block mb-4 border-b border-neutral-700 pb-3">Ratio de Cobertura</span>
+                  <span className="text-[10px] font-bold text-[#D1C292] uppercase tracking-widest block mb-4 border-b border-neutral-700 pb-3">Ratio de Cobertura Clientes</span>
                   <div className="flex-1 flex flex-col justify-center space-y-5">
                     <div>
-                      <span className="text-[9px] text-neutral-400 uppercase tracking-wider block mb-1">Caja Real (En Banco)</span>
+                      <span className="text-[9px] text-neutral-400 uppercase tracking-wider block mb-1">Caja Real (En Banco Hoy)</span>
                       <span className="text-2xl font-mono font-bold text-white">${bancoReal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                     </div>
                     <div>
-                      <span className="text-[9px] text-neutral-400 uppercase tracking-wider block mb-1">Total Abonado (Clientes)</span>
+                      <span className="text-[9px] text-neutral-400 uppercase tracking-wider block mb-1">Total Abonado por Clientes</span>
                       <span className="text-2xl font-mono font-bold text-white">${metricas.totalClientesAbonadoReal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                     </div>
                   </div>
@@ -469,8 +458,6 @@ export default function FinanzasDashboardPage() {
         {activeTab === 'tesoreria' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in">
             <div className="lg:col-span-1 space-y-6">
-              
-              {/* 🎯 AUDITOR DE CAJA CON BOTÓN GUARDAR (NUBE) */}
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
                 <h2 className="text-[11px] font-bold text-[#21242E] uppercase tracking-widest border-b border-neutral-100 pb-3 mb-4 flex justify-between items-center">
                   <span>Auditor de Caja</span><span>⚖️</span>
@@ -634,7 +621,6 @@ export default function FinanzasDashboardPage() {
                   <button onClick={cancelarEdicionPresupuesto} className="text-[9px] font-bold text-red-600 uppercase underline">Cancelar</button>
                 )}
               </div>
-              
               <form onSubmit={registrarPresupuesto} className="space-y-4">
                 <div>
                   <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Categoría</label>
@@ -700,7 +686,7 @@ export default function FinanzasDashboardPage() {
           </div>
         )}
 
-        {/* PESTAÑA 4: INTERCOMPAÑÍA & APORTES EN ESPECIE */}
+        {/* PESTAÑA 4: INTERCOMPAÑÍA */}
         {activeTab === 'intercompania' && (
           <div className="space-y-8 animate-in fade-in max-w-6xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
