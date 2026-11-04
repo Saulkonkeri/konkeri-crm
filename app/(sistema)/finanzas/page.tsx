@@ -77,7 +77,7 @@ export default function FinanzasDashboardPage() {
       const { data: deudas } = await supabase.from('finanzas_deudas_intercompania').select('*').order('fecha_registro', { ascending: false });
       
       // 🎯 FORZAMOS LA LECTURA DEL SALDO BANCARIO DIRECTO DE SUPABASE
-      const { data: config } = await supabase.from('finanzas_configuracion').select('valor').eq('id', 'saldo_bancario_real').single();
+      const { data: config, error: configError } = await supabase.from('finanzas_configuracion').select('valor').eq('id', 'saldo_bancario_real').maybeSingle();
 
       if (config && config.valor) {
         setSaldoBancarioReal(config.valor); // Cargamos el valor real del servidor
@@ -166,14 +166,28 @@ export default function FinanzasDashboardPage() {
     }
   };
 
+  // 🎯 FUNCIÓN CORREGIDA PARA GUARDAR EL SALDO BANCARIO
   const guardarSaldoBancario = async () => {
     setGuardandoSaldo(true);
     try {
-      await supabase.from('finanzas_configuracion').upsert({ id: 'saldo_bancario_real', valor: saldoBancarioReal || '0' });
+      // Usamos onConflict para asegurarnos de que sobrescriba el valor si ya existe el ID
+      const { error } = await supabase
+        .from('finanzas_configuracion')
+        .upsert(
+          { id: 'saldo_bancario_real', valor: saldoBancarioReal || '0' },
+          { onConflict: 'id' } // 👈 ESTO ES LA CLAVE PARA QUE NO FALLE
+        );
+      
+      if (error) {
+        throw error;
+      }
+      
       alert('¡Saldo bancario guardado correctamente en la nube!');
-      cargarDatos(); // Forzamos recarga visual
-    } catch (err) {
-      alert('Error al guardar el saldo.');
+      // Forzamos una recarga silenciosa para asegurar que el estado está sincronizado
+      cargarDatos(); 
+    } catch (err: any) {
+      console.error("Error guardando saldo:", err);
+      alert('Error al guardar el saldo: ' + (err.message || 'Fallo desconocido'));
     } finally {
       setGuardandoSaldo(false);
     }
@@ -534,7 +548,6 @@ export default function FinanzasDashboardPage() {
                     </div>
                   </div>
                   <div>
-                    {/* 🎯 SE AÑADIÓ GASTOS LEGALES EN EL SELECTOR DE CATEGORÍA */}
                     <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Categoría</label>
                     <select value={movForm.categoria} onChange={e => setMovForm({...movForm, categoria: e.target.value})} className="w-full text-xs font-medium p-2.5 rounded-lg border border-neutral-200 bg-white outline-none">
                       {movForm.tipo === 'Ingreso' ? (
@@ -556,7 +569,7 @@ export default function FinanzasDashboardPage() {
                   </div>
                   <div>
                     <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Detalle</label>
-                    <input type="text" required value={movForm.descripcion} onChange={e => setMovForm({...movForm, descripcion: e.target.value})} className="w-full text-xs p-2.5 rounded-lg border outline-none" placeholder="Ej. Pago Promesa Compraventa" />
+                    <input type="text" required value={movForm.descripcion} onChange={e => setMovForm({...movForm, descripcion: e.target.value})} className="w-full text-xs p-2.5 rounded-lg border outline-none" placeholder="Ej. Pago Municipio" />
                   </div>
                   <div>
                     <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Monto ($)</label>
