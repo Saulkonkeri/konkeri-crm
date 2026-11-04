@@ -9,13 +9,16 @@ export default function FinanzasDashboardPage() {
   const [mesProyeccion, setMesProyeccion] = useState('2026-12');
   const [cargando, setCargando] = useState(true);
 
-  // ================= ESTADOS DE DATOS =================
+  // ================= ESTADOS DE DATOS Y EDICIÓN =================
   const [editandoMovId, setEditandoMovId] = useState<string | null>(null);
+  const [editandoPresupuestoId, setEditandoPresupuestoId] = useState<string | null>(null); // 👈 Nuevo
+  const [editandoDeudaId, setEditandoDeudaId] = useState<string | null>(null);             // 👈 Nuevo
+  
   const [movimientos, setMovimientos] = useState<any[]>([]);
   const [inversionesPorHacer, setInversionesPorHacer] = useState<any[]>([]);
   const [unidadesVendidas, setUnidadesVendidas] = useState<any[]>([]);
   const [clientes, setClientes] = useState<any[]>([]);
-  const [deudasSocios, setDeudasSocios] = useState<any[]>([]); // 👈 Estado para aportes en especie/bolsillo
+  const [deudasSocios, setDeudasSocios] = useState<any[]>([]);
   
   const [saldoBancarioReal, setSaldoBancarioReal] = useState<string>('');
 
@@ -32,7 +35,7 @@ export default function FinanzasDashboardPage() {
     inversionProyectada: 0,
     comisionesRealesKonkeri: 0, 
     anticiposRealesKonkeri: 0,
-    aportesEspeciePendientes: 0 // 👈 Total de deudas pendientes a socios
+    aportesEspeciePendientes: 0
   });
 
   // ================= FORMULARIOS =================
@@ -50,7 +53,7 @@ export default function FinanzasDashboardPage() {
     categoria: 'Trámites y Permisos',
     detalle: '',
     monto_estimado: '',
-    fecha_estimada: ''
+    fecha_estimada: new Date().toISOString().split('T')[0] // 👈 Ahora pide un día específico
   });
 
   const [deudaForm, setDeudaForm] = useState({
@@ -110,12 +113,12 @@ export default function FinanzasDashboardPage() {
       });
 
       const cajaReal = (inCapital + inVentas + comisionesKonkeri) - egresosTotales;
-      const presupuestoFiltrado = presData.filter(p => !p.fecha_estimada || p.fecha_estimada <= mesProyeccion);
+      const limitePresupuesto = `${mesProyeccion}-31`;
+      const presupuestoFiltrado = presData.filter(p => !p.fecha_estimada || p.fecha_estimada <= limitePresupuesto);
       const totalInvProy = presupuestoFiltrado.reduce((acc, curr) => acc + Number(curr.monto_estimado), 0);
 
       let sumCobrado = 0;
       let sumPorCobrarHastaFecha = 0;
-      const fechaLimiteFiltro = `${mesProyeccion}-31`;
 
       ventasData.forEach(v => {
         if (v.cronograma_pagos && Array.isArray(v.cronograma_pagos)) {
@@ -123,7 +126,7 @@ export default function FinanzasDashboardPage() {
             const montoCuota = Number(cuota.amount || 0);
             if (cuota.pagado === true) {
               sumCobrado += montoCuota;
-            } else if (cuota.date && cuota.date <= fechaLimiteFiltro) {
+            } else if (cuota.date && cuota.date <= limitePresupuesto) {
               sumPorCobrarHastaFecha += montoCuota;
             }
           });
@@ -161,12 +164,12 @@ export default function FinanzasDashboardPage() {
     }
   };
 
+  // 🎯 FUNCIONES PARA TESORERÍA (MOVIMIENTOS)
   const registrarMovimiento = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!movForm.monto || Number(movForm.monto) <= 0) return alert("Ingrese un monto válido.");
-    
+    if (!movForm.monto) return alert("Ingrese un monto válido.");
     try {
-      const datosAGuardar = {
+      const datos = {
         fecha_transaccion: movForm.fecha_transaccion,
         entidad: movForm.cuenta_bancaria,
         tipo: movForm.tipo,
@@ -175,95 +178,116 @@ export default function FinanzasDashboardPage() {
         monto: Number(movForm.monto),
         estado_facturacion: movForm.estado_comprobante
       };
-
       if (editandoMovId) {
-        await supabase.from('finanzas_movimientos').update(datosAGuardar).eq('id', editandoMovId);
+        await supabase.from('finanzas_movimientos').update(datos).eq('id', editandoMovId);
         setEditandoMovId(null);
       } else {
-        await supabase.from('finanzas_movimientos').insert([datosAGuardar]);
+        await supabase.from('finanzas_movimientos').insert([datos]);
       }
-      
-      setMovForm({ ...movForm, descripcion: '', monto: '' });
+      setMovForm({ fecha_transaccion: new Date().toISOString().split('T')[0], cuenta_bancaria: 'Cta. Arienzo S.A.S.', tipo: 'Ingreso', categoria: 'Aporte de Socios / Capital', descripcion: '', monto: '', estado_comprobante: 'Recibo Interno' });
       cargarDatos();
-    } catch (err) {
-      alert("Error al guardar en el servidor.");
-    }
+    } catch (err) { alert("Error al guardar en el servidor."); }
   };
 
   const cargarParaEditarMov = (mov: any) => {
-    setMovForm({
-      fecha_transaccion: mov.fecha_transaccion,
-      cuenta_bancaria: mov.entidad,
-      tipo: mov.tipo,
-      categoria: mov.categoria,
-      descripcion: mov.descripcion || '',
-      monto: mov.monto.toString(),
-      estado_comprobante: mov.estado_facturacion || 'Recibo Interno',
-    });
+    setMovForm({ fecha_transaccion: mov.fecha_transaccion, cuenta_bancaria: mov.entidad, tipo: mov.tipo, categoria: mov.categoria, descripcion: mov.descripcion || '', monto: mov.monto.toString(), estado_comprobante: mov.estado_facturacion || 'Recibo Interno' });
     setEditandoMovId(mov.id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const cancelarEdicion = () => {
+  const cancelarEdicionMov = () => {
     setEditandoMovId(null);
-    setMovForm({
-      fecha_transaccion: new Date().toISOString().split('T')[0],
-      cuenta_bancaria: 'Cta. Arienzo S.A.S.',
-      tipo: 'Ingreso',
-      categoria: 'Aporte de Socios / Capital',
-      descripcion: '',
-      monto: '',
-      estado_comprobante: 'Recibo Interno',
-    });
+    setMovForm({ fecha_transaccion: new Date().toISOString().split('T')[0], cuenta_bancaria: 'Cta. Arienzo S.A.S.', tipo: 'Ingreso', categoria: 'Aporte de Socios / Capital', descripcion: '', monto: '', estado_comprobante: 'Recibo Interno' });
   };
 
   const eliminarMovimiento = async (id: string) => {
     if (!window.confirm("¿Confirma la eliminación? Esto recalculará los saldos.")) return;
+    await supabase.from('finanzas_movimientos').delete().eq('id', id);
+    cargarDatos();
+  };
+
+  // 🎯 FUNCIONES PARA PRESUPUESTO
+  const registrarPresupuesto = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!proyeccionForm.monto_estimado) return alert("Ingrese un monto.");
     try {
-      await supabase.from('finanzas_movimientos').delete().eq('id', id);
+      const datos = {
+        categoria: proyeccionForm.categoria,
+        detalle: proyeccionForm.detalle,
+        monto_estimado: Number(proyeccionForm.monto_estimado),
+        fecha_estimada: proyeccionForm.fecha_estimada
+      };
+      if (editandoPresupuestoId) {
+        await supabase.from('finanzas_presupuestos').update(datos).eq('id', editandoPresupuestoId);
+        setEditandoPresupuestoId(null);
+      } else {
+        await supabase.from('finanzas_presupuestos').insert([datos]);
+      }
+      setProyeccionForm({ categoria: 'Trámites y Permisos', detalle: '', monto_estimado: '', fecha_estimada: new Date().toISOString().split('T')[0] });
       cargarDatos();
-    } catch (err) {
-      alert("Error al eliminar.");
-    }
+    } catch (err) { alert("Error al guardar presupuesto."); }
+  };
+
+  const cargarParaEditarPresupuesto = (pres: any) => {
+    setProyeccionForm({ categoria: pres.categoria, detalle: pres.detalle, monto_estimado: pres.monto_estimado.toString(), fecha_estimada: pres.fecha_estimada || '' });
+    setEditandoPresupuestoId(pres.id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelarEdicionPresupuesto = () => {
+    setEditandoPresupuestoId(null);
+    setProyeccionForm({ categoria: 'Trámites y Permisos', detalle: '', monto_estimado: '', fecha_estimada: new Date().toISOString().split('T')[0] });
+  };
+
+  const eliminarPresupuesto = async (id: string) => {
+    if (!window.confirm("¿Eliminar este rubro del presupuesto?")) return;
+    await supabase.from('finanzas_presupuestos').delete().eq('id', id);
+    cargarDatos();
   };
 
   // 🎯 FUNCIONES PARA DEUDAS/APORTES INTERCOMPAÑÍA
   const registrarDeudaSocio = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!deudaForm.monto || Number(deudaForm.monto) <= 0) return alert("Ingrese un monto válido.");
+    if (!deudaForm.monto) return alert("Ingrese un monto.");
     try {
-      await supabase.from('finanzas_deudas_intercompania').insert([{
+      const datos = {
         fecha_registro: deudaForm.fecha_registro,
         acreedor: deudaForm.acreedor,
         concepto: deudaForm.concepto,
-        monto: Number(deudaForm.monto),
-        estado: 'Pendiente'
-      }]);
-      setDeudaForm({ ...deudaForm, concepto: '', monto: '' });
+        monto: Number(deudaForm.monto)
+      };
+      if (editandoDeudaId) {
+        await supabase.from('finanzas_deudas_intercompania').update(datos).eq('id', editandoDeudaId);
+        setEditandoDeudaId(null);
+      } else {
+        await supabase.from('finanzas_deudas_intercompania').insert([{ ...datos, estado: 'Pendiente' }]);
+      }
+      setDeudaForm({ fecha_registro: new Date().toISOString().split('T')[0], acreedor: 'Saúl Intriago (Socio)', concepto: '', monto: '' });
       cargarDatos();
-    } catch (err) {
-      alert("Error al guardar el aporte.");
-    }
+    } catch (err) { alert("Error al guardar el aporte."); }
+  };
+
+  const cargarParaEditarDeuda = (deuda: any) => {
+    setDeudaForm({ fecha_registro: deuda.fecha_registro, acreedor: deuda.acreedor, concepto: deuda.concepto, monto: deuda.monto.toString() });
+    setEditandoDeudaId(deuda.id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelarEdicionDeuda = () => {
+    setEditandoDeudaId(null);
+    setDeudaForm({ fecha_registro: new Date().toISOString().split('T')[0], acreedor: 'Saúl Intriago (Socio)', concepto: '', monto: '' });
   };
 
   const saldarDeudaSocio = async (id: string) => {
-    if (!window.confirm("¿Confirma que Arienzo ya pagó o reembolsó este valor?\n\nRecuerde que debe registrar un EGRESO en la pestaña de Tesorería para que el saldo de la caja baje.")) return;
-    try {
-      await supabase.from('finanzas_deudas_intercompania').update({ estado: 'Saldado' }).eq('id', id);
-      cargarDatos();
-    } catch (err) {
-      alert("Error al actualizar.");
-    }
+    if (!window.confirm("¿Confirma que Arienzo ya pagó o reembolsó este valor?\n\nRecuerde registrar el EGRESO correspondiente en la pestaña de Tesorería.")) return;
+    await supabase.from('finanzas_deudas_intercompania').update({ estado: 'Saldado' }).eq('id', id);
+    cargarDatos();
   };
 
   const eliminarDeudaSocio = async (id: string) => {
-    if (!window.confirm("¿Desea eliminar este registro de forma permanente?")) return;
-    try {
-      await supabase.from('finanzas_deudas_intercompania').delete().eq('id', id);
-      cargarDatos();
-    } catch (err) {
-      alert("Error al eliminar.");
-    }
+    if (!window.confirm("¿Desea eliminar este registro permanentemente?")) return;
+    await supabase.from('finanzas_deudas_intercompania').delete().eq('id', id);
+    cargarDatos();
   };
 
   if (cargando) return <div className="flex items-center justify-center min-h-screen"><div className="text-sm font-bold text-[#415364] uppercase tracking-widest animate-pulse">Estructurando Finanzas...</div></div>;
@@ -283,7 +307,6 @@ export default function FinanzasDashboardPage() {
             <span className="text-[10px] font-bold tracking-widest text-[#B94A36] uppercase block">Módulo Financiero Integrado</span>
             <h1 className="text-3xl font-bold tracking-tight text-[#21242E] mt-1">Centro de Control de Capital</h1>
           </div>
-
           <div className="flex bg-white p-1.5 rounded-xl border border-neutral-200 shadow-sm gap-1 overflow-x-auto w-full lg:w-auto">
             <button onClick={() => setActiveTab('resumen')} className={`px-4 py-2.5 text-[11px] font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'resumen' ? 'bg-[#21242E] text-white shadow-md' : 'text-[#415364]/70 hover:bg-neutral-50'}`}>Dashboard Gerencial</button>
             <button onClick={() => setActiveTab('tesoreria')} className={`px-4 py-2.5 text-[11px] font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'tesoreria' ? 'bg-[#21242E] text-white shadow-md' : 'text-[#415364]/70 hover:bg-neutral-50'}`}>Tesorería y Caja</button>
@@ -292,7 +315,7 @@ export default function FinanzasDashboardPage() {
           </div>
         </div>
 
-        {/* PESTAÑA 1: DASHBOARD GERENCIAL */}
+        {/* PESTAÑA 1: DASHBOARD GERENCIAL (Mantenida idéntica y limpia) */}
         {activeTab === 'resumen' && (
           <div className="space-y-6 animate-in fade-in max-w-6xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -383,7 +406,6 @@ export default function FinanzasDashboardPage() {
                     </div>
                     <span className="text-xl font-mono font-bold text-emerald-700">+${(metricas.ingresosCapital + metricas.ingresosVentas + metricas.comisionesRealesKonkeri).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                   </div>
-
                   <div className="p-4 rounded-xl bg-red-50 border border-red-100 flex justify-between items-center">
                     <div>
                       <span className="text-[10px] font-bold text-[#ea0029] uppercase tracking-widest block">Total Histórico Gastado</span>
@@ -457,10 +479,9 @@ export default function FinanzasDashboardPage() {
                     {editandoMovId ? '✏️ Editando Movimiento' : 'Registrar Movimiento'}
                   </h2>
                   {editandoMovId && (
-                    <button onClick={cancelarEdicion} className="text-[9px] font-bold text-red-600 uppercase underline">Cancelar</button>
+                    <button onClick={cancelarEdicionMov} className="text-[9px] font-bold text-red-600 uppercase underline">Cancelar</button>
                   )}
                 </div>
-
                 <form onSubmit={registrarMovimiento} className="space-y-4">
                   <div>
                     <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Fecha del Movimiento</label>
@@ -568,14 +589,16 @@ export default function FinanzasDashboardPage() {
         {activeTab === 'presupuesto' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in">
             <div className="lg:col-span-1 bg-white rounded-2xl p-6 shadow-sm border border-neutral-200 h-fit sticky top-6">
-              <h2 className="text-[11px] font-bold text-[#21242E] uppercase tracking-widest border-b border-neutral-100 pb-3 mb-5">Planificar Obligación Futura</h2>
-              <form onSubmit={async (e) => {
-                  e.preventDefault();
-                  if (!proyeccionForm.monto_estimado) return;
-                  await supabase.from('finanzas_presupuestos').insert([{ ...proyeccionForm, monto_estimado: Number(proyeccionForm.monto_estimado) }]);
-                  setProyeccionForm({ categoria: 'Trámites y Permisos', detalle: '', monto_estimado: '', fecha_estimada: '' });
-                  cargarDatos();
-              }} className="space-y-4">
+              <div className="flex justify-between items-center border-b border-neutral-100 pb-3 mb-5">
+                <h2 className="text-[11px] font-bold text-[#21242E] uppercase tracking-widest">
+                  {editandoPresupuestoId ? '✏️ Editando Presupuesto' : 'Planificar Obligación'}
+                </h2>
+                {editandoPresupuestoId && (
+                  <button onClick={cancelarEdicionPresupuesto} className="text-[9px] font-bold text-red-600 uppercase underline">Cancelar</button>
+                )}
+              </div>
+              
+              <form onSubmit={registrarPresupuesto} className="space-y-4">
                 <div>
                   <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Categoría</label>
                   <select value={proyeccionForm.categoria} onChange={e => setProyeccionForm({...proyeccionForm, categoria: e.target.value})} className="w-full text-xs font-bold p-2.5 rounded-lg border outline-none">
@@ -594,11 +617,14 @@ export default function FinanzasDashboardPage() {
                     <input type="number" step="0.01" required value={proyeccionForm.monto_estimado} onChange={e => setProyeccionForm({...proyeccionForm, monto_estimado: e.target.value})} className="w-full text-sm font-mono font-bold p-2.5 rounded-lg border outline-none" />
                   </div>
                   <div>
-                    <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Mes Est.</label>
-                    <input type="month" required value={proyeccionForm.fecha_estimada} onChange={e => setProyeccionForm({...proyeccionForm, fecha_estimada: e.target.value})} className="w-full text-xs p-2.5 rounded-lg border outline-none" />
+                    {/* 🎯 AQUÍ SE CAMBIÓ A type="date" PARA PONER EL DÍA EXACTO */}
+                    <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Día Exacto</label>
+                    <input type="date" required value={proyeccionForm.fecha_estimada} onChange={e => setProyeccionForm({...proyeccionForm, fecha_estimada: e.target.value})} className="w-full text-[11px] font-bold p-2.5 rounded-lg border outline-none" />
                   </div>
                 </div>
-                <button type="submit" className="w-full bg-[#B94A36] text-white font-bold uppercase text-[10px] py-3.5 rounded-xl">Agregar al Presupuesto</button>
+                <button type="submit" className={`w-full text-white font-bold uppercase text-[10px] py-3.5 rounded-xl ${editandoPresupuestoId ? 'bg-amber-600' : 'bg-[#B94A36]'}`}>
+                  {editandoPresupuestoId ? 'Actualizar Rubro' : 'Agregar al Presupuesto'}
+                </button>
               </form>
             </div>
             
@@ -609,16 +635,25 @@ export default function FinanzasDashboardPage() {
                    <thead>
                      <tr className="border-b border-neutral-200 text-neutral-400 uppercase tracking-wider">
                        <th className="py-3 px-2 font-semibold">Detalle y Categoría</th>
-                       <th className="py-3 px-2 font-semibold text-center">Mes Estimado</th>
+                       <th className="py-3 px-2 font-semibold text-center">Fecha Exacta</th>
                        <th className="py-3 px-2 font-semibold text-right">Valor</th>
+                       <th className="py-3 px-2 font-semibold text-center">Acciones</th>
                      </tr>
                    </thead>
                    <tbody className="divide-y divide-neutral-100">
                      {inversionesPorHacer.map(inv => (
-                       <tr key={inv.id} className="hover:bg-neutral-50">
+                       <tr key={inv.id} className="hover:bg-neutral-50 group">
                          <td className="py-4 px-2"><p className="font-bold text-[#21242E]">{inv.detalle}</p><p className="text-[9px] text-neutral-500 uppercase">{inv.categoria}</p></td>
-                         <td className="py-4 px-2 text-center text-neutral-500 font-medium">{inv.fecha_estimada}</td>
+                         <td className="py-4 px-2 text-center text-neutral-500 font-medium">
+                           {inv.fecha_estimada ? new Date(inv.fecha_estimada).toLocaleDateString('es-ES') : 'N/A'}
+                         </td>
                          <td className="py-4 px-2 text-right font-mono font-bold text-[#B94A36]">${Number(inv.monto_estimado).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                         <td className="py-4 px-2 text-center opacity-0 group-hover:opacity-100 transition-opacity">
+                           <div className="flex justify-center gap-3">
+                             <button onClick={() => cargarParaEditarPresupuesto(inv)} className="text-neutral-400 hover:text-[#415364]" title="Editar">✏️</button>
+                             <button onClick={() => eliminarPresupuesto(inv.id)} className="text-neutral-400 hover:text-[#ea0029]" title="Eliminar">🗑️</button>
+                           </div>
+                         </td>
                        </tr>
                      ))}
                    </tbody>
@@ -632,7 +667,6 @@ export default function FinanzasDashboardPage() {
         {activeTab === 'intercompania' && (
           <div className="space-y-8 animate-in fade-in max-w-6xl mx-auto">
             
-            {/* Tarjetas de Resumen Global */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="bg-white p-5 rounded-xl border border-neutral-200 shadow-sm flex flex-col justify-center">
                 <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest block mb-1">1. Comisiones Konkeri</span>
@@ -653,9 +687,17 @@ export default function FinanzasDashboardPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Formulario de Aportes/Deudas */}
+              
               <div className="lg:col-span-1 bg-white rounded-2xl p-6 shadow-sm border border-neutral-200 h-fit sticky top-6">
-                <h2 className="text-[11px] font-bold text-[#21242E] uppercase tracking-widest border-b border-neutral-100 pb-3 mb-5">Registrar Gasto de Bolsillo / Trabajo</h2>
+                <div className="flex justify-between items-center border-b border-neutral-100 pb-3 mb-5">
+                  <h2 className="text-[11px] font-bold text-[#21242E] uppercase tracking-widest">
+                    {editandoDeudaId ? '✏️ Editando Deuda' : 'Registrar Gasto/Trabajo'}
+                  </h2>
+                  {editandoDeudaId && (
+                    <button onClick={cancelarEdicionDeuda} className="text-[9px] font-bold text-red-600 uppercase underline">Cancelar</button>
+                  )}
+                </div>
+                
                 <form onSubmit={registrarDeudaSocio} className="space-y-4">
                   <div>
                     <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Fecha</label>
@@ -677,11 +719,12 @@ export default function FinanzasDashboardPage() {
                     <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Valorización ($)</label>
                     <input type="number" step="0.01" required value={deudaForm.monto} onChange={e => setDeudaForm({...deudaForm, monto: e.target.value})} className="w-full text-sm font-mono font-bold p-2.5 rounded-lg border outline-none" placeholder="0.00" />
                   </div>
-                  <button type="submit" className="w-full bg-sky-700 text-white font-bold uppercase tracking-widest text-[10px] py-3.5 rounded-xl hover:bg-sky-800 transition-colors">Registrar Cta. Por Pagar</button>
+                  <button type="submit" className={`w-full text-white font-bold uppercase tracking-widest text-[10px] py-3.5 rounded-xl transition-colors ${editandoDeudaId ? 'bg-amber-600' : 'bg-sky-700 hover:bg-sky-800'}`}>
+                    {editandoDeudaId ? 'Actualizar Registro' : 'Registrar Cta. Por Pagar'}
+                  </button>
                 </form>
               </div>
               
-              {/* Tabla de Aportes Registrados */}
               <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-neutral-200 flex flex-col">
                  <h2 className="text-[11px] font-bold text-[#415364] uppercase tracking-widest border-b border-neutral-100 pb-3 mb-4">Cuentas por Pagar (Aportes en Especie y Bolsillo)</h2>
                  <div className="overflow-auto custom-scrollbar flex-1 -mx-2 px-2">
@@ -717,6 +760,8 @@ export default function FinanzasDashboardPage() {
                                  {d.estado === 'Pendiente' && (
                                    <button onClick={() => saldarDeudaSocio(d.id)} className="text-emerald-600 font-bold text-[9px] uppercase hover:underline" title="Marcar como pagado">Saldar</button>
                                  )}
+                                 {/* 🎯 BOTÓN PARA EDITAR DEUDA/APORTE */}
+                                 <button onClick={() => cargarParaEditarDeuda(d)} className="text-neutral-400 hover:text-[#415364]" title="Editar">✏️</button>
                                  <button onClick={() => eliminarDeudaSocio(d.id)} className="text-neutral-400 hover:text-[#ea0029]" title="Eliminar permanentemente">🗑️</button>
                                </div>
                              </td>
