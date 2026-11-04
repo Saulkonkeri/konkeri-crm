@@ -20,10 +20,11 @@ export default function FinanzasDashboardPage() {
   const [clientes, setClientes] = useState<any[]>([]);
   const [deudasSocios, setDeudasSocios] = useState<any[]>([]);
   
-  const [saldoBancarioReal, setSaldoBancarioReal] = useState<string>('');
+  const [saldoBancarioReal, setSaldoBancarioReal] = useState<string>('0');
+  const [guardandoSaldo, setGuardandoSaldo] = useState(false);
 
   const [metricas, setMetricas] = useState({
-    cajaReal: 0,
+    cajaSistema: 0,
     totalIngresosHistoricos: 0,
     ingresosTesoreria: 0,
     egresosTesoreria: 0,
@@ -32,7 +33,8 @@ export default function FinanzasDashboardPage() {
     presupuestoFuturo: 0,
     comisionesKonkeri: 0, 
     anticiposRealesKonkeri: 0,
-    aportesEspeciePendientes: 0
+    aportesEspeciePendientes: 0,
+    totalClientesAbonadoReal: 0
   });
 
   // ================= FORMULARIOS =================
@@ -63,15 +65,7 @@ export default function FinanzasDashboardPage() {
   // ================= CEREBRO FINANCIERO =================
   useEffect(() => {
     cargarDatos();
-    const saldoGuardado = localStorage.getItem('arienzo_saldo_banco');
-    if (saldoGuardado) setSaldoBancarioReal(saldoGuardado);
   }, [mesProyeccion]);
-
-  const handleSaldoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setSaldoBancarioReal(val);
-    localStorage.setItem('arienzo_saldo_banco', val);
-  };
 
   const cargarDatos = async () => {
     setCargando(true);
@@ -81,6 +75,11 @@ export default function FinanzasDashboardPage() {
       const { data: ventas } = await supabase.from('cotizaciones').select('*').eq('estado', 'Venta - En Cierre'); 
       const { data: clis } = await supabase.from('clientes').select('*');
       const { data: deudas } = await supabase.from('finanzas_deudas_intercompania').select('*').order('fecha_registro', { ascending: false });
+      const { data: config } = await supabase.from('finanzas_configuracion').select('*').eq('id', 'saldo_bancario_real').single();
+
+      if (config) {
+        setSaldoBancarioReal(config.valor);
+      }
 
       const movsData = movs || [];
       const presData = pres || [];
@@ -98,12 +97,14 @@ export default function FinanzasDashboardPage() {
       let outTesoreria = 0;
       let comKonk = 0;
       let antKonk = 0;
+      let reservasManuales = 0;
 
       movsData.forEach(m => {
         const monto = Number(m.monto);
         if (m.tipo === 'Ingreso') {
           inTesoreria += monto;
           if (m.categoria.includes('Comisiones')) comKonk += monto;
+          if (m.categoria.includes('Reserva')) reservasManuales += monto;
         }
         if (m.tipo === 'Egreso') {
           outTesoreria += monto;
@@ -129,7 +130,8 @@ export default function FinanzasDashboardPage() {
       });
 
       const totalIngresosHistoricos = cobradoCRM + inTesoreria;
-      const cajaReal = totalIngresosHistoricos - outTesoreria;
+      const cajaSistema = totalIngresosHistoricos - outTesoreria;
+      const totalClientesAbonadoReal = cobradoCRM + reservasManuales;
 
       const presupuestoFiltrado = presData.filter(p => !p.fecha_estimada || p.fecha_estimada <= limitePresupuesto);
       const presupuestoFuturo = presupuestoFiltrado.reduce((acc, curr) => acc + Number(curr.monto_estimado), 0);
@@ -140,7 +142,7 @@ export default function FinanzasDashboardPage() {
       });
 
       setMetricas({
-        cajaReal,
+        cajaSistema,
         totalIngresosHistoricos,
         ingresosTesoreria: inTesoreria,
         egresosTesoreria: outTesoreria,
@@ -149,13 +151,27 @@ export default function FinanzasDashboardPage() {
         presupuestoFuturo,
         comisionesKonkeri: comKonk,
         anticiposRealesKonkeri: antKonk,
-        aportesEspeciePendientes: sumAportesPendientes
+        aportesEspeciePendientes: sumAportesPendientes,
+        totalClientesAbonadoReal
       });
 
     } catch (error) {
       console.error("Error cargando finanzas:", error);
     } finally {
       setCargando(false);
+    }
+  };
+
+  const guardarSaldoBancario = async () => {
+    setGuardandoSaldo(true);
+    try {
+      await supabase.from('finanzas_configuracion').upsert({ id: 'saldo_bancario_real', valor: saldoBancarioReal || '0' });
+      alert('¡Saldo bancario guardado correctamente!');
+      cargarDatos();
+    } catch (err) {
+      alert('Error al guardar el saldo.');
+    } finally {
+      setGuardandoSaldo(false);
     }
   };
 
@@ -287,7 +303,9 @@ export default function FinanzasDashboardPage() {
 
   if (cargando) return <div className="flex items-center justify-center min-h-screen"><div className="text-sm font-bold text-[#415364] uppercase tracking-widest animate-pulse">Estructurando Finanzas...</div></div>;
 
-  const diferenciaConciliacion = Number(saldoBancarioReal || 0) - metricas.cajaReal;
+  const bancoReal = Number(saldoBancarioReal) || 0;
+  const diferenciaConciliacion = bancoReal - metricas.cajaSistema;
+  const brechaCobertura = bancoReal - metricas.totalClientesAbonadoReal;
 
   return (
     <div className="min-h-screen bg-[#F9F7F5] p-4 md:p-8 font-sans text-[#415364]">
@@ -314,8 +332,8 @@ export default function FinanzasDashboardPage() {
             {/* 1. CAJA Y VENTAS CERRADAS */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-200 flex flex-col justify-center">
-                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block mb-2">Caja Real Actual</span>
-                <span className="text-3xl font-mono font-bold text-[#21242E]">${metricas.cajaReal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block mb-2">Caja Real en Bancos</span>
+                <span className="text-3xl font-mono font-bold text-[#21242E]">${bancoReal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
               </div>
               <div className="bg-sky-50/50 p-6 rounded-2xl border border-sky-100 flex flex-col justify-center">
                 <span className="text-[10px] font-bold text-sky-800 uppercase tracking-widest block mb-2">Cobrado (Ventas Cerradas)</span>
@@ -367,43 +385,73 @@ export default function FinanzasDashboardPage() {
               </div>
             </div>
 
-            {/* 3. BALANCE HISTÓRICO Y PRESUPUESTOS */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden flex flex-col justify-between">
-                <div className="bg-neutral-50 p-4 border-b border-neutral-200"><h2 className="text-[11px] font-bold text-[#415364] uppercase tracking-widest">Balance General Histórico</h2></div>
-                <div className="p-6 space-y-4">
-                  <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100 flex justify-between items-center">
-                    <div>
-                      <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest block">Total Ingresos (Cobrado + Manual)</span>
-                      <span className="text-[9px] text-emerald-600">Ventas cerradas CRM + Aportes/Reservas en Tesorería</span>
+            {/* 3. BALANCE HISTÓRICO Y PRESUPUESTOS (NUEVA ESTRUCTURA) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              
+              {/* Bloque Central de Balances (Ocupa 2 columnas) */}
+              <div className="md:col-span-2 space-y-6">
+                <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden flex flex-col justify-between">
+                  <div className="bg-neutral-50 p-4 border-b border-neutral-200"><h2 className="text-[11px] font-bold text-[#415364] uppercase tracking-widest">Balance General Histórico</h2></div>
+                  <div className="p-6 space-y-4">
+                    <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100 flex justify-between items-center">
+                      <div>
+                        <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest block">Total Ingresos Totales</span>
+                        <span className="text-[9px] text-emerald-600">Todo lo ingresado al proyecto</span>
+                      </div>
+                      <span className="text-xl font-mono font-bold text-emerald-700">+${metricas.totalIngresosHistoricos.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                     </div>
-                    <span className="text-xl font-mono font-bold text-emerald-700">+${metricas.totalIngresosHistoricos.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                    <div className="p-4 rounded-xl bg-red-50 border border-red-100 flex justify-between items-center">
+                      <div>
+                        <span className="text-[10px] font-bold text-[#ea0029] uppercase tracking-widest block">Total Histórico Gastado</span>
+                        <span className="text-[9px] text-[#ea0029]/70">Todo el capital utilizado hasta la fecha</span>
+                      </div>
+                      <span className="text-xl font-mono font-bold text-[#ea0029]">-${metricas.egresosTesoreria.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                    </div>
                   </div>
-                  <div className="p-4 rounded-xl bg-red-50 border border-red-100 flex justify-between items-center">
-                    <div>
-                      <span className="text-[10px] font-bold text-[#ea0029] uppercase tracking-widest block">Total Histórico Gastado</span>
-                      <span className="text-[9px] text-[#ea0029]/70">Obra, permisos, marketing y anticipos operativos</span>
+                </div>
+                
+                <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden flex flex-col justify-between">
+                  <div className="bg-neutral-50 p-4 border-b border-neutral-200 flex justify-between items-center">
+                    <h2 className="text-[11px] font-bold text-[#415364] uppercase tracking-widest">Presupuestos Futuros</h2>
+                    <input type="month" value={mesProyeccion} onChange={e => setMesProyeccion(e.target.value)} className="text-[10px] font-bold text-[#21242E] border border-neutral-300 rounded p-1 outline-none bg-white" />
+                  </div>
+                  <div className="p-6 space-y-4">
+                    <div className="p-4 rounded-xl bg-amber-50 border border-amber-100 flex justify-between items-center">
+                      <div>
+                        <span className="text-[10px] font-bold text-amber-800 uppercase tracking-widest block">Inversiones Proyectadas</span>
+                        <span className="text-[9px] text-amber-600">Obligaciones planificadas hasta {mesProyeccion}</span>
+                      </div>
+                      <span className="text-xl font-mono font-bold text-amber-700">-${metricas.presupuestoFuturo.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                     </div>
-                    <span className="text-xl font-mono font-bold text-[#ea0029]">-${metricas.egresosTesoreria.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden flex flex-col justify-between">
-                <div className="bg-neutral-50 p-4 border-b border-neutral-200 flex justify-between items-center">
-                  <h2 className="text-[11px] font-bold text-[#415364] uppercase tracking-widest">Presupuestos Futuros</h2>
-                  <input type="month" value={mesProyeccion} onChange={e => setMesProyeccion(e.target.value)} className="text-[10px] font-bold text-[#21242E] border border-neutral-300 rounded p-1 outline-none bg-white" />
-                </div>
-                <div className="p-6 space-y-4">
-                  <div className="p-4 rounded-xl bg-amber-50 border border-amber-100 flex justify-between items-center">
+              {/* Columna Derecha: Cuadrito de Riesgo/Cobertura */}
+              <div className="md:col-span-1">
+                <div className="bg-neutral-900 text-white p-6 rounded-2xl shadow-lg border border-neutral-800 h-full flex flex-col">
+                  <span className="text-[10px] font-bold text-[#D1C292] uppercase tracking-widest block mb-4 border-b border-neutral-700 pb-3">Ratio de Cobertura</span>
+                  
+                  <div className="flex-1 flex flex-col justify-center space-y-5">
                     <div>
-                      <span className="text-[10px] font-bold text-amber-800 uppercase tracking-widest block">Inversiones Proyectadas</span>
-                      <span className="text-[9px] text-amber-600">Obligaciones planificadas hasta {mesProyeccion}</span>
+                      <span className="text-[9px] text-neutral-400 uppercase tracking-wider block mb-1">Caja Real (En Banco)</span>
+                      <span className="text-2xl font-mono font-bold text-white">${bancoReal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                     </div>
-                    <span className="text-xl font-mono font-bold text-amber-700">-${metricas.presupuestoFuturo.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                    <div>
+                      <span className="text-[9px] text-neutral-400 uppercase tracking-wider block mb-1">Total Abonado (Clientes)</span>
+                      <span className="text-2xl font-mono font-bold text-white">${metricas.totalClientesAbonadoReal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t border-neutral-700">
+                    <span className="text-[9px] text-neutral-400 uppercase tracking-wider block mb-1">Brecha / Diferencia</span>
+                    <span className={`text-xl font-mono font-bold ${brechaCobertura >= 0 ? 'text-emerald-400' : 'text-[#ea0029]'}`}>
+                      {brechaCobertura >= 0 ? '+' : '-'}${Math.abs(brechaCobertura).toLocaleString('en-US', {minimumFractionDigits: 2})}
+                    </span>
                   </div>
                 </div>
               </div>
+
             </div>
           </div>
         )}
@@ -412,6 +460,8 @@ export default function FinanzasDashboardPage() {
         {activeTab === 'tesoreria' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in">
             <div className="lg:col-span-1 space-y-6">
+              
+              {/* 🎯 AUDITOR DE CAJA CON BOTÓN GUARDAR */}
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
                 <h2 className="text-[11px] font-bold text-[#21242E] uppercase tracking-widest border-b border-neutral-100 pb-3 mb-4 flex justify-between items-center">
                   <span>Auditor de Caja</span><span>⚖️</span>
@@ -419,11 +469,16 @@ export default function FinanzasDashboardPage() {
                 <div className="space-y-4">
                   <div>
                     <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Saldo Real en Bancos Hoy:</label>
-                    <input type="number" value={saldoBancarioReal} onChange={handleSaldoChange} className="w-full text-xl font-mono font-bold p-3 rounded-lg border border-neutral-300 bg-neutral-50 outline-none" placeholder="0.00" />
+                    <div className="flex gap-2">
+                      <input type="number" value={saldoBancarioReal} onChange={e => setSaldoBancarioReal(e.target.value)} className="w-full text-xl font-mono font-bold p-3 rounded-lg border border-neutral-300 bg-neutral-50 outline-none" placeholder="0.00" />
+                      <button onClick={guardarSaldoBancario} disabled={guardandoSaldo} className="bg-[#21242E] text-white px-4 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-neutral-800 whitespace-nowrap transition-all">
+                        {guardandoSaldo ? '...' : 'Guardar'}
+                      </button>
+                    </div>
                   </div>
                   <div className="flex justify-between items-center text-[11px]">
-                    <span className="font-bold text-neutral-500 uppercase">Saldo en Sistema:</span>
-                    <span className="font-mono font-bold text-[#415364]">${metricas.cajaReal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                    <span className="font-bold text-neutral-500 uppercase">Saldo Contable (Sistema):</span>
+                    <span className="font-mono font-bold text-[#415364]">${metricas.cajaSistema.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                   </div>
                   <div className={`p-4 rounded-xl border ${saldoBancarioReal === '' ? 'bg-neutral-50 border-neutral-200' : diferenciaConciliacion === 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
                     <span className="text-[9px] font-bold uppercase tracking-widest block mb-1 text-neutral-500">Diferencia a Justificar:</span>
@@ -569,6 +624,7 @@ export default function FinanzasDashboardPage() {
                   <button onClick={cancelarEdicionPresupuesto} className="text-[9px] font-bold text-red-600 uppercase underline">Cancelar</button>
                 )}
               </div>
+              
               <form onSubmit={registrarPresupuesto} className="space-y-4">
                 <div>
                   <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Categoría</label>
