@@ -20,7 +20,7 @@ export default function FinanzasDashboardPage() {
   const [clientes, setClientes] = useState<any[]>([]);
   const [deudasSocios, setDeudasSocios] = useState<any[]>([]);
   
-  const [saldoBancarioReal, setSaldoBancarioReal] = useState<string>('0');
+  const [saldoBancarioReal, setSaldoBancarioReal] = useState<string>(''); // 👈 Inicial vacío
   const [guardandoSaldo, setGuardandoSaldo] = useState(false);
 
   const [metricas, setMetricas] = useState({
@@ -75,10 +75,14 @@ export default function FinanzasDashboardPage() {
       const { data: ventas } = await supabase.from('cotizaciones').select('*').eq('estado', 'Venta - En Cierre'); 
       const { data: clis } = await supabase.from('clientes').select('*');
       const { data: deudas } = await supabase.from('finanzas_deudas_intercompania').select('*').order('fecha_registro', { ascending: false });
-      const { data: config } = await supabase.from('finanzas_configuracion').select('*').eq('id', 'saldo_bancario_real').single();
+      
+      // 🎯 FORZAMOS LA LECTURA DEL SALDO BANCARIO DIRECTO DE SUPABASE
+      const { data: config } = await supabase.from('finanzas_configuracion').select('valor').eq('id', 'saldo_bancario_real').single();
 
-      if (config) {
-        setSaldoBancarioReal(config.valor);
+      if (config && config.valor) {
+        setSaldoBancarioReal(config.valor); // Cargamos el valor real del servidor
+      } else {
+        setSaldoBancarioReal('0'); // Si no hay nada, forzamos a 0 para que no se quede en blanco
       }
 
       const movsData = movs || [];
@@ -166,8 +170,8 @@ export default function FinanzasDashboardPage() {
     setGuardandoSaldo(true);
     try {
       await supabase.from('finanzas_configuracion').upsert({ id: 'saldo_bancario_real', valor: saldoBancarioReal || '0' });
-      alert('¡Saldo bancario guardado correctamente!');
-      cargarDatos();
+      alert('¡Saldo bancario guardado correctamente en la nube!');
+      cargarDatos(); // Forzamos recarga visual
     } catch (err) {
       alert('Error al guardar el saldo.');
     } finally {
@@ -273,9 +277,9 @@ export default function FinanzasDashboardPage() {
       } else {
         await supabase.from('finanzas_deudas_intercompania').insert([{ ...datos, estado: 'Pendiente' }]);
       }
-      setDeudaForm({ fecha_registro: new Date().toISOString().split('T')[0], acreedor: 'Saúl Intriago (Socio)', concepto: '', monto: '' });
+      setDeudaForm({ fecha_registro: new Date().toISOString().split('T')[0], acreedor: 'Konkeri S.A.S.', concepto: '', monto: '' });
       cargarDatos();
-    } catch (err) { alert("Asegúrate de haber creado la tabla finanzas_deudas_intercompania en Supabase."); }
+    } catch (err) { alert("Error al guardar registro intercompañía."); }
   };
 
   const cargarParaEditarDeuda = (deuda: any) => {
@@ -286,7 +290,7 @@ export default function FinanzasDashboardPage() {
 
   const cancelarEdicionDeuda = () => {
     setEditandoDeudaId(null);
-    setDeudaForm({ fecha_registro: new Date().toISOString().split('T')[0], acreedor: 'Saúl Intriago (Socio)', concepto: '', monto: '' });
+    setDeudaForm({ fecha_registro: new Date().toISOString().split('T')[0], acreedor: 'Konkeri S.A.S.', concepto: '', monto: '' });
   };
 
   const saldarDeudaSocio = async (id: string) => {
@@ -329,7 +333,6 @@ export default function FinanzasDashboardPage() {
         {activeTab === 'resumen' && (
           <div className="space-y-6 animate-in fade-in max-w-6xl mx-auto">
             
-            {/* 1. CAJA Y VENTAS CERRADAS */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-200 flex flex-col justify-center">
                 <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block mb-2">Caja Real en Bancos</span>
@@ -349,7 +352,6 @@ export default function FinanzasDashboardPage() {
               </div>
             </div>
 
-            {/* 2. AUDITORÍA CRM */}
             <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden">
               <div className="bg-neutral-50 p-4 border-b border-neutral-200 flex justify-between items-center">
                 <h2 className="text-[11px] font-bold text-[#415364] uppercase tracking-widest">Auditoría: Ventas en Firme ({unidadesVendidas.length})</h2>
@@ -385,10 +387,7 @@ export default function FinanzasDashboardPage() {
               </div>
             </div>
 
-            {/* 3. BALANCE HISTÓRICO Y PRESUPUESTOS (NUEVA ESTRUCTURA) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              
-              {/* Bloque Central de Balances (Ocupa 2 columnas) */}
               <div className="md:col-span-2 space-y-6">
                 <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden flex flex-col justify-between">
                   <div className="bg-neutral-50 p-4 border-b border-neutral-200"><h2 className="text-[11px] font-bold text-[#415364] uppercase tracking-widest">Balance General Histórico</h2></div>
@@ -427,11 +426,9 @@ export default function FinanzasDashboardPage() {
                 </div>
               </div>
 
-              {/* Columna Derecha: Cuadrito de Riesgo/Cobertura */}
               <div className="md:col-span-1">
                 <div className="bg-neutral-900 text-white p-6 rounded-2xl shadow-lg border border-neutral-800 h-full flex flex-col">
                   <span className="text-[10px] font-bold text-[#D1C292] uppercase tracking-widest block mb-4 border-b border-neutral-700 pb-3">Ratio de Cobertura</span>
-                  
                   <div className="flex-1 flex flex-col justify-center space-y-5">
                     <div>
                       <span className="text-[9px] text-neutral-400 uppercase tracking-wider block mb-1">Caja Real (En Banco)</span>
@@ -442,7 +439,6 @@ export default function FinanzasDashboardPage() {
                       <span className="text-2xl font-mono font-bold text-white">${metricas.totalClientesAbonadoReal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                     </div>
                   </div>
-
                   <div className="mt-6 pt-4 border-t border-neutral-700">
                     <span className="text-[9px] text-neutral-400 uppercase tracking-wider block mb-1">Brecha / Diferencia</span>
                     <span className={`text-xl font-mono font-bold ${brechaCobertura >= 0 ? 'text-emerald-400' : 'text-[#ea0029]'}`}>
@@ -451,7 +447,6 @@ export default function FinanzasDashboardPage() {
                   </div>
                 </div>
               </div>
-
             </div>
           </div>
         )}
@@ -461,7 +456,7 @@ export default function FinanzasDashboardPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in">
             <div className="lg:col-span-1 space-y-6">
               
-              {/* 🎯 AUDITOR DE CAJA CON BOTÓN GUARDAR */}
+              {/* 🎯 AUDITOR DE CAJA CON BOTÓN GUARDAR (NUBE) */}
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
                 <h2 className="text-[11px] font-bold text-[#21242E] uppercase tracking-widest border-b border-neutral-100 pb-3 mb-4 flex justify-between items-center">
                   <span>Auditor de Caja</span><span>⚖️</span>
@@ -539,6 +534,7 @@ export default function FinanzasDashboardPage() {
                     </div>
                   </div>
                   <div>
+                    {/* 🎯 SE AÑADIÓ GASTOS LEGALES EN EL SELECTOR DE CATEGORÍA */}
                     <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Categoría</label>
                     <select value={movForm.categoria} onChange={e => setMovForm({...movForm, categoria: e.target.value})} className="w-full text-xs font-medium p-2.5 rounded-lg border border-neutral-200 bg-white outline-none">
                       {movForm.tipo === 'Ingreso' ? (
@@ -553,13 +549,14 @@ export default function FinanzasDashboardPage() {
                           <option>Costos Comerciales (Marketing, Renders)</option>
                           <option>Anticipo Operativo (Konkeri)</option>
                           <option>Inversión Obra / Permisos Municipales</option>
+                          <option>Gastos Legales y Notariales</option>
                         </>
                       )}
                     </select>
                   </div>
                   <div>
                     <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Detalle</label>
-                    <input type="text" required value={movForm.descripcion} onChange={e => setMovForm({...movForm, descripcion: e.target.value})} className="w-full text-xs p-2.5 rounded-lg border outline-none" placeholder="Ej. Pago Municipio" />
+                    <input type="text" required value={movForm.descripcion} onChange={e => setMovForm({...movForm, descripcion: e.target.value})} className="w-full text-xs p-2.5 rounded-lg border outline-none" placeholder="Ej. Pago Promesa Compraventa" />
                   </div>
                   <div>
                     <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Monto ($)</label>
@@ -632,6 +629,7 @@ export default function FinanzasDashboardPage() {
                     <option>Trámites y Permisos</option>
                     <option>Costos de Obra</option>
                     <option>Marketing y Ventas</option>
+                    <option>Gastos Legales y Notariales</option>
                   </select>
                 </div>
                 <div>
@@ -736,7 +734,7 @@ export default function FinanzasDashboardPage() {
                   </div>
                   <div>
                     <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Concepto del Trabajo o Gasto</label>
-                    <input type="text" required value={deudaForm.concepto} onChange={e => setDeudaForm({...deudaForm, concepto: e.target.value})} placeholder="Ej: Pago de Cuadros, Diseño de Renders..." className="w-full text-xs p-2.5 rounded-lg border outline-none" />
+                    <input type="text" required value={deudaForm.concepto} onChange={e => setDeudaForm({...deudaForm, concepto: e.target.value})} placeholder="Ej: Comisión Ganada Unidad 1, Pago Notaría..." className="w-full text-xs p-2.5 rounded-lg border outline-none" />
                   </div>
                   <div>
                     <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Valorización ($)</label>
