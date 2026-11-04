@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 export default function FinanzasDashboardPage() {
   const [activeTab, setActiveTab] = useState<'resumen' | 'tesoreria' | 'presupuesto' | 'intercompania'>('resumen');
   
-  const [mesProyeccion, setMesProyeccion] = useState('2026-12'); // Formato YYYY-MM
+  const [mesProyeccion, setMesProyeccion] = useState('2026-12');
   const [cargando, setCargando] = useState(true);
 
   // ================= ESTADOS DE DATOS =================
@@ -23,7 +23,9 @@ export default function FinanzasDashboardPage() {
     ingresosVentas: 0,
     egresosObra: 0,
     egresosComerciales: 0,
-    ingresosProyectadosAcumulados: 0, // 👈 Suma todo (reservas, iniciales, cuotas) hasta la fecha límite
+    totalVentasCerradasProyectado: 0,
+    totalEgresosProyectadosPresupuesto: 0,
+    totalClientesAbonadoReal: 0, // 👈 Lo que los clientes han dado en total (cuotas cobradas + reservas manuales)
     inversionProyectada: 0,
     comisionesRealesKonkeri: 0, 
     anticiposRealesKonkeri: 0
@@ -73,13 +75,17 @@ export default function FinanzasDashboardPage() {
       let inCapital = 0, inVentas = 0;
       let egObra = 0, egComercial = 0;
       let comisionesKonkeri = 0, anticiposKonkeri = 0;
+      let reservasManualesIngresadas = 0;
 
       movsData.forEach(m => {
         const monto = Number(m.monto);
         if (m.tipo === 'Ingreso') {
           if (m.categoria.includes('Capital') || m.categoria.includes('Socios')) inCapital += monto;
           else if (m.categoria.includes('Comisiones')) comisionesKonkeri += monto;
-          else inVentas += monto;
+          else {
+            inVentas += monto;
+            if (m.categoria.includes('Reserva')) reservasManualesIngresadas += monto;
+          }
         }
         if (m.tipo === 'Egreso') {
           if (m.categoria.includes('Obra') || m.categoria.includes('Permisos')) egObra += monto;
@@ -89,22 +95,30 @@ export default function FinanzasDashboardPage() {
       });
 
       const cajaReal = (inCapital + inVentas + comisionesKonkeri) - (egObra + egComercial + anticiposKonkeri);
-      const totalInvProy = presData.filter(p => p.fecha_estimada <= mesProyeccion).reduce((acc, curr) => acc + Number(curr.monto_estimado), 0);
+      
+      // Sumar presupuestos hasta la fecha de proyección seleccionada
+      const presupuestoFiltrado = presData.filter(p => !p.fecha_estimada || p.fecha_estimada <= mesProyeccion);
+      const totalInvProy = presupuestoFiltrado.reduce((acc, curr) => acc + Number(curr.monto_estimado), 0);
 
-      // 🎯 CONEXIÓN ACUMULADA CON EL PLAN DE PAGOS (Reservas + Iniciales + Cuotas hasta el mes seleccionado):
-      let ingresosAcumuladosProyectados = 0;
-      const fechaLimiteStr = `${mesProyeccion}-31`; // Ejemplo: "2026-12-31"
+      // Sumatoria de planes de pago de ventas cerradas
+      let sumaTotalPlanPagos = 0;
+      let totalCobradoVentasFirme = 0;
 
       ventasData.forEach(v => {
         if (v.cronograma_pagos && Array.isArray(v.cronograma_pagos)) {
           v.cronograma_pagos.forEach((cuota: any) => {
-            // Suma todo lo que NO esté pagado y cuya fecha de vencimiento sea menor o igual al fin del mes seleccionado
-            if (!cuota.pagado && cuota.date && cuota.date <= fechaLimiteStr) {
-              ingresosAcumuladosProyectados += Number(cuota.amount || 0);
+            sumaTotalPlanPagos += Number(cuota.amount || 0);
+            if (cuota.pagado === true) {
+              totalCobradoVentasFirme += Number(cuota.amount || 0);
             }
           });
+        } else {
+          sumaTotalPlanPagos += Number(v.precio_total || v.precio_final || 0);
         }
       });
+
+      // Total abonado real por los clientes = Lo cobrado en ventas en firme + Reservas manuales registradas en tesorería
+      const totalClientesAbonado = totalCobradoVentasFirme + reservasManualesIngresadas;
 
       setMetricas({
         cajaTotal: cajaReal,
@@ -112,7 +126,9 @@ export default function FinanzasDashboardPage() {
         ingresosVentas: inVentas,
         egresosObra: egObra,
         egresosComerciales: egComercial,
-        ingresosProyectadosAcumulados: ingresosAcumuladosProyectados, // 👈 Todo sumado (reservas + iniciales + cuotas)
+        totalVentasCerradasProyectado: sumaTotalPlanPagos,
+        totalEgresosProyectadosPresupuesto: totalInvProy,
+        totalClientesAbonadoReal: totalClientesAbonado,
         inversionProyectada: totalInvProy,
         comisionesRealesKonkeri: comisionesKonkeri,
         anticiposRealesKonkeri: anticiposKonkeri
@@ -198,11 +214,13 @@ export default function FinanzasDashboardPage() {
 
   if (cargando) return <div className="flex items-center justify-center min-h-screen"><div className="text-sm font-bold text-[#415364] uppercase tracking-widest animate-pulse">Estructurando Finanzas...</div></div>;
 
-  // 🎯 LÍQUIDEZ PROYECTADA ACUMULADA: Caja Real + Todo lo pendiente por cobrar (reservas+iniciales+cuotas) hasta la fecha - Inversiones
-  const liquidezProyectadaAcumulada = metricas.cajaTotal + metricas.ingresosProyectadosAcumulados - metricas.inversionProyectada;
+  const liquidezTotalVentas = metricas.cajaTotal + metricas.totalVentasCerradasProyectado - metricas.inversionProyectada;
   const bancoReal = Number(saldoBancarioReal) || 0;
   const diferenciaConciliacion = bancoReal - metricas.cajaTotal;
   const saldoIntercompaniaReal = metricas.comisionesRealesKonkeri - metricas.anticiposRealesKonkeri;
+
+  // Cálculo del Fondo de Garantía / Exposición (Caja Actual menos lo que han dado los clientes)
+  const brechaDevolucionClientes = metricas.cajaTotal - metricas.totalClientesAbonadoReal;
 
   return (
     <div className="min-h-screen bg-[#F9F7F5] p-4 md:p-8 font-sans text-[#415364]">
@@ -226,6 +244,8 @@ export default function FinanzasDashboardPage() {
         {/* PESTAÑA 1: DASHBOARD GERENCIAL */}
         {activeTab === 'resumen' && (
           <div className="space-y-6 animate-in fade-in max-w-6xl mx-auto">
+            
+            {/* TARJETAS PRINCIPALES */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                <div className="bg-white p-8 rounded-2xl shadow-sm border border-neutral-200 flex flex-col justify-center">
                   <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block mb-2">Efectivo Total en Cuentas (Caja Real)</span>
@@ -235,14 +255,36 @@ export default function FinanzasDashboardPage() {
                <div className="bg-[#21242E] p-8 rounded-2xl shadow-lg border border-neutral-800 flex flex-col justify-center relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-[#D1C292] opacity-10 rounded-full blur-2xl -mr-10 -mt-10"></div>
                   <div className="flex justify-between items-center mb-2 relative z-10">
-                    <span className="text-[10px] font-bold text-[#D1C292] uppercase tracking-widest block">Liquidez Acumulada Proyectada</span>
+                    <span className="text-[10px] font-bold text-[#D1C292] uppercase tracking-widest block">Potencial Total (Caja + Ventas Cerradas)</span>
                     <div className="flex items-center gap-2">
-                      <span className="text-[9px] font-bold text-neutral-400 uppercase">Hasta:</span>
+                      <span className="text-[9px] font-bold text-neutral-400 uppercase">Presupuesto hasta:</span>
                       <input type="month" value={mesProyeccion} onChange={e => setMesProyeccion(e.target.value)} className="text-[10px] font-bold text-white border border-neutral-600 rounded p-1.5 outline-none bg-neutral-800" />
                     </div>
                   </div>
-                  <span className="text-4xl font-mono font-bold text-white relative z-10">${liquidezProyectadaAcumulada.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                  <span className="text-4xl font-mono font-bold text-white relative z-10">${liquidezTotalVentas.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                </div>
+            </div>
+
+            {/* BLOQUE DE MATCHING (INGRESOS VS EGRESOS PROYECTADOS HASTA LA FECHA) */}
+            <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 p-6">
+              <h2 className="text-xs font-bold text-[#21242E] uppercase tracking-widest mb-4 border-b border-neutral-100 pb-3">Análisis de Flujo Proyectado (Hasta {mesProyeccion})</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-100">
+                  <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest block mb-1">(+) Total Proyectado Ventas</span>
+                  <span className="text-2xl font-mono font-bold text-emerald-700">${metricas.totalVentasCerradasProyectado.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                  <p className="text-[9px] text-emerald-600 mt-1">Planes de pago completos de unidades cerradas.</p>
+                </div>
+                <div className="p-4 rounded-xl bg-amber-50/50 border border-amber-100">
+                  <span className="text-[10px] font-bold text-amber-800 uppercase tracking-widest block mb-1">(-) Presupuesto / Egresos Obra</span>
+                  <span className="text-2xl font-mono font-bold text-amber-700">-${metricas.totalEgresosProyectadosPresupuesto.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                  <p className="text-[9px] text-amber-600 mt-1">Obligaciones planificadas hasta el periodo.</p>
+                </div>
+                <div className="p-4 rounded-xl bg-neutral-900 text-white shadow-md">
+                  <span className="text-[10px] font-bold text-[#D1C292] uppercase tracking-widest block mb-1">(=) Saldo Neto Proyectado</span>
+                  <span className="text-2xl font-mono font-bold text-white">${(metricas.cajaTotal + metricas.totalVentasCerradasProyectado - metricas.totalEgresosProyectadosPresupuesto).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                  <p className="text-[9px] text-white/60 mt-1">Caja + Cobros - Inversiones de obra.</p>
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -266,24 +308,42 @@ export default function FinanzasDashboardPage() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden">
-                <div className="bg-sky-50 p-4 border-b border-sky-100"><h2 className="text-[11px] font-bold text-sky-900 uppercase tracking-widest">Detalle Proyectado (Hasta {mesProyeccion})</h2></div>
-                <div className="p-6 space-y-4">
-                  <div className="p-4 border border-neutral-100 rounded-xl bg-neutral-50 flex justify-between items-center">
-                    <div>
-                      <span className="text-[10px] font-bold text-neutral-500 uppercase block">Total por Cobrar (Reservas + Iniciales + Cuotas)</span>
-                      <span className="text-[9px] text-neutral-400">Suma acumulada de todo el plan de pagos hasta la fecha</span>
+              {/* COLUMNA DERECHA: RESUMEN + RATIO DISCRETO DE COBERTURA DE CLIENTES */}
+              <div className="space-y-6 flex flex-col">
+                <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden flex-1">
+                  <div className="bg-sky-50 p-4 border-b border-sky-100"><h2 className="text-[11px] font-bold text-sky-900 uppercase tracking-widest">Resumen de Ventas Cerradas (CRM)</h2></div>
+                  <div className="p-6 space-y-4">
+                    <div className="p-4 border border-neutral-100 rounded-xl bg-neutral-50 flex justify-between items-center">
+                      <div>
+                        <span className="text-[10px] font-bold text-neutral-500 uppercase block">Total Proyectado en Planes de Pago</span>
+                        <span className="text-[9px] text-neutral-400">Suma total de reservas, iniciales y cuotas de unidades cerradas</span>
+                      </div>
+                      <span className="text-lg font-mono font-bold text-sky-600">+${metricas.totalVentasCerradasProyectado.toLocaleString()}</span>
                     </div>
-                    <span className="text-lg font-mono font-bold text-sky-600">+${metricas.ingresosProyectadosAcumulados.toLocaleString()}</span>
-                  </div>
-                  <div className="p-4 border border-neutral-100 rounded-xl bg-neutral-50 flex justify-between items-center">
-                    <div>
-                      <span className="text-[10px] font-bold text-neutral-500 uppercase block">Obligaciones (Presupuesto)</span>
-                      <span className="text-[9px] text-neutral-400">Inversiones planificadas hasta esta fecha</span>
+                    <div className="p-4 border border-neutral-100 rounded-xl bg-neutral-50 flex justify-between items-center">
+                      <div>
+                        <span className="text-[10px] font-bold text-neutral-500 uppercase block">Obligaciones (Presupuesto)</span>
+                        <span className="text-[9px] text-neutral-400">Inversiones planificadas hasta {mesProyeccion}</span>
+                      </div>
+                      <span className="text-lg font-mono font-bold text-amber-600">-${metricas.inversionProyectada.toLocaleString()}</span>
                     </div>
-                    <span className="text-lg font-mono font-bold text-amber-600">-${metricas.inversionProyectada.toLocaleString()}</span>
                   </div>
                 </div>
+
+                {/* 🎯 TARJETA DISCRETA: RATIO DE COBERTURA / FONDO DE GARANTÍA REQUERIDO */}
+                <div className="bg-neutral-900 text-white p-5 rounded-2xl border border-neutral-800 flex justify-between items-center shadow-md">
+                  <div>
+                    <span className="text-[9px] font-bold text-[#D1C292] uppercase tracking-widest block">Ratio de Cobertura de Clientes</span>
+                    <p className="text-[10px] text-neutral-400 mt-0.5">Total Abonado por Clientes: <span className="font-mono font-bold text-white">${metricas.totalClientesAbonadoReal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span></p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[8px] text-neutral-400 uppercase tracking-wider block">Brecha / Faltante Caja</span>
+                    <span className={`text-xl font-mono font-bold ${brechaDevolucionClientes >= 0 ? 'text-emerald-400' : 'text-[#ea0029]'}`}>
+                      {brechaDevolucionClientes >= 0 ? `+$${brechaDevolucionClientes.toLocaleString('en-US', {minimumFractionDigits: 2})}` : `-$${Math.abs(brechaDevolucionClientes).toLocaleString('en-US', {minimumFractionDigits: 2})}`}
+                    </span>
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>
