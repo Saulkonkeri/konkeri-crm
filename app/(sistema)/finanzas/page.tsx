@@ -28,11 +28,17 @@ export default function FinanzasDashboardPage() {
     totalIngresosHistoricos: 0,
     ingresosTesoreria: 0,
     egresosTesoreria: 0,
+    // 🎯 DESGLOSE DE GASTOS
+    gastosMarketing: 0,
+    gastosObra: 0,
+    gastosLegales: 0,
+    gastosAnticipos: 0,
+    // ====================
     cobradoCRM: 0,
     porCobrarCRM: 0,
     presupuestoFuturo: 0,
     comisionesManualesIngresadas: 0,
-    comisionesKonkeriGanadas: 0,  // 🎯 Cambiado a Ganadas
+    comisionesKonkeriGanadas: 0,  
     anticiposRealesKonkeri: 0,
     aportesEspeciePendientes: 0,
     totalClientesAbonadoReal: 0
@@ -97,11 +103,9 @@ export default function FinanzasDashboardPage() {
       setClientes(clisData);
       setDeudasSocios(deudasData);
 
-      let inTesoreria = 0;
-      let outTesoreria = 0;
-      let comisionesManualesIngresadas = 0;
-      let antKonk = 0;
-      let reservasManuales = 0;
+      let inTesoreria = 0, outTesoreria = 0;
+      let comisionesManualesIngresadas = 0, antKonk = 0, reservasManuales = 0;
+      let gMark = 0, gObra = 0, gLegal = 0; // Contadores de desglose
 
       movsData.forEach(m => {
         const monto = Number(m.monto);
@@ -112,13 +116,15 @@ export default function FinanzasDashboardPage() {
         }
         if (m.tipo === 'Egreso') {
           outTesoreria += monto;
-          if (m.categoria.includes('Anticipo')) antKonk += monto;
+          // 🎯 CLASIFICACIÓN DE GASTOS
+          if (m.categoria.includes('Marketing')) gMark += monto;
+          else if (m.categoria.includes('Obra') || m.categoria.includes('Permisos')) gObra += monto;
+          else if (m.categoria.includes('Legales') || m.categoria.includes('Notariales')) gLegal += monto;
+          else if (m.categoria.includes('Anticipo')) antKonk += monto;
         }
       });
 
-      let cobradoCRM = 0;
-      let porCobrarCRM = 0;
-      let comisionesGanadasTotal = 0; 
+      let cobradoCRM = 0, porCobrarCRM = 0, comisionesGanadasTotal = 0; 
       const limitePresupuesto = `${mesProyeccion}-31`;
 
       ventasData.forEach(v => {
@@ -154,6 +160,10 @@ export default function FinanzasDashboardPage() {
         totalIngresosHistoricos,
         ingresosTesoreria: inTesoreria,
         egresosTesoreria: outTesoreria,
+        gastosMarketing: gMark,
+        gastosObra: gObra,
+        gastosLegales: gLegal,
+        gastosAnticipos: antKonk,
         cobradoCRM,
         porCobrarCRM,
         presupuestoFuturo,
@@ -174,20 +184,11 @@ export default function FinanzasDashboardPage() {
   const guardarSaldoBancario = async () => {
     setGuardandoSaldo(true);
     try {
-      const { error } = await supabase
-        .from('finanzas_configuracion')
-        .upsert(
-          { id: 'saldo_bancario_real', valor: saldoBancarioReal || '0' },
-          { onConflict: 'id' } 
-        );
+      const { error } = await supabase.from('finanzas_configuracion').upsert({ id: 'saldo_bancario_real', valor: saldoBancarioReal || '0' }, { onConflict: 'id' });
       if (error) throw error;
       alert('¡Saldo bancario guardado correctamente en la nube!');
       cargarDatos(); 
-    } catch (err: any) {
-      alert('Error al guardar el saldo: ' + (err.message || 'Fallo desconocido'));
-    } finally {
-      setGuardandoSaldo(false);
-    }
+    } catch (err: any) { alert('Error al guardar el saldo: ' + (err.message || 'Fallo desconocido')); } finally { setGuardandoSaldo(false); }
   };
 
   const registrarMovimiento = async (e: React.FormEvent) => {
@@ -315,6 +316,10 @@ export default function FinanzasDashboardPage() {
     cargarDatos();
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   if (cargando) return <div className="flex items-center justify-center min-h-screen"><div className="text-sm font-bold text-[#415364] uppercase tracking-widest animate-pulse">Estructurando Finanzas...</div></div>;
 
   const bancoReal = Number(saldoBancarioReal) || 0;
@@ -322,143 +327,187 @@ export default function FinanzasDashboardPage() {
   const brechaCobertura = bancoReal - metricas.totalClientesAbonadoReal;
 
   return (
-    <div className="min-h-screen bg-[#F9F7F5] p-4 md:p-8 font-sans text-[#415364]">
+    <div className="min-h-screen bg-[#F9F7F5] p-4 md:p-8 font-sans text-[#415364] print:bg-white print:p-0">
       <div className="max-w-7xl mx-auto space-y-8">
         
-        {/* CABECERA */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center border-b border-neutral-200 pb-6 gap-4">
+        {/* CABECERA (Se adapta en impresión) */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center border-b border-neutral-200 pb-6 gap-4 print:pb-2">
           <div>
             <span className="text-[10px] font-bold tracking-widest text-[#B94A36] uppercase block">Módulo Financiero Integrado</span>
-            <h1 className="text-3xl font-bold tracking-tight text-[#21242E] mt-1">Centro de Control de Capital</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-[#21242E] mt-1 print:text-2xl">Centro de Control de Capital</h1>
+            <p className="hidden print:block text-[10px] text-neutral-500 uppercase font-bold mt-2">Reporte emitido el: {new Date().toLocaleDateString('es-ES')}</p>
           </div>
           
-          {/* 🎯 BOTONES DE PESTAÑAS (DISEÑO UNIFICADO) */}
-          <div className="flex bg-white p-1.5 rounded-xl border border-neutral-200 shadow-sm gap-1 overflow-x-auto w-full lg:w-auto">
-            <button onClick={() => setActiveTab('resumen')} className={`px-4 py-2.5 text-[11px] font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'resumen' ? 'bg-[#21242E] text-white shadow-md' : 'text-[#415364]/70 hover:bg-neutral-50'}`}>Dashboard Gerencial</button>
-            <button onClick={() => setActiveTab('tesoreria')} className={`px-4 py-2.5 text-[11px] font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'tesoreria' ? 'bg-[#21242E] text-white shadow-md' : 'text-[#415364]/70 hover:bg-neutral-50'}`}>Tesorería y Caja</button>
-            <button onClick={() => setActiveTab('presupuesto')} className={`px-4 py-2.5 text-[11px] font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'presupuesto' ? 'bg-[#21242E] text-white shadow-md' : 'text-[#415364]/70 hover:bg-neutral-50'}`}>Presupuestos</button>
-            <button onClick={() => setActiveTab('intercompania')} className={`px-4 py-2.5 text-[11px] font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'intercompania' ? 'bg-[#21242E] text-white shadow-md' : 'text-[#415364]/70 hover:bg-neutral-50'}`}>Cuentas Intercompañía</button>
+          <div className="flex items-center gap-4 print:hidden">
+            {/* 🎯 BOTÓN DE IMPRESIÓN */}
+            {activeTab === 'resumen' && (
+              <button onClick={handlePrint} className="bg-neutral-200 text-[#415364] hover:bg-neutral-300 px-4 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-colors shadow-sm">
+                🖨️ Imprimir Reporte
+              </button>
+            )}
+            
+            <div className="flex bg-white p-1.5 rounded-xl border border-neutral-200 shadow-sm gap-1 overflow-x-auto w-full lg:w-auto">
+              <button onClick={() => setActiveTab('resumen')} className={`px-4 py-2.5 text-[11px] font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'resumen' ? 'bg-[#21242E] text-white shadow-md' : 'text-[#415364]/70 hover:bg-neutral-50'}`}>Dashboard Gerencial</button>
+              <button onClick={() => setActiveTab('tesoreria')} className={`px-4 py-2.5 text-[11px] font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'tesoreria' ? 'bg-[#21242E] text-white shadow-md' : 'text-[#415364]/70 hover:bg-neutral-50'}`}>Tesorería y Caja</button>
+              <button onClick={() => setActiveTab('presupuesto')} className={`px-4 py-2.5 text-[11px] font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'presupuesto' ? 'bg-[#21242E] text-white shadow-md' : 'text-[#415364]/70 hover:bg-neutral-50'}`}>Presupuestos</button>
+              <button onClick={() => setActiveTab('intercompania')} className={`px-4 py-2.5 text-[11px] font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'intercompania' ? 'bg-[#21242E] text-white shadow-md' : 'text-[#415364]/70 hover:bg-neutral-50'}`}>Cuentas Intercompañía</button>
+            </div>
           </div>
         </div>
 
         {/* PESTAÑA 1: DASHBOARD GERENCIAL */}
         {activeTab === 'resumen' && (
           <div className="space-y-6 animate-in fade-in max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-200 flex flex-col justify-center">
+            
+            {/* FLUJO DE CAJA */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 print:grid-cols-4">
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-200 flex flex-col justify-center print:border-neutral-300">
                 <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block mb-2">Caja Real Hoy</span>
                 <span className="text-3xl font-mono font-bold text-[#21242E]">${bancoReal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
               </div>
-              <div className="bg-sky-50/50 p-6 rounded-2xl border border-sky-100 flex flex-col justify-center">
+              <div className="bg-sky-50/50 p-6 rounded-2xl border border-sky-100 flex flex-col justify-center print:bg-white print:border-sky-300">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-[10px] font-bold text-sky-800 uppercase tracking-widest block">(+) Por Cobrar CRM</span>
                 </div>
                 <span className="text-2xl font-mono font-bold text-sky-700">+${metricas.porCobrarCRM.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
               </div>
-              <div className="bg-amber-50/50 p-6 rounded-2xl border border-amber-100 flex flex-col justify-center">
+              <div className="bg-amber-50/50 p-6 rounded-2xl border border-amber-100 flex flex-col justify-center print:bg-white print:border-amber-300">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-[10px] font-bold text-amber-800 uppercase tracking-widest block">(-) Presupuestos Futuros</span>
                 </div>
                 <span className="text-2xl font-mono font-bold text-amber-700">-${metricas.presupuestoFuturo.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
               </div>
-              <div className="bg-[#21242E] p-6 rounded-2xl shadow-md flex flex-col justify-center relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-[#D1C292] opacity-10 rounded-full blur-2xl -mr-10 -mt-10"></div>
+              <div className="bg-[#21242E] p-6 rounded-2xl shadow-md flex flex-col justify-center relative overflow-hidden print:bg-white print:border print:border-neutral-800">
                 <div className="flex justify-between items-center mb-2 relative z-10">
-                  <span className="text-[10px] font-bold text-[#D1C292] uppercase tracking-widest block">Liquidez Proyectada</span>
-                  <input type="month" value={mesProyeccion} onChange={e => setMesProyeccion(e.target.value)} className="text-[9px] font-bold text-white border border-neutral-600 rounded p-1 outline-none bg-neutral-800" />
+                  <span className="text-[10px] font-bold text-[#D1C292] print:text-[#21242E] uppercase tracking-widest block">Liquidez Proyectada</span>
+                  <input type="month" value={mesProyeccion} onChange={e => setMesProyeccion(e.target.value)} className="text-[9px] font-bold text-white border border-neutral-600 rounded p-1 outline-none bg-neutral-800 print:hidden" />
+                  <span className="hidden print:block text-[9px] font-bold text-[#21242E]">Hasta {mesProyeccion}</span>
                 </div>
-                <span className="text-3xl font-mono font-bold text-white relative z-10">
+                <span className="text-3xl font-mono font-bold text-white print:text-[#21242E] relative z-10">
                   ${(bancoReal + metricas.porCobrarCRM - metricas.presupuestoFuturo).toLocaleString('en-US', {minimumFractionDigits: 2})}
                 </span>
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden">
-              <div className="bg-neutral-50 p-4 border-b border-neutral-200 flex justify-between items-center">
-                <h2 className="text-[11px] font-bold text-[#415364] uppercase tracking-widest">Auditoría: Ventas en Firme ({unidadesVendidas.length})</h2>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-neutral-100 text-[9px] text-neutral-500 uppercase tracking-wider">
-                    <tr>
-                      <th className="px-4 py-3">Unidad</th>
-                      <th className="px-4 py-3">Cliente Inversionista</th>
-                      <th className="px-4 py-3 text-center">Estatus CRM</th>
-                      <th className="px-4 py-3 text-right">Valor Total Negocio</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-neutral-100">
-                    {unidadesVendidas.length > 0 ? (
-                      unidadesVendidas.map(v => {
-                        const cliente = clientes.find(c => c.id === v.cliente_id);
-                        return (
-                          <tr key={v.id} className="hover:bg-neutral-50">
-                            <td className="px-4 py-3 font-bold text-[#21242E]">Dpto {v.unidad_numero || 'N/A'}</td>
-                            <td className="px-4 py-3 font-medium text-neutral-700">{cliente ? `${cliente.nombres} ${cliente.apellidos}` : 'Cliente no asignado'}</td>
-                            <td className="px-4 py-3 text-center"><span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[9px] font-bold uppercase">{v.estado}</span></td>
-                            <td className="px-4 py-3 text-right font-mono font-bold text-sky-700">${Number(v.precio_total || v.precio_final || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr><td colSpan={4} className="py-6 text-center text-neutral-400 text-xs italic">No hay ventas registradas en estatus 'Venta - En Cierre'.</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="md:col-span-2 space-y-6">
-                <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden flex flex-col justify-between h-full">
-                  <div className="bg-neutral-50 p-4 border-b border-neutral-200"><h2 className="text-[11px] font-bold text-[#415364] uppercase tracking-widest">Balance Histórico Acumulado</h2></div>
-                  <div className="p-6 space-y-4 flex-1 flex flex-col justify-center">
-                    <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100 flex justify-between items-center">
-                      <div>
-                        <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest block">Total Ingresos Históricos</span>
-                        <span className="text-[9px] text-emerald-600">Todo el capital que ha entrado (Ventas + Aportes)</span>
-                      </div>
-                      <span className="text-xl font-mono font-bold text-emerald-700">+${metricas.totalIngresosHistoricos.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+            {/* 🎯 DESGLOSE DE INGRESOS Y GASTOS (NUEVO DISEÑO PARA REPORTES) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:grid-cols-2">
+              
+              <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden flex flex-col h-full print:border-neutral-300">
+                <div className="bg-neutral-50 p-4 border-b border-neutral-200 print:bg-neutral-100">
+                  <h2 className="text-[11px] font-bold text-[#415364] uppercase tracking-widest">Resumen de Ingresos</h2>
+                </div>
+                <div className="p-6 space-y-4 flex-1">
+                  <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100 flex justify-between items-center print:bg-white print:border-emerald-200">
+                    <div>
+                      <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest block">Total Capital Ingresado</span>
+                      <span className="text-[9px] text-emerald-600">Todo el capital recibido a la fecha</span>
                     </div>
-                    <div className="p-4 rounded-xl bg-red-50 border border-red-100 flex justify-between items-center">
-                      <div>
-                        <span className="text-[10px] font-bold text-[#ea0029] uppercase tracking-widest block">Total Histórico Gastado</span>
-                        <span className="text-[9px] text-[#ea0029]/70">Todo el capital utilizado (Obras, comisiones, etc)</span>
-                      </div>
-                      <span className="text-xl font-mono font-bold text-[#ea0029]">-${metricas.egresosTesoreria.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                    <span className="text-xl font-mono font-bold text-emerald-700">+${metricas.totalIngresosHistoricos.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4 mt-4">
+                    <div className="border border-neutral-100 p-3 rounded-xl text-center">
+                      <span className="text-[9px] text-neutral-500 uppercase font-bold block mb-1">Pagos de Clientes</span>
+                      <span className="text-sm font-mono font-bold text-[#415364]">${metricas.totalClientesAbonadoReal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                    </div>
+                    <div className="border border-neutral-100 p-3 rounded-xl text-center">
+                      <span className="text-[9px] text-neutral-500 uppercase font-bold block mb-1">Aportes Extra / Capital</span>
+                      <span className="text-sm font-mono font-bold text-[#415364]">${(metricas.totalIngresosHistoricos - metricas.totalClientesAbonadoReal).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="md:col-span-1">
-                <div className="bg-neutral-900 text-white p-6 rounded-2xl shadow-lg border border-neutral-800 h-full flex flex-col">
-                  <span className="text-[10px] font-bold text-[#D1C292] uppercase tracking-widest block mb-4 border-b border-neutral-700 pb-3">Ratio de Cobertura Clientes</span>
-                  <div className="flex-1 flex flex-col justify-center space-y-5">
-                    <div>
-                      <span className="text-[9px] text-neutral-400 uppercase tracking-wider block mb-1">Caja Real (En Banco Hoy)</span>
-                      <span className="text-2xl font-mono font-bold text-white">${bancoReal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                    </div>
-                    <div>
-                      <span className="text-[9px] text-neutral-400 uppercase tracking-wider block mb-1">Total Abonado por Clientes</span>
-                      <span className="text-2xl font-mono font-bold text-white">${metricas.totalClientesAbonadoReal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                    </div>
+              <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden flex flex-col h-full print:border-neutral-300">
+                <div className="bg-neutral-50 p-4 border-b border-neutral-200 flex justify-between items-center print:bg-neutral-100">
+                  <h2 className="text-[11px] font-bold text-[#415364] uppercase tracking-widest">Desglose de Gastos</h2>
+                  <span className="text-xs font-mono font-bold text-[#ea0029]">-${metricas.egresosTesoreria.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                </div>
+                <div className="p-6 space-y-3 flex-1">
+                  
+                  {/* Desglose Detallado */}
+                  <div className="flex justify-between items-center text-sm border-b border-neutral-100 pb-2">
+                    <span className="text-[10px] font-bold text-neutral-600 uppercase">Costos Comerciales (Mkt/Renders)</span>
+                    <span className="font-mono font-bold text-neutral-700">${metricas.gastosMarketing.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                   </div>
-                  <div className="mt-6 pt-4 border-t border-neutral-700">
-                    <span className="text-[9px] text-neutral-400 uppercase tracking-wider block mb-1">Brecha / Diferencia</span>
-                    <span className={`text-xl font-mono font-bold ${brechaCobertura >= 0 ? 'text-emerald-400' : 'text-[#ea0029]'}`}>
-                      {brechaCobertura >= 0 ? '+' : '-'}${Math.abs(brechaCobertura).toLocaleString('en-US', {minimumFractionDigits: 2})}
-                    </span>
+                  <div className="flex justify-between items-center text-sm border-b border-neutral-100 pb-2">
+                    <span className="text-[10px] font-bold text-neutral-600 uppercase">Gastos Legales y Notariales</span>
+                    <span className="font-mono font-bold text-neutral-700">${metricas.gastosLegales.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                   </div>
+                  <div className="flex justify-between items-center text-sm border-b border-neutral-100 pb-2">
+                    <span className="text-[10px] font-bold text-neutral-600 uppercase">Inversión Obra / Permisos</span>
+                    <span className="font-mono font-bold text-neutral-700">${metricas.gastosObra.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm pb-2">
+                    <span className="text-[10px] font-bold text-[#B94A36] uppercase">Anticipos de Comisiones (Konkeri)</span>
+                    <span className="font-mono font-bold text-[#B94A36]">${metricas.gastosAnticipos.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:grid-cols-2">
+              <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden print:border-neutral-300">
+                <div className="bg-neutral-50 p-4 border-b border-neutral-200 print:bg-neutral-100">
+                  <h2 className="text-[11px] font-bold text-[#415364] uppercase tracking-widest">Auditoría: Ventas Cerradas ({unidadesVendidas.length})</h2>
+                </div>
+                <div className="p-2">
+                  <table className="w-full text-left text-xs">
+                    <thead className="text-[9px] text-neutral-500 uppercase tracking-wider border-b border-neutral-100">
+                      <tr>
+                        <th className="px-3 py-2">Unidad</th>
+                        <th className="px-3 py-2">Cliente Inversionista</th>
+                        <th className="px-3 py-2 text-right">Valor Negocio</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-neutral-50">
+                      {unidadesVendidas.length > 0 ? (
+                        unidadesVendidas.map(v => {
+                          const cliente = clientes.find(c => c.id === v.cliente_id);
+                          return (
+                            <tr key={v.id}>
+                              <td className="px-3 py-2 font-bold text-[#21242E]">Dpto {v.unidad_numero || 'N/A'}</td>
+                              <td className="px-3 py-2 font-medium text-neutral-700">{cliente ? `${cliente.nombres} ${cliente.apellidos}` : 'N/A'}</td>
+                              <td className="px-3 py-2 text-right font-mono font-bold text-sky-700">${Number(v.precio_total || v.precio_final || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr><td colSpan={3} className="py-4 text-center text-neutral-400 text-xs italic">No hay ventas registradas.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="bg-neutral-900 text-white p-6 rounded-2xl shadow-lg border border-neutral-800 h-full flex flex-col print:bg-white print:border-neutral-300 print:text-[#21242E]">
+                <span className="text-[10px] font-bold text-[#D1C292] print:text-[#21242E] uppercase tracking-widest block mb-4 border-b border-neutral-700 print:border-neutral-200 pb-3">Ratio de Cobertura Clientes</span>
+                <div className="flex-1 flex flex-col justify-center space-y-5">
+                  <div>
+                    <span className="text-[9px] text-neutral-400 print:text-neutral-500 uppercase tracking-wider block mb-1">Caja Real (En Banco Hoy)</span>
+                    <span className="text-2xl font-mono font-bold text-white print:text-[#21242E]">${bancoReal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] text-neutral-400 print:text-neutral-500 uppercase tracking-wider block mb-1">Total Abonado por Clientes</span>
+                    <span className="text-2xl font-mono font-bold text-white print:text-[#21242E]">${metricas.totalClientesAbonadoReal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                  </div>
+                </div>
+                <div className="mt-6 pt-4 border-t border-neutral-700 print:border-neutral-200">
+                  <span className="text-[9px] text-neutral-400 print:text-neutral-500 uppercase tracking-wider block mb-1">Brecha / Diferencia</span>
+                  <span className={`text-xl font-mono font-bold ${brechaCobertura >= 0 ? 'text-emerald-400 print:text-emerald-600' : 'text-[#ea0029]'}`}>
+                    {brechaCobertura >= 0 ? '+' : '-'}${Math.abs(brechaCobertura).toLocaleString('en-US', {minimumFractionDigits: 2})}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* PESTAÑA 2: TESORERÍA */}
+        {/* PESTAÑA 2: TESORERÍA (Se oculta al imprimir) */}
         {activeTab === 'tesoreria' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in print:hidden">
             <div className="lg:col-span-1 space-y-6">
               
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
@@ -623,9 +672,9 @@ export default function FinanzasDashboardPage() {
           </div>
         )}
 
-        {/* PESTAÑA 3: PRESUPUESTO */}
+        {/* PESTAÑA 3: PRESUPUESTO (Se oculta al imprimir) */}
         {activeTab === 'presupuesto' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in print:hidden">
             <div className="lg:col-span-1 bg-white rounded-2xl p-6 shadow-sm border border-neutral-200 h-fit sticky top-6">
               <div className="flex justify-between items-center border-b border-neutral-100 pb-3 mb-5">
                 <h2 className="text-[11px] font-bold text-[#21242E] uppercase tracking-widest">
@@ -709,9 +758,9 @@ export default function FinanzasDashboardPage() {
           </div>
         )}
 
-        {/* PESTAÑA 4: INTERCOMPAÑÍA & APORTES */}
+        {/* PESTAÑA 4: INTERCOMPAÑÍA (Se oculta al imprimir) */}
         {activeTab === 'intercompania' && (
-          <div className="space-y-8 animate-in fade-in max-w-6xl mx-auto">
+          <div className="space-y-8 animate-in fade-in max-w-6xl mx-auto print:hidden">
             
             <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm mb-6">
               <h2 className="text-xs font-bold text-[#21242E] uppercase tracking-widest mb-2">Comisiones Konkeri (Política 4% - 70% a la Firma)</h2>
