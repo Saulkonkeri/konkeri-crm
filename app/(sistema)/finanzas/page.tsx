@@ -3,210 +3,151 @@
 import { useState } from 'react';
 
 export default function FinanzasDashboardPage() {
-  const [activeTab, setActiveTab] = useState<'panorama' | 'movimientos' | 'presupuesto'>('panorama');
-  const [fechaProyeccion, setFechaProyeccion] = useState('2026-12');
+  const [activeTab, setActiveTab] = useState<'resumen' | 'movimientos' | 'intercompania' | 'proyeccion'>('resumen');
+  const [fechaCorte, setFechaCorte] = useState('2026-12');
 
   // ================= ESTADOS PARA EL REGISTRO MANUAL =================
   const [movForm, setMovForm] = useState({
     fecha: new Date().toISOString().split('T')[0],
     entidad: 'Arienzo',
     tipo: 'Egreso',
-    categoria: 'Anticipo Konkeri (Operativo)',
+    categoria: 'Costos Operativos',
     detalle: '',
     monto: '',
     pagado_por: 'Caja de la Empresa',
-    estado_comprobante: 'No Facturado'
+    estado: 'Registrado'
   });
 
-  const [presupuestoForm, setPresupuestoForm] = useState({
+  const [proyeccionForm, setProyeccionForm] = useState({
     categoria: 'Honorarios y Servicios',
     detalle: '',
-    monto_proyectado: '',
+    monto_estimado: '',
     fecha_estimada: ''
   });
 
-  // DATOS SIMULADOS PARA EL DISEÑO DEL DASHBOARD GERENCIAL
-  
-  // BLOQUE 1: REALIDAD ACTUAL (FUENTES Y USOS)
-  const fuentes = {
-    aportesSocios: 15000,
-    ingresoPreventas: 8500
-  };
-  const totalFuentes = fuentes.aportesSocios + fuentes.ingresoPreventas;
+  // ================= DATOS DE EJEMPLO =================
+  // 1. Efectivo y Caja
+  const cajaDisponible = 12540.50; // Saldo real en bancos
 
-  const usos = {
-    inversionObraPermisos: 2500,
-    anticiposKonkeri: 6000 // Lo que Saúl y Debbi han sacado para operar/vivir
-  };
-  const totalUsos = usos.inversionObraPermisos + usos.anticiposKonkeri;
+  // 2. Histórico (Realizado)
+  const totalIngresos = 23500.00;
+  const totalEgresosObra = 2500.00;
+  const totalEgresosOperativos = 8459.50; // Aquí están los retiros de Konkeri
 
-  const saldoActualBancos = totalFuentes - totalUsos; // Esto debe cuadrar con el banco
-
-  // BLOQUE 2: JUSTIFICACIÓN KONKERI
-  const comisionesDevengadas = 16000; // Ej: 4% de $400,000 en ventas
-  const saldoPorFacturarKonkeri = comisionesDevengadas - usos.anticiposKonkeri;
-
-  // BLOQUE 3: PROYECCIÓN FUTURA
-  const cuentasPorCobrarClientes = 18500; // Leído automático del CRM (cuotas futuras)
-  
+  // 3. Proyecciones
+  const cuentasPorCobrar = 18500.00; // Leído de CRM
   const inversionesPorHacer = [
-    { id: 1, categoria: 'Trámites Municipales', detalle: 'Aprobación Anteproyecto', proyectado: 2500, fecha_estimada: 'Nov 2026' },
-    { id: 2, categoria: 'Marketing', detalle: 'Nuevos Renders', proyectado: 1800, fecha_estimada: 'Dic 2026' },
+    { id: 1, categoria: 'Trámites', detalle: 'Aprobación Anteproyecto', estimado: 2500, fecha: 'Nov 2026' },
+    { id: 2, categoria: 'Marketing', detalle: 'Nuevos Renders', estimado: 1800, fecha: 'Dic 2026' },
   ];
-  const totalInversionesProyectadas = inversionesPorHacer.reduce((acc, curr) => acc + curr.proyectado, 0);
+  const totalInversionesProyectadas = inversionesPorHacer.reduce((acc, curr) => acc + curr.estimado, 0);
   
-  // Proyección final
-  const proyeccionCaja = saldoActualBancos + cuentasPorCobrarClientes - totalInversionesProyectadas;
+  const liquidezProyectada = cajaDisponible + cuentasPorCobrar - totalInversionesProyectadas;
+
+  // 4. Intercompañía (La justificación de Konkeri)
+  const honorariosFacturables = 16000.00; // Comisiones/Servicios de Konkeri ganados
+  const anticiposEntregados = 8459.50; // Lo que Konkeri ya ha retirado
+  const saldoPendienteLiquidacion = honorariosFacturables - anticiposEntregados;
 
   return (
     <div className="min-h-screen bg-[#F9F7F5] p-4 md:p-8 font-sans text-[#415364]">
       <div className="max-w-7xl mx-auto space-y-8">
         
-        {/* CABECERA FINANCIERA */}
+        {/* CABECERA */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center border-b border-neutral-200 pb-6 gap-4">
           <div>
-            <span className="text-[10px] font-bold tracking-widest text-[#B94A36] uppercase block">Gestión Financiera</span>
-            <h1 className="text-3xl font-bold tracking-tight text-[#21242E] mt-1">Control General de Operaciones</h1>
-            <p className="text-xs text-neutral-500 mt-1">Registro contable, justificación de usos y proyección de liquidez.</p>
+            <span className="text-[10px] font-bold tracking-widest text-[#B94A36] uppercase block">Dirección Financiera</span>
+            <h1 className="text-3xl font-bold tracking-tight text-[#21242E] mt-1">Control de Operaciones</h1>
+            <p className="text-xs text-neutral-500 mt-1">Gestión de liquidez, presupuestos y posición consolidada.</p>
           </div>
 
           <div className="flex bg-white p-1.5 rounded-xl border border-neutral-200 shadow-sm gap-1 overflow-x-auto w-full lg:w-auto">
-            <button onClick={() => setActiveTab('panorama')} className={`px-4 py-2.5 text-[11px] font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'panorama' ? 'bg-[#21242E] text-[#D1C292] shadow-md' : 'text-[#415364]/70 hover:bg-neutral-50'}`}>
-              1. Panorama Gerencial
+            <button onClick={() => setActiveTab('resumen')} className={`px-4 py-2.5 text-[11px] font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'resumen' ? 'bg-[#21242E] text-[#D1C292] shadow-md' : 'text-[#415364]/70 hover:bg-neutral-50'}`}>
+              Resumen Ejecutivo
             </button>
             <button onClick={() => setActiveTab('movimientos')} className={`px-4 py-2.5 text-[11px] font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'movimientos' ? 'bg-[#21242E] text-[#D1C292] shadow-md' : 'text-[#415364]/70 hover:bg-neutral-50'}`}>
-              2. Libro de Caja (Diario)
+              Libro Diario (Caja)
             </button>
-            <button onClick={() => setActiveTab('presupuesto')} className={`px-4 py-2.5 text-[11px] font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'presupuesto' ? 'bg-[#21242E] text-[#D1C292] shadow-md' : 'text-[#415364]/70 hover:bg-neutral-50'}`}>
-              3. Inversiones por Hacer
+            <button onClick={() => setActiveTab('proyeccion')} className={`px-4 py-2.5 text-[11px] font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'proyeccion' ? 'bg-[#21242E] text-[#D1C292] shadow-md' : 'text-[#415364]/70 hover:bg-neutral-50'}`}>
+              Obligaciones & Presupuesto
+            </button>
+            <button onClick={() => setActiveTab('intercompania')} className={`px-4 py-2.5 text-[11px] font-bold tracking-wider uppercase rounded-lg transition-all whitespace-nowrap ${activeTab === 'intercompania' ? 'bg-neutral-200 text-[#21242E] shadow-inner' : 'text-neutral-400 hover:bg-neutral-100'}`}>
+              Conciliación Interna
             </button>
           </div>
         </div>
 
-        {/* HERRAMIENTA 1: PANORAMA GERENCIAL (LA PELÍCULA COMPLETA) */}
-        {activeTab === 'panorama' && (
-          <div className="space-y-6 animate-in fade-in max-w-5xl mx-auto">
+        {/* ========================================================================= */}
+        {/* PESTAÑA 1: RESUMEN EJECUTIVO (CORPORATIVO Y LIMPIO) */}
+        {/* ========================================================================= */}
+        {activeTab === 'resumen' && (
+          <div className="space-y-6 animate-in fade-in max-w-6xl mx-auto">
             
-            {/* BLOQUE 1: REALIDAD ACTUAL */}
-            <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden">
-               <div className="bg-neutral-50 border-b border-neutral-200 p-4 px-6 flex justify-between items-center">
-                  <h2 className="text-[12px] font-bold text-[#21242E] uppercase tracking-widest">I. Estado Actual: Fuentes y Usos</h2>
-                  <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full uppercase tracking-wider">
-                     Saldo en Bancos: ${saldoActualBancos.toLocaleString()}
-                  </span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <div className="bg-[#21242E] p-8 rounded-2xl shadow-lg border border-neutral-800 flex flex-col justify-center">
+                  <span className="text-[10px] font-bold text-[#D1C292] uppercase tracking-widest block mb-2">Liquidez Disponible (Caja)</span>
+                  <span className="text-4xl font-mono font-bold text-white">${cajaDisponible.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                  <span className="text-[10px] text-white/50 uppercase mt-3 tracking-wider">Efectivo en cuentas operativas</span>
                </div>
                
-               <div className="grid grid-cols-1 md:grid-cols-2">
-                 {/* FUENTES */}
-                 <div className="p-6 border-b md:border-b-0 md:border-r border-neutral-100">
-                    <h3 className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-4">Ingresos (Fuentes de Capital)</h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-medium text-neutral-600">Aportes de Socios / Capital</span>
-                        <span className="text-sm font-mono font-bold text-emerald-600">${fuentes.aportesSocios.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-medium text-neutral-600">Cobros de Preventa (Clientes)</span>
-                        <span className="text-sm font-mono font-bold text-emerald-600">${fuentes.ingresoPreventas.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between items-center border-t border-neutral-100 pt-3 mt-3">
-                        <span className="text-xs font-bold text-[#21242E] uppercase">Total Ingresos</span>
-                        <span className="text-sm font-mono font-bold text-[#21242E]">${totalFuentes.toLocaleString()}</span>
-                      </div>
-                    </div>
-                 </div>
-
-                 {/* USOS */}
-                 <div className="p-6">
-                    <h3 className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-4">Egresos (Usos de Capital)</h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-medium text-neutral-600">Inversión Proyecto (Permisos, etc.)</span>
-                        <span className="text-sm font-mono font-bold text-[#ea0029]">-${usos.inversionObraPermisos.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between items-center bg-amber-50 p-2 -mx-2 rounded border border-amber-100">
-                        <span className="text-xs font-bold text-amber-800">Anticipos Girados a Konkeri</span>
-                        <span className="text-sm font-mono font-bold text-[#ea0029]">-${usos.anticiposKonkeri.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between items-center border-t border-neutral-100 pt-3 mt-3">
-                        <span className="text-xs font-bold text-[#21242E] uppercase">Total Egresos</span>
-                        <span className="text-sm font-mono font-bold text-[#21242E]">-${totalUsos.toLocaleString()}</span>
-                      </div>
-                    </div>
-                 </div>
+               <div className="bg-white p-8 rounded-2xl shadow-sm border border-neutral-200 flex flex-col justify-center">
+                  <div className="flex justify-between items-end mb-2">
+                    <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest block">Proyección a Corto Plazo</span>
+                    <input type="month" value={fechaCorte} onChange={e => setFechaCorte(e.target.value)} className="text-[10px] font-bold text-neutral-500 border border-neutral-200 rounded p-1 outline-none" />
+                  </div>
+                  <span className="text-4xl font-mono font-bold text-[#21242E]">${liquidezProyectada.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                  <span className="text-[10px] text-neutral-400 uppercase mt-3 tracking-wider">Caja + CxC Clientes - Obligaciones (Presupuesto)</span>
                </div>
             </div>
 
-            {/* BLOQUE 2: JUSTIFICACIÓN KONKERI */}
-            <div className="bg-[#1a1c23] text-white rounded-2xl shadow-xl border border-neutral-800 p-6 relative overflow-hidden">
-               <div className="absolute top-0 right-0 w-64 h-64 bg-[#B94A36] opacity-10 rounded-full blur-3xl -mr-20 -mt-20"></div>
-               
-               <h2 className="text-[12px] font-bold text-[#D1C292] uppercase tracking-widest mb-1 relative z-10">II. Justificación Operativa (Posición Konkeri)</h2>
-               <p className="text-[10px] text-neutral-400 mb-6 relative z-10">Cruce contable para justificar los retiros operativos de Konkeri como anticipos de servicios comerciales.</p>
-
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
-                 <div className="bg-white/5 border border-white/10 p-4 rounded-xl">
-                   <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest block mb-1">Comisiones Devengadas</span>
-                   <span className="text-2xl font-mono font-bold text-white">${comisionesDevengadas.toLocaleString()}</span>
-                 </div>
-                 <div className="bg-white/5 border border-white/10 p-4 rounded-xl">
-                   <span className="text-[9px] text-[#ea0029] font-bold uppercase tracking-widest block mb-1">(-) Anticipos Retirados</span>
-                   <span className="text-2xl font-mono font-bold text-white">-${usos.anticiposKonkeri.toLocaleString()}</span>
-                 </div>
-                 <div className="bg-[#D1C292]/10 border border-[#D1C292]/20 p-4 rounded-xl">
-                   <span className="text-[9px] text-[#D1C292] font-bold uppercase tracking-widest block mb-1">Saldo por Facturar a Arienzo</span>
-                   <span className="text-2xl font-mono font-bold text-[#D1C292]">${saldoPorFacturarKonkeri.toLocaleString()}</span>
-                 </div>
-               </div>
-            </div>
-
-            {/* BLOQUE 3: PROYECCIÓN FUTURA */}
-            <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 p-6">
-               <div className="flex justify-between items-center mb-6 border-b border-neutral-100 pb-4">
-                 <h2 className="text-[12px] font-bold text-[#21242E] uppercase tracking-widest">III. Proyección y Obligaciones</h2>
-                 <div className="flex items-center gap-2">
-                   <label className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest">Corte al:</label>
-                   <input type="month" value={fechaProyeccion} onChange={(e) => setFechaProyeccion(e.target.value)} className="text-[11px] font-bold bg-neutral-50 border border-neutral-200 rounded p-1 outline-none text-[#21242E]" />
-                 </div>
-               </div>
-
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">1. Liquidez Base Hoy</span>
-                    <p className="text-xl font-mono font-bold text-[#21242E]">${saldoActualBancos.toLocaleString()}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
+                <h2 className="text-[11px] font-bold text-[#415364] uppercase tracking-widest mb-4 border-b border-neutral-100 pb-2">Radiografía Histórica (Realizado)</h2>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center bg-neutral-50 p-3 rounded-lg border border-neutral-100">
+                    <span className="text-xs font-bold text-neutral-600">Total Ingresos Históricos</span>
+                    <span className="text-sm font-mono font-bold text-emerald-600">${totalIngresos.toLocaleString()}</span>
                   </div>
-                  
-                  <div className="space-y-1 border-l border-neutral-100 pl-6">
-                    <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">(+) Cuentas por Cobrar CRM</span>
-                    <p className="text-xl font-mono font-bold text-emerald-600">${cuentasPorCobrarClientes.toLocaleString()}</p>
+                  <div className="flex justify-between items-center bg-neutral-50 p-3 rounded-lg border border-neutral-100">
+                    <span className="text-xs font-bold text-neutral-600">Total Inversión (Obra/Permisos)</span>
+                    <span className="text-sm font-mono font-bold text-[#ea0029]">-${totalEgresosObra.toLocaleString()}</span>
                   </div>
-
-                  <div className="space-y-1 border-l border-neutral-100 pl-6">
-                    <span className="text-[10px] font-bold text-[#B94A36] uppercase tracking-widest">(-) Inversiones por Hacer</span>
-                    <p className="text-xl font-mono font-bold text-[#B94A36]">-${totalInversionesProyectadas.toLocaleString()}</p>
+                  <div className="flex justify-between items-center bg-neutral-50 p-3 rounded-lg border border-neutral-100">
+                    <span className="text-xs font-bold text-neutral-600">Total Costos Operativos & Comerciales</span>
+                    <span className="text-sm font-mono font-bold text-[#ea0029]">-${totalEgresosOperativos.toLocaleString()}</span>
                   </div>
-               </div>
+                </div>
+              </div>
 
-               <div className="mt-6 pt-6 border-t border-neutral-200 flex justify-between items-center">
-                  <span className="text-[11px] font-bold text-[#21242E] uppercase tracking-widest">Proyección de Caja Libre:</span>
-                  <span className="text-3xl font-mono font-bold text-[#21242E]">${proyeccionCaja.toLocaleString()}</span>
-               </div>
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
+                <h2 className="text-[11px] font-bold text-[#415364] uppercase tracking-widest mb-4 border-b border-neutral-100 pb-2">Obligaciones (Por Realizar)</h2>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center bg-sky-50 p-3 rounded-lg border border-sky-100">
+                    <span className="text-xs font-bold text-sky-800">Cuentas por Cobrar (Clientes CRM)</span>
+                    <span className="text-sm font-mono font-bold text-sky-700">${cuentasPorCobrar.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-amber-50 p-3 rounded-lg border border-amber-100">
+                    <span className="text-xs font-bold text-amber-800">Presupuesto de Inversión Pendiente</span>
+                    <span className="text-sm font-mono font-bold text-amber-700">-${totalInversionesProyectadas.toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
-        {/* HERRAMIENTA 2: LIBRO DE ENTRADAS Y SALIDAS */}
+        {/* ========================================================================= */}
+        {/* PESTAÑA 2: LIBRO DIARIO (COMO ESTABA, MANUAL Y FLEXIBLE) */}
+        {/* ========================================================================= */}
         {activeTab === 'movimientos' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in">
-            {/* FORMULARIO MANUAL */}
             <div className="lg:col-span-1 bg-white rounded-2xl p-6 shadow-sm border border-neutral-200 h-fit sticky top-6">
-              <h2 className="text-[11px] font-bold text-[#21242E] uppercase tracking-widest border-b border-neutral-100 pb-3 mb-5">Nuevo Registro de Caja</h2>
-              
+              <h2 className="text-[11px] font-bold text-[#21242E] uppercase tracking-widest border-b border-neutral-100 pb-3 mb-5">Registrar Movimiento</h2>
               <form className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Tipo</label>
-                    <select value={movForm.tipo} onChange={e => setMovForm({...movForm, tipo: e.target.value})} className={`w-full text-xs font-bold p-2.5 rounded-lg border outline-none ${movForm.tipo === 'Ingreso' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+                    <select value={movForm.tipo} onChange={e => setMovForm({...movForm, tipo: e.target.value})} className="w-full text-xs font-bold p-2.5 rounded-lg border outline-none bg-neutral-50">
                       <option value="Ingreso">INGRESO (+)</option>
                       <option value="Egreso">EGRESO (-)</option>
                     </select>
@@ -214,106 +155,110 @@ export default function FinanzasDashboardPage() {
                   <div>
                     <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Entidad</label>
                     <select value={movForm.entidad} onChange={e => setMovForm({...movForm, entidad: e.target.value})} className="w-full text-xs font-bold p-2.5 rounded-lg border border-neutral-200 bg-neutral-50 outline-none">
-                      <option>Arienzo</option>
-                      <option>Konkeri</option>
+                      <option>Arienzo S.A.S.</option>
+                      <option>Konkeri S.A.S.</option>
                     </select>
                   </div>
                 </div>
-
                 <div>
-                  <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Concepto o Categoría</label>
+                  <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Categoría</label>
                   <select value={movForm.categoria} onChange={e => setMovForm({...movForm, categoria: e.target.value})} className="w-full text-xs font-medium p-2.5 rounded-lg border border-neutral-200 bg-neutral-50 outline-none text-[#415364]">
-                    {movForm.tipo === 'Ingreso' ? (
-                      <>
-                        <option>Aporte de Socios / Capital</option>
-                        <option>Cobro Preventa (Cliente)</option>
-                        <option>Otro Ingreso</option>
-                      </>
-                    ) : (
-                      <>
-                        <option>Anticipo Konkeri (Operativo)</option>
-                        <option>Inversión Obra / Permisos</option>
-                        <option>Gasto Comercial Externo</option>
-                      </>
-                    )}
+                    <option>Costos Operativos y Comerciales</option>
+                    <option>Inversión Obra y Permisos</option>
+                    <option>Honorarios Profesionales</option>
+                    <option>Aportes y Capital</option>
+                    <option>Cobros y Preventas</option>
                   </select>
                 </div>
-
                 <div>
-                  <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Detalle Exacto</label>
-                  <input type="text" value={movForm.detalle} onChange={e => setMovForm({...movForm, detalle: e.target.value})} className="w-full text-xs font-medium p-2.5 rounded-lg border border-neutral-200 bg-white outline-none focus:border-[#B94A36]" placeholder="Ej. Aprobación Planos Municipio" />
+                  <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Detalle</label>
+                  <input type="text" className="w-full text-xs font-medium p-2.5 rounded-lg border border-neutral-200 bg-white outline-none focus:border-[#B94A36]" placeholder="Ej. Pago Pauta Facebook" />
                 </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="col-span-2">
-                    <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Valor ($)</label>
-                    <input type="number" value={movForm.monto} onChange={e => setMovForm({...movForm, monto: e.target.value})} className="w-full text-lg font-mono font-bold p-2.5 rounded-lg border border-neutral-200 bg-white outline-none focus:border-[#B94A36] text-[#21242E]" placeholder="0.00" />
-                  </div>
+                <div>
+                  <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Monto ($)</label>
+                  <input type="number" className="w-full text-lg font-mono font-bold p-2.5 rounded-lg border border-neutral-200 bg-white outline-none focus:border-[#B94A36] text-[#21242E]" placeholder="0.00" />
                 </div>
-
-                <div className="p-3 bg-[#415364]/5 border border-[#415364]/10 rounded-xl mt-2">
-                   <label className="text-[9px] font-bold text-[#415364] uppercase block mb-1.5">Medio de Pago / Origen</label>
-                   <select value={movForm.pagado_por} onChange={e => setMovForm({...movForm, pagado_por: e.target.value})} className="w-full text-[11px] font-bold p-2 rounded border border-neutral-200 bg-white outline-none text-[#ea0029]">
-                      <option>Cuenta Bancaria Proyecto</option>
-                      <option>Tarjeta Personal (Saúl)</option>
-                      <option>Tarjeta Personal (Debbi)</option>
-                   </select>
-                </div>
-
                 <div className="pt-3">
                   <button type="button" className="w-full bg-[#21242E] text-white font-bold uppercase tracking-widest text-[10px] py-3.5 rounded-xl hover:bg-black transition-all shadow-md">
-                    Guardar en el Libro
+                    Guardar Movimiento
+                  </button>
+                </div>
+              </form>
+            </div>
+            
+            <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
+               <h2 className="text-[11px] font-bold text-[#415364] uppercase tracking-widest border-b border-neutral-100 pb-3 mb-4">Últimos Registros</h2>
+               <div className="flex-1 flex flex-col items-center justify-center py-12 text-center">
+                  <p className="text-sm font-bold text-neutral-400">Libro Diario</p>
+                  <p className="text-xs text-neutral-400 mt-1">Los registros manuales aparecerán aquí.</p>
+               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* PESTAÑA 3: OBLIGACIONES & PRESUPUESTO (INVERSIONES POR HACER) */}
+        {/* ========================================================================= */}
+        {activeTab === 'proyeccion' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in">
+            <div className="lg:col-span-1 bg-white rounded-2xl p-6 shadow-sm border border-neutral-200 h-fit sticky top-6">
+              <h2 className="text-[11px] font-bold text-[#21242E] uppercase tracking-widest border-b border-neutral-100 pb-3 mb-5">Planificar Obligación</h2>
+              <form className="space-y-4">
+                <div>
+                  <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Categoría</label>
+                  <select className="w-full text-xs font-bold p-2.5 rounded-lg border border-neutral-200 bg-neutral-50 outline-none text-[#21242E]">
+                    <option>Trámites y Permisos</option>
+                    <option>Marketing y Ventas</option>
+                    <option>Honorarios y Servicios</option>
+                    <option>Impuestos y Obligaciones</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Detalle del Gasto Futuro</label>
+                  <input type="text" className="w-full text-xs font-medium p-2.5 rounded-lg border border-neutral-200 bg-white outline-none focus:border-[#B94A36]" placeholder="Ej. Pago Municipio" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Costo Estimado</label>
+                    <input type="number" className="w-full text-sm font-mono font-bold p-2.5 rounded-lg border border-neutral-200 bg-white outline-none text-[#B94A36]" placeholder="0.00" />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">¿Para Cuándo?</label>
+                    <input type="month" className="w-full text-xs font-medium p-2.5 rounded-lg border border-neutral-200 bg-white outline-none" />
+                  </div>
+                </div>
+                <div className="pt-3">
+                  <button type="button" className="w-full bg-[#B94A36] text-white font-bold uppercase tracking-widest text-[10px] py-3.5 rounded-xl transition-all shadow-md">
+                    Añadir al Presupuesto
                   </button>
                 </div>
               </form>
             </div>
 
-            {/* TABLA DE MOVIMIENTOS (CON BOTONES EDITAR/ELIMINAR) */}
-            <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-neutral-200 overflow-hidden flex flex-col">
-              <h2 className="text-[11px] font-bold text-[#B94A36] uppercase tracking-widest border-b border-neutral-100 pb-3 mb-4">Libro Diario (Caja Real)</h2>
-              
-              <div className="overflow-auto custom-scrollbar flex-1 -mx-2 px-2">
+            <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
+               <div className="flex justify-between items-center border-b border-neutral-100 pb-3 mb-4">
+                 <h2 className="text-[11px] font-bold text-[#415364] uppercase tracking-widest">Presupuesto de Inversión Pendiente</h2>
+                 <span className="text-[11px] font-mono font-bold text-[#B94A36]">Total: ${totalInversionesProyectadas.toLocaleString()}</span>
+               </div>
+               <div className="overflow-auto custom-scrollbar">
                 <table className="w-full text-left text-[11px] whitespace-nowrap">
                   <thead>
                     <tr className="border-b border-neutral-200 text-neutral-400 uppercase tracking-wider">
-                      <th className="py-3 px-2 font-semibold">Fecha</th>
-                      <th className="py-3 px-2 font-semibold">Caja</th>
-                      <th className="py-3 px-2 font-semibold">Concepto</th>
-                      <th className="py-3 px-2 font-semibold text-right">Monto</th>
-                      <th className="py-3 px-2 font-semibold text-center">Acción</th>
+                      <th className="py-3 px-2 font-semibold">Detalle y Concepto</th>
+                      <th className="py-3 px-2 font-semibold">Categoría</th>
+                      <th className="py-3 px-2 font-semibold text-center">Fecha Est.</th>
+                      <th className="py-3 px-2 font-semibold text-right">Valor Est.</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100">
-                    <tr className="hover:bg-neutral-50">
-                      <td className="py-3 px-2 font-mono text-neutral-500">2026-10-15</td>
-                      <td className="py-3 px-2">
-                        <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-[#D1C292]/20 text-[#8A7A55]">Arienzo</span>
-                      </td>
-                      <td className="py-3 px-2">
-                        <p className="font-bold text-[#415364]">Aporte de Socios / Capital</p>
-                        <p className="text-[9px] text-neutral-500">Depósito inicial de operaciones</p>
-                      </td>
-                      <td className="py-3 px-2 text-right font-mono font-bold text-emerald-600">+$15,000.00</td>
-                      <td className="py-3 px-2 text-center space-x-2">
-                        <button className="text-neutral-400 hover:text-[#415364]">✏️</button>
-                        <button className="text-neutral-400 hover:text-[#ea0029]">🗑️</button>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-neutral-50">
-                      <td className="py-3 px-2 font-mono text-neutral-500">2026-11-05</td>
-                      <td className="py-3 px-2">
-                        <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-[#D1C292]/20 text-[#8A7A55]">Arienzo</span>
-                      </td>
-                      <td className="py-3 px-2">
-                        <p className="font-bold text-[#415364]">Anticipo Konkeri (Operativo)</p>
-                        <p className="text-[9px] text-neutral-500">Retiro para gastos operativos y pauta</p>
-                      </td>
-                      <td className="py-3 px-2 text-right font-mono font-bold text-[#ea0029]">-$6,000.00</td>
-                      <td className="py-3 px-2 text-center space-x-2">
-                        <button className="text-neutral-400 hover:text-[#415364]">✏️</button>
-                        <button className="text-neutral-400 hover:text-[#ea0029]">🗑️</button>
-                      </td>
-                    </tr>
+                    {inversionesPorHacer.map(inv => (
+                      <tr key={inv.id} className="hover:bg-neutral-50">
+                        <td className="py-4 px-2 font-bold text-[#21242E]">{inv.detalle}</td>
+                        <td className="py-4 px-2 text-neutral-500 uppercase text-[9px] tracking-wider">{inv.categoria}</td>
+                        <td className="py-4 px-2 text-center text-neutral-500 font-medium">{inv.fecha}</td>
+                        <td className="py-4 px-2 text-right font-mono font-bold text-[#B94A36]">${inv.estimado.toLocaleString()}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -321,14 +266,33 @@ export default function FinanzasDashboardPage() {
           </div>
         )}
 
-        {/* HERRAMIENTA 3: INVERSIONES POR HACER (PRESUPUESTO MANUAL) */}
-        {activeTab === 'presupuesto' && (
-          <div className="bg-white rounded-2xl p-16 shadow-sm border border-neutral-200 text-center animate-in fade-in">
-             <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
-               <svg className="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
-             </div>
-             <h2 className="text-lg font-bold text-[#21242E]">Planificación de Inversiones</h2>
-             <p className="text-sm text-neutral-500 mt-2">Aquí conectarás los egresos manuales que sabes que tienes que pagar a futuro para restarlos de la proyección.</p>
+        {/* ========================================================================= */}
+        {/* PESTAÑA 4: ESTADO DE CUENTA INTERCOMPAÑÍA (LA JUSTIFICACIÓN AISLADA) */}
+        {/* ========================================================================= */}
+        {activeTab === 'intercompania' && (
+          <div className="space-y-6 animate-in fade-in max-w-4xl mx-auto">
+            <div className="bg-neutral-50 p-6 rounded-2xl border border-neutral-200 text-center">
+               <h2 className="text-sm font-bold text-[#21242E] mb-2">Conciliación de Cuentas: Arienzo S.A.S. & Konkeri S.A.S.</h2>
+               <p className="text-xs text-neutral-500 max-w-lg mx-auto">Este panel es de uso interno exclusivo para la conciliación de honorarios y servicios devengados por la operadora comercial frente a los anticipos recibidos.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+               <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-200">
+                 <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest block mb-2">Servicios Devengados</span>
+                 <span className="text-3xl font-mono font-bold text-[#21242E]">${honorariosFacturables.toLocaleString()}</span>
+                 <p className="text-[9px] text-neutral-400 mt-2 uppercase">Comisiones por ventas / Honorarios ganados por Konkeri.</p>
+               </div>
+               <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-200">
+                 <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest block mb-2">Anticipos Operativos Recibidos</span>
+                 <span className="text-3xl font-mono font-bold text-[#ea0029]">-${anticiposEntregados.toLocaleString()}</span>
+                 <p className="text-[9px] text-neutral-400 mt-2 uppercase">Fondos retirados de Arienzo para operaciones.</p>
+               </div>
+               <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-300 bg-neutral-100">
+                 <span className="text-[10px] text-[#415364] font-bold uppercase tracking-widest block mb-2">Saldo Pendiente de Liquidación</span>
+                 <span className="text-3xl font-mono font-bold text-[#415364]">${saldoPendienteLiquidacion.toLocaleString()}</span>
+                 <p className="text-[9px] text-neutral-500 mt-2 uppercase font-bold">Monto pendiente a favor de la Operadora.</p>
+               </div>
+            </div>
           </div>
         )}
 
