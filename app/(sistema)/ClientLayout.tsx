@@ -49,8 +49,12 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     { 
       name: 'Cobranzas', 
       path: '/cobranzas', 
-      // Ícono de billete/efectivo, perfecto para módulo financiero
       icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+    },
+    { 
+      name: 'Finanzas', 
+      path: '/finanzas', 
+      icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
     },
     { 
       name: 'Reportes BI', 
