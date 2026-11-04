@@ -63,7 +63,6 @@ export default function FinanzasDashboardPage() {
   // ================= CEREBRO FINANCIERO =================
   useEffect(() => {
     cargarDatos();
-    // Cargar el saldo bancario guardado en la memoria local
     const saldoGuardado = localStorage.getItem('arienzo_saldo_banco');
     if (saldoGuardado) setSaldoBancarioReal(saldoGuardado);
   }, [mesProyeccion]);
@@ -71,7 +70,7 @@ export default function FinanzasDashboardPage() {
   const handleSaldoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setSaldoBancarioReal(val);
-    localStorage.setItem('arienzo_saldo_banco', val); // Autoguardado instantáneo
+    localStorage.setItem('arienzo_saldo_banco', val);
   };
 
   const cargarDatos = async () => {
@@ -129,7 +128,6 @@ export default function FinanzasDashboardPage() {
         }
       });
 
-      // BALANCE PRINCIPAL: Ingresos CRM + Ingresos Manuales Tesorería
       const totalIngresosHistoricos = cobradoCRM + inTesoreria;
       const cajaReal = totalIngresosHistoricos - outTesoreria;
 
@@ -289,8 +287,7 @@ export default function FinanzasDashboardPage() {
 
   if (cargando) return <div className="flex items-center justify-center min-h-screen"><div className="text-sm font-bold text-[#415364] uppercase tracking-widest animate-pulse">Estructurando Finanzas...</div></div>;
 
-  const bancoReal = Number(saldoBancarioReal) || 0;
-  const diferenciaConciliacion = bancoReal - metricas.cajaReal;
+  const diferenciaConciliacion = Number(saldoBancarioReal || 0) - metricas.cajaReal;
 
   return (
     <div className="min-h-screen bg-[#F9F7F5] p-4 md:p-8 font-sans text-[#415364]">
@@ -572,7 +569,6 @@ export default function FinanzasDashboardPage() {
                   <button onClick={cancelarEdicionPresupuesto} className="text-[9px] font-bold text-red-600 uppercase underline">Cancelar</button>
                 )}
               </div>
-              
               <form onSubmit={registrarPresupuesto} className="space-y-4">
                 <div>
                   <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Categoría</label>
@@ -640,11 +636,10 @@ export default function FinanzasDashboardPage() {
         {/* PESTAÑA 4: INTERCOMPAÑÍA & APORTES EN ESPECIE */}
         {activeTab === 'intercompania' && (
           <div className="space-y-8 animate-in fade-in max-w-6xl mx-auto">
-            
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="bg-white p-5 rounded-xl border border-neutral-200 shadow-sm flex flex-col justify-center">
                 <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest block mb-1">1. Comisiones Konkeri</span>
-                <span className="text-2xl font-mono font-bold text-[#21242E]">${metricas.comisionesRealesKonkeri.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                <span className="text-2xl font-mono font-bold text-[#21242E]">${metricas.comisionesKonkeri.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
               </div>
               <div className="bg-white p-5 rounded-xl border border-neutral-200 shadow-sm flex flex-col justify-center">
                 <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest block mb-1">2. Anticipos Girados</span>
@@ -656,12 +651,11 @@ export default function FinanzasDashboardPage() {
               </div>
               <div className="bg-[#21242E] p-5 rounded-xl shadow-md flex flex-col justify-center">
                 <span className="text-[9px] font-bold text-[#D1C292] uppercase tracking-widest block mb-1">Total que Arienzo Debe (1 - 2 + 3)</span>
-                <span className="text-2xl font-mono font-bold text-white">${(metricas.comisionesRealesKonkeri - metricas.anticiposRealesKonkeri + metricas.aportesEspeciePendientes).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                <span className="text-2xl font-mono font-bold text-white">${(metricas.comisionesKonkeri - metricas.anticiposRealesKonkeri + metricas.aportesEspeciePendientes).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
               </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              
               <div className="lg:col-span-1 bg-white rounded-2xl p-6 shadow-sm border border-neutral-200 h-fit sticky top-6">
                 <div className="flex justify-between items-center border-b border-neutral-100 pb-3 mb-5">
                   <h2 className="text-[11px] font-bold text-[#21242E] uppercase tracking-widest">
@@ -671,7 +665,6 @@ export default function FinanzasDashboardPage() {
                     <button onClick={cancelarEdicionDeuda} className="text-[9px] font-bold text-red-600 uppercase underline">Cancelar</button>
                   )}
                 </div>
-                
                 <form onSubmit={registrarDeudaSocio} className="space-y-4">
                   <div>
                     <label className="text-[9px] font-bold text-neutral-500 uppercase block mb-1">Fecha</label>
