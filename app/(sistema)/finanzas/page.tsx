@@ -140,7 +140,7 @@ export default function FinanzasDashboardPage() {
       });
 
       const totalIngresosHistoricos = cobradoCRM + inTesoreria;
-      // CORRECCIÓN EXACTA: El saldo de caja es ÚNICAMENTE ingresos del libro menos egresos del libro.
+      // Caja Sistema: Solo ingresos de tesorería menos egresos de tesorería (Libro Diario)
       const cajaSistema = inTesoreria - outTesoreria;
       const totalClientesAbonadoReal = cobradoCRM + reservasManuales;
 
@@ -325,6 +325,7 @@ export default function FinanzasDashboardPage() {
   if (cargando) return <div className="flex items-center justify-center min-h-screen"><div className="text-sm font-bold text-[#415364] uppercase tracking-widest animate-pulse">Estructurando Finanzas...</div></div>;
 
   const bancoReal = Number(saldoBancarioReal) || 0;
+  // Diferencia a justificar: Lo que declaras en banco MENOS lo que el libro de caja dice que debería haber
   const diferenciaConciliacion = bancoReal - metricas.cajaSistema;
   const brechaCobertura = bancoReal - metricas.totalClientesAbonadoReal;
 
@@ -576,7 +577,7 @@ export default function FinanzasDashboardPage() {
           </div>
         )}
 
-        {/* PESTAÑA 2: TESORERÍA CON FILTROS */}
+        {/* PESTAÑA 2: TESORERÍA CON FILTROS Y FORMULA CORREGIDA */}
         {activeTab === 'tesoreria' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in">
             <div className="lg:col-span-1 space-y-6">
@@ -595,10 +596,7 @@ export default function FinanzasDashboardPage() {
                       </button>
                     </div>
                   </div>
-                  <div className="flex justify-between items-center text-[11px]">
-                    <span className="font-bold text-neutral-500 uppercase" title="Suma total de Ingresos menos Egresos del Libro de Entradas y Salidas">Saldo Contable (Libro de Caja):</span>
-                    <span className="font-mono font-bold text-[#415364]">${metricas.cajaSistema.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                  </div>
+                  {/* SE OMITIÓ EL SALDO CONTABLE DEL SISTEMA AQUÍ A PETICIÓN */}
                   <div className={`p-4 rounded-xl border ${saldoBancarioReal === '' ? 'bg-neutral-50 border-neutral-200' : diferenciaConciliacion === 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
                     <span className="text-[9px] font-bold uppercase tracking-widest block mb-1 text-neutral-500">Diferencia a Justificar:</span>
                     <span className={`text-2xl font-mono font-bold ${saldoBancarioReal === '' ? 'text-neutral-400' : diferenciaConciliacion === 0 ? 'text-emerald-600' : 'text-[#ea0029]'}`}>
