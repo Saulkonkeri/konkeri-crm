@@ -230,15 +230,6 @@ export default function CotizadorPage() {
 
     let cuotasGeneradas: CuotaMes[] = [];
 
-    if (saldoFirmaPromesa > 0 && mesesInicial > 0) {
-      const valorAbono = Number((saldoFirmaPromesa / mesesInicial).toFixed(2));
-      for (let i = 0; i < mesesInicial; i++) {
-        const d = new Date(fechaFirmaPromesa + "T12:00:00");
-        d.setMonth(d.getMonth() + i);
-        cuotasGeneradas.push({ id: `ini-${i}`, tipo: 'inicial', numeroCuota: i + 1, fechaPago: d.toISOString().split('T')[0], valor: valorAbono, esEditable: false });
-      }
-    }
-
     if (mesesConstruccion > 0 && entradaDiferirTotal > 0) {
       const valorBaseCuota = Number((entradaDiferirTotal / mesesConstruccion).toFixed(2));
       const [y, m, d] = fechaInicioConstruccion.split('-');
@@ -252,7 +243,7 @@ export default function CotizadorPage() {
     }
 
     setCronogramaCuotas(cuotasGeneradas);
-  }, [propiedadSeleccionada, mesesConstruccion, entradaDiferirTotal, saldoFirmaPromesa, fechaInicioConstruccion, mesesInicial, fechaFirmaPromesa]);
+  }, [propiedadSeleccionada, mesesConstruccion, entradaDiferirTotal, fechaInicioConstruccion]);
 
   const actualizarAtributoCuota = (id: string, campo: 'valor' | 'fechaPago', nuevoValor: any) => {
     let nuevoCrono = [...cronogramaCuotas];
@@ -768,57 +759,59 @@ export default function CotizadorPage() {
           ) : pestañaActiva === 'previsualizar' ? (
             
             /* PESTAÑA DE PREVISUALIZAR PDF (DOCUMENTO FORMAL LIMPIO) */
-            <div className="bg-[#525659] w-full rounded-2xl shadow-inner border border-[#415364]/30 overflow-auto max-h-[85vh] custom-scrollbar flex justify-center py-10">
+            <div className="bg-[#525659] w-full rounded-2xl shadow-inner border border-[#415364]/30 overflow-auto max-h-[85vh] custom-scrollbar flex justify-center py-12 px-4 sm:px-10">
               <div id="plantilla-pdf-arienzo" className="flex flex-col gap-10 print:gap-0 shrink-0" style={{ width: '210mm' }}>
                 
                 {/* PÁGINA 1: PROPUESTA FINANCIERA */}
-                <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm' }} className="pdf-page-container bg-white text-neutral-900 shadow-2xl relative flex flex-col mx-auto shrink-0 print:shadow-none">
-                  <div className="px-10 pt-10 pb-6 flex flex-col h-full">
-                    
-                    {/* Cabecera Logo y Fecha */}
-                    <div className="flex justify-between items-end border-b-2 border-neutral-200 pb-4 mb-6">
-                      <div>
-                        <h1 className="text-3xl font-bold tracking-widest text-[#B94A36]">ARIENZO</h1>
-                        <h2 className="text-sm font-bold tracking-[0.2em] text-neutral-500 uppercase mt-0.5">LIVING</h2>
-                      </div>
-                      <div className="text-right">
-                        <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-1">PROPUESTA DE INVERSIÓN</h3>
-                        <p className="text-[10px] text-neutral-500">Emisión: {new Date().toLocaleDateString('es-EC')}</p>
-                        <p className="text-[10px] text-neutral-500 font-bold">Válida hasta: {formatearFechaLegible(fechaCaducidad)}</p>
-                      </div>
-                    </div>
+                <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm' }} className="pdf-page-container bg-white text-neutral-900 shadow-2xl relative flex flex-col overflow-hidden mx-auto shrink-0 print:shadow-none">
+                  
+                  {/* Franja Terracota Superior - Edge to Edge */}
+                  <div className="bg-[#B94A36] w-full px-10 py-6 flex justify-between items-center shrink-0">
+                     <img src={LOGO_BLANCO} alt="Arienzo Living" className="h-12 w-auto object-contain" />
+                     <div className="text-right text-white">
+                        <h3 className="text-[13px] font-bold tracking-widest uppercase">Propuesta de Inversión</h3>
+                        <p className="text-[10px] mt-1.5 font-light opacity-90">Emisión: {new Date().toLocaleDateString('es-EC')}</p>
+                        <p className="text-[10px] mt-0.5 font-bold">Válida hasta: {formatearFechaLegible(fechaCaducidad)}</p>
+                     </div>
+                  </div>
+                  
+                  <div className="px-10 pt-8 flex flex-col flex-1">
 
                     {/* Datos del Cliente */}
                     <div className="mb-6">
-                      <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest mb-1">INVERSIONISTA DE PROPUESTA</p>
+                      <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest mb-1">Inversionista de Propuesta</p>
                       <p className="text-xl font-bold text-[#21242E] border-b border-neutral-100 pb-3">{nombreDestinatarioCorreo}</p>
                     </div>
 
-                    {/* Detalles de la Unidad */}
-                    <div className="flex items-center justify-between text-[11px] mb-6">
-                      <div className="flex-1 text-left">
-                        <span className="text-[8px] text-neutral-400 uppercase block mb-1 font-bold">UNIDAD</span>
-                        <span className="font-bold text-[#21242E] text-sm">Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero}</span>
-                      </div>
-                      <div className="flex-1 text-left">
-                        <span className="text-[8px] text-neutral-400 uppercase block mb-1 font-bold">TIPOLOGIA</span>
-                        <span className="font-bold text-[#21242E] text-sm">{tipologia}</span>
-                      </div>
-                      <div className="flex-1 text-left">
-                        <span className="text-[8px] text-neutral-400 uppercase block mb-1 font-bold">COMPLEMENTOS ASIGNADOS</span>
-                        <span className="font-semibold text-neutral-700 block text-xs">P: {parqueaderoTexto}</span>
-                        <span className="font-semibold text-neutral-700 block text-xs">B: {bodegaAsignada}</span>
-                      </div>
-                      <div className="flex-1 text-center">
-                        <span className="text-[8px] text-neutral-400 uppercase block mb-1 font-bold">AREA TOTAL</span>
-                        <span className="font-bold text-[#B94A36] text-sm">{areaTotal}m²</span>
-                      </div>
-                      {!esLocal && (
-                        <div className="flex-1 text-right border-l border-neutral-200 pl-4">
-                          <span className="text-[8px] text-neutral-400 uppercase block mb-1 font-bold">VALOR M² (PRE LANZAMIENTO)</span>
-                          <span className="font-bold text-[#415364] font-mono text-sm">${valorM2Lanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}/m²</span>
+                    {/* Detalles de la Unidad - CAJA DE DISEÑO RESALTADO */}
+                    <div className="mb-6 shrink-0 border border-[#D1C292]/40 bg-[#F9F7F5] rounded-xl p-4">
+                      <div className="flex items-center justify-between text-[11px] divide-x divide-neutral-300/60">
+                        <div className="flex-1 text-center px-2">
+                          <span className="text-[8px] text-neutral-500 uppercase block mb-1 font-bold">Unidad</span>
+                          <span className="font-bold text-[#21242E] text-sm">Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero}</span>
                         </div>
-                      )}
+                        <div className="flex-1 text-center px-2">
+                          <span className="text-[8px] text-neutral-500 uppercase block mb-1 font-bold">Tipología</span>
+                          <span className="font-bold text-[#21242E] text-sm">{tipologia}</span>
+                        </div>
+                        <div className="flex-[1.5] text-center px-2">
+                          <span className="text-[8px] text-neutral-500 uppercase block mb-1 font-bold">Complementos Asignados</span>
+                          <span className="font-semibold text-neutral-700 block text-[11px]">P: {parqueaderoTexto}</span>
+                          {bodegaAsignada && bodegaAsignada !== 'Ninguna' && (
+                            <span className="font-semibold text-neutral-700 block text-[11px]">B: {bodegaAsignada}</span>
+                          )}
+                        </div>
+                        <div className="flex-1 text-center px-2">
+                          <span className="text-[8px] text-neutral-500 uppercase block mb-1 font-bold">Área Total</span>
+                          <span className="font-bold text-[#B94A36] text-sm">{areaTotal} m²</span>
+                        </div>
+                        {!esLocal && (
+                          <div className="flex-[1.2] text-center px-2">
+                            <span className="text-[8px] text-neutral-500 uppercase block mb-1 font-bold">Valor m²</span>
+                            <span className="font-bold text-[#415364] font-mono text-sm">${valorM2Lanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Plan de Financiamiento Específico */}
@@ -888,12 +881,12 @@ export default function CotizadorPage() {
                           </tr>
                         </tbody>
                       </table>
-                      <p className="text-[8px] text-neutral-400 mt-2 italic">* Nota: El Valor Total de Venta detallado ya considera un 5% de descuento por etapa de pre-lanzamiento respecto al precio de lista estándar[cite: 1].</p>
+                      <p className="text-[8px] text-neutral-400 mt-2 italic">* Nota: El Valor Total de Venta detallado ya considera un 5% de descuento por etapa de pre-lanzamiento respecto al precio de lista estándar.</p>
                     </div>
                     
                     {/* CRONOGRAMA EN EL PDF (CON CONTENEDOR AJUSTADO QUE NO SE CHORREA) */}
                     {entradaDiferirTotal > 0 && (
-                      <div className="shrink-0 mb-4">
+                      <div className="shrink-0">
                         <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">CRONOGRAMA DE PAGOS (CONSTRUCCIÓN)</h4>
                         <div className="bg-neutral-50/50 border border-neutral-200/60 rounded-[8px] p-3 flex gap-4">
                            <div className="flex-1">
@@ -920,16 +913,16 @@ export default function CotizadorPage() {
                       </div>
                     )}
 
-                    {/* FIRMAS UBICADAS PERFECTAMENTE ABAJO */}
+                    {/* FIRMAS UBICADAS PERFECTAMENTE ABAJO Y SEPARADAS */}
                     {incluirFirmas && (
-                       <div className="mt-auto pt-6 shrink-0 flex justify-between items-end">
-                          <div className="w-[40%] text-center border-t border-neutral-800 pt-1.5">
-                             <p className="text-[10px] font-bold text-neutral-800 uppercase m-0">{nombreAsesor}</p>
-                             <p className="text-[8px] text-neutral-500 m-0">Asesor Comercial Arienzo[cite: 1]</p>
+                       <div className="mt-auto mb-8 pt-8 shrink-0 flex justify-between items-end px-4">
+                          <div className="w-[40%] text-center border-t border-neutral-400 pt-2">
+                             <p className="text-[11px] font-bold text-neutral-800 uppercase m-0">{nombreAsesor}</p>
+                             <p className="text-[9px] text-neutral-500 m-0 mt-0.5">Asesor Comercial Arienzo</p>
                           </div>
-                          <div className="w-[40%] text-center border-t border-neutral-800 pt-1.5">
-                             <p className="text-[10px] font-bold text-neutral-800 uppercase m-0">{nombreDestinatarioCorreo}</p>
-                             <p className="text-[8px] text-neutral-500 m-0">Firma Inversionista[cite: 1]</p>
+                          <div className="w-[40%] text-center border-t border-neutral-400 pt-2">
+                             <p className="text-[11px] font-bold text-neutral-800 uppercase m-0">{nombreDestinatarioCorreo}</p>
+                             <p className="text-[9px] text-neutral-500 m-0 mt-0.5">Firma Inversionista</p>
                           </div>
                        </div>
                     )}
@@ -944,13 +937,13 @@ export default function CotizadorPage() {
                           
                           <div className="flex h-[150px] shrink-0 bg-white border-b border-neutral-200">
                              <div className="w-[230px] h-full shrink-0 bg-[#181A20]">
-                                <img src={RENDER_FACHADA} className="w-full h-full object-cover" alt="Fachada Arienzo[cite: 2]" />
+                                <img src={RENDER_FACHADA} className="w-full h-full object-cover" alt="Fachada Arienzo" />
                              </div>
                              <div className="flex-1 pl-8 pr-6 flex flex-col justify-center text-left">
-                                <h3 className="text-[15px] font-bold tracking-widest uppercase text-[#B94A36]">DISEÑO ARQUITECTÓNICO[cite: 2]</h3>
-                                <p className="text-[11px] mt-0.5 font-bold tracking-wider text-neutral-800">Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero} | {tipologia}[cite: 2]</p>
+                                <h3 className="text-[15px] font-bold tracking-widest uppercase text-[#B94A36]">DISEÑO ARQUITECTÓNICO</h3>
+                                <p className="text-[11px] mt-0.5 font-bold tracking-wider text-neutral-800">Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero} | {tipologia}</p>
                                 <p className="text-[9.5px] text-neutral-600 leading-snug mt-2 text-justify">
-                                  Un diseño arquitectónico exclusivo y minuciosamente pensado por el prestigioso estudio Diez+Muller, uno de los más reconocidos del país[cite: 2]. Cada espacio ha sido concebido para ofrecer un estilo de vida superior, destacando una distribución inteligente y una selección de acabados de excelente calidad[cite: 2].
+                                  Un diseño arquitectónico exclusivo y minuciosamente pensado por el prestigioso estudio Diez+Muller, uno de los más reconocidos del país. Cada espacio ha sido concebido para ofrecer un estilo de vida superior, destacando una distribución inteligente y una selección de acabados de excelente calidad.
                                 </p>
                              </div>
                           </div>
@@ -959,57 +952,57 @@ export default function CotizadorPage() {
                           <div className="bg-[#F9F7F5] px-4 py-3.5 grid grid-cols-7 gap-1 items-center shrink-0 border-b border-neutral-200">
                              <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
                                 <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/iconos/area.png" alt="Área Total" className="w-[22px] h-[22px] object-contain" />
-                                <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">ÁREA TOTAL[cite: 2]</span>
-                                <span className="text-[10px] font-black text-[#B94A36]">{areaTotal} m²[cite: 2]</span>
+                                <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">ÁREA TOTAL</span>
+                                <span className="text-[10px] font-black text-[#B94A36]">{areaTotal} m²</span>
                              </div>
                              <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
                                 <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/iconos/dormitorio.png" alt="Dormitorios" className="w-[22px] h-[22px] object-contain" />
-                                <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">DORMITORIOS[cite: 2]</span>
-                                <span className="text-[10px] font-bold text-[#21242E]">{numHabitaciones}[cite: 2]</span>
+                                <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">DORMITORIOS</span>
+                                <span className="text-[10px] font-bold text-[#21242E]">{numHabitaciones}</span>
                              </div>
                              <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
                                 <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/iconos/ducha.png" alt="Baños" className="w-[22px] h-[22px] object-contain" />
-                                <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">BAÑOS[cite: 2]</span>
-                                <span className="text-[10px] font-bold text-[#21242E]">{numBanos}[cite: 2]</span>
+                                <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">BAÑOS</span>
+                                <span className="text-[10px] font-bold text-[#21242E]">{numBanos}</span>
                              </div>
                              <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
                                 <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/iconos/lavadora.png" alt="Lavandería" className="w-[22px] h-[22px] object-contain" />
-                                <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">LAVANDERÍA[cite: 2]</span>
-                                <span className="text-[10px] font-bold text-[#21242E]">Sí[cite: 2]</span>
+                                <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">LAVANDERÍA</span>
+                                <span className="text-[10px] font-bold text-[#21242E]">Sí</span>
                              </div>
                              <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
                                 <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/iconos/terraza.png" alt="Terraza" className="w-[22px] h-[22px] object-contain" />
-                                <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">TERRAZA[cite: 2]</span>
-                                <span className="text-[10px] font-bold text-[#21242E]">Sí[cite: 2]</span>
+                                <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">TERRAZA</span>
+                                <span className="text-[10px] font-bold text-[#21242E]">Sí</span>
                              </div>
                              <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
                                 <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/iconos/garaje.png" alt="Parqueos" className="w-[22px] h-[22px] object-contain" />
-                                <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">PARQUEOS[cite: 2]</span>
-                                <span className="text-[10px] font-bold text-[#21242E]">{cantidadParqueos}[cite: 2]</span>
+                                <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">PARQUEOS</span>
+                                <span className="text-[10px] font-bold text-[#21242E]">{cantidadParqueos}</span>
                              </div>
                              <div className="flex flex-col items-center gap-1.5">
                                 <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/iconos/bodega.png" alt="Bodega" className="w-[22px] h-[22px] object-contain" />
-                                <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">BODEGA[cite: 2]</span>
-                                <span className="text-[10px] font-bold text-[#21242E]">{bodegaAsignada && bodegaAsignada.toLowerCase() !== 'ninguna' ? 'Sí' : 'No'}[cite: 2]</span>
+                                <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">BODEGA</span>
+                                <span className="text-[10px] font-bold text-[#21242E]">{bodegaAsignada && bodegaAsignada.toLowerCase() !== 'ninguna' ? 'Sí' : 'No'}</span>
                              </div>
                           </div>
 
                           <div className="flex-1 flex items-center justify-center p-6 relative bg-white">
                              <div className="w-full h-full max-h-[110mm] flex items-center justify-center">
-                                <img src={urlPlanoAsignado} alt="Plano Arienzo[cite: 2]" className="max-w-[75%] max-h-full object-contain mix-blend-multiply" />
+                                <img src={urlPlanoAsignado} alt="Plano Arienzo" className="max-w-[75%] max-h-full object-contain mix-blend-multiply" />
                              </div>
                           </div>
 
                           {/* Especificaciones */}
                           <div className="px-8 py-5 bg-[#F9F7F5] shrink-0 border-t border-neutral-200">
-                             <h4 className="text-[9px] font-bold uppercase tracking-widest text-[#B94A36] mb-2.5">RESUMEN DE ESPECIFICACIONES TÉCNICAS Y EQUIPAMIENTO[cite: 2]</h4>
+                             <h4 className="text-[9px] font-bold uppercase tracking-widest text-[#B94A36] mb-2.5">RESUMEN DE ESPECIFICACIONES TÉCNICAS Y EQUIPAMIENTO</h4>
                              <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-[7.5px] text-neutral-700 leading-tight">
-                                <p><strong className="text-neutral-900 uppercase">ACABADOS INTERIORES:</strong> Pisos de porcelanato importado rectificado de 60 x 120 cm, paredes lisas con revestimientos decorativos y puertas de madera con chapa natural lacada de 2,30 m de altura[cite: 2].</p>
-                                <p><strong className="text-neutral-900 uppercase">COCINA Y CLÓSETS:</strong> Mobiliario de melamínico Madeval o similar[cite: 2]. Mesones de piedra sinterizada y fregadero de acero inoxidable de dos pozos, tipo undercounter[cite: 2].</p>
-                                <p><strong className="text-neutral-900 uppercase">BAÑOS Y GRIFERÍA:</strong> Mesones de piedra sinterizada, muebles de melamínico, lavamanos FV o Edesa y grifería de línea alta FV o Edesa[cite: 2].</p>
-                                <p><strong className="text-neutral-900 uppercase">VENTANERÍA Y PASAMANOS:</strong> Ventanas de aluminio anodizado color café, con vidrio claro y sistema de apertura proyectable[cite: 2]. Pasamanos de vidrio templado con anclaje inferior[cite: 2].</p>
-                                <p><strong className="text-neutral-900 uppercase">ÁREAS COMUNALES Y AMENIDADES:</strong> Área social con piscina, zona de barbacoa (BBQ), espacios de living y gimnasio[cite: 2].</p>
-                                <p><strong className="text-neutral-900 uppercase">EQUIPAMIENTO DEL EDIFICIO:</strong> Generador eléctrico, ascensor, paneles solares, lobby 24/7, cámaras CCTV y área comercial[cite: 2].</p>
+                                <p><strong className="text-neutral-900 uppercase">ACABADOS INTERIORES:</strong> Pisos de porcelanato importado rectificado de 60 x 120 cm, paredes lisas con revestimientos decorativos y puertas de madera con chapa natural lacada de 2,30 m de altura.</p>
+                                <p><strong className="text-neutral-900 uppercase">COCINA Y CLÓSETS:</strong> Mobiliario de melamínico Madeval o similar. Mesones de piedra sinterizada y fregadero de acero inoxidable de dos pozos, tipo undercounter.</p>
+                                <p><strong className="text-neutral-900 uppercase">BAÑOS Y GRIFERÍA:</strong> Mesones de piedra sinterizada, muebles de melamínico, lavamanos FV o Edesa y grifería de línea alta FV o Edesa.</p>
+                                <p><strong className="text-neutral-900 uppercase">VENTANERÍA Y PASAMANOS:</strong> Ventanas de aluminio anodizado color café, con vidrio claro y sistema de apertura proyectable. Pasamanos de vidrio templado con anclaje inferior.</p>
+                                <p><strong className="text-neutral-900 uppercase">ÁREAS COMUNALES Y AMENIDADES:</strong> Área social con piscina, zona de barbacoa (BBQ), espacios de living y gimnasio.</p>
+                                <p><strong className="text-neutral-900 uppercase">EQUIPAMIENTO DEL EDIFICIO:</strong> Generador eléctrico, ascensor, paneles solares, lobby 24/7, cámaras CCTV y área comercial.</p>
                              </div>
                           </div>
 
