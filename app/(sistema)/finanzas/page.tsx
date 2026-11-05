@@ -93,12 +93,6 @@ export default function FinanzasDashboardPage() {
       const clisData = clis || [];
       const deudasData = deudas || [];
 
-      setMovimientos(movsData);
-      setInversionesPorHacer(presData);
-      setUnidadesVendidas(ventasData);
-      setClientes(clisData);
-      setDeudasSocios(deudasData);
-
       let inTesoreria = 0;
       let outTesoreria = 0;
       let comisionesManualesIngresadas = 0;
@@ -139,9 +133,10 @@ export default function FinanzasDashboardPage() {
         }
       });
 
+      // Total ingresado: CRM (clientes) + Tesorería (manuales)
       const totalIngresosHistoricos = cobradoCRM + inTesoreria;
-      // Caja Sistema: Solo ingresos de tesorería menos egresos de tesorería (Libro Diario)
-      const cajaSistema = inTesoreria - outTesoreria;
+      // Para la página principal (Resumen)
+      const cajaSistema = totalIngresosHistoricos - outTesoreria;
       const totalClientesAbonadoReal = cobradoCRM + reservasManuales;
 
       const presupuestoFiltrado = presData.filter(p => !p.fecha_estimada || p.fecha_estimada <= limitePresupuesto);
@@ -325,8 +320,11 @@ export default function FinanzasDashboardPage() {
   if (cargando) return <div className="flex items-center justify-center min-h-screen"><div className="text-sm font-bold text-[#415364] uppercase tracking-widest animate-pulse">Estructurando Finanzas...</div></div>;
 
   const bancoReal = Number(saldoBancarioReal) || 0;
-  // Diferencia a justificar: Lo que declaras en banco MENOS lo que el libro de caja dice que debería haber
-  const diferenciaConciliacion = bancoReal - metricas.cajaSistema;
+  
+  // ================= LÓGICA DE AUDITORÍA DE CAJA (SEGÚN TU EXPLICACIÓN) =================
+  // Diferencia = (Lo que hay en banco + Lo que se ha gastado) - (Todo lo que ha ingresado)
+  const diferenciaConciliacion = (bancoReal + metricas.egresosTesoreria) - metricas.totalIngresosHistoricos;
+  
   const brechaCobertura = bancoReal - metricas.totalClientesAbonadoReal;
 
   return (
@@ -335,14 +333,12 @@ export default function FinanzasDashboardPage() {
       {/* 🎯 REPORTE PROFESIONAL PARA IMPRESIÓN (SOLO SE VE AL IMPRIMIR) */}
       <div className="hidden print:block text-black font-sans text-sm max-w-4xl mx-auto">
         
-        {/* Encabezado */}
         <div className="border-b-2 border-black pb-4 mb-6">
           <h1 className="text-2xl font-bold uppercase tracking-widest text-[#21242E]">ARIENZO S.A.S.</h1>
           <h2 className="text-lg font-medium text-gray-700">Reporte de Inteligencia Financiera</h2>
           <p className="text-xs text-gray-500 mt-1">Emitido el: {new Date().toLocaleDateString('es-ES')}</p>
         </div>
 
-        {/* 1. Posición de Liquidez */}
         <div className="mb-8">
           <h3 className="text-xs font-bold uppercase tracking-widest text-gray-800 border-b border-gray-300 mb-3 pb-1">1. Posición de Liquidez Proyectada (Hasta {mesProyeccion})</h3>
           <table className="w-full text-left border-collapse text-sm">
@@ -367,7 +363,6 @@ export default function FinanzasDashboardPage() {
           </table>
         </div>
 
-        {/* 2. Balances Históricos y Cobertura */}
         <div className="grid grid-cols-2 gap-8 mb-8">
           <div>
             <h3 className="text-xs font-bold uppercase tracking-widest text-gray-800 border-b border-gray-300 mb-3 pb-1">2. Flujo Acumulado</h3>
@@ -405,7 +400,6 @@ export default function FinanzasDashboardPage() {
           </div>
         </div>
 
-        {/* 4. Resumen de Ventas */}
         <div>
           <h3 className="text-xs font-bold uppercase tracking-widest text-gray-800 border-b border-gray-300 mb-3 pb-1">4. Auditoría de Ventas Cerradas ({unidadesVendidas.length})</h3>
           <table className="w-full text-left text-sm border border-gray-300">
@@ -439,13 +433,11 @@ export default function FinanzasDashboardPage() {
       {/* 🎯 TODO EL SISTEMA VISUAL NORMAL SE OCULTA AL IMPRIMIR (print:hidden) */}
       <div className="max-w-7xl mx-auto space-y-8 print:hidden">
         
-        {/* CABECERA */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center border-b border-neutral-200 pb-6 gap-4">
           <div>
             <span className="text-[10px] font-bold tracking-widest text-[#B94A36] uppercase block">Módulo Financiero Integrado</span>
             <h1 className="text-3xl font-bold tracking-tight text-[#21242E] mt-1">Centro de Control de Capital</h1>
             
-            {/* 🎯 BOTÓN MOVIDO AQUÍ PARA NO ESTORBAR LAS PESTAÑAS */}
             {activeTab === 'resumen' && (
               <button onClick={handlePrint} className="mt-4 bg-white border border-neutral-300 text-[#415364] hover:bg-neutral-50 px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm flex items-center gap-2">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
@@ -577,7 +569,7 @@ export default function FinanzasDashboardPage() {
           </div>
         )}
 
-        {/* PESTAÑA 2: TESORERÍA CON FILTROS Y FORMULA CORREGIDA */}
+        {/* PESTAÑA 2: TESORERÍA CON AUDITORÍA MATEMÁTICA EXACTA */}
         {activeTab === 'tesoreria' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in">
             <div className="lg:col-span-1 space-y-6">
@@ -596,11 +588,27 @@ export default function FinanzasDashboardPage() {
                       </button>
                     </div>
                   </div>
-                  {/* SE OMITIÓ EL SALDO CONTABLE DEL SISTEMA AQUÍ A PETICIÓN */}
-                  <div className={`p-4 rounded-xl border ${saldoBancarioReal === '' ? 'bg-neutral-50 border-neutral-200' : diferenciaConciliacion === 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
+
+                  {/* DESGLOSE MATEMÁTICO TRANSPARENTE */}
+                  <div className="space-y-2 py-3 border-y border-neutral-100">
+                    <div className="flex justify-between items-center text-[10px] text-neutral-500">
+                      <span>(+) Saldo Real en Banco:</span>
+                      <span className="font-mono">${bancoReal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[10px] text-neutral-500">
+                      <span>(+) Total Gastado/Invertido:</span>
+                      <span className="font-mono">${metricas.egresosTesoreria.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[10px] font-bold text-neutral-600">
+                      <span>(-) Total Ingresado (CRM + Extras):</span>
+                      <span className="font-mono">-${metricas.totalIngresosHistoricos.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                    </div>
+                  </div>
+                  
+                  <div className={`p-4 rounded-xl border ${diferenciaConciliacion === 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
                     <span className="text-[9px] font-bold uppercase tracking-widest block mb-1 text-neutral-500">Diferencia a Justificar:</span>
-                    <span className={`text-2xl font-mono font-bold ${saldoBancarioReal === '' ? 'text-neutral-400' : diferenciaConciliacion === 0 ? 'text-emerald-600' : 'text-[#ea0029]'}`}>
-                      ${Math.abs(diferenciaConciliacion).toLocaleString('en-US', {minimumFractionDigits: 2})}
+                    <span className={`text-2xl font-mono font-bold ${diferenciaConciliacion === 0 ? 'text-emerald-600' : 'text-[#ea0029]'}`}>
+                      {diferenciaConciliacion < 0 ? '-' : ''}${Math.abs(diferenciaConciliacion).toLocaleString('en-US', {minimumFractionDigits: 2})}
                     </span>
                   </div>
                 </div>
