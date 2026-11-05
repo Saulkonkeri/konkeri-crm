@@ -140,7 +140,8 @@ export default function FinanzasDashboardPage() {
       });
 
       const totalIngresosHistoricos = cobradoCRM + inTesoreria;
-      const cajaSistema = totalIngresosHistoricos - outTesoreria;
+      // CORRECCIÓN EXACTA: El saldo de caja es ÚNICAMENTE ingresos del libro menos egresos del libro.
+      const cajaSistema = inTesoreria - outTesoreria;
       const totalClientesAbonadoReal = cobradoCRM + reservasManuales;
 
       const presupuestoFiltrado = presData.filter(p => !p.fecha_estimada || p.fecha_estimada <= limitePresupuesto);
@@ -595,7 +596,7 @@ export default function FinanzasDashboardPage() {
                     </div>
                   </div>
                   <div className="flex justify-between items-center text-[11px]">
-                    <span className="font-bold text-neutral-500 uppercase">Saldo Contable (Sistema):</span>
+                    <span className="font-bold text-neutral-500 uppercase" title="Suma total de Ingresos menos Egresos del Libro de Entradas y Salidas">Saldo Contable (Libro de Caja):</span>
                     <span className="font-mono font-bold text-[#415364]">${metricas.cajaSistema.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                   </div>
                   <div className={`p-4 rounded-xl border ${saldoBancarioReal === '' ? 'bg-neutral-50 border-neutral-200' : diferenciaConciliacion === 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
