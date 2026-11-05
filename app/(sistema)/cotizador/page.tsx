@@ -4,7 +4,9 @@ import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 
 interface CuotaMes {
-  numeroCuota: number;
+  id: string;
+  tipo: 'inicial' | 'construccion';
+  numeroCuota: number | string;
   fechaPago: string;
   valor: number;
   esEditable: boolean;
@@ -43,7 +45,6 @@ export default function CotizadorPage() {
   const [clienteSeleccionado, setClienteSeleccionado] = useState<string>(''); 
   const [nombreAsesor, setNombreAsesor] = useState<string>('Saúl Intriago / Debbi Mera');
 
-  const [incluirFechas, setIncluirFechas] = useState<boolean>(true);
   const [tipoDescuento, setTipoDescuento] = useState<'porcentaje' | 'valor'>('porcentaje');
   const [valorDescuento, setValorDescuento] = useState<number>(0);
   const [motivoDescuento, setMotivoDescuento] = useState<string>('');
@@ -65,17 +66,16 @@ export default function CotizadorPage() {
   
   const [tipoEntrada, setTipoEntrada] = useState<'porcentaje' | 'valor'>('porcentaje');
   const [valorEntrada, setValorEntrada] = useState<number>(25); 
-  
   const [mesesConstruccion, setMesesConstruccion] = useState(24);
   
-  const [fechaReserva, setFechaReserva] = useState(hoyStr);
+  const [fechaReservaInf, setFechaReservaInf] = useState(hoyStr);
   const [fechaFirmaPromesa, setFechaFirmaPromesa] = useState(sieteDiasDespuesStr);
-
-  const [diaPago, setDiaPago] = useState(5);
-  const [mesInicio, setMesInicio] = useState(new Date().getMonth() + 1); 
-  const [anioInicio, setAnioInicio] = useState(new Date().getFullYear());
+  const [fechaInicioConstruccion, setFechaInicioConstruccion] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
 
   const [cronogramaCuotas, setCronogramaCuotas] = useState<CuotaMes[]>([]);
+  const [mostrarCalculadoraRefuerzos, setMostrarCalculadoraRefuerzos] = useState(false);
+  const [cuotaBaseRapida, setCuotaBaseRapida] = useState<number | ''>('');
+  const [mesesRefuerzoRapido, setMesesRefuerzoRapido] = useState<string>('');
 
   useEffect(() => {
     if (propiedadSeleccionada) {
@@ -86,27 +86,23 @@ export default function CotizadorPage() {
   const formatearFechaLegible = (fechaIso: string) => {
     if (!fechaIso) return '---';
     const partes = fechaIso.split('-');
-    if (partes.length !== 3) return fechaIso;
+    if(partes.length !== 3) return fechaIso;
     const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     const mesIndex = parseInt(partes[1], 10) - 1;
-    if (isNaN(mesIndex)) return fechaIso;
+    if(isNaN(mesIndex)) return fechaIso;
     return `${partes[2]} de ${mesesNombres[mesIndex]} ${partes[0]}`;
   };
 
   useEffect(() => {
     async function cargarDatosIniciales() {
       try {
-        const { data: dataProp, error: errorProp } = await supabase.from('propiedades').select('*');
-        if (!errorProp && dataProp) {
-          const datosOrdenados = dataProp.sort((a, b) => {
-            const numA = parseInt(a.unidad || a.numero, 10) || 0;
-            const numB = parseInt(b.unidad || b.numero, 10) || 0;
-            return numA - numB;
-          });
+        const { data: dataProp } = await supabase.from('propiedades').select('*');
+        if (dataProp) {
+          const datosOrdenados = dataProp.sort((a, b) => (parseInt(a.unidad || a.numero, 10) || 0) - (parseInt(b.unidad || b.numero, 10) || 0));
           setPropiedades(datosOrdenados);
         }
-        const { data: dataCli, error: errorCli } = await supabase.from('clientes').select('id, nombres, apellidos, tipo, telefono, email').order('nombres', { ascending: true });
-        if (!errorCli && dataCli) setClientes(dataCli);
+        const { data: dataCli } = await supabase.from('clientes').select('id, nombres, apellidos, tipo, telefono, email').order('nombres', { ascending: true });
+        if (dataCli) setClientes(dataCli);
       } catch (err) {
         console.error("Error cargando datos:", err);
       } finally {
@@ -137,7 +133,7 @@ export default function CotizadorPage() {
 
   const { 
     precioListaOriginal, montoDescuentoCalculado, precioDeptoPreLanzamiento, valAnexosPreLanzamiento, precioTotal, 
-    cuotaInicialTotal, saldoFirmaPromesa, cuotaInicialMensual, entradaDiferirTotal, contraEntrega,
+    cuotaInicialTotal, saldoFirmaPromesa, entradaDiferirTotal, contraEntrega,
     pctInicialReal, pctFirmaReal, pctEntradaReal, pctContraEntregaReal, areaTotal, valorM2Lanzamiento,
     tipologia, parqueaderoTexto, bodegaAsignada, esLocal, cantidadParqueos, urlPlanoAsignado,
     numHabitaciones, numBanos
@@ -182,8 +178,6 @@ export default function CotizadorPage() {
 
     let entrega = Math.max(0, precioFin - reservaValor - saldoPromesa - entradaDiferir);
 
-    const mensualInicial = mesesInicial > 0 ? saldoPromesa / mesesInicial : saldoPromesa;
-
     const pReserva = precioFin > 0 ? (reservaValor / precioFin) * 100 : 0;
     const pFirma = precioFin > 0 ? (saldoPromesa / precioFin) * 100 : 0;
     const pInicialTotal = pReserva + pFirma; 
@@ -217,7 +211,7 @@ export default function CotizadorPage() {
     return {
       precioListaOriginal: listaOriginal, montoDescuentoCalculado: descuentoMonto, precioDeptoPreLanzamiento: precioDeptoDescontado,
       valAnexosPreLanzamiento: valAnexosDescontados, precioTotal: precioFin, cuotaInicialTotal: reservaValor + saldoPromesa,
-      saldoFirmaPromesa: saldoPromesa, cuotaInicialMensual: mensualInicial, entradaDiferirTotal: entradaDiferir, contraEntrega: entrega,
+      saldoFirmaPromesa: saldoPromesa, entradaDiferirTotal: entradaDiferir, contraEntrega: entrega,
       pctInicialReal: pInicialTotal, pctFirmaReal: pFirma, pctEntradaReal: pEntrada, pctContraEntregaReal: pEntrega,
       areaTotal: area, valorM2Lanzamiento: m2Lanzamiento, tipologia: tipologiaReal,
       parqueaderoTexto: textoParqueo, bodegaAsignada: bodegaText, esLocal: isLocalComercial, cantidadParqueos: cant > 0 ? cant : 1,
@@ -231,25 +225,92 @@ export default function CotizadorPage() {
       return;
     }
 
-    const valorBaseCuota = entradaDiferirTotal / mesesConstruccion;
-    const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-    
-    const cuotasCalculadas = Array.from({ length: mesesConstruccion }, (_, i) => {
-      let etiquetaFecha = `Mes ${i + 1}`;
-      if (incluirFechas) {
-        const mesRelativo = (mesInicio - 1) + i;
-        const fechaCuota = new Date(anioInicio, mesRelativo, diaPago);
-        etiquetaFecha = `${String(fechaCuota.getDate()).padStart(2, '0')} de ${mesesNombres[fechaCuota.getMonth()]} ${fechaCuota.getFullYear()}`;
-      }
-      return { numeroCuota: i + 1, fechaPago: etiquetaFecha, valor: valorBaseCuota, esEditable: false };
-    });
-    setCronogramaCuotas(cuotasCalculadas);
-  }, [propiedadSeleccionada, mesesConstruccion, entradaDiferirTotal, diaPago, mesInicio, anioInicio, incluirFechas]);
+    let cuotasGeneradas: CuotaMes[] = [];
 
-  const cuotasDivididas = useMemo(() => {
-    const mitad = Math.ceil(cronogramaCuotas.length / 2);
-    return { columnaIzquierda: cronogramaCuotas.slice(0, mitad), columnaDerecha: cronogramaCuotas.slice(mitad) };
+    if (saldoFirmaPromesa > 0 && mesesInicial > 0) {
+      const valorAbono = Number((saldoFirmaPromesa / mesesInicial).toFixed(2));
+      for (let i = 0; i < mesesInicial; i++) {
+        const d = new Date(fechaFirmaPromesa + "T12:00:00");
+        d.setMonth(d.getMonth() + i);
+        cuotasGeneradas.push({ id: `ini-${i}`, tipo: 'inicial', numeroCuota: i + 1, fechaPago: d.toISOString().split('T')[0], valor: valorAbono, esEditable: false });
+      }
+    }
+
+    if (mesesConstruccion > 0 && entradaDiferirTotal > 0) {
+      const valorBaseCuota = Number((entradaDiferirTotal / mesesConstruccion).toFixed(2));
+      const [y, m, d] = fechaInicioConstruccion.split('-');
+      const baseDate = new Date(Number(y), Number(m) - 1, Number(d), 12, 0, 0);
+
+      for (let i = 0; i < mesesConstruccion; i++) {
+        const currentDate = new Date(baseDate);
+        currentDate.setMonth(currentDate.getMonth() + i);
+        cuotasGeneradas.push({ id: `cons-${i}`, tipo: 'construccion', numeroCuota: i + 1, fechaPago: currentDate.toISOString().split('T')[0], valor: valorBaseCuota, esEditable: false });
+      }
+    }
+
+    setCronogramaCuotas(cuotasGeneradas);
+  }, [propiedadSeleccionada, mesesConstruccion, entradaDiferirTotal, saldoFirmaPromesa, fechaInicioConstruccion, mesesInicial, fechaFirmaPromesa]);
+
+  const actualizarAtributoCuota = (id: string, campo: 'valor' | 'fechaPago', nuevoValor: any) => {
+    let nuevoCrono = [...cronogramaCuotas];
+    const index = nuevoCrono.findIndex(c => c.id === id);
+    if(index === -1) return;
+
+    if (campo === 'fechaPago') {
+       nuevoCrono[index].fechaPago = nuevoValor;
+    } else if (campo === 'valor') {
+       nuevoCrono[index].valor = Number(nuevoValor);
+       nuevoCrono[index].esEditable = true;
+
+       if (nuevoCrono[index].tipo === 'construccion') {
+         const construccionCrono = nuevoCrono.filter(c => c.tipo === 'construccion');
+         const saldoRestante = entradaDiferirTotal - construccionCrono.filter(c => c.esEditable).reduce((acc, curr) => acc + curr.valor, 0);
+         const automaticos = construccionCrono.filter(c => !c.esEditable);
+         if (automaticos.length > 0) {
+           const valorRepartido = Number((Math.max(0, saldoRestante / automaticos.length)).toFixed(2));
+           nuevoCrono = nuevoCrono.map(c => (c.tipo === 'construccion' && !c.esEditable) ? { ...c, valor: valorRepartido } : c);
+         }
+       }
+    }
+    setCronogramaCuotas(nuevoCrono);
+  };
+
+  const reiniciarCuotas = () => {
+    const prevMeses = mesesConstruccion;
+    setMesesConstruccion(0);
+    setTimeout(() => setMesesConstruccion(prevMeses), 10);
+  };
+
+  const aplicarPlanRefuerzos = () => {
+    const base = Number(cuotaBaseRapida);
+    if (base <= 0) { alert("Ingresa Cuota Base mayor a $0."); return; }
+    const mesesExtra = mesesRefuerzoRapido.split(',').map(m => parseInt(m.trim())).filter(m => !isNaN(m) && m > 0 && m <= mesesConstruccion);
+    if (mesesExtra.length === 0) return;
+    const saldoRef = entradaDiferirTotal - (base * (mesesConstruccion - mesesExtra.length));
+    const valRef = Number((saldoRef / mesesExtra.length).toFixed(2));
+    
+    setCronogramaCuotas(cronogramaCuotas.map(c => {
+      if(c.tipo === 'construccion') {
+         return { ...c, valor: mesesExtra.includes(Number(c.numeroCuota)) ? valRef : base, esEditable: true };
+      }
+      return c;
+    }));
+    setMostrarCalculadoraRefuerzos(false); 
+  };
+
+  const listadoMaestroPagos = useMemo(() => {
+    const cuotasConst = cronogramaCuotas.filter(c => c.tipo === 'construccion');
+    return cuotasConst.map(c => ({
+      id: c.id,
+      label: `C${c.numeroCuota}`,
+      date: c.fechaPago,
+      amount: c.valor
+    }));
   }, [cronogramaCuotas]);
+
+  const mitadPagos = Math.ceil(listadoMaestroPagos.length / 2);
+  const columnaPagosIzq = listadoMaestroPagos.slice(0, mitadPagos);
+  const columnaPagosDer = listadoMaestroPagos.slice(mitadPagos);
 
   const guardarCotizacionEnSistema = async () => {
     if (!propiedadSeleccionada) return;
@@ -624,10 +685,63 @@ export default function CotizadorPage() {
                 </div>
               </div>
 
-              {/* 3. OPCIONES DE PRESENTACIÓN */}
+              {/* 3. CALENDARIO Y CUOTAS INTERACTIVAS */}
               <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-sm">
-                <h3 className="text-xs font-bold text-[#ea0029] uppercase tracking-widest mb-4 border-b border-neutral-100 pb-2">3. Opciones de Presentación</h3>
-                <div className="flex flex-wrap gap-6 mt-4">
+                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-5 border-b border-neutral-100 pb-4">
+                  <h2 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest">3. Ajuste de Cuotas y Fechas (Completo)</h2>
+                  <div className="flex gap-2">
+                    <button onClick={reiniciarCuotas} className="text-[10px] text-[#415364]/60 hover:text-[#415364] font-bold uppercase tracking-wider bg-[#dce3eb]/50 px-3 py-2 rounded-lg transition-colors flex items-center gap-1">
+                      Reiniciar
+                    </button>
+                    <button onClick={() => setMostrarCalculadoraRefuerzos(!mostrarCalculadoraRefuerzos)} className="text-[10px] bg-[#ea0029] text-white px-4 py-2 rounded-lg font-bold uppercase tracking-wider flex items-center gap-1 hover:bg-[#c90022]">
+                      Cuota Balón
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 bg-[#F9F7F5] p-4 rounded-xl border border-neutral-100">
+                  <div><label className="block text-[10px] font-bold uppercase mb-1 text-neutral-500">Firma Reserva</label><input type="date" value={fechaReservaInf} onChange={(e)=>setFechaReservaInf(e.target.value)} className="w-full text-xs p-2 border rounded-md outline-none focus:border-[#ea0029]" /></div>
+                  <div><label className="block text-[10px] font-bold uppercase mb-1 text-neutral-500">Inicio Cuota Inicial</label><input type="date" value={fechaFirmaPromesa} onChange={(e)=>setFechaFirmaPromesa(e.target.value)} className="w-full text-xs p-2 border rounded-md outline-none focus:border-[#ea0029]" /></div>
+                  <div><label className="block text-[10px] font-bold uppercase mb-1 text-[#ea0029]">Inicio Cuotas Construcción</label><input type="date" value={fechaInicioConstruccion} onChange={(e)=>setFechaInicioConstruccion(e.target.value)} className="w-full text-xs p-2 border border-[#ea0029]/40 rounded-md outline-none focus:border-[#ea0029]" /></div>
+                </div>
+
+                {mostrarCalculadoraRefuerzos && (
+                  <div className="mb-5 p-5 bg-[#415364] border border-[#21242E] rounded-xl flex gap-4">
+                     <div className="flex-1"><label className="text-[9px] font-bold text-[#dce3eb]/70 uppercase mb-1.5 block">Cuota Fija Base ($)</label><input type="number" value={cuotaBaseRapida} onChange={e => setCuotaBaseRapida(e.target.value===''? '':Number(e.target.value))} className="w-full bg-white/10 p-2.5 text-xs text-white rounded-lg outline-none"/></div>
+                     <div className="flex-1"><label className="text-[9px] font-bold text-[#dce3eb]/70 uppercase mb-1.5 block">Meses Refuerzo (Ej: 12,24)</label><input type="text" value={mesesRefuerzoRapido} onChange={e => setMesesRefuerzoRapido(e.target.value)} className="w-full bg-white/10 p-2.5 text-xs text-white rounded-lg outline-none"/></div>
+                     <button onClick={aplicarPlanRefuerzos} className="bg-[#ea0029] text-white px-6 rounded-lg text-[11px] font-bold mt-5 h-10 hover:bg-[#c90022]">Aplicar</button>
+                  </div>
+                )}
+
+                <div className="max-h-80 overflow-y-auto border border-[#415364]/10 rounded-xl divide-y divide-[#415364]/5 custom-scrollbar bg-white">
+                  <div className="flex justify-between items-center p-3 bg-neutral-50">
+                     <span className="text-[11px] font-bold text-neutral-600 w-32">Reserva Inmediata</span>
+                     <div className="flex items-center gap-4">
+                        <span className="text-xs p-1.5 font-medium text-neutral-500 w-32 text-center">{fechaReservaInf}</span>
+                        <div className="flex items-center pb-0.5 w-28 justify-end">
+                          <span className="text-xs mr-1 font-bold text-neutral-400">$</span>
+                          <span className="text-right text-sm font-bold font-mono text-neutral-700">{reservaValor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                        </div>
+                     </div>
+                  </div>
+
+                  {cronogramaCuotas.map(cuota => (
+                    <div key={cuota.id} className={`flex justify-between items-center p-3 ${cuota.tipo === 'inicial' ? 'bg-[#D1C292]/10' : ''}`}>
+                      <span className={`text-[11px] font-bold ${cuota.tipo === 'inicial' ? 'text-[#D1C292] w-32' : 'text-[#415364] w-32'}`}>
+                        {cuota.tipo === 'inicial' ? `Abono Inicial ${cuota.numeroCuota}` : `Cuota ${cuota.numeroCuota}`}
+                      </span>
+                      <div className="flex items-center gap-4">
+                        <input type="date" value={cuota.fechaPago} onChange={(e) => actualizarAtributoCuota(cuota.id, 'fechaPago', e.target.value)} className="text-xs p-1.5 border border-transparent hover:border-[#415364]/20 rounded-md bg-transparent outline-none text-[#415364]/70 font-medium w-32 text-center" />
+                        <div className="flex items-center border-b border-dashed border-[#415364]/30 pb-0.5 w-28 justify-end">
+                          <span className="text-xs mr-1 font-bold text-[#415364]/50">$</span>
+                          <input type="number" value={Number(cuota.valor.toFixed(2))} onChange={(e) => actualizarAtributoCuota(cuota.id, 'valor', Number(e.target.value))} className="w-full text-right text-sm font-bold font-mono outline-none bg-transparent" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex flex-wrap gap-6 mt-4 border-t border-neutral-100 pt-5">
                    <label className="flex items-center gap-2 text-xs font-bold text-[#415364] cursor-pointer hover:text-[#ea0029]">
                      <input type="checkbox" checked={incluirPlano} onChange={e => setIncluirPlano(e.target.checked)} className="rounded text-[#ea0029] w-4 h-4" />
                      Adjuntar Plano de la Unidad
@@ -726,10 +840,37 @@ export default function CotizadorPage() {
                         </table>
                       </div>
                       
-                      <div className="mt-auto"></div>
+                      {/* CRONOGRAMA EN EL PDF */}
+                      {entradaDiferirTotal > 0 && (
+                        <div className="flex-1 flex flex-col min-h-0 relative z-10">
+                          <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5 shrink-0">Cronograma de Pagos (Construcción)</h4>
+                          <div className="flex-1 bg-neutral-50/50 border border-neutral-200/60 rounded-[8px] p-4 flex gap-6">
+                             <div className="flex-1">
+                               <table className="w-full text-left text-[9px]">
+                                 <thead><tr className="border-b border-neutral-300 text-neutral-400 uppercase tracking-wider"><th className="pb-1">Concepto</th><th className="pb-1">Fecha Programada</th><th className="pb-1 text-right">Valor</th></tr></thead>
+                                 <tbody className="divide-y divide-neutral-100">
+                                   {columnaPagosIzq.map((c) => (
+                                     <tr key={c.id}><td className="py-1 font-medium text-neutral-500">{c.label}</td><td className="py-1 text-neutral-700">{formatearFechaLegible(c.date)}</td><td className="py-1 text-right font-mono font-bold text-neutral-800">${c.amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td></tr>
+                                   ))}
+                                 </tbody>
+                               </table>
+                             </div>
+                             <div className="flex-1">
+                               <table className="w-full text-left text-[9px]">
+                                 <thead><tr className="border-b border-neutral-300 text-neutral-400 uppercase tracking-wider"><th className="pb-1">Concepto</th><th className="pb-1">Fecha Programada</th><th className="pb-1 text-right">Valor</th></tr></thead>
+                                 <tbody className="divide-y divide-neutral-100">
+                                   {columnaPagosDer.map((c) => (
+                                     <tr key={c.id}><td className="py-1 font-medium text-neutral-500">{c.label}</td><td className="py-1 text-neutral-700">{formatearFechaLegible(c.date)}</td><td className="py-1 text-right font-mono font-bold text-neutral-800">${c.amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td></tr>
+                                   ))}
+                                 </tbody>
+                               </table>
+                             </div>
+                          </div>
+                        </div>
+                      )}
 
                       {incluirFirmas && (
-                         <div className="mt-8 pt-4 shrink-0 flex justify-between items-end border-t border-neutral-200">
+                         <div className="mt-4 pt-3 shrink-0 flex justify-between items-end border-t border-neutral-200">
                             <div className="w-[45%] text-center border-t border-neutral-400 pt-1">
                                <p className="text-[10px] font-bold text-neutral-800 uppercase m-0">{nombreAsesor}</p>
                                <p className="text-[8px] text-neutral-500 m-0">Asesor Comercial Arienzo</p>
