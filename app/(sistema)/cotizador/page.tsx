@@ -43,7 +43,7 @@ export default function CotizadorPage() {
   const [clientes, setClientes] = useState<any[]>([]);
   const [busquedaCliente, setBusquedaCliente] = useState<string>('');
   const [clienteSeleccionado, setClienteSeleccionado] = useState<string>(''); 
-  const [nombreAsesor, setNombreAsesor] = useState<string>('Saúl Intriago / Debbi Mera');
+  const [nombreAsesor, setNombreAsesor] = useState<string>('Saúl Intriago');
 
   const [tipoDescuento, setTipoDescuento] = useState<'porcentaje' | 'valor'>('porcentaje');
   const [valorDescuento, setValorDescuento] = useState<number>(0);
@@ -66,7 +66,7 @@ export default function CotizadorPage() {
   
   const [tipoEntrada, setTipoEntrada] = useState<'porcentaje' | 'valor'>('porcentaje');
   const [valorEntrada, setValorEntrada] = useState<number>(25); 
-  const [mesesConstruccion, setMesesConstruccion] = useState(24);
+  const [mesesConstruccion, setMesesConstruccion] = useState(28);
   
   const [fechaReservaInf, setFechaReservaInf] = useState(hoyStr);
   const [fechaFirmaPromesa, setFechaFirmaPromesa] = useState(sieteDiasDespuesStr);
@@ -127,7 +127,7 @@ export default function CotizadorPage() {
     if (clienteDataCompleta) {
       setNombreDestinatarioCorreo(`${clienteDataCompleta.nombres || ''} ${clienteDataCompleta.apellidos || ''}`.trim());
     } else {
-      setNombreDestinatarioCorreo('Cliente / Inversionista');
+      setNombreDestinatarioCorreo('Francisco Chang');
     }
   }, [clienteDataCompleta]);
 
@@ -227,15 +227,6 @@ export default function CotizadorPage() {
 
     let cuotasGeneradas: CuotaMes[] = [];
 
-    if (saldoFirmaPromesa > 0 && mesesInicial > 0) {
-      const valorAbono = Number((saldoFirmaPromesa / mesesInicial).toFixed(2));
-      for (let i = 0; i < mesesInicial; i++) {
-        const d = new Date(fechaFirmaPromesa + "T12:00:00");
-        d.setMonth(d.getMonth() + i);
-        cuotasGeneradas.push({ id: `ini-${i}`, tipo: 'inicial', numeroCuota: i + 1, fechaPago: d.toISOString().split('T')[0], valor: valorAbono, esEditable: false });
-      }
-    }
-
     if (mesesConstruccion > 0 && entradaDiferirTotal > 0) {
       const valorBaseCuota = Number((entradaDiferirTotal / mesesConstruccion).toFixed(2));
       const [y, m, d] = fechaInicioConstruccion.split('-');
@@ -249,7 +240,7 @@ export default function CotizadorPage() {
     }
 
     setCronogramaCuotas(cuotasGeneradas);
-  }, [propiedadSeleccionada, mesesConstruccion, entradaDiferirTotal, saldoFirmaPromesa, fechaInicioConstruccion, mesesInicial, fechaFirmaPromesa]);
+  }, [propiedadSeleccionada, mesesConstruccion, entradaDiferirTotal, fechaInicioConstruccion]);
 
   const actualizarAtributoCuota = (id: string, campo: 'valor' | 'fechaPago', nuevoValor: any) => {
     let nuevoCrono = [...cronogramaCuotas];
@@ -772,6 +763,7 @@ export default function CotizadorPage() {
                   {/* PÁGINA 1: PROPUESTA FINANCIERA */}
                   <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm' }} className="pdf-page-container bg-white text-neutral-900 shadow-2xl relative flex flex-col overflow-hidden mx-auto shrink-0">
                     <div className="px-10 pt-10 pb-6 flex flex-col h-full">
+                      
                       <div className="bg-[#B94A36] px-8 py-5 flex justify-between items-center mb-6 shrink-0 rounded-[8px]">
                         <img src={LOGO_BLANCO} alt="Arienzo Living" className="h-10 w-auto object-contain" />
                         <div className="text-right text-white">
@@ -803,6 +795,10 @@ export default function CotizadorPage() {
                             <span className="text-[7.5px] text-neutral-400 uppercase block mb-1">Área Total</span>
                             <span className="font-bold text-neutral-800 text-[11px]">{areaTotal}m²</span>
                           </div>
+                          <div className="flex-[1.4] text-right pl-3">
+                            <span className="text-[7.5px] text-neutral-400 uppercase block mb-1">Valor m² (Pre Lanzamiento)</span>
+                            <span className="font-bold text-[#B94A36] font-mono text-[11px]">${valorM2Lanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}/m²</span>
+                          </div>
                         </div>
                       </div>
 
@@ -832,6 +828,12 @@ export default function CotizadorPage() {
                               <td className="py-1 pl-3 font-medium text-neutral-800">↳ Diferido Construcción ({mesesConstruccion} Meses)</td>
                               <td className="py-1 text-right font-medium font-mono">${entradaDiferirTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                             </tr>
+                            {montoDescuentoCalculado > 0 && (
+                              <tr className="bg-red-50/40 text-red-900">
+                                <td className="py-1 pl-2 italic">(-) Descuento Especial {motivoDescuento && `(${motivoDescuento})`}</td>
+                                <td className="py-1 text-right font-mono font-bold">-${montoDescuentoCalculado.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                              </tr>
+                            )}
                             <tr>
                               <td className="py-1.5 pl-3 font-bold text-[#B94A36]">↳ Saldo Contra Entrega</td>
                               <td className="py-1.5 text-right font-bold text-[#B94A36] font-mono">${contraEntrega.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
@@ -840,27 +842,27 @@ export default function CotizadorPage() {
                         </table>
                       </div>
                       
-                      {/* CRONOGRAMA EN EL PDF */}
+                      {/* CRONOGRAMA EN EL PDF (CON CONTENEDOR AJUSTADO QUE NO SE CHORREA) */}
                       {entradaDiferirTotal > 0 && (
-                        <div className="flex-1 flex flex-col min-h-0 relative z-10">
-                          <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5 shrink-0">Cronograma de Pagos (Construcción)</h4>
-                          <div className="flex-1 bg-neutral-50/50 border border-neutral-200/60 rounded-[8px] p-4 flex gap-6">
+                        <div className="shrink-0 mb-4">
+                          <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Cronograma de Pagos (Construcción)</h4>
+                          <div className="bg-neutral-50/50 border border-neutral-200/60 rounded-[8px] p-3 flex gap-4">
                              <div className="flex-1">
                                <table className="w-full text-left text-[9px]">
-                                 <thead><tr className="border-b border-neutral-300 text-neutral-400 uppercase tracking-wider"><th className="pb-1">Concepto</th><th className="pb-1">Fecha Programada</th><th className="pb-1 text-right">Valor</th></tr></thead>
+                                 <thead><tr className="border-b border-neutral-300 text-neutral-400 uppercase tracking-wider"><th className="pb-1">Concepto</th><th className="pb-1">Fecha</th><th className="pb-1 text-right">Valor</th></tr></thead>
                                  <tbody className="divide-y divide-neutral-100">
                                    {columnaPagosIzq.map((c) => (
-                                     <tr key={c.id}><td className="py-1 font-medium text-neutral-500">{c.label}</td><td className="py-1 text-neutral-700">{formatearFechaLegible(c.date)}</td><td className="py-1 text-right font-mono font-bold text-neutral-800">${c.amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td></tr>
+                                     <tr key={c.id}><td className="py-0.5 font-medium text-neutral-500">{c.label}</td><td className="py-0.5 text-neutral-700">{formatearFechaLegible(c.date)}</td><td className="py-0.5 text-right font-mono font-bold text-neutral-800">${c.amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td></tr>
                                    ))}
                                  </tbody>
                                </table>
                              </div>
                              <div className="flex-1">
                                <table className="w-full text-left text-[9px]">
-                                 <thead><tr className="border-b border-neutral-300 text-neutral-400 uppercase tracking-wider"><th className="pb-1">Concepto</th><th className="pb-1">Fecha Programada</th><th className="pb-1 text-right">Valor</th></tr></thead>
+                                 <thead><tr className="border-b border-neutral-300 text-neutral-400 uppercase tracking-wider"><th className="pb-1">Concepto</th><th className="pb-1">Fecha</th><th className="pb-1 text-right">Valor</th></tr></thead>
                                  <tbody className="divide-y divide-neutral-100">
                                    {columnaPagosDer.map((c) => (
-                                     <tr key={c.id}><td className="py-1 font-medium text-neutral-500">{c.label}</td><td className="py-1 text-neutral-700">{formatearFechaLegible(c.date)}</td><td className="py-1 text-right font-mono font-bold text-neutral-800">${c.amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td></tr>
+                                     <tr key={c.id}><td className="py-0.5 font-medium text-neutral-500">{c.label}</td><td className="py-0.5 text-neutral-700">{formatearFechaLegible(c.date)}</td><td className="py-0.5 text-right font-mono font-bold text-neutral-800">${c.amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td></tr>
                                    ))}
                                  </tbody>
                                </table>
@@ -869,8 +871,9 @@ export default function CotizadorPage() {
                         </div>
                       )}
 
+                      {/* FIRMAS UBICADAS PERFECTAMENTE ABAJO */}
                       {incluirFirmas && (
-                         <div className="mt-4 pt-3 shrink-0 flex justify-between items-end border-t border-neutral-200">
+                         <div className="mt-auto pt-4 shrink-0 flex justify-between items-end border-t border-neutral-200">
                             <div className="w-[45%] text-center border-t border-neutral-400 pt-1">
                                <p className="text-[10px] font-bold text-neutral-800 uppercase m-0">{nombreAsesor}</p>
                                <p className="text-[8px] text-neutral-500 m-0">Asesor Comercial Arienzo</p>
