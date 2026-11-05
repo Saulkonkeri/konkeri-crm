@@ -48,15 +48,12 @@ export default function CotizadorPage() {
   const [valorDescuento, setValorDescuento] = useState<number>(0);
   const [motivoDescuento, setMotivoDescuento] = useState<string>('');
 
-  const [incluirClima, setIncluirClima] = useState<boolean>(false);
-  const [incluirBbq, setIncluirBbq] = useState<boolean>(false);
   const [incluirPlano, setIncluirPlano] = useState<boolean>(true);
   const [incluirFirmas, setIncluirFirmas] = useState<boolean>(true);
 
   const hoyStr = new Date().toISOString().split('T')[0];
   const sieteDiasDespuesStr = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-  const [fechaCaducidad, setFechaCaducidad] = useState<string>(sieteDiasDespuesStr);
   const [reservaValor, setReservaValor] = useState<number>(2500);
 
   const [tipoInicial, setTipoInicial] = useState<'porcentaje' | 'valor'>('porcentaje');
@@ -68,31 +65,17 @@ export default function CotizadorPage() {
   
   const [mesesConstruccion, setMesesConstruccion] = useState(24);
   
-  const [fechaReserva, setFechaReserva] = useState(hoyStr);
-  const [fechaFirmaPromesa, setFechaFirmaPromesa] = useState(sieteDiasDespuesStr);
-
   const [diaPago, setDiaPago] = useState(5);
   const [mesInicio, setMesInicio] = useState(new Date().getMonth() + 1); 
   const [anioInicio, setAnioInicio] = useState(new Date().getFullYear());
 
   const [cronogramaCuotas, setCronogramaCuotas] = useState<CuotaMes[]>([]);
-  const [mostrarCalculadoraRefuerzos, setMostrarCalculadoraRefuerzos] = useState(false);
-  const [cuotaBaseRapida, setCuotaBaseRapida] = useState<number | ''>('');
-  const [mesesRefuerzoRapido, setMesesRefuerzoRapido] = useState<string>('');
 
   useEffect(() => {
     if (propiedadSeleccionada) {
       setMensajeCorreo(`Es un placer saludarle.\n\nAdjunto a este correo encontrará la propuesta de inversión estructurada para la Unidad ${propiedadSeleccionada.unidad || propiedadSeleccionada.numero} en nuestro proyecto Arienzo Living.\n\nEl documento en formato PDF incluye el desglose financiero detallado y el diseño arquitectónico de la propiedad.\n\nQuedo a su entera disposición para cualquier consulta o para agendar una reunión.`);
     }
   }, [propiedadSeleccionada]);
-
-  const formatearFechaLegible = (fechaIso: string) => {
-    if (!fechaIso) return '---';
-    const partes = fechaIso.split('-');
-    const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-    const mesIndex = parseInt(partes[1], 10) - 1;
-    return `${partes[2]} de ${mesesNombres[mesIndex]} ${partes[0]}`;
-  };
 
   useEffect(() => {
     async function cargarDatosIniciales() {
@@ -523,7 +506,7 @@ export default function CotizadorPage() {
           </div>
 
           <div className="bg-white rounded-2xl border border-[#D1C292] p-6 shadow-sm relative overflow-hidden">
-            <h2 className="text-[11px] font-bold text-[#21242E] uppercase tracking-widest mb-4">1. Selección de Inventario</h2>
+            <h2 className="text-[11px] font-bold text-[#21242E] uppercase tracking-widest mb-4">Selección de Inventario</h2>
             <select
               className="w-full bg-[#F9F7F5] border border-[#D1C292]/50 rounded-xl p-3.5 text-sm font-bold text-[#21242E] mb-4 focus:outline-none focus:border-[#ea0029]"
               value={propiedadSeleccionada?.id || ''}
@@ -540,11 +523,135 @@ export default function CotizadorPage() {
             </select>
           </div>
 
+          {/* 🎯 AQUÍ ESTÁ LA PESTAÑA DE CONFIGURACIÓN QUE SE HABÍA BORRADO */}
           {!propiedadSeleccionada ? (
             <div className="bg-white rounded-2xl border border-dashed border-[#415364]/20 p-16 text-center text-[#415364]/40">
               <p className="text-sm font-bold uppercase tracking-widest">Selecciona una unidad para habilitar el cotizador.</p>
             </div>
+          ) : pestañaActiva === 'configurar' ? (
+            <div className="space-y-6 animate-in fade-in">
+              
+              {/* 1. PRECIO Y DESCUENTOS */}
+              <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-sm">
+                <h3 className="text-xs font-bold text-[#ea0029] uppercase tracking-widest mb-4 border-b border-neutral-100 pb-2">1. Precio y Condiciones Comerciales</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div>
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Precio de Lista</label>
+                    <div className="p-3.5 bg-neutral-50 rounded-xl border border-neutral-200 text-[#415364] font-mono font-bold text-lg">
+                      ${precioListaOriginal.toLocaleString('en-US', {minimumFractionDigits: 2})}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Descuento Especial</label>
+                    <div className="flex gap-2">
+                      <select value={tipoDescuento} onChange={e => setTipoDescuento(e.target.value as any)} className="w-1/3 p-3.5 bg-white border border-neutral-200 rounded-xl text-xs font-bold outline-none focus:border-[#ea0029]">
+                        <option value="porcentaje">%</option>
+                        <option value="valor">$</option>
+                      </select>
+                      <input type="number" value={valorDescuento} onChange={e => setValorDescuento(Number(e.target.value))} className="w-2/3 p-3.5 bg-white border border-neutral-200 rounded-xl text-sm font-bold outline-none focus:border-[#ea0029]" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-[#21242E] uppercase tracking-widest block mb-2">Precio Final de Venta</label>
+                    <div className="p-3.5 bg-[#21242E] rounded-xl border border-[#21242E] text-white font-mono font-bold text-xl shadow-md">
+                      ${precioTotal.toLocaleString('en-US', {minimumFractionDigits: 2})}
+                    </div>
+                  </div>
+                </div>
+                {valorDescuento > 0 && (
+                  <div className="mt-4">
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Motivo / Justificación del Descuento</label>
+                    <input type="text" value={motivoDescuento} onChange={e => setMotivoDescuento(e.target.value)} placeholder="Ej. Aprobación de gerencia comercial..." className="w-full p-3.5 bg-white border border-neutral-200 rounded-xl text-sm outline-none focus:border-[#ea0029]" />
+                  </div>
+                )}
+              </div>
+
+              {/* 2. ESTRUCTURA DE PAGOS */}
+              <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-sm">
+                <h3 className="text-xs font-bold text-[#ea0029] uppercase tracking-widest mb-4 border-b border-neutral-100 pb-2">2. Estructura de Pagos (Enganche y Construcción)</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+                  <div>
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Valor Reserva ($)</label>
+                    <input type="number" value={reservaValor} onChange={e => setReservaValor(Number(e.target.value))} className="w-full p-3.5 bg-white border border-neutral-200 rounded-xl text-base font-bold font-mono outline-none focus:border-[#ea0029]" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Firma Promesa (Completar Inicial)</label>
+                    <div className="flex gap-2">
+                      <select value={tipoInicial} onChange={e => setTipoInicial(e.target.value as any)} className="w-1/3 p-3.5 bg-white border border-neutral-200 rounded-xl text-xs font-bold outline-none focus:border-[#ea0029]">
+                        <option value="porcentaje">%</option>
+                        <option value="valor">$</option>
+                      </select>
+                      <input type="number" value={valorInicial} onChange={e => setValorInicial(Number(e.target.value))} className="w-2/3 p-3.5 bg-white border border-neutral-200 rounded-xl text-base font-bold font-mono outline-none focus:border-[#ea0029]" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Plazo Firma (Meses)</label>
+                    <input type="number" value={mesesInicial} onChange={e => setMesesInicial(Number(e.target.value))} className="w-full p-3.5 bg-white border border-neutral-200 rounded-xl text-base font-bold font-mono outline-none focus:border-[#ea0029]" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-4 border-t border-neutral-100">
+                  <div>
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Entrada Diferida (Durante Obra)</label>
+                    <div className="flex gap-2">
+                      <select value={tipoEntrada} onChange={e => setTipoEntrada(e.target.value as any)} className="w-1/4 p-3.5 bg-white border border-neutral-200 rounded-xl text-xs font-bold outline-none focus:border-[#ea0029]">
+                        <option value="porcentaje">%</option>
+                        <option value="valor">$</option>
+                      </select>
+                      <input type="number" value={valorEntrada} onChange={e => setValorEntrada(Number(e.target.value))} className="w-3/4 p-3.5 bg-white border border-neutral-200 rounded-xl text-base font-bold font-mono outline-none focus:border-[#ea0029]" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Meses de Construcción (Plazo)</label>
+                    <input type="number" value={mesesConstruccion} onChange={e => setMesesConstruccion(Number(e.target.value))} className="w-full p-3.5 bg-white border border-neutral-200 rounded-xl text-base font-bold font-mono outline-none focus:border-[#ea0029]" />
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. CRONOGRAMA */}
+              <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-sm">
+                <h3 className="text-xs font-bold text-[#ea0029] uppercase tracking-widest mb-4 border-b border-neutral-100 pb-2">3. Calendario de Pagos</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+                   <div>
+                     <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Día de Pago (Corte)</label>
+                     <input type="number" min="1" max="31" value={diaPago} onChange={e => setDiaPago(Number(e.target.value))} className="w-full p-3.5 bg-white border border-neutral-200 rounded-xl text-sm font-bold outline-none focus:border-[#ea0029]" />
+                   </div>
+                   <div>
+                     <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Mes de Inicio</label>
+                     <select value={mesInicio} onChange={e => setMesInicio(Number(e.target.value))} className="w-full p-3.5 bg-white border border-neutral-200 rounded-xl text-sm font-bold outline-none focus:border-[#ea0029]">
+                       <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
+                       <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
+                       <option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option>
+                       <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+                     </select>
+                   </div>
+                   <div>
+                     <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Año de Inicio</label>
+                     <input type="number" value={anioInicio} onChange={e => setAnioInicio(Number(e.target.value))} className="w-full p-3.5 bg-white border border-neutral-200 rounded-xl text-sm font-bold outline-none focus:border-[#ea0029]" />
+                   </div>
+                </div>
+
+                <div className="flex flex-wrap gap-6 mt-4 border-t border-neutral-100 pt-5">
+                   <label className="flex items-center gap-2 text-xs font-bold text-[#415364] cursor-pointer hover:text-[#ea0029] transition-colors">
+                     <input type="checkbox" checked={incluirFechas} onChange={e => setIncluirFechas(e.target.checked)} className="rounded text-[#ea0029] focus:ring-[#ea0029] w-4 h-4" />
+                     Mostrar Fechas Exactas en PDF
+                   </label>
+                   <label className="flex items-center gap-2 text-xs font-bold text-[#415364] cursor-pointer hover:text-[#ea0029] transition-colors">
+                     <input type="checkbox" checked={incluirPlano} onChange={e => setIncluirPlano(e.target.checked)} className="rounded text-[#ea0029] focus:ring-[#ea0029] w-4 h-4" />
+                     Adjuntar Plano de la Unidad
+                   </label>
+                   <label className="flex items-center gap-2 text-xs font-bold text-[#415364] cursor-pointer hover:text-[#ea0029] transition-colors">
+                     <input type="checkbox" checked={incluirFirmas} onChange={e => setIncluirFirmas(e.target.checked)} className="rounded text-[#ea0029] focus:ring-[#ea0029] w-4 h-4" />
+                     Incluir Espacios para Firma
+                   </label>
+                </div>
+              </div>
+
+            </div>
           ) : pestañaActiva === 'previsualizar' ? (
+            
+            /* PESTAÑA DE PREVISUALIZAR PDF (LA QUE SÍ FUNCIONABA Y SE QUEDÓ INTACTA) */
             <div className="bg-[#525659] w-full rounded-2xl shadow-inner border border-[#415364]/30 overflow-auto max-h-[85vh] custom-scrollbar text-center">
               <div className="inline-block text-left py-12 px-4 sm:px-12 min-w-max">
                 <div id="plantilla-pdf-arienzo" className="flex flex-col gap-10 print:gap-0" style={{ width: '210mm' }}>
@@ -619,6 +726,46 @@ export default function CotizadorPage() {
                           </tbody>
                         </table>
                       </div>
+                      
+                      {/* CRONOGRAMA EN EL PDF */}
+                      <div className="flex-1 flex flex-col min-h-0 relative z-10">
+                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5 shrink-0">Cronograma de Pagos (Construcción)</h4>
+                        <div className="flex-1 bg-neutral-50/50 border border-neutral-200/60 rounded-[8px] p-4 flex gap-6">
+                           <div className="flex-1">
+                             <table className="w-full text-left text-[9px]">
+                               <thead><tr className="border-b border-neutral-300 text-neutral-400 uppercase tracking-wider"><th className="pb-1">Nº</th><th className="pb-1">Fecha Programada</th><th className="pb-1 text-right">Valor</th></tr></thead>
+                               <tbody className="divide-y divide-neutral-100">
+                                 {cuotasDivididas.columnaIzquierda.map((c) => (
+                                   <tr key={c.numeroCuota}><td className="py-1 font-medium text-neutral-500">{c.numeroCuota}</td><td className="py-1 text-neutral-700">{c.fechaPago}</td><td className="py-1 text-right font-mono font-bold text-neutral-800">${c.valor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td></tr>
+                                 ))}
+                               </tbody>
+                             </table>
+                           </div>
+                           <div className="flex-1">
+                             <table className="w-full text-left text-[9px]">
+                               <thead><tr className="border-b border-neutral-300 text-neutral-400 uppercase tracking-wider"><th className="pb-1">Nº</th><th className="pb-1">Fecha Programada</th><th className="pb-1 text-right">Valor</th></tr></thead>
+                               <tbody className="divide-y divide-neutral-100">
+                                 {cuotasDivididas.columnaDerecha.map((c) => (
+                                   <tr key={c.numeroCuota}><td className="py-1 font-medium text-neutral-500">{c.numeroCuota}</td><td className="py-1 text-neutral-700">{c.fechaPago}</td><td className="py-1 text-right font-mono font-bold text-neutral-800">${c.valor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td></tr>
+                                 ))}
+                               </tbody>
+                             </table>
+                           </div>
+                        </div>
+                      </div>
+
+                      {incluirFirmas && (
+                         <div className="mt-4 pt-3 shrink-0 flex justify-between items-end border-t border-neutral-200">
+                            <div className="w-[45%] text-center border-t border-neutral-400 pt-1">
+                               <p className="text-[10px] font-bold text-neutral-800 uppercase m-0">{nombreAsesor}</p>
+                               <p className="text-[8px] text-neutral-500 m-0">Asesor Comercial Arienzo</p>
+                            </div>
+                            <div className="w-[45%] text-center border-t border-neutral-400 pt-1">
+                               <p className="text-[10px] font-bold text-neutral-800 uppercase m-0">{nombreDestinatarioCorreo}</p>
+                               <p className="text-[8px] text-neutral-500 m-0">Firma Inversionista</p>
+                            </div>
+                         </div>
+                      )}
                     </div>
                   </div>
 
