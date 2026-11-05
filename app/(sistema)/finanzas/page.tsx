@@ -93,6 +93,12 @@ export default function FinanzasDashboardPage() {
       const clisData = clis || [];
       const deudasData = deudas || [];
 
+      setMovimientos(movsData);
+      setInversionesPorHacer(presData);
+      setUnidadesVendidas(ventasData);
+      setClientes(clisData);
+      setDeudasSocios(deudasData);
+
       let inTesoreria = 0;
       let outTesoreria = 0;
       let comisionesManualesIngresadas = 0;
@@ -135,7 +141,6 @@ export default function FinanzasDashboardPage() {
 
       // Total ingresado: CRM (clientes) + Tesorería (manuales)
       const totalIngresosHistoricos = cobradoCRM + inTesoreria;
-      // Para la página principal (Resumen)
       const cajaSistema = totalIngresosHistoricos - outTesoreria;
       const totalClientesAbonadoReal = cobradoCRM + reservasManuales;
 
@@ -321,10 +326,9 @@ export default function FinanzasDashboardPage() {
 
   const bancoReal = Number(saldoBancarioReal) || 0;
   
-  // ================= LÓGICA DE AUDITORÍA DE CAJA (SEGÚN TU EXPLICACIÓN) =================
+  // ================= LÓGICA DE AUDITORÍA DE CAJA =================
   // Diferencia = (Lo que hay en banco + Lo que se ha gastado) - (Todo lo que ha ingresado)
   const diferenciaConciliacion = (bancoReal + metricas.egresosTesoreria) - metricas.totalIngresosHistoricos;
-  
   const brechaCobertura = bancoReal - metricas.totalClientesAbonadoReal;
 
   return (
@@ -332,7 +336,6 @@ export default function FinanzasDashboardPage() {
       
       {/* 🎯 REPORTE PROFESIONAL PARA IMPRESIÓN (SOLO SE VE AL IMPRIMIR) */}
       <div className="hidden print:block text-black font-sans text-sm max-w-4xl mx-auto">
-        
         <div className="border-b-2 border-black pb-4 mb-6">
           <h1 className="text-2xl font-bold uppercase tracking-widest text-[#21242E]">ARIENZO S.A.S.</h1>
           <h2 className="text-lg font-medium text-gray-700">Reporte de Inteligencia Financiera</h2>
@@ -415,7 +418,7 @@ export default function FinanzasDashboardPage() {
                 unidadesVendidas.map(v => {
                   const cliente = clientes.find(c => c.id === v.cliente_id);
                   return (
-                    <tr key={v.id} className="border-b border-gray-200">
+                    <tr key={`print-venta-${v.id}`} className="border-b border-gray-200">
                       <td className="p-2 font-bold text-gray-800">Dpto {v.unidad_numero || 'N/A'}</td>
                       <td className="p-2 text-gray-700">{cliente ? `${cliente.nombres} ${cliente.apellidos}` : 'N/A'}</td>
                       <td className="p-2 text-right font-mono font-bold text-gray-800">${Number(v.precio_total || v.precio_final || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
@@ -433,6 +436,7 @@ export default function FinanzasDashboardPage() {
       {/* 🎯 TODO EL SISTEMA VISUAL NORMAL SE OCULTA AL IMPRIMIR (print:hidden) */}
       <div className="max-w-7xl mx-auto space-y-8 print:hidden">
         
+        {/* CABECERA */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center border-b border-neutral-200 pb-6 gap-4">
           <div>
             <span className="text-[10px] font-bold tracking-widest text-[#B94A36] uppercase block">Módulo Financiero Integrado</span>
@@ -454,7 +458,7 @@ export default function FinanzasDashboardPage() {
           </div>
         </div>
 
-        {/* PESTAÑA 1: DASHBOARD GERENCIAL (ORIGINAL) */}
+        {/* PESTAÑA 1: DASHBOARD GERENCIAL */}
         {activeTab === 'resumen' && (
           <div className="space-y-6 animate-in fade-in max-w-6xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -505,7 +509,7 @@ export default function FinanzasDashboardPage() {
                       unidadesVendidas.map(v => {
                         const cliente = clientes.find(c => c.id === v.cliente_id);
                         return (
-                          <tr key={v.id} className="hover:bg-neutral-50">
+                          <tr key={`venta-${v.id}`} className="hover:bg-neutral-50">
                             <td className="px-4 py-3 font-bold text-[#21242E]">Dpto {v.unidad_numero || 'N/A'}</td>
                             <td className="px-4 py-3 font-medium text-neutral-700">{cliente ? `${cliente.nombres} ${cliente.apellidos}` : 'Cliente no asignado'}</td>
                             <td className="px-4 py-3 text-center"><span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[9px] font-bold uppercase">{v.estado}</span></td>
@@ -569,7 +573,7 @@ export default function FinanzasDashboardPage() {
           </div>
         )}
 
-        {/* PESTAÑA 2: TESORERÍA CON AUDITORÍA MATEMÁTICA EXACTA */}
+        {/* PESTAÑA 2: TESORERÍA (FÓRMULA EXACTA DEL USUARIO) */}
         {activeTab === 'tesoreria' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in">
             <div className="lg:col-span-1 space-y-6">
@@ -730,7 +734,7 @@ export default function FinanzasDashboardPage() {
                    <tbody className="divide-y divide-neutral-100">
                      {movimientosFiltrados.length > 0 ? (
                        movimientosFiltrados.map(mov => (
-                         <tr key={mov.id} className="hover:bg-neutral-50 group">
+                         <tr key={`mov-${mov.id}`} className="hover:bg-neutral-50 group">
                            <td className="py-3 px-2 font-mono text-neutral-500">{new Date(mov.fecha_transaccion).toLocaleDateString('es-ES')}</td>
                            <td className="py-3 px-2"><span className="font-bold text-[#415364] text-[10px]">{mov.entidad}</span></td>
                            <td className="py-3 px-2">
@@ -825,7 +829,7 @@ export default function FinanzasDashboardPage() {
                    </thead>
                    <tbody className="divide-y divide-neutral-100">
                      {inversionesPorHacer.map(inv => (
-                       <tr key={inv.id} className="hover:bg-neutral-50 group">
+                       <tr key={`pres-${inv.id}`} className="hover:bg-neutral-50 group">
                          <td className="py-4 px-2"><p className="font-bold text-[#21242E]">{inv.detalle}</p><p className="text-[9px] text-neutral-500 uppercase">{inv.categoria}</p></td>
                          <td className="py-4 px-2 text-center text-neutral-500 font-medium">
                            {inv.fecha_estimada ? new Date(inv.fecha_estimada).toLocaleDateString('es-ES') : 'N/A'}
@@ -939,7 +943,7 @@ export default function FinanzasDashboardPage() {
                      <tbody className="divide-y divide-neutral-100">
                        {deudasSocios.length > 0 ? (
                          deudasSocios.map(d => (
-                           <tr key={d.id} className="hover:bg-neutral-50 group">
+                           <tr key={`deuda-${d.id}`} className="hover:bg-neutral-50 group">
                              <td className="py-4 px-2">
                                <p className="font-mono text-neutral-500 text-[10px]">{new Date(d.fecha_registro).toLocaleDateString('es-ES')}</p>
                                <p className="font-bold text-[#21242E]">{d.acreedor}</p>
