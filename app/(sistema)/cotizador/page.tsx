@@ -10,7 +10,6 @@ interface CuotaMes {
   esEditable: boolean;
 }
 
-// === MAPEO DE PLANOS ACTUALIZADO ===
 const MAPA_PLANOS = [
   { area: 69.43, url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_%2069,43m2.png' },
   { area: 86.78, url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_86,78m2.png' },
@@ -23,8 +22,6 @@ const MAPA_PLANOS = [
 ];
 
 const RENDER_FACHADA = 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Frontal.jpg';
-
-// NUEVO LOGO DORADO
 const LOGO_BLANCO = 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/logo%20arienzo%20living%20dorado_Mesa%20de%20trabajo%201.svg';
 
 export default function CotizadorPage() {
@@ -34,7 +31,6 @@ export default function CotizadorPage() {
   const [guardando, setGuardando] = useState(false);
   const [generandoPdf, setGenerandoPdf] = useState(false);
   
-  // Variables de Modal y Correo
   const [mostrarModalCorreo, setMostrarModalCorreo] = useState(false);
   const [enviandoCorreo, setEnviandoCorreo] = useState(false);
   const [mensajeCorreo, setMensajeCorreo] = useState('');
@@ -52,7 +48,6 @@ export default function CotizadorPage() {
   const [valorDescuento, setValorDescuento] = useState<number>(0);
   const [motivoDescuento, setMotivoDescuento] = useState<string>('');
 
-  // Toggles de Presentación
   const [incluirClima, setIncluirClima] = useState<boolean>(false);
   const [incluirBbq, setIncluirBbq] = useState<boolean>(false);
   const [incluirPlano, setIncluirPlano] = useState<boolean>(true);
@@ -81,27 +76,20 @@ export default function CotizadorPage() {
   const [anioInicio, setAnioInicio] = useState(new Date().getFullYear());
 
   const [cronogramaCuotas, setCronogramaCuotas] = useState<CuotaMes[]>([]);
-  const [mostrarCalculadoraRefuerzos, setMostrarCalculadoraRefuerzos] = useState(false);
-  const [cuotaBaseRapida, setCuotaBaseRapida] = useState<number | ''>('');
-  const [mesesRefuerzoRapido, setMesesRefuerzoRapido] = useState<string>('');
 
-  // Auto-generar plantilla de correo al seleccionar propiedad
   useEffect(() => {
     if (propiedadSeleccionada) {
       setMensajeCorreo(`Es un placer saludarle.\n\nAdjunto a este correo encontrará la propuesta de inversión estructurada para la Unidad ${propiedadSeleccionada.unidad || propiedadSeleccionada.numero} en nuestro proyecto Arienzo Living.\n\nEl documento en formato PDF incluye el desglose financiero detallado y el diseño arquitectónico de la propiedad.\n\nQuedo a su entera disposición para cualquier consulta o para agendar una reunión.`);
     }
   }, [propiedadSeleccionada]);
 
-  const setDiasCaducidad = (dias: number) => {
-    const nuevaFecha = new Date(Date.now() + dias * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    setFechaCaducidad(nuevaFecha);
-  };
-
   const formatearFechaLegible = (fechaIso: string) => {
     if (!fechaIso) return '---';
     const partes = fechaIso.split('-');
+    if (partes.length !== 3) return fechaIso;
     const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     const mesIndex = parseInt(partes[1], 10) - 1;
+    if (isNaN(mesIndex)) return fechaIso;
     return `${partes[2]} de ${mesesNombres[mesIndex]} ${partes[0]}`;
   };
 
@@ -139,7 +127,6 @@ export default function CotizadorPage() {
     return clientes.find(item => item.id.toString() === clienteSeleccionado.toString());
   }, [clienteSeleccionado, clientes]);
 
-  // Sincronizar el nombre editable cuando cambia el cliente seleccionado
   useEffect(() => {
     if (clienteDataCompleta) {
       setNombreDestinatarioCorreo(`${clienteDataCompleta.nombres || ''} ${clienteDataCompleta.apellidos || ''}`.trim());
@@ -185,15 +172,15 @@ export default function CotizadorPage() {
     if (saldoPromesa < 0) {
       const reservaSobrante = Math.abs(saldoPromesa);
       saldoPromesa = 0; 
-      entradaDiferir = entradaDiferir - reservaSobrante; 
-      if (entradaDiferir < 0) entradaDiferir = 0;
+      entradaDiferir = Math.max(0, entradaDiferir - reservaSobrante); 
     }
 
     const totalPagadoAntesDeEntrega = reservaValor + saldoPromesa + entradaDiferir;
-    if (totalPagadoAntesDeEntrega > precioFin) entradaDiferir = Math.max(0, precioFin - reservaValor - saldoPromesa);
+    if (totalPagadoAntesDeEntrega > precioFin) {
+      entradaDiferir = Math.max(0, precioFin - reservaValor - saldoPromesa);
+    }
 
-    let entrega = precioFin - reservaValor - saldoPromesa - entradaDiferir;
-    if (entrega < 0) entrega = 0;
+    let entrega = Math.max(0, precioFin - reservaValor - saldoPromesa - entradaDiferir);
 
     const mensualInicial = mesesInicial > 0 ? saldoPromesa / mesesInicial : saldoPromesa;
 
@@ -263,42 +250,6 @@ export default function CotizadorPage() {
     const mitad = Math.ceil(cronogramaCuotas.length / 2);
     return { columnaIzquierda: cronogramaCuotas.slice(0, mitad), columnaDerecha: cronogramaCuotas.slice(mitad) };
   }, [cronogramaCuotas]);
-
-  const actualizarValorCuota = (cuotaNumero: number, nuevoValor: number) => {
-    let nuevoCronograma = cronogramaCuotas.map(cuota => cuota.numeroCuota === cuotaNumero ? { ...cuota, valor: nuevoValor, esEditable: true } : cuota);
-    const totalManual = nuevoCronograma.filter(c => c.esEditable).reduce((acc, curr) => acc + curr.valor, 0);
-    const saldoRestantePorCubrir = entradaDiferirTotal - totalManual;
-    const mesesAutomaticos = nuevoCronograma.filter(c => !c.esEditable);
-
-    if (mesesAutomaticos.length > 0) {
-      const valorRepartido = Math.max(0, saldoRestantePorCubrir / mesesAutomaticos.length);
-      nuevoCronograma = nuevoCronograma.map(cuota => !cuota.esEditable ? { ...cuota, valor: valorRepartido } : cuota);
-    }
-    setCronogramaCuotas(nuevoCronograma);
-  };
-
-  const reiniciarCuotas = () => {
-    if (mesesConstruccion <= 0) return;
-    const valorBaseCuota = entradaDiferirTotal / mesesConstruccion;
-    setCronogramaCuotas(cronogramaCuotas.map(c => ({ ...c, valor: valorBaseCuota, esEditable: false })));
-  };
-
-  const aplicarPlanRefuerzos = () => {
-    const base = Number(cuotaBaseRapida);
-    if (base <= 0) return alert("Por favor ingresa una Cuota Base mayor a $0.");
-
-    const mesesExtra = mesesRefuerzoRapido.split(',').map(m => parseInt(m.trim())).filter(m => !isNaN(m) && m > 0 && m <= mesesConstruccion);
-    if (mesesExtra.length === 0) return alert(`Ingresa al menos un mes válido entre 1 y ${mesesConstruccion}. (Ej: 12)`);
-
-    const totalRegular = base * (mesesConstruccion - mesesExtra.length);
-    if (totalRegular > entradaDiferirTotal) return alert(`La cuota base de $${base} es muy alta. Supera el total a diferir ($${entradaDiferirTotal}).`);
-
-    const valorPorRefuerzo = (entradaDiferirTotal - totalRegular) / mesesExtra.length;
-    setCronogramaCuotas(cronogramaCuotas.map(cuota => ({
-      ...cuota, valor: mesesExtra.includes(cuota.numeroCuota) ? valorPorRefuerzo : base, esEditable: true 
-    })));
-    setMostrarCalculadoraRefuerzos(false); 
-  };
 
   const guardarCotizacionEnSistema = async () => {
     if (!propiedadSeleccionada) return;
@@ -377,7 +328,6 @@ export default function CotizadorPage() {
 
   const enviarCotizacionPorCorreo = async () => {
     setEnviandoCorreo(true);
-    
     try {
       const elemento = document.getElementById('plantilla-pdf-arienzo');
       if (!elemento) throw new Error("No se encontró el diseño de la cotización");
@@ -463,25 +413,18 @@ export default function CotizadorPage() {
   return (
     <div className="min-h-screen bg-[#dce3eb] p-4 md:p-6 font-sans text-[#415364] relative">
       
-      {/* --- MODAL DE PREVISUALIZACIÓN DE CORREO (ESTILO CRM) --- */}
+      {/* MODAL DE CORREO */}
       {mostrarModalCorreo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#21242E]/80 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[95vh] shadow-2xl flex flex-col animate-in fade-in zoom-in-95">
-            
             <div className="px-6 py-5 border-b border-neutral-100 flex justify-between items-center bg-[#F9F7F5] shrink-0 rounded-t-2xl">
-              <div>
-                <h3 className="font-bold text-[#B94A36] uppercase tracking-widest text-sm flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                  Preparar Envío de Cotización
-                </h3>
-              </div>
-              <button onClick={() => setMostrarModalCorreo(false)} className="text-neutral-400 hover:text-[#ea0029] transition-colors p-1 bg-white rounded-md shadow-sm border border-neutral-200">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-              </button>
+              <h3 className="font-bold text-[#B94A36] uppercase tracking-widest text-sm flex items-center gap-2">
+                Preparar Envío de Cotización
+              </h3>
+              <button onClick={() => setMostrarModalCorreo(false)} className="text-neutral-400 hover:text-[#ea0029] transition-colors p-1 bg-white rounded-md shadow-sm border border-neutral-200">✕</button>
             </div>
             
             <div className="p-6 overflow-y-auto flex-1 grid grid-cols-1 lg:grid-cols-2 gap-8 custom-scrollbar">
-              
               <div className="space-y-6">
                 <div className="space-y-3">
                   <div className="bg-[#dce3eb]/30 border border-[#415364]/10 rounded-xl p-3.5">
@@ -492,63 +435,27 @@ export default function CotizadorPage() {
                         value={nombreDestinatarioCorreo} 
                         onChange={(e) => setNombreDestinatarioCorreo(e.target.value)} 
                         className="flex-1 bg-white border border-[#415364]/20 rounded-lg p-2 text-sm font-bold text-[#415364] outline-none focus:border-[#ea0029]"
-                        placeholder="Nombre del cliente..."
                       />
                       <span className="text-xs font-medium text-neutral-500 bg-neutral-100 px-2 py-2 rounded-lg border border-neutral-200 whitespace-nowrap">
                         &lt;{clienteDataCompleta?.email}&gt;
                       </span>
                     </div>
                   </div>
-                  
-                  <div className="bg-[#dce3eb]/30 border border-[#415364]/10 rounded-xl p-3.5">
-                    <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-0.5">Asunto del Correo</p>
-                    <p className="text-[13px] font-medium text-[#415364]">Propuesta de Inversión - Arienzo Living - Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero}</p>
-                  </div>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-[#ea0029] uppercase tracking-widest flex justify-between items-center">
-                    Cuerpo del Mensaje (Editable)
-                    <svg className="w-3.5 h-3.5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                  </label>
+                  <label className="text-[10px] font-bold text-[#ea0029] uppercase tracking-widest block">Cuerpo del Mensaje (Editable)</label>
                   <textarea 
                     value={mensajeCorreo}
                     onChange={(e) => setMensajeCorreo(e.target.value)}
-                    className="w-full bg-white border border-[#415364]/20 rounded-xl p-4 text-[13px] text-[#415364] h-48 outline-none focus:border-[#ea0029] focus:ring-1 focus:ring-[#ea0029] resize-none leading-relaxed shadow-sm"
+                    className="w-full bg-white border border-[#415364]/20 rounded-xl p-4 text-[13px] text-[#415364] h-48 outline-none focus:border-[#ea0029] resize-none leading-relaxed shadow-sm"
                   />
-                </div>
-
-                <div className="border border-[#D1C292]/50 bg-[#F9F7F5] rounded-xl p-4 space-y-3">
-                  <p className="text-[10px] font-bold text-[#B94A36] uppercase tracking-widest">Opciones de Envío</p>
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <input type="checkbox" checked={incluirPlano} onChange={e => setIncluirPlano(e.target.checked)} className="w-4 h-4 text-[#ea0029] focus:ring-[#ea0029] rounded border-neutral-300" />
-                    <div>
-                      <p className="text-xs font-bold text-[#415364] group-hover:text-[#ea0029] transition-colors">Adjuntar Hoja 2 en el PDF</p>
-                      <p className="text-[9.5px] text-neutral-500 mt-0.5">Incluye el render y diseño arquitectónico.</p>
-                    </div>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <input type="checkbox" checked={incluirFirmas} onChange={e => setIncluirFirmas(e.target.checked)} className="w-4 h-4 text-[#ea0029] focus:ring-[#ea0029] rounded border-neutral-300" />
-                    <div>
-                      <p className="text-xs font-bold text-[#415364] group-hover:text-[#ea0029] transition-colors">Estampar mi firma en el correo</p>
-                      <p className="text-[9.5px] text-neutral-500 mt-0.5">Añade tu nombre y cargo al final del mensaje de texto.</p>
-                    </div>
-                  </label>
                 </div>
               </div>
 
-              {/* Vista Previa Correo */}
               <div className="flex flex-col">
-                <p className="text-[10px] font-bold text-[#415364]/50 uppercase tracking-widest mb-3 flex items-center gap-2">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                  Vista previa del diseño del cliente
-                </p>
+                <p className="text-[10px] font-bold text-[#415364]/50 uppercase tracking-widest mb-3">Vista previa del diseño del cliente</p>
                 <div className="border border-neutral-200 rounded-xl overflow-hidden bg-[#F9F7F5] flex-1 flex flex-col shadow-sm">
-                  <div className="bg-white border-b border-neutral-200 px-4 py-3 flex gap-2 items-center shrink-0">
-                    <div className="w-2.5 h-2.5 rounded-full bg-red-400"></div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-amber-400"></div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-green-400"></div>
-                  </div>
                   <div className="p-4 overflow-y-auto custom-scrollbar bg-[#F3F4F6] flex-1">
                     <div className="bg-white border border-neutral-200 rounded-lg overflow-hidden shadow-sm">
                       <div className="bg-[#B94A36] p-4 text-center">
@@ -561,30 +468,19 @@ export default function CotizadorPage() {
                           <div className="mt-5 pt-4 border-t border-neutral-100">
                              <p className="font-bold text-[#B94A36] text-[13px] m-0">{nombreAsesor}</p>
                              <p className="text-[10px] text-neutral-500 m-0 mt-0.5">Asesor Comercial - Arienzo Living</p>
-                             <p className="text-[10px] text-neutral-500 m-0">Konkeri Developer Group</p>
                           </div>
                         )}
-                      </div>
-                      <div className="bg-neutral-50 p-4 border-t border-neutral-100 flex items-center gap-3">
-                        <div className="bg-red-100 p-2 rounded-lg">
-                          <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd"></path></svg>
-                        </div>
-                        <div>
-                          <p className="text-[11px] font-bold text-neutral-700">Cotizacion_Unidad_{propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero}.pdf</p>
-                          <p className="text-[9px] text-neutral-500">{incluirPlano ? '2 Páginas' : '1 Página'} • Arienzo Living</p>
-                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-
             </div>
             
             <div className="p-5 border-t border-neutral-100 bg-white flex justify-end gap-3 shrink-0 rounded-b-2xl">
-              <button onClick={() => setMostrarModalCorreo(false)} className="px-6 py-3 rounded-xl text-xs font-bold text-[#415364] hover:bg-neutral-100 transition-colors">Cancelar Envío</button>
+              <button onClick={() => setMostrarModalCorreo(false)} className="px-6 py-3 rounded-xl text-xs font-bold text-[#415364] hover:bg-neutral-100 transition-colors">Cancelar</button>
               <button onClick={enviarCotizacionPorCorreo} disabled={enviandoCorreo} className="bg-[#ea0029] text-white px-8 py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-[#c90022] transition-colors shadow-md disabled:opacity-50">
-                {enviandoCorreo ? 'Procesando Envío...' : 'Confirmar y Enviar Correo'}
+                {enviandoCorreo ? 'Enviando...' : 'Confirmar y Enviar Correo'}
               </button>
             </div>
           </div>
@@ -601,18 +497,8 @@ export default function CotizadorPage() {
           
           {propiedadSeleccionada && (
             <div className="flex bg-[#dce3eb]/50 p-1.5 rounded-xl border border-[#415364]/10 shadow-inner">
-              <button 
-                onClick={() => setPestañaActiva('configurar')} 
-                className={`px-4 py-2 rounded-lg text-xs transition-all flex items-center gap-2 ${pestañaActiva === 'configurar' ? 'bg-white text-[#ea0029] shadow-sm font-bold' : 'text-[#415364]/70 hover:text-[#415364] font-semibold'}`}
-              >
-                Configurar Plan
-              </button>
-              <button 
-                onClick={() => setPestañaActiva('previsualizar')} 
-                className={`px-4 py-2 rounded-lg text-xs transition-all flex items-center gap-2 ${pestañaActiva === 'previsualizar' ? 'bg-white text-[#ea0029] shadow-sm font-bold' : 'text-[#415364]/70 hover:text-[#415364] font-semibold'}`}
-              >
-                Ver Documento
-              </button>
+              <button onClick={() => setPestañaActiva('configurar')} className={`px-4 py-2 rounded-lg text-xs transition-all ${pestañaActiva === 'configurar' ? 'bg-white text-[#ea0029] shadow-sm font-bold' : 'text-[#415364]/70 font-semibold'}`}>Configurar Plan</button>
+              <button onClick={() => setPestañaActiva('previsualizar')} className={`px-4 py-2 rounded-lg text-xs transition-all ${pestañaActiva === 'previsualizar' ? 'bg-white text-[#ea0029] shadow-sm font-bold' : 'text-[#415364]/70 font-semibold'}`}>Ver Documento</button>
             </div>
           )}
         </div>
@@ -620,67 +506,30 @@ export default function CotizadorPage() {
 
       <div className="w-full mx-auto grid grid-cols-1 xl:grid-cols-3 gap-6">
         
-        {/* COLUMNA IZQUIERDA: CONFIGURADOR */}
         <div className="xl:col-span-2 space-y-5">
-          
           <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-sm flex flex-col md:flex-row gap-6">
             <div className="flex-1">
               <h2 className="text-[10px] font-bold text-[#415364]/60 uppercase tracking-widest mb-3">Asesor / Comercial Emisor</h2>
-              <input
-                type="text"
-                value={nombreAsesor}
-                onChange={(e) => setNombreAsesor(e.target.value)}
-                className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs font-bold text-[#415364] focus:outline-none focus:border-[#ea0029] transition-colors"
-                placeholder="Ej. Saúl Intriago / Debbi Mera"
-              />
+              <input type="text" value={nombreAsesor} onChange={(e) => setNombreAsesor(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs font-bold text-[#415364] focus:outline-none focus:border-[#ea0029]" />
             </div>
-            
             <div className="flex-1">
               <h2 className="text-[10px] font-bold text-[#415364]/60 uppercase tracking-widest mb-3">Asociar Inversionista</h2>
-              <div className="relative mb-2">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#415364]/40">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                </span>
-                <input 
-                  type="text" 
-                  placeholder="Buscar cliente por nombre o teléfono..." 
-                  value={busquedaCliente} 
-                  onChange={(e) => setBusquedaCliente(e.target.value)} 
-                  className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl py-2.5 pl-10 pr-4 text-xs font-medium focus:outline-none focus:border-[#ea0029] transition-all text-[#415364]" 
-                />
-              </div>
-              <select
-                value={clienteSeleccionado}
-                onChange={(e) => setClienteSeleccionado(e.target.value)}
-                className="w-full bg-[#415364]/5 border border-[#415364]/20 rounded-xl p-3 text-xs font-bold text-[#415364] focus:outline-none focus:border-[#ea0029]"
-              >
+              <select value={clienteSeleccionado} onChange={(e) => setClienteSeleccionado(e.target.value)} className="w-full bg-[#415364]/5 border border-[#415364]/20 rounded-xl p-3 text-xs font-bold text-[#415364] focus:outline-none focus:border-[#ea0029]">
                 <option value="">— Cliente Anónimo (Consulta Rápida) —</option>
-                {clientesFiltrados.map(c => (
-                  <option key={c.id} value={c.id}>
-                    {c.nombres} {c.apellidos} {c.tipo === 'prospecto' ? '(Prospecto)' : '(Cliente)'}
-                  </option>
-                ))}
+                {clientesFiltrados.map(c => <option key={c.id} value={c.id}>{c.nombres} {c.apellidos}</option>)}
               </select>
             </div>
           </div>
 
           <div className="bg-white rounded-2xl border border-[#D1C292] p-6 shadow-sm relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-1.5 h-full bg-[#D1C292]"></div>
-            <h2 className="text-[11px] font-bold text-[#21242E] uppercase tracking-widest mb-4 flex items-center gap-2">
-              <svg className="w-4 h-4 text-[#D1C292]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-              1. Selección de Inventario
-            </h2>
+            <h2 className="text-[11px] font-bold text-[#21242E] uppercase tracking-widest mb-4">Selección de Inventario</h2>
             <select
-              className="w-full bg-[#F9F7F5] border border-[#D1C292]/50 rounded-xl p-3.5 text-sm font-bold text-[#21242E] mb-4 focus:outline-none focus:border-[#ea0029] transition-colors"
+              className="w-full bg-[#F9F7F5] border border-[#D1C292]/50 rounded-xl p-3.5 text-sm font-bold text-[#21242E] mb-4 focus:outline-none focus:border-[#ea0029]"
               value={propiedadSeleccionada?.id || ''}
               onChange={(e) => {
                 const val = e.target.value;
-                if (val === '') {
-                  setPropiedadSeleccionada(null);
-                  setPestañaActiva('configurar');
-                } else {
-                  setPropiedadSeleccionada(propiedades.find(p => p.id === Number(val) || p.id === val));
-                }
+                if (val === '') { setPropiedadSeleccionada(null); setPestañaActiva('configurar'); } 
+                else { setPropiedadSeleccionada(propiedades.find(p => p.id === Number(val) || p.id === val)); }
               }}
             >
               <option value="">-- Selecciona una Unidad para Estructurar --</option>
@@ -688,34 +537,10 @@ export default function CotizadorPage() {
                 <option key={prop.id} value={prop.id}>Unidad {prop.unidad || prop.numero} — {prop.categoria || 'Departamento'} ({prop.tipologia || 'S/T'})</option>
               ))}
             </select>
-
-            {propiedadSeleccionada && (
-              <div className={`grid grid-cols-2 ${esLocal ? 'sm:grid-cols-4' : 'sm:grid-cols-5'} gap-3 pt-4 border-t border-[#415364]/10 text-center text-xs`}>
-                <div className="border-r border-[#415364]/10">
-                  <span className="text-[9px] text-[#415364]/50 font-bold uppercase tracking-wider block mb-1">Distribución</span>
-                  <span className="font-bold text-[#415364]">{tipologia}</span>
-                </div>
-                <div className="border-r border-[#415364]/10">
-                  <span className="text-[9px] text-[#415364]/50 font-bold uppercase tracking-wider block mb-1">Complementos</span>
-                  <span className="font-bold text-[#415364] block truncate" title={`${parqueaderoTexto} / ${bodegaAsignada}`}>P: {parqueaderoTexto}</span>
-                </div>
-                <div className={esLocal ? "" : "border-r border-[#415364]/10"}>
-                  <span className="text-[9px] text-[#415364]/50 font-bold uppercase tracking-wider block mb-1">Área Total</span>
-                  <span className="font-bold text-[#415364]">{areaTotal}m²</span>
-                </div>
-                {!esLocal && (
-                  <div>
-                    <span className="text-[9px] text-[#ea0029]/80 font-bold uppercase tracking-wider block mb-1">M² Lanzamiento</span>
-                    <span className="font-bold font-mono text-[#ea0029]">{"$"}{valorM2Lanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           {!propiedadSeleccionada ? (
             <div className="bg-white rounded-2xl border border-dashed border-[#415364]/20 p-16 text-center text-[#415364]/40">
-              <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
               <p className="text-sm font-bold uppercase tracking-widest">Selecciona una unidad para habilitar el cotizador.</p>
             </div>
           ) : pestañaActiva === 'configurar' ? (
@@ -777,7 +602,7 @@ export default function CotizadorPage() {
                   </div>
                   <div>
                     <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Plazo Firma (Meses)</label>
-                    <input type="number" value={mesesInicial} onChange={e => setMesesInicial(Number(e.target.value))} className="w-full p-3.5 bg-white border border-neutral-200 rounded-xl text-base font-bold font-mono outline-none focus:border-[#ea0029]" />
+                    <input type="number" min="1" max="12" value={mesesInicial} onChange={e => setMesesInicial(Number(e.target.value))} className="w-full p-3.5 bg-white border border-neutral-200 rounded-xl text-base font-bold font-mono outline-none focus:border-[#ea0029]" />
                   </div>
                 </div>
 
@@ -799,49 +624,24 @@ export default function CotizadorPage() {
                 </div>
               </div>
 
-              {/* 3. CALENDARIO Y CUOTAS INTERACTIVAS */}
+              {/* 3. OPCIONES DE PRESENTACIÓN */}
               <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-sm">
-                <h3 className="text-xs font-bold text-[#ea0029] uppercase tracking-widest mb-4 border-b border-neutral-100 pb-2">3. Calendario de Pagos</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
-                   <div>
-                     <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Día de Pago (Corte)</label>
-                     <input type="number" min="1" max="31" value={diaPago} onChange={e => setDiaPago(Number(e.target.value))} className="w-full p-3.5 bg-white border border-neutral-200 rounded-xl text-sm font-bold outline-none focus:border-[#ea0029]" />
-                   </div>
-                   <div>
-                     <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Mes de Inicio</label>
-                     <select value={mesInicio} onChange={e => setMesInicio(Number(e.target.value))} className="w-full p-3.5 bg-white border border-neutral-200 rounded-xl text-sm font-bold outline-none focus:border-[#ea0029]">
-                       <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
-                       <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
-                       <option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option>
-                       <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
-                     </select>
-                   </div>
-                   <div>
-                     <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Año de Inicio</label>
-                     <input type="number" value={anioInicio} onChange={e => setAnioInicio(Number(e.target.value))} className="w-full p-3.5 bg-white border border-neutral-200 rounded-xl text-sm font-bold outline-none focus:border-[#ea0029]" />
-                   </div>
-                </div>
-
-                {/* HERRAMIENTAS ADICIONALES (BBQ, CLIMATIZACIÓN, etc.) */}
-                <div className="flex flex-wrap gap-6 mt-4 border-t border-neutral-100 pt-5">
-                   <label className="flex items-center gap-2 text-xs font-bold text-[#415364] cursor-pointer hover:text-[#ea0029] transition-colors">
-                     <input type="checkbox" checked={incluirFechas} onChange={e => setIncluirFechas(e.target.checked)} className="rounded text-[#ea0029] focus:ring-[#ea0029] w-4 h-4" />
-                     Mostrar Fechas Exactas en PDF
-                   </label>
-                   <label className="flex items-center gap-2 text-xs font-bold text-[#415364] cursor-pointer hover:text-[#ea0029] transition-colors">
-                     <input type="checkbox" checked={incluirPlano} onChange={e => setIncluirPlano(e.target.checked)} className="rounded text-[#ea0029] focus:ring-[#ea0029] w-4 h-4" />
+                <h3 className="text-xs font-bold text-[#ea0029] uppercase tracking-widest mb-4 border-b border-neutral-100 pb-2">3. Opciones de Presentación</h3>
+                <div className="flex flex-wrap gap-6 mt-4">
+                   <label className="flex items-center gap-2 text-xs font-bold text-[#415364] cursor-pointer hover:text-[#ea0029]">
+                     <input type="checkbox" checked={incluirPlano} onChange={e => setIncluirPlano(e.target.checked)} className="rounded text-[#ea0029] w-4 h-4" />
                      Adjuntar Plano de la Unidad
                    </label>
-                   <label className="flex items-center gap-2 text-xs font-bold text-[#415364] cursor-pointer hover:text-[#ea0029] transition-colors">
-                     <input type="checkbox" checked={incluirFirmas} onChange={e => setIncluirFirmas(e.target.checked)} className="rounded text-[#ea0029] focus:ring-[#ea0029] w-4 h-4" />
+                   <label className="flex items-center gap-2 text-xs font-bold text-[#415364] cursor-pointer hover:text-[#ea0029]">
+                     <input type="checkbox" checked={incluirFirmas} onChange={e => setIncluirFirmas(e.target.checked)} className="rounded text-[#ea0029] w-4 h-4" />
                      Incluir Espacios para Firma
                    </label>
-                   <label className="flex items-center gap-2 text-xs font-bold text-[#415364] cursor-pointer hover:text-[#ea0029] transition-colors">
-                     <input type="checkbox" checked={incluirClima} onChange={e => setIncluirClima(e.target.checked)} className="rounded text-[#ea0029] focus:ring-[#ea0029] w-4 h-4" />
+                   <label className="flex items-center gap-2 text-xs font-bold text-[#415364] cursor-pointer hover:text-[#ea0029]">
+                     <input type="checkbox" checked={incluirClima} onChange={e => setIncluirClima(e.target.checked)} className="rounded text-[#ea0029] w-4 h-4" />
                      Incluir Climatización Estética
                    </label>
-                   <label className="flex items-center gap-2 text-xs font-bold text-[#415364] cursor-pointer hover:text-[#ea0029] transition-colors">
-                     <input type="checkbox" checked={incluirBbq} onChange={e => setIncluirBbq(e.target.checked)} className="rounded text-[#ea0029] focus:ring-[#ea0029] w-4 h-4" />
+                   <label className="flex items-center gap-2 text-xs font-bold text-[#415364] cursor-pointer hover:text-[#ea0029]">
+                     <input type="checkbox" checked={incluirBbq} onChange={e => setIncluirBbq(e.target.checked)} className="rounded text-[#ea0029] w-4 h-4" />
                      Incluir Área BBQ en Terraza
                    </label>
                 </div>
@@ -850,198 +650,104 @@ export default function CotizadorPage() {
             </div>
           ) : pestañaActiva === 'previsualizar' ? (
             
-            /* PESTAÑA DE PREVISUALIZAR PDF (DOCUMENTO FORMAL LIMPIO) */
+            /* PESTAÑA DE PREVISUALIZAR PDF */
             <div className="bg-[#525659] w-full rounded-2xl shadow-inner border border-[#415364]/30 overflow-auto max-h-[85vh] custom-scrollbar text-center">
               <div className="inline-block text-left py-12 px-4 sm:px-12 min-w-max">
                 <div id="plantilla-pdf-arienzo" className="flex flex-col gap-10 print:gap-0" style={{ width: '210mm' }}>
                   
                   {/* PÁGINA 1: PROPUESTA FINANCIERA */}
-                  <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm' }} className="pdf-page-container bg-white text-neutral-900 shadow-2xl print:shadow-none relative flex flex-col print:rounded-none overflow-hidden mx-auto shrink-0">
+                  <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm' }} className="pdf-page-container bg-white text-neutral-900 shadow-2xl relative flex flex-col overflow-hidden mx-auto shrink-0">
                     <div className="px-10 pt-10 pb-6 flex flex-col h-full">
-                      
-                      {/* Cabecera Logo y Fecha */}
-                      <div className="flex justify-between items-end border-b-2 border-neutral-200 pb-4 mb-6">
-                        <div>
-                          <h1 className="text-3xl font-bold tracking-widest text-[#B94A36]">ARIENZO</h1>
-                          <h2 className="text-sm font-bold tracking-[0.2em] text-neutral-500 uppercase mt-0.5">LIVING</h2>
-                        </div>
-                        <div className="text-right">
-                          <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-1">PROPUESTA DE INVERSIÓN</h3>
-                          <p className="text-[10px] text-neutral-500">Emisión: {new Date().toLocaleDateString('es-EC')}</p>
-                          <p className="text-[10px] text-neutral-500 font-bold">Válida hasta: {formatearFechaLegible(fechaCaducidad)}</p>
+                      <div className="bg-[#B94A36] px-8 py-5 flex justify-between items-center mb-6 shrink-0 rounded-[8px]">
+                        <img src={LOGO_BLANCO} alt="Arienzo Living" className="h-10 w-auto object-contain" />
+                        <div className="text-right text-white">
+                          <h3 className="text-[13px] font-bold tracking-widest uppercase">Propuesta de Inversión</h3>
+                          <p className="text-[10px] mt-1.5 font-light opacity-90">Emisión: {new Date().toLocaleDateString('es-EC')}</p>
                         </div>
                       </div>
 
-                      {/* Datos del Cliente */}
-                      <div className="mb-6">
-                        <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest mb-1">INVERSIONISTA DE PROPUESTA</p>
-                        <p className="text-xl font-bold text-[#21242E] border-b border-neutral-100 pb-3">{nombreDestinatarioCorreo}</p>
+                      <div className="mb-4 shrink-0 text-left">
+                        <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-widest mb-0.5">Inversionista de Propuesta</p>
+                        <p className="text-[20px] font-bold text-neutral-800">{nombreDestinatarioCorreo}</p>
                       </div>
 
-                      {/* Detalles de la Unidad */}
-                      <div className="flex items-center justify-between text-[11px] mb-6">
-                        <div className="flex-1 text-left">
-                          <span className="text-[8px] text-neutral-400 uppercase block mb-1 font-bold">UNIDAD</span>
-                          <span className="font-bold text-[#21242E] text-sm">Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero}</span>
-                        </div>
-                        <div className="flex-1 text-left">
-                          <span className="text-[8px] text-neutral-400 uppercase block mb-1 font-bold">TIPOLOGIA</span>
-                          <span className="font-bold text-[#21242E] text-sm">{tipologia}</span>
-                        </div>
-                        <div className="flex-1 text-left">
-                          <span className="text-[8px] text-neutral-400 uppercase block mb-1 font-bold">COMPLEMENTOS ASIGNADOS</span>
-                          <span className="font-semibold text-neutral-700 block text-xs">P: {parqueaderoTexto}</span>
-                          <span className="font-semibold text-neutral-700 block text-xs">B: {bodegaAsignada}</span>
-                        </div>
-                        <div className="flex-1 text-center">
-                          <span className="text-[8px] text-neutral-400 uppercase block mb-1 font-bold">AREA TOTAL</span>
-                          <span className="font-bold text-[#B94A36] text-sm">{areaTotal}m²</span>
-                        </div>
-                        {!esLocal && (
-                          <div className="flex-1 text-right border-l border-neutral-200 pl-4">
-                            <span className="text-[8px] text-neutral-400 uppercase block mb-1 font-bold">VALOR M² (PRE LANZAMIENTO)</span>
-                            <span className="font-bold text-[#415364] font-mono text-sm">${valorM2Lanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}/m²</span>
+                      <div className="mb-4 shrink-0 border border-neutral-200/80 rounded-[8px] p-3 bg-white">
+                        <div className="flex items-center justify-between text-[10px]">
+                          <div className="flex-1 text-left border-r border-neutral-200 pr-2">
+                            <span className="text-[7.5px] text-neutral-400 uppercase block mb-1">Unidad</span>
+                            <span className="font-bold text-neutral-800 text-[11px]">Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero}</span>
                           </div>
-                        )}
+                          <div className="flex-1 text-left border-r border-neutral-200 px-3">
+                            <span className="text-[7.5px] text-neutral-400 uppercase block mb-1">Tipología</span>
+                            <span className="font-bold text-neutral-800 text-[11px]">{tipologia}</span>
+                          </div>
+                          <div className="flex-[1.5] text-left border-r border-neutral-200 px-3">
+                            <span className="text-[7.5px] text-neutral-400 uppercase block mb-1">Complementos</span>
+                            <span className="font-semibold text-neutral-700 block text-[10px]">P: {parqueaderoTexto}</span>
+                          </div>
+                          <div className="flex-1 text-center border-r border-neutral-200 px-3">
+                            <span className="text-[7.5px] text-neutral-400 uppercase block mb-1">Área Total</span>
+                            <span className="font-bold text-neutral-800 text-[11px]">{areaTotal}m²</span>
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Plan de Financiamiento Específico */}
-                      <div className="mb-6">
-                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-white bg-[#B94A36] py-1.5 px-3 mb-2 rounded-sm inline-block">PLAN DE FINANCIAMIENTO ESPECÍFICO</h4>
-                        <table className="w-full text-left text-xs border-collapse">
+                      <div className="shrink-0 mb-4">
+                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">Plan de Financiamiento</h4>
+                        <table className="w-full text-left text-[11px] border-collapse">
                           <thead>
-                            <tr className="border-b border-neutral-300 text-neutral-500 text-[9px] uppercase tracking-wider">
-                              <th className="py-2 font-bold w-[45%]">CONCEPTO ESTRUCTURADO</th>
-                              <th className="py-2 text-center font-bold">FECHA / CONTROL</th>
-                              <th className="py-2 text-center font-bold">PORCENTAJE</th>
-                              <th className="py-2 text-right font-bold">MONTO</th>
+                            <tr className="border-b border-[#B94A36] text-[#B94A36] text-[8px] uppercase tracking-wider">
+                              <th className="pb-1 font-bold">Concepto</th>
+                              <th className="pb-1 text-right font-bold">Monto</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-neutral-100 text-neutral-800">
+                          <tbody className="divide-y divide-neutral-100 text-neutral-700">
                             <tr>
-                              <td className="py-2.5">Valor del Departamento (Pre Lanzamiento)</td>
-                              <td className="py-2.5 text-center text-neutral-400">—</td>
-                              <td className="py-2.5 text-center text-neutral-400">—</td>
-                              <td className="py-2.5 text-right font-mono font-bold">${precioDeptoPreLanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                            </tr>
-                            {!esLocal && (
-                              <tr>
-                                <td className="py-2.5"><span className="text-neutral-400 mr-1">(+)</span> Valor Parqueo y Bodega (Pre Lanzamiento)</td>
-                                <td className="py-2.5 text-center text-neutral-400">—</td>
-                                <td className="py-2.5 text-center text-neutral-400">—</td>
-                                <td className="py-2.5 text-right font-mono font-bold">${valAnexosPreLanzamiento.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                              </tr>
-                            )}
-                            {montoDescuentoCalculado > 0 && (
-                              <tr className="bg-red-50/40 text-red-900">
-                                <td className="py-1 pl-2 italic"><span className="text-red-700 mr-1 font-mono">(-)</span> Descuento Adicional {motivoDescuento && `(${motivoDescuento})`}</td>
-                                <td className="py-1 text-center text-red-700">—</td>
-                                <td className="py-1 text-center font-medium">{tipoDescuento === 'porcentaje' ? `${valorDescuento}%` : 'Fijo'}</td>
-                                <td className="py-1 text-right font-mono font-bold">-{"$"}{montoDescuentoCalculado.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                              </tr>
-                            )}
-                            <tr className="bg-neutral-50/50 font-bold border-y-2 border-neutral-200">
-                              <td className="py-3"><span className="text-neutral-600 mr-1">(=)</span> Valor Total de Venta</td>
-                              <td className="py-3 text-center text-neutral-400">—</td>
-                              <td className="py-3 text-center text-neutral-400">—</td>
-                              <td className="py-3 text-right font-mono text-[14px]">${precioTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                              <td className="py-1 text-neutral-600 font-light">Valor Total de Venta</td>
+                              <td className="py-1 text-right font-mono text-neutral-950 font-bold">${precioTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                             </tr>
                             <tr>
-                              <td className="py-2.5 pl-3">↳ Reserva para Bloqueo</td>
-                              <td className="py-2.5 text-center text-neutral-500 text-[10px]">{incluirFechas ? formatearFechaLegible(fechaReserva) : 'Inmediato'}</td>
-                              <td className="py-2.5 text-center text-neutral-500 text-[10px]">{Number(pctInicialReal.toFixed(1))}%</td>
-                              <td className="py-2.5 text-right font-mono">${reservaValor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                              <td className="py-1 pl-3 text-neutral-600">↳ Reserva Comercial</td>
+                              <td className="py-1 text-right font-medium font-mono">${reservaValor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                             </tr>
                             <tr>
-                              <td className="py-2.5 pl-3">↳ Abono Inicial Promesa {mesesInicial > 1 ? `(Diferido en ${mesesInicial} meses)` : ''}</td>
-                              <td className="py-2.5 text-center text-neutral-500 text-[10px]">{mesesInicial > 1 ? `${mesesInicial} pagos de $${cuotaInicialMensual.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : (incluirFechas ? formatearFechaLegible(fechaFirmaPromesa) : 'Plazo Convenido')}</td>
-                              <td className="py-2.5 text-center text-neutral-500 text-[10px]">{Number(pctFirmaReal.toFixed(1))}%</td>
-                              <td className="py-2.5 text-right font-mono">${saldoFirmaPromesa.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                              <td className="py-1 pl-3 text-neutral-600">↳ Inicial a la Promesa</td>
+                              <td className="py-1 text-right font-medium font-mono">${saldoFirmaPromesa.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                             </tr>
                             <tr>
-                              <td className="py-2.5 pl-3 font-bold text-[#415364]">↳ Monto Diferido Construcción</td>
-                              <td className="py-2.5 text-center text-neutral-500 text-[10px]">Diferido mensual</td>
-                              <td className="py-2.5 text-center text-neutral-500 text-[10px]">{Number(pctEntradaReal.toFixed(1))}%</td>
-                              <td className="py-2.5 text-right font-bold font-mono text-[#415364]">${entradaDiferirTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                              <td className="py-1 pl-3 font-medium text-neutral-800">↳ Diferido Construcción ({mesesConstruccion} Meses)</td>
+                              <td className="py-1 text-right font-medium font-mono">${entradaDiferirTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                             </tr>
                             <tr>
-                              <td className="py-3 pl-3 font-bold text-[#B94A36] text-[13px]">↳ Saldo Final Contra Entrega</td>
-                              <td className="py-3 text-center text-[#B94A36] text-[10px]">A la entrega física</td>
-                              <td className="py-3 text-center text-[#B94A36] text-[10px] font-bold">{Number(pctContraEntregaReal.toFixed(1))}%</td>
-                              <td className="py-3 text-right font-bold text-[#B94A36] font-mono text-[14px]">${contraEntrega.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                              <td className="py-1.5 pl-3 font-bold text-[#B94A36]">↳ Saldo Contra Entrega</td>
+                              <td className="py-1.5 text-right font-bold text-[#B94A36] font-mono">${contraEntrega.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                             </tr>
                           </tbody>
                         </table>
-                        <p className="text-[8px] text-neutral-400 mt-2 italic">* Nota: El Valor Total de Venta ya considera un 5% de descuento por etapa de pre-lanzamiento respecto al precio de lista estándar.</p>
                       </div>
+                      
+                      <div className="mt-auto"></div>
 
-                      {/* Cronograma en 2 Columnas */}
-                      {entradaDiferirTotal > 0 && (
-                        <div className="shrink-0 mb-4">
-                          <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">CRONOGRAMA DE PAGOS ({mesesConstruccion} DIVIDENDOS)</h4>
-                          <div className="border-t border-[#B94A36] w-full mb-1"></div>
-                          <div className="grid grid-cols-2 gap-x-12 items-start text-[10px] text-neutral-600">
-                            <div className="space-y-0">
-                              {cuotasDivididas.columnaIzquierda.map((cuota) => (
-                                <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-100 py-[2.5px]">
-                                  <span>C{cuota.numeroCuota} | {cuota.fechaPago}</span>
-                                  <span className="font-bold text-neutral-800 font-mono">${cuota.valor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                                </div>
-                              ))}
-                            </div>
-                            <div className="space-y-0">
-                              {cuotasDivididas.columnaDerecha.map((cuota) => (
-                                <div key={cuota.numeroCuota} className="flex justify-between border-b border-neutral-100 py-[2.5px]">
-                                  <span>C{cuota.numeroCuota} | {cuota.fechaPago}</span>
-                                  <span className="font-bold text-neutral-800 font-mono">${cuota.valor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Valores Agregados */}
-                      <div className="shrink-0 border border-[#EAE3DC] rounded-[8px] p-3.5 bg-[#FDF8F5] mb-4 mt-auto">
-                        <h4 className="text-[9px] font-bold uppercase tracking-widest text-[#B94A36] mb-1.5">VALORES AGREGADOS A LA UNIDAD</h4>
-                        <ul className="text-[9px] text-neutral-700 space-y-1 pl-3 list-disc marker:text-[#DEB886]">
-                          {esLocal ? (
-                            <li><span className="font-bold text-neutral-800">Complemento Inmobiliario:</span> La unidad incluye {cantidadParqueos} parqueo{cantidadParqueos !== 1 ? 's' : ''}.</li>
-                          ) : (
-                            <li><span className="font-bold text-neutral-800">Complementos Inmobiliarios:</span> El Valor Total de Venta ya contempla la asignación de los parqueos y la bodega detallados en la ficha técnica.</li>
-                          )}
-                          {!esLocal && (<li><span className="font-bold text-neutral-800">Equipamiento:</span> La unidad incluye calentador de agua.</li>)}
-                          {!esLocal && incluirClima && (<li><span className="font-bold text-neutral-800">Climatización Estética:</span> Sistema de aire acondicionado integral empotrado en el tumbado para todos los ambientes del departamento.</li>)}
-                          {!esLocal && incluirBbq && (<li><span className="font-bold text-neutral-800">Área de BBQ en Terraza:</span> Adecuación de espacio exterior con mesón y recubrimientos listos para su uso (no incluye parrilla ni equipos).</li>)}
-                        </ul>
-                      </div>
-
-                      {/* Firmas */}
                       {incluirFirmas && (
-                        <div className="mt-4 shrink-0 pt-2 pb-2">
-                          <div className="grid grid-cols-2 gap-24 text-center text-[10px] px-10">
-                            <div>
-                              <div className="border-t border-neutral-300 w-full mb-2"></div>
-                              <p className="font-bold text-[#B94A36] uppercase tracking-wider">ARIENZO LIVING</p>
-                              <p className="text-neutral-400 mt-1">Emitido por: {nombreAsesor || 'Saúl Intriago'}</p>
+                         <div className="mt-8 pt-4 shrink-0 flex justify-between items-end border-t border-neutral-200">
+                            <div className="w-[45%] text-center border-t border-neutral-400 pt-1">
+                               <p className="text-[10px] font-bold text-neutral-800 uppercase m-0">{nombreAsesor}</p>
+                               <p className="text-[8px] text-neutral-500 m-0">Asesor Comercial Arienzo</p>
                             </div>
-                            <div>
-                              <div className="border-t border-neutral-300 w-full mb-2"></div>
-                              <p className="font-bold text-neutral-800 uppercase tracking-wider">ACEPTACIÓN DE PROPUESTA</p>
-                              <p className="text-neutral-400 mt-1">Firma del Inversionista</p>
+                            <div className="w-[45%] text-center border-t border-neutral-400 pt-1">
+                               <p className="text-[10px] font-bold text-neutral-800 uppercase m-0">{nombreDestinatarioCorreo}</p>
+                               <p className="text-[8px] text-neutral-500 m-0">Firma Inversionista</p>
                             </div>
-                          </div>
-                        </div>
+                         </div>
                       )}
                     </div>
                   </div>
 
                   {/* PÁGINA 2: PLANO Y ARQUITECTURA */}
                   {incluirPlano && (
-                    <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm' }} className="pdf-page-container bg-white text-neutral-900 shadow-2xl relative flex flex-col overflow-hidden shrink-0 mx-auto print:shadow-none">
+                    <div style={{ width: '210mm', height: '297mm', minWidth: '210mm', minHeight: '297mm' }} className="pdf-page-container bg-white text-neutral-900 shadow-2xl relative flex flex-col overflow-hidden shrink-0 mx-auto">
                       <div className="px-10 py-10 flex flex-col h-full">
                          <div className="flex-1 flex flex-col border border-neutral-300 rounded-[12px] overflow-hidden shadow-sm bg-white">
-                            
                             <div className="flex h-[150px] shrink-0 bg-white border-b border-neutral-200">
                                <div className="w-[230px] h-full shrink-0 bg-[#181A20]">
                                   <img src={RENDER_FACHADA} className="w-full h-full object-cover" alt="Fachada Arienzo" />
@@ -1049,68 +755,13 @@ export default function CotizadorPage() {
                                <div className="flex-1 pl-8 pr-6 flex flex-col justify-center text-left">
                                   <h3 className="text-[15px] font-bold tracking-widest uppercase text-[#B94A36]">Diseño Arquitectónico</h3>
                                   <p className="text-[11px] mt-0.5 font-bold tracking-wider text-neutral-800">Unidad {propiedadSeleccionada?.unidad || propiedadSeleccionada?.numero} | {tipologia}</p>
-                                  <p className="text-[9.5px] text-neutral-600 leading-snug mt-2 text-justify">
-                                    Un diseño arquitectónico exclusivo y minuciosamente pensado por el prestigioso estudio Diez+Muller, uno de los más reconocidos del país. Cada espacio ha sido concebido para ofrecer un estilo de vida superior, destacando una distribución inteligente y una selección de acabados de excelente calidad.
-                                  </p>
                                </div>
                             </div>
-
-                            <div className="bg-[#F9F7F5] px-4 py-3.5 grid grid-cols-7 gap-1 items-center shrink-0 border-b border-neutral-200">
-                               <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
-                                  <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/iconos/area.png" alt="Área Total" className="w-[22px] h-[22px] object-contain" />
-                                  <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Área Total</span>
-                                  <span className="text-[10px] font-black text-[#B94A36]">{areaTotal} m²</span>
-                               </div>
-                               <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
-                                  <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/iconos/dormitorio.png" alt="Dormitorios" className="w-[22px] h-[22px] object-contain" />
-                                  <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Dormitorios</span>
-                                  <span className="text-[10px] font-bold text-[#21242E]">{numHabitaciones}</span>
-                               </div>
-                               <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
-                                  <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/iconos/ducha.png" alt="Baños" className="w-[22px] h-[22px] object-contain" />
-                                  <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Baños</span>
-                                  <span className="text-[10px] font-bold text-[#21242E]">{numBanos}</span>
-                               </div>
-                               <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
-                                  <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/iconos/lavadora.png" alt="Lavandería" className="w-[22px] h-[22px] object-contain" />
-                                  <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Lavandería</span>
-                                  <span className="text-[10px] font-bold text-[#21242E]">Sí</span>
-                               </div>
-                               <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
-                                  <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/iconos/terraza.png" alt="Terraza" className="w-[22px] h-[22px] object-contain" />
-                                  <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Terraza</span>
-                                  <span className="text-[10px] font-bold text-[#21242E]">Sí</span>
-                               </div>
-                               <div className="flex flex-col items-center gap-1.5 border-r border-neutral-300">
-                                  <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/iconos/garaje.png" alt="Parqueos" className="w-[22px] h-[22px] object-contain" />
-                                  <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Parqueos</span>
-                                  <span className="text-[10px] font-bold text-[#21242E]">{cantidadParqueos}</span>
-                               </div>
-                               <div className="flex flex-col items-center gap-1.5">
-                                  <img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/iconos/bodega.png" alt="Bodega" className="w-[22px] h-[22px] object-contain" />
-                                  <span className="text-[6.5px] font-bold text-neutral-500 uppercase tracking-widest">Bodega</span>
-                                  <span className="text-[10px] font-bold text-[#21242E]">{bodegaAsignada && bodegaAsignada.toLowerCase() !== 'ninguna' ? 'Sí' : 'No'}</span>
-                               </div>
-                            </div>
-
                             <div className="flex-1 flex items-center justify-center p-6 relative bg-white">
                                <div className="w-full h-full max-h-[110mm] flex items-center justify-center">
                                   <img src={urlPlanoAsignado} alt="Plano Arienzo" className="max-w-[75%] max-h-full object-contain mix-blend-multiply" />
                                </div>
                             </div>
-
-                            <div className="px-8 py-5 bg-[#F9F7F5] shrink-0 border-t border-neutral-200">
-                               <h4 className="text-[9px] font-bold uppercase tracking-widest text-[#B94A36] mb-2.5">Resumen de Especificaciones Técnicas y Equipamiento</h4>
-                               <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-[7.5px] text-neutral-700 leading-tight">
-                                  <p><strong className="text-neutral-900 uppercase">Acabados Interiores:</strong> Pisos de porcelanato importado rectificado de 60 × 120 cm, paredes lisas con revestimientos decorativos y puertas de madera con chapa natural lacada de 2,30 m de altura.</p>
-                                  <p><strong className="text-neutral-900 uppercase">Cocina y Clósets:</strong> Mobiliario de melamínico Madeval o similar. Mesones de piedra sinterizada y fregadero de acero inoxidable de dos pozos, tipo undercounter.</p>
-                                  <p><strong className="text-neutral-900 uppercase">Baños y Grifería:</strong> Mesones de piedra sinterizada, muebles de melamínico, lavamanos FV o Edesa y grifería de línea alta FV o Edesa.</p>
-                                  <p><strong className="text-neutral-900 uppercase">Ventanería y Pasamanos:</strong> Ventanas de aluminio anodizado color café, con vidrio claro y sistema de apertura proyectable. Pasamanos de vidrio templado con anclaje inferior.</p>
-                                  <p><strong className="text-neutral-900 uppercase">Áreas Comunales y Amenidades:</strong> Área social con piscina, zona de barbacoa (BBQ), espacios de living y gimnasio.</p>
-                                  <p><strong className="text-neutral-900 uppercase">Equipamiento del Edificio:</strong> Generador eléctrico, ascensor, paneles solares, lobby 24/7, cámaras CCTV y área comercial.</p>
-                               </div>
-                            </div>
-
                             <div className="bg-[#B94A36] h-[55px] flex justify-center items-center shrink-0">
                                <img src={LOGO_BLANCO} alt="Arienzo Living" className="h-[22px] w-auto object-contain opacity-95" />
                             </div>
@@ -1130,96 +781,39 @@ export default function CotizadorPage() {
           <div className="bg-white rounded-2xl border border-neutral-200/60 p-6 shadow-xl sticky top-6 space-y-6 flex flex-col min-h-[500px]">
             <div>
               <h2 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest mb-3 border-b border-neutral-100 pb-2">Resumen Financiero</h2>
-              {montoDescuentoCalculado > 0 && (
-                <div className="text-[11px] text-[#415364]/40 line-through font-mono font-bold mb-1">
-                  Lista Base: {"$"}{precioListaOriginal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                </div>
-              )}
               <div className="text-4xl font-bold tracking-tight text-[#415364] font-mono">
-                {"$"}{precioTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                ${precioTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
               </div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#415364]/50 mt-1">Valor Total de Venta de la Unidad</p>
             </div>
 
             <div className="space-y-4 pt-5 border-t border-[#415364]/10 text-sm flex-1">
-              
               <div className="flex justify-between items-center">
-                <span className="text-[11px] font-bold text-[#415364] uppercase tracking-wider">Cuota Inicial ({Number(pctInicialReal.toFixed(1))}%)</span>
-                <span className="font-bold text-[#415364] font-mono">{"$"}{cuotaInicialTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                <span className="text-[11px] font-bold text-[#415364] uppercase">Cuota Inicial</span>
+                <span className="font-bold text-[#415364] font-mono">${cuotaInicialTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
               </div>
-              <div className="flex justify-between pl-4 text-[11px] text-[#415364]/70 border-l-2 border-[#ea0029]/30 font-medium">
-                <span>Reserva Inmediata:</span>
-                <span className="font-mono font-bold">{"$"}{reservaValor.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-              </div>
-              <div className="flex justify-between pl-4 text-[11px] text-[#415364]/70 border-l-2 border-[#ea0029]/30 font-medium">
-                <span>Firma de Promesa:</span>
-                <span className="font-mono font-bold text-[#415364]">
-                  {"$"}{saldoFirmaPromesa > 0 ? saldoFirmaPromesa.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}
-                </span>
-              </div>
-              
-              {mesesInicial > 1 && saldoFirmaPromesa > 0 && (
-                <div className="flex justify-between pl-4 pr-3 py-2 text-[10px] font-bold text-[#ea0029] bg-[#ea0029]/5 rounded-lg border border-[#ea0029]/10">
-                  <span>↳ Dividido en {mesesInicial} pagos:</span>
-                  <span className="font-mono">{"$"}{cuotaInicialMensual.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} c/u</span>
-                </div>
-              )}
-              
               <div className="flex justify-between items-center border-t border-[#415364]/10 pt-4">
-                <span className="text-[11px] font-bold text-[#415364] uppercase tracking-wider">Diferido Obra ({Number(pctEntradaReal.toFixed(1))}%)</span>
-                <span className="font-bold text-[#415364] font-mono">{"$"}{entradaDiferirTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                <span className="text-[11px] font-bold text-[#415364] uppercase">Diferido Obra</span>
+                <span className="font-bold text-[#415364] font-mono">${entradaDiferirTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
               </div>
-              
-              {entradaDiferirTotal > 0 && (
-                <div className="flex justify-between text-[11px] text-[#415364]/60 font-medium bg-[#dce3eb]/30 px-3 py-2 rounded-lg border border-[#415364]/5">
-                  <span>{mesesConstruccion} cuotas promedio de:</span>
-                  <span className="font-mono font-bold">
-                    {"$"}{(entradaDiferirTotal / mesesConstruccion).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                  </span>
-                </div>
-              )}
-              
               <div className="flex justify-between items-center border-t-2 border-[#21242E] pt-4 mt-2">
-                <span className="text-[12px] font-bold text-[#21242E] uppercase tracking-widest">Contra Entrega ({Number(pctContraEntregaReal.toFixed(1))}%)</span>
-                <span className="font-bold text-[#21242E] text-lg font-mono">{"$"}{contraEntrega.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                <span className="text-[12px] font-bold text-[#21242E] uppercase">Contra Entrega</span>
+                <span className="font-bold text-[#21242E] text-lg font-mono">${contraEntrega.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
               </div>
             </div>
 
             {propiedadSeleccionada && (
               <div className="space-y-3 pt-6 border-t border-[#415364]/10 mt-auto">
                 <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={descargarPdfComercial}
-                    disabled={generandoPdf}
-                    className="w-full bg-white border-2 border-[#21242E] text-[#21242E] rounded-xl p-3 text-[10px] font-bold uppercase tracking-widest hover:bg-[#21242E] hover:text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
-                  >
-                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path></svg>
+                  <button onClick={descargarPdfComercial} disabled={generandoPdf} className="w-full bg-white border-2 border-[#21242E] text-[#21242E] rounded-xl p-3 text-[10px] font-bold uppercase tracking-widest hover:bg-[#21242E] hover:text-white transition-colors">
                     {generandoPdf ? 'Generando...' : 'Bajar PDF'}
                   </button>
-
-                  <button
-                    onClick={() => {
-                        if (!clienteDataCompleta?.email) {
-                            alert("⚠️ El cliente seleccionado no tiene un correo electrónico registrado en el CRM.");
-                            return;
-                        }
-                        setPestañaActiva('previsualizar');
-                        setMostrarModalCorreo(true);
-                    }}
-                    className={`w-full border-2 rounded-xl p-3 text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-1.5 ${!clienteDataCompleta?.email ? 'bg-neutral-100 border-neutral-200 text-neutral-400 cursor-not-allowed' : 'bg-white border-[#21242E] text-[#21242E] hover:bg-[#21242E] hover:text-white shadow-sm'}`}
-                    title={!clienteDataCompleta?.email ? "El cliente no tiene correo registrado" : "Enviar PDF por correo"}
-                  >
-                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                  <button onClick={() => { if (!clienteDataCompleta?.email) { alert("⚠️ El cliente no tiene correo registrado."); return; } setPestañaActiva('previsualizar'); setMostrarModalCorreo(true); }} className="w-full border-2 border-[#21242E] bg-white text-[#21242E] rounded-xl p-3 text-[10px] font-bold uppercase tracking-widest hover:bg-[#21242E] hover:text-white transition-colors">
                     Enviar Email
                   </button>
                 </div>
-                <button
-                  onClick={guardarCotizacionEnSistema}
-                  disabled={guardando}
-                  className="w-full bg-[#ea0029] text-white rounded-xl p-3.5 text-[11px] font-bold uppercase tracking-widest hover:bg-[#c90022] transition-colors shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-                  {guardando ? 'Guardando Registro...' : 'Guardar en CRM'}
+                <button onClick={guardarCotizacionEnSistema} disabled={guardando} className="w-full bg-[#ea0029] text-white rounded-xl p-3.5 text-[11px] font-bold uppercase tracking-widest hover:bg-[#c90022] transition-colors shadow-md">
+                  {guardando ? 'Guardando...' : 'Guardar en CRM'}
                 </button>
               </div>
             )}
