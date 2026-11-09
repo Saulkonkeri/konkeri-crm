@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 
 interface CuotaMes {
@@ -44,6 +44,9 @@ export default function CotizadorPage() {
   const [busquedaCliente, setBusquedaCliente] = useState<string>('');
   const [clienteSeleccionado, setClienteSeleccionado] = useState<string>(''); 
   const [nombreAsesor, setNombreAsesor] = useState<string>('Saúl Intriago / Debbi Mera');
+  const [mostrarOpcionesCliente, setMostrarOpcionesCliente] = useState(false);
+
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [tipoDescuento, setTipoDescuento] = useState<'porcentaje' | 'valor'>('porcentaje');
   const [valorDescuento, setValorDescuento] = useState<number>(0);
@@ -113,10 +116,25 @@ export default function CotizadorPage() {
     cargarDatosIniciales();
   }, []);
 
+  // Cierra el dropdown si hacen click afuera
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setMostrarOpcionesCliente(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const clientesFiltrados = useMemo(() => {
     if (!busquedaCliente.trim()) return clientes;
     const b = busquedaCliente.toLowerCase();
-    return clientes.filter(c => `${c.nombres || ''} ${c.apellidos || ''}`.toLowerCase().includes(b) || (c.telefono && c.telefono.includes(b)));
+    return clientes.filter(c => 
+      `${c.nombres || ''} ${c.apellidos || ''}`.toLowerCase().includes(b) || 
+      (c.telefono && c.telefono.includes(b)) ||
+      (c.email && c.email.toLowerCase().includes(b))
+    );
   }, [clientes, busquedaCliente]);
 
   const clienteDataCompleta = useMemo(() => {
@@ -127,10 +145,12 @@ export default function CotizadorPage() {
   useEffect(() => {
     if (clienteDataCompleta) {
       setNombreDestinatarioCorreo(`${clienteDataCompleta.nombres || ''} ${clienteDataCompleta.apellidos || ''}`.trim());
+      setBusquedaCliente(`${clienteDataCompleta.nombres || ''} ${clienteDataCompleta.apellidos || ''}`.trim());
     } else {
       setNombreDestinatarioCorreo('Cliente Anónimo / Prospecto');
+      if (clienteSeleccionado === '') setBusquedaCliente('');
     }
-  }, [clienteDataCompleta]);
+  }, [clienteDataCompleta, clienteSeleccionado]);
 
   const { 
     precioListaOriginal, montoDescuentoCalculado, precioDeptoPreLanzamiento, valAnexosPreLanzamiento, precioTotal, 
@@ -576,13 +596,86 @@ export default function CotizadorPage() {
               <h2 className="text-[10px] font-bold text-[#415364]/60 uppercase tracking-widest mb-3">Asesor / Comercial Emisor</h2>
               <input type="text" value={nombreAsesor} onChange={(e) => setNombreAsesor(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-xl p-3 text-xs font-bold text-[#415364] focus:outline-none focus:border-[#ea0029]" />
             </div>
-            <div className="flex-1">
+            
+            {/* ========================================================= */}
+            {/* COMBOBOX DE BÚSQUEDA DE CLIENTE CON AUTOFILTRO */}
+            {/* ========================================================= */}
+            <div className="flex-1 relative" ref={dropdownRef}>
               <h2 className="text-[10px] font-bold text-[#415364]/60 uppercase tracking-widest mb-3">Asociar Inversionista</h2>
-              <select value={clienteSeleccionado} onChange={(e) => setClienteSeleccionado(e.target.value)} className="w-full bg-[#415364]/5 border border-[#415364]/20 rounded-xl p-3 text-xs font-bold text-[#415364] focus:outline-none focus:border-[#ea0029]">
-                <option value="">— Cliente Anónimo (Consulta Rápida) —</option>
-                {clientesFiltrados.map(c => <option key={c.id} value={c.id}>{c.nombres} {c.apellidos}</option>)}
-              </select>
+              
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Escribe para buscar cliente..."
+                  value={busquedaCliente}
+                  onChange={(e) => {
+                    setBusquedaCliente(e.target.value);
+                    setMostrarOpcionesCliente(true);
+                    if (clienteSeleccionado) setClienteSeleccionado('');
+                  }}
+                  onFocus={() => setMostrarOpcionesCliente(true)}
+                  className="w-full bg-[#415364]/5 border border-[#415364]/20 rounded-xl p-3 pr-8 text-xs font-bold text-[#415364] focus:outline-none focus:border-[#ea0029] transition-colors"
+                />
+                
+                {/* Botón de limpiar selección */}
+                {busquedaCliente && (
+                  <button 
+                    onClick={() => {
+                      setBusquedaCliente('');
+                      setClienteSeleccionado('');
+                      setMostrarOpcionesCliente(true);
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-[#ea0029] font-bold p-1"
+                    title="Limpiar cliente"
+                  >
+                    &times;
+                  </button>
+                )}
+              </div>
+
+              {/* Lista desplegable flotante (Dropdown) */}
+              {mostrarOpcionesCliente && (
+                <ul className="absolute z-50 w-full mt-1 bg-white border border-[#415364]/20 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar">
+                  <li 
+                    className="p-3 text-xs text-neutral-500 font-bold hover:bg-[#dce3eb]/30 cursor-pointer border-b border-neutral-100 flex items-center gap-2"
+                    onClick={() => {
+                      setClienteSeleccionado('');
+                      setBusquedaCliente('');
+                      setMostrarOpcionesCliente(false);
+                    }}
+                  >
+                    <span className="w-5 h-5 rounded-full bg-neutral-100 flex items-center justify-center border border-neutral-200">👤</span>
+                    — Cliente Anónimo (Consulta Rápida) —
+                  </li>
+                  
+                  {clientesFiltrados.length > 0 ? (
+                    clientesFiltrados.map(c => (
+                      <li 
+                        key={c.id} 
+                        className="p-3 text-xs hover:bg-[#dce3eb]/30 cursor-pointer border-b border-neutral-100 last:border-0 flex flex-col transition-colors"
+                        onClick={() => {
+                          setClienteSeleccionado(c.id.toString());
+                          setBusquedaCliente(`${c.nombres} ${c.apellidos}`.trim());
+                          setMostrarOpcionesCliente(false);
+                        }}
+                      >
+                        <span className="font-bold text-[#415364]">{c.nombres} {c.apellidos}</span>
+                        <div className="flex gap-3 text-[10px] text-[#415364]/60 font-mono mt-0.5">
+                          {c.telefono && <span>📱 {c.telefono}</span>}
+                          {c.email && <span className="truncate">✉️ {c.email}</span>}
+                        </div>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="p-4 text-xs text-neutral-400 text-center font-medium italic">
+                      No se encontraron clientes que coincidan.
+                    </li>
+                  )}
+                </ul>
+              )}
             </div>
+            {/* ========================================================= */}
+            
           </div>
 
           <div className="bg-white rounded-2xl border border-[#D1C292] p-6 shadow-sm relative overflow-hidden">
