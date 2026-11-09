@@ -18,7 +18,7 @@ const modelosArienzo = [
   { id: 'm2', area: '86.78m²', dorms: 1, banos: '1.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/1D_86,78m2.png' },
   { id: 'm3', area: '100.02m²', dorms: 2, banos: '2 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_100.2m2.png' },
   { id: 'm4', area: '106.65m²', dorms: 2, banos: '2.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_106,65m2.png' },
-  { id: 'm5', area: '121.61m²', dorms: 2, banos: '2.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_121,61m2.png' },
+  { id: 'm5', area: '121.61m²', dorms: 2, banos: '2.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2D_121,61m2.png', agotado: true },
   { id: 'm6', area: '129.42m²', dorms: 2, banos: '2.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/2d_129,42m2.png' },
   { id: 'm7', area: '150.14m²', dorms: 3, banos: '3.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/3D_150,14m2.png' },
   { id: 'm8', area: '158.77m²', dorms: 3, banos: '3.5 Baños', lavanderia: true, extras: 'Terraza', imagen: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/planos%20para%20landing/3D_158,77m2.png' },
@@ -40,8 +40,8 @@ export default function ArienzoLandingPremium() {
   const carruselRef = useRef<HTMLDivElement>(null);
   const [modeloActivo, setModeloActivo] = useState(modelosArienzo[0]);
 
-  const [formData, setFormData] = useState({ nombres: '', telefono: '', email: '', modeloCotizado: '' });
-  const [formBrochure, setFormBrochure] = useState({ nombres: '', telefono: '', email: '' });
+  const [formData, setFormData] = useState({ nombres: '', telefono: '', email: '', ciudad: '', modeloCotizado: '' });
+  const [formBrochure, setFormBrochure] = useState({ nombres: '', telefono: '', email: '', ciudad: '' });
 
   const imagenesGaleria = useMemo(() => [
     "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Frontal.jpg",
@@ -109,7 +109,7 @@ export default function ArienzoLandingPremium() {
       }, 200);
     }
 
-    // Carga de imágenes pesadas retrasada para priorizar el LCP de la primera vista
+    // Carga de imágenes pesadas retrasada
     const preloadImages = () => {
       const imagesToPreload = [...modelosArienzo.map(m => m.imagen)];
       imagesToPreload.forEach((src) => {
@@ -218,6 +218,7 @@ export default function ArienzoLandingPremium() {
         nombres: formData.nombres,
         telefono: formData.telefono,
         email: correoLimpio,
+        ciudad: formData.ciudad,
         tipo: 'prospecto',
         origen: origenDinamico,
         campana: campanaDinamica,
@@ -264,6 +265,7 @@ export default function ArienzoLandingPremium() {
         nombres: formBrochure.nombres,
         telefono: formBrochure.telefono,
         email: correoLimpio,
+        ciudad: formBrochure.ciudad,
         tipo: 'prospecto',
         origen: 'Landing - Descarga Brochure',
         campana: 'Tráfico Web General',
@@ -291,7 +293,7 @@ export default function ArienzoLandingPremium() {
       setTimeout(() => {
         setMostrarModalBrochure(false);
         setBrochureDescargado(false);
-        setFormBrochure({ nombres: '', telefono: '', email: '' });
+        setFormBrochure({ nombres: '', telefono: '', email: '', ciudad: '' });
       }, 4000);
       
     } catch (error) {
@@ -320,7 +322,7 @@ export default function ArienzoLandingPremium() {
         `}
       </Script>
 
-      {/* NAVEGACIÓN (Logo Ligeramente Más Grande) */}
+      {/* NAVEGACIÓN */}
       <header className={`fixed top-0 w-full z-40 transition-all duration-500 ${scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm py-5 md:py-6' : 'bg-transparent py-6 md:py-8'}`}>
         <div className="max-w-7xl mx-auto px-5 md:px-12 flex justify-between items-center">
           <img 
@@ -337,7 +339,7 @@ export default function ArienzoLandingPremium() {
         </div>
       </header>
 
-      {/* 1. HERO INMERSIVO: CARGA SUPER OPTIMIZADA CON FOTO PISCINA */}
+      {/* 1. HERO INMERSIVO */}
       <section className="relative h-[100vh] min-h-[650px] flex flex-col items-center justify-center">
         <img 
           src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-PISCINA-PARA-PAGINA.jpg" 
@@ -347,7 +349,6 @@ export default function ArienzoLandingPremium() {
           loading="eager"
           decoding="sync"
         />
-        {/* Filtro suavizado para mantener lectura pero aclarar la imagen */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/20 to-black/60 z-0"></div>
 
         <div className="relative z-10 text-center px-6 w-full max-w-4xl mx-auto pt-20">
@@ -541,11 +542,11 @@ export default function ArienzoLandingPremium() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 4.5. ESPACIOS DE AUTOR (FONDO REDISEÑADO CON TIPOGRAFÍA ELEGANTE Y CUADRITOS ORIGINALES) */}
+      {/* 4.5. ESPACIOS DE AUTOR (CON ETIQUETA SOLD OUT Y COMPORTAMIENTO ADAPTADO) */}
       {/* ========================================================================= */}
       <section className="py-24 md:py-32 px-4 md:px-8 bg-[#FDFCFB] border-y border-[#EAE3DC] font-sans relative overflow-hidden">
         
-        {/* Fondo Arquitectónico Premium: Grid muy sutil y luces radiales suaves */}
+        {/* Fondo Arquitectónico Premium */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:48px_48px] z-0"></div>
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-[1px] bg-gradient-to-r from-transparent via-[#D1C292]/50 to-transparent z-0"></div>
         
@@ -571,7 +572,6 @@ export default function ArienzoLandingPremium() {
             </p>
           </div>
 
-          {/* TARJETAS ORIGINALES (LOS CUADRITOS LIMPIOS Y MINIMALISTAS) */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5 max-w-4xl mx-auto">
             {modelosArienzo.map((mod) => (
               <button
@@ -579,14 +579,21 @@ export default function ArienzoLandingPremium() {
                 onClick={() => abrirPlanoInteractivo(mod)}
                 className="group relative flex flex-col items-center justify-center py-4 px-2 w-full h-20 md:h-24 rounded-2xl transition-all duration-500 border-[2px] border-dashed border-[#D1C292]/70 bg-white/90 backdrop-blur-sm shadow-[0_8px_20px_rgba(0,0,0,0.03)] hover:bg-white hover:border-solid hover:border-[#964B36]/70 hover:shadow-[0_20px_40px_rgba(150,75,54,0.15)] hover:-translate-y-2 overflow-hidden"
               >
+                {/* Etiqueta de SOLD OUT si el modelo está agotado */}
+                {mod.agotado && (
+                  <div className="absolute top-2 -right-6 bg-red-800 text-white text-[8px] font-bold tracking-widest uppercase py-1 px-8 transform rotate-45 shadow-sm opacity-90 z-10">
+                    Sold Out
+                  </div>
+                )}
+
                 <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[#D1C292] to-[#964B36] scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-500 ease-out"></div>
                 
-                <span className="text-[#415364] group-hover:text-[#964B36] text-xl md:text-2xl font-bold tracking-tight transition-colors mb-1.5">
+                <span className={`text-[#415364] group-hover:text-[#964B36] text-xl md:text-2xl font-bold tracking-tight transition-colors mb-1.5 ${mod.agotado ? 'opacity-60' : ''}`}>
                   {mod.area.replace('m²', '')}
                   <span className="text-xs font-normal text-neutral-400 ml-0.5 group-hover:text-[#964B36]/70">m²</span>
                 </span>
                 
-                <div className="flex items-center gap-1.5">
+                <div className={`flex items-center gap-1.5 ${mod.agotado ? 'opacity-60' : ''}`}>
                   <svg className="w-3.5 h-3.5 text-[#D1C292] group-hover:text-[#964B36] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18M3 16h18M5 12V8a2 2 0 012-2h10a2 2 0 012 2v4M7 16v2m10-2v2"></path>
                   </svg>
@@ -614,7 +621,12 @@ export default function ArienzoLandingPremium() {
 
             <div className="flex flex-col w-full">
               
-              <div className="px-6 pt-8 pb-4 md:px-10 md:pt-10 text-center border-b border-[#EAE3DC] bg-white">
+              <div className="px-6 pt-8 pb-4 md:px-10 md:pt-10 text-center border-b border-[#EAE3DC] bg-white relative overflow-hidden">
+                {modeloActivo.agotado && (
+                   <span className="inline-block bg-red-100 text-red-800 text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-3">
+                     Unidades Agotadas
+                   </span>
+                )}
                 <h3 className="text-[10px] md:text-xs font-bold tracking-[0.3em] text-[#964B36] uppercase mb-1.5 md:mb-2">Distribución Espacial</h3>
                 <div className="text-2xl md:text-4xl font-medium text-neutral-900 tracking-tight">{modeloActivo.area}</div>
               </div>
@@ -672,16 +684,21 @@ export default function ArienzoLandingPremium() {
                 <div className="flex flex-col sm:flex-row justify-center items-center gap-3 md:gap-4 mt-1">
                   <button 
                     onClick={() => { setMostrarModalPlano(false); abrirModalVIP(`Distribución de ${modeloActivo.area}`); }}
-                    className="w-full sm:w-auto bg-[#21242E] text-white px-8 py-3.5 md:px-10 md:py-4 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-[0.15em] hover:bg-black transition-all duration-300 shadow-xl flex items-center justify-center hover:-translate-y-0.5"
+                    disabled={modeloActivo.agotado}
+                    className={`w-full sm:w-auto px-8 py-3.5 md:px-10 md:py-4 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-[0.15em] transition-all duration-300 flex items-center justify-center shadow-xl ${modeloActivo.agotado ? 'bg-neutral-300 text-neutral-500 cursor-not-allowed shadow-none' : 'bg-[#21242E] text-white hover:bg-black hover:-translate-y-0.5'}`}
                   >
-                    Cotizar este Depto.
+                    {modeloActivo.agotado ? 'Unidades Agotadas' : 'Cotizar este Depto.'}
                   </button>
+                  
                   <a 
-                    href={`https://wa.me/593979469472?text=${encodeURIComponent(`Hola, quiero cotizar el modelo de ${modeloActivo.area} de${modeloActivo.dorms} dormitorio(s) en el proyecto Arienzo.`)}`}
-                    target="_blank"
+                    href={modeloActivo.agotado ? '#' : `https://wa.me/593979469472?text=${encodeURIComponent(`Hola, quiero cotizar el modelo de ${modeloActivo.area} de${modeloActivo.dorms} dormitorio(s) en el proyecto Arienzo.`)}`}
+                    target={modeloActivo.agotado ? '_self' : '_blank'}
                     rel="noopener noreferrer"
-                    onClick={() => trackEventRadar('CLIC_WHATSAPP_PLANO', `Hizo clic en WhatsApp para el plano ${modeloActivo.area}`)}
-                    className="w-full sm:w-auto bg-transparent border border-[#25D366] text-[#25D366] px-8 py-3.5 md:px-10 md:py-4 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-[0.15em] hover:bg-[#25D366] hover:text-white transition-all duration-300 flex items-center justify-center gap-2 hover:-translate-y-0.5"
+                    onClick={(e) => { 
+                      if(modeloActivo.agotado) { e.preventDefault(); return; }
+                      trackEventRadar('CLIC_WHATSAPP_PLANO', `Hizo clic en WhatsApp para el plano ${modeloActivo.area}`) 
+                    }}
+                    className={`w-full sm:w-auto px-8 py-3.5 md:px-10 md:py-4 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-[0.15em] transition-all duration-300 flex items-center justify-center gap-2 ${modeloActivo.agotado ? 'border border-neutral-300 text-neutral-400 cursor-not-allowed bg-transparent' : 'bg-transparent border border-[#25D366] text-[#25D366] hover:bg-[#25D366] hover:text-white hover:-translate-y-0.5'}`}
                   >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
                     Hablar con un asesor
@@ -930,6 +947,21 @@ export default function ArienzoLandingPremium() {
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#964B36] transition-colors" 
                     />
                   </div>
+                  <div>
+                    <select
+                      required
+                      value={formData.ciudad}
+                      onChange={e => setFormData({...formData, ciudad: e.target.value})}
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium text-neutral-600 focus:outline-none focus:border-[#964B36] transition-colors"
+                    >
+                      <option value="" disabled>Selecciona tu ciudad de residencia</option>
+                      <option value="Manta">Manta</option>
+                      <option value="Quito">Quito</option>
+                      <option value="Guayaquil">Guayaquil</option>
+                      <option value="Otra Ciudad (Ecuador)">Otra Ciudad (Ecuador)</option>
+                      <option value="Exterior">En el Exterior</option>
+                    </select>
+                  </div>
                   
                   <button 
                     type="submit" 
@@ -1013,6 +1045,21 @@ export default function ArienzoLandingPremium() {
                       onChange={e => setFormBrochure({...formBrochure, email: e.target.value})} 
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#D1C292] transition-colors" 
                     />
+                  </div>
+                  <div>
+                    <select
+                      required
+                      value={formBrochure.ciudad}
+                      onChange={e => setFormBrochure({...formBrochure, ciudad: e.target.value})}
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium text-neutral-600 focus:outline-none focus:border-[#D1C292] transition-colors"
+                    >
+                      <option value="" disabled>Selecciona tu ciudad de residencia</option>
+                      <option value="Manta">Manta</option>
+                      <option value="Quito">Quito</option>
+                      <option value="Guayaquil">Guayaquil</option>
+                      <option value="Otra Ciudad (Ecuador)">Otra Ciudad (Ecuador)</option>
+                      <option value="Exterior">En el Exterior</option>
+                    </select>
                   </div>
                   
                   <button 
