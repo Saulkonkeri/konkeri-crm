@@ -54,6 +54,20 @@ const PLANTILLAS_CORREO = [
     layout: 'full'
   },
   {
+    id: 'rentabilidad_inversion',
+    nombre: '📈 Rentabilidad y Plusvalía Asegurada',
+    asunto: '¿Por qué Barbasquillo es la mejor zona para invertir hoy?',
+    cuerpo: 'Hola {nombre},\n\nSi estás buscando una inversión segura y altamente rentable, Arienzo Living es la oportunidad del momento.\n\nActualmente, el precio promedio por metro cuadrado en la zona de Barbasquillo ronda los $2,200 (y hasta $2,400 o $2,500 al pie del mar). En Arienzo, por estar en etapa de preventa, nuestro promedio actual es de **$1,750 por m²**.\n\n¿Qué significa esto para ti? Una **plusvalía asegurada desde el día 1**. Al finalizar el proyecto, tu capital habrá crecido automáticamente solo por haber entrado en esta etapa temprana, sin contar la alta rentabilidad que puedes obtener si decides alquilarlo.',
+    layout: 'full'
+  },
+  {
+    id: 'match_perfecto',
+    nombre: '🎯 Encuentra tu Tipología Ideal',
+    asunto: '¿Cuál es el departamento ideal para tu estilo de vida?',
+    cuerpo: 'Hola {nombre},\n\nEn Arienzo Living hemos diseñado espacios pensando en cada etapa de la vida y perfil de inversión. ¿Cuál de nuestras tipologías hace "match" contigo?\n\n✨ **Suites:** Perfectas para solteros, ejecutivos o inversionistas que buscan alta rentabilidad en alquileres (excelente para formato Airbnb).\n✨ **2 Dormitorios:** El equilibrio ideal para parejas, o quienes buscan un espacio extra muy cómodo para visitas o home office.\n✨ **3 Dormitorios:** Espacios generosos y pensados para familias con hijos que no quieren renunciar al lujo y la mejor ubicación de Manta.\n\nMe encantaría mostrarte los planos a detalle. ¿A qué hora te viene bien que conversemos?',
+    layout: 'full'
+  },
+  {
     id: 'invitacion_zoom',
     nombre: '🤝 Invitación a Reunión / Videollamada Zoom',
     asunto: 'Invitación Exclusiva: Conoce Arienzo Living',
@@ -518,7 +532,6 @@ export default function CRMPage() {
     } catch (e: any) { alert(`Error: ${e.message}`); } finally { setGuardandoNota(false); }
   };
 
-  // 🔥 ACTUALIZACIÓN: Registro Automático de WhatsApp
   const abrirWhatsApp = async (cliente: Cliente, tipoMensaje: 'bienvenida' | 'campana' | 'libre') => {
     if (!cliente.telefono) { alert("Sin número."); return; }
     let num = cliente.telefono.replace(/\D/g, '');
@@ -582,7 +595,13 @@ export default function CRMPage() {
   const generarCodigoHTMLCorreo = () => {
     const plantillaConfig = PLANTILLAS_CORREO.find(p => p.id === plantillaActivaId) || PLANTILLAS_CORREO[0];
     const nombreCliente = clienteSeleccionado?.nombres || 'Cliente';
-    const cuerpoFormateado = textoIntroPersonalizado.replace(/{nombre}/g, nombreCliente).replace(/\n/g, '<br/>');
+    
+    // Soporte para variables y para transformar **negritas** a <strong>negritas</strong>
+    const cuerpoFormateado = textoIntroPersonalizado
+      .replace(/{nombre}/g, nombreCliente)
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n/g, '<br/>');
+      
     const urlPortada = IMAGENES_GALERIA[imagenPortada] || IMAGENES_GALERIA.fachada;
     
     const enlaceWhatsApp = `https://wa.me/593979469472?text=${encodeURIComponent(`Hola Saúl, recibí tu correo sobre Arienzo y me gustaría más información.`)}`;
@@ -674,7 +693,6 @@ export default function CRMPage() {
     return htmlCompleto;
   };
 
-  // 🔥 ACTUALIZACIÓN: Registro Automático de Correo
   const enviarCorreoFinal = async () => {
     if (!clienteSeleccionado) return;
     
@@ -1105,7 +1123,6 @@ export default function CRMPage() {
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
               
-              {/* NUEVA TARJETA: PROCEDENCIA E INTELIGENCIA DEL LEAD */}
               <div className="bg-white p-4 rounded-xl border border-neutral-200/60 shadow-sm relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-1.5 h-full bg-[#415364]"></div>
                 <p className="text-[10px] font-bold text-[#415364] uppercase tracking-widest border-b border-neutral-100 pb-2 mb-3 flex items-center gap-1.5">
@@ -1204,7 +1221,12 @@ export default function CRMPage() {
                 </div>
               </div>
 
-              <div className="pb-6">
+              {/* ACCIONES DE COTIZADOR */}
+              <div className="pb-6 space-y-3">
+                <button onClick={() => window.location.href = `/cotizador?clienteId=${clienteSeleccionado.id}`} className="w-full py-3.5 bg-[#ea0029] text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-[#c90022] transition-colors shadow-md flex items-center justify-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                  Ir a Cotizar Unidad
+                </button>
                 <button onClick={() => verHistorialCotizaciones(clienteSeleccionado)} className="w-full py-3.5 bg-white border border-[#415364]/20 text-[#415364] rounded-xl text-[11px] font-bold uppercase tracking-widest hover:border-[#ea0029] hover:text-[#ea0029] transition-colors shadow-sm flex items-center justify-center gap-2">
                   Ver Cotizaciones Generadas
                 </button>
@@ -1388,7 +1410,7 @@ export default function CRMPage() {
                       <p className="text-[10px] text-neutral-500 font-medium mt-0.5">Fecha: {new Date(cot.created_at).toLocaleDateString('es-EC')}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-[#ea0029] text-sm">\${Number(cot.precio_total).toLocaleString()}</p>
+                      <p className="font-bold text-[#ea0029] text-sm">${Number(cot.precio_total).toLocaleString()}</p>
                       <span className="inline-block px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-green-50 text-green-700 mt-1">{cot.estado}</span>
                     </div>
                   </div>
@@ -1479,8 +1501,8 @@ export default function CRMPage() {
                   <div className="space-y-3 pt-2 border-t border-neutral-100">
                     <label className="block text-[10px] font-bold text-[#ea0029] uppercase tracking-widest">5. Edición de Textos</label>
                     <div>
-                      <span className="text-[9px] font-bold text-neutral-500 uppercase">Párrafo Principal:</span>
-                      <textarea rows={3} value={textoIntroPersonalizado} onChange={(e)=>setTextoIntroPersonalizado(e.target.value)} className="w-full mt-1 bg-[#dce3eb]/30 border border-neutral-200 rounded-lg p-2 text-xs font-medium text-[#415364] outline-none focus:border-[#ea0029] resize-none" />
+                      <span className="text-[9px] font-bold text-neutral-500 uppercase">Párrafo Principal (Soporta **negritas**):</span>
+                      <textarea rows={5} value={textoIntroPersonalizado} onChange={(e)=>setTextoIntroPersonalizado(e.target.value)} className="w-full mt-1 bg-[#dce3eb]/30 border border-neutral-200 rounded-lg p-2 text-xs font-medium text-[#415364] outline-none focus:border-[#ea0029] resize-none" />
                     </div>
                     {plantillaActivaId === 'seguimiento_premium' && (
                       <>
