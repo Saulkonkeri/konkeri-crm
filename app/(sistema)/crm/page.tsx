@@ -80,6 +80,13 @@ const PLANTILLAS_CORREO = [
     asunto: 'Últimos días de precios de lanzamiento en Arienzo',
     cuerpo: 'Hola {nombre},\n\nTe escribo para avisarte que estamos cerrando la etapa de precios de lanzamiento.\n\nEl proyecto ha tenido una excelente acogida y las unidades se están moviendo muy rápido. Si estás buscando asegurar tu inversión con la máxima rentabilidad y plusvalía, este es el momento exacto para bloquear tu unidad con solo $2,500 antes del incremento de precios.',
     layout: 'simple'
+  },
+  {
+    id: 'solicitar_numero',
+    nombre: '📱 Solicitar Número de WhatsApp',
+    asunto: 'Solicitud de Información - Arienzo Living (Contacto)',
+    cuerpo: 'Hola {nombre},\n\nMuchas gracias por tu interés en Arienzo Living.\n\nHe intentado comunicarme contigo pero parece que el número de teléfono que registraste tiene un pequeño error o no cuenta con WhatsApp activo.\n\nPara poder enviarte el brochure completo, los planos detallados y la lista de precios de lanzamiento de manera ágil, ¿podrías responder a este correo compartiéndome tu número actual, o hacer clic en el botón de abajo para escribirme directamente a mi WhatsApp?\n\nQuedo muy atento para enviarte toda la información.',
+    layout: 'simple'
   }
 ];
 
@@ -653,6 +660,7 @@ export default function CRMPage() {
 
     const htmlBotonWhatsApp = `<tr><td align="center" style="background-color: #FDFCFB; padding: 40px 20px; border-top: 1px solid #EAE3DC; border-bottom: 1px solid #EAE3DC;"><h2 style="margin: 0 0 15px 0; color: ${colorAcento}; font-size: 24px;">Asegura tu unidad en Planos</h2><p style="margin: 0 0 25px 0; color: #415364; font-size: 16px; font-weight: bold;">Reservas abiertas con solo $2,500 USD</p><a href="${enlaceWhatsApp}" style="background-color: #25D366; color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 30px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: inline-block;">Hablar por WhatsApp</a></td></tr>`;
     const htmlBotonZoom = `<tr><td align="center" style="background-color: #FDFCFB; padding: 40px 20px; border-top: 1px solid #EAE3DC; border-bottom: 1px solid #EAE3DC;"><h2 style="margin: 0 0 15px 0; color: #21242E; font-size: 22px;">Conoce los planos y disponibilidad</h2><p style="margin: 0 0 25px 0; color: #415364; font-size: 15px;">Selecciona la fecha y hora que mejor se adapte a tu agenda.</p><a href="${enlaceCalendly}" style="background-color: ${colorBoton}; color: ${colorTextoBoton}; text-decoration: none; padding: 15px 30px; border-radius: 8px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: inline-block;">🗓️ Agendar Videollamada</a></td></tr>`;
+    const htmlBotonWhatsAppContacto = `<tr><td align="center" style="background-color: #FDFCFB; padding: 40px 20px; border-top: 1px solid #EAE3DC; border-bottom: 1px solid #EAE3DC;"><h2 style="margin: 0 0 15px 0; color: ${colorAcento}; font-size: 22px;">Escríbenos directamente</h2><p style="margin: 0 0 25px 0; color: #415364; font-size: 15px;">También puedes hacer clic en el botón para abrir el chat con nosotros.</p><a href="${enlaceWhatsApp}" style="background-color: #25D366; color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 30px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: inline-block;">Hablar por WhatsApp</a></td></tr>`;
     
     const htmlFirma = incluirFirma ? `
                 <tr>
@@ -686,6 +694,8 @@ export default function CRMPage() {
       htmlCompleto = htmlCabecera + htmlPilares + htmlBotonWhatsApp + htmlFirma + htmlFooter;
     } else if (plantillaActivaId === 'invitacion_zoom') {
       htmlCompleto = htmlCabecera + htmlBotonZoom + htmlFirma + htmlFooter;
+    } else if (plantillaActivaId === 'solicitar_numero') {
+      htmlCompleto = htmlCabecera + htmlBotonWhatsAppContacto + htmlFirma + htmlFooter;
     } else {
       htmlCompleto = htmlCabecera + htmlBotonWhatsApp + htmlFirma + htmlFooter;
     }
