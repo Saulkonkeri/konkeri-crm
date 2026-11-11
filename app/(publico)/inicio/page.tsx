@@ -367,22 +367,29 @@ export default function ArienzoLandingPremium() {
             <span className="font-light italic text-[#F9F7F5]">una buena ubicación.</span>
           </h1>
           
-          {/* EL PRECIO COMO TEXTO RESALTADO EN EL HERO */}
-          <div className="mb-10 md:mb-12 space-y-2">
-            <p className="text-sm md:text-[17px] text-neutral-100 font-light max-w-2xl mx-auto leading-relaxed drop-shadow-md">
-              Colección exclusiva de solo <strong className="text-white font-semibold">22 departamentos premium</strong> de 1, 2 y 3 dormitorios.
+          {/* TEXTOS SECUNDARIOS Y PRECIO ULTRA LIMPIO */}
+          <div className="mb-10 md:mb-12 flex flex-col items-center gap-3">
+            <p className="text-sm md:text-[16px] text-white/90 font-medium max-w-2xl mx-auto leading-relaxed drop-shadow-md">
+              Colección exclusiva de solo <strong className="text-white font-bold">22 departamentos premium</strong> de 1, 2 y 3 dormitorios.
             </p>
-            <p className="text-base md:text-lg text-neutral-200 font-light drop-shadow-md">
-              Oportunidades de inversión desde <strong className="text-[#D1C292] text-xl md:text-2xl font-bold tracking-wide drop-shadow-[0_0_10px_rgba(209,194,146,0.4)]">$129.000</strong>
+            <p className="text-2xl md:text-3xl text-[#D1C292] font-bold tracking-wide drop-shadow-[0_0_15px_rgba(209,194,146,0.4)]">
+              Desde $129.000
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4">
+            <button 
+              onClick={abrirCalendly}
+              className="group w-full sm:w-auto bg-[#964B36] text-white px-6 py-3.5 md:px-8 md:py-4 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] transition-all duration-300 shadow-[0_4px_20px_rgba(150,75,54,0.6)] hover:shadow-[0_8px_30px_rgba(150,75,54,0.8)] hover:-translate-y-1 flex items-center justify-center gap-2"
+            >
+              <svg className="w-3.5 h-3.5 opacity-90 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+              Agendar Presentación
+            </button>
             <button 
               onClick={() => abrirModalVIP()}
-              className="w-full sm:w-auto bg-[#964B36] text-white px-8 py-4 rounded-full text-[11px] font-bold uppercase tracking-[0.2em] transition-all duration-300 shadow-[0_4px_20px_rgba(150,75,54,0.6)] hover:shadow-[0_8px_30px_rgba(150,75,54,0.8)] hover:-translate-y-1 flex items-center justify-center gap-2"
+              className="w-full sm:w-auto bg-black/30 backdrop-blur-md border border-white/50 text-white px-6 py-3.5 md:px-8 md:py-4 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-white hover:text-[#964B36] transition-all duration-300 hover:-translate-y-1 shadow-[0_4px_20px_rgba(0,0,0,0.3)]"
             >
-              Ver Precios y Planos
+              Solicitar Precios
             </button>
           </div>
         </div>
@@ -412,7 +419,7 @@ export default function ArienzoLandingPremium() {
               <h3 className="text-3xl md:text-4xl font-medium text-neutral-900 leading-tight mb-6 md:mb-8 tracking-tight">
                 La mejor zona <br className="hidden md:block"/> de la ciudad.
               </h3>
-              <p className="text-sm md:text-base text-neutral-600 font-light leading-relaxed mb-6">
+              <p className="text-sm md:text-base text-neutral-500 font-medium leading-relaxed mb-6">
                 Vivir en Arienzo es disfrutar de una ubicación estratégica. A pasos de La Quadra y del nuevo Riocentro Plaza Barbasquillo, con acceso inmediato a hoteles, restaurantes y las principales vías de conexión.
               </p>
             </div>
@@ -430,7 +437,7 @@ export default function ArienzoLandingPremium() {
                   </div>
                   <div className="flex flex-col">
                     <span className="text-[9px] md:text-[10px] font-bold tracking-[0.25em] text-[#964B36] uppercase">Ubicación Privilegiada</span>
-                    <span className="text-[12px] md:text-[13px] font-semibold text-neutral-900 tracking-tight">Alta Plusvalía Garantizada</span>
+                    <span className="text-[12px] md:text-[13px] font-medium text-neutral-900 tracking-tight">Alta Plusvalía Garantizada</span>
                   </div>
                 </div>
 
@@ -480,7 +487,7 @@ export default function ArienzoLandingPremium() {
             <h3 className="text-3xl md:text-4xl font-medium text-neutral-900 tracking-tight mb-6">
               Espacios pensados para vivir.
             </h3>
-            <p className="max-w-2xl mx-auto text-sm md:text-base text-neutral-500 font-light leading-relaxed">
+            <p className="max-w-2xl mx-auto text-sm md:text-base text-neutral-500 font-medium leading-relaxed">
               El rooftop reúne las áreas comunes en un solo nivel, organizadas para una circulación fluida y funcionamiento eficiente, elevando tu experiencia diaria.
             </p>
           </div>
@@ -499,7 +506,7 @@ export default function ArienzoLandingPremium() {
               <div className="p-8">
                 <div className="w-8 h-[2px] bg-[#D1C292] mb-4 transition-all duration-300 group-hover:w-16"></div>
                 <h4 className="text-xl font-medium text-neutral-900 mb-3">Piscina & Rooftop</h4>
-                <p className="text-sm text-neutral-500 font-light leading-relaxed">
+                <p className="text-sm text-neutral-500 font-medium leading-relaxed">
                   Concebida desde la experiencia de uso. Un ambiente donde el bienestar, el diseño y la comodidad encuentran el equilibrio perfecto, incluyendo un área de BBQ.
                 </p>
               </div>
@@ -518,7 +525,7 @@ export default function ArienzoLandingPremium() {
               <div className="p-8">
                 <div className="w-8 h-[2px] bg-[#D1C292] mb-4 transition-all duration-300 group-hover:w-16"></div>
                 <h4 className="text-xl font-medium text-neutral-900 mb-3">Social Living & Gym</h4>
-                <p className="text-sm text-neutral-500 font-light leading-relaxed">
+                <p className="text-sm text-neutral-500 font-medium leading-relaxed">
                   Un ambiente flexible que integra áreas de descanso, coworking y un gimnasio panorámico. Pensado para entrenar o trabajar de forma remota.
                 </p>
               </div>
@@ -537,7 +544,7 @@ export default function ArienzoLandingPremium() {
               <div className="p-8">
                 <div className="w-8 h-[2px] bg-[#D1C292] mb-4 transition-all duration-300 group-hover:w-16"></div>
                 <h4 className="text-xl font-medium text-neutral-900 mb-3">Área Comercial</h4>
-                <p className="text-sm text-neutral-500 font-light leading-relaxed">
+                <p className="text-sm text-neutral-500 font-medium leading-relaxed">
                   Un retail de planta baja curado para complementar tu experiencia. Marcas seleccionadas por su calidad, conveniencia y afinidad con el proyecto.
                 </p>
               </div>
@@ -573,9 +580,8 @@ export default function ArienzoLandingPremium() {
               Tipologías <span className="font-light italic text-neutral-400">de Autor</span>
             </h2>
             
-            {/* EL PRECIO SE ELIMINÓ DE AQUÍ */}
-            <p className="max-w-2xl mx-auto text-sm md:text-lg text-neutral-500 font-light leading-relaxed">
-              Explore nuestra exclusiva colección de <strong className="text-neutral-800 font-medium">departamentos de 1, 2 y 3 dormitorios</strong>. Seleccione el modelo ideal para visualizar sus detalles y cotizar su inversión en tiempo real.
+            <p className="max-w-2xl mx-auto text-sm md:text-[15px] text-neutral-500 font-medium leading-relaxed">
+              Explore nuestra exclusiva colección de <strong className="text-neutral-800 font-bold">departamentos de 1, 2 y 3 dormitorios</strong>. Seleccione el modelo ideal para visualizar sus detalles y cotizar su inversión en tiempo real.
             </p>
           </div>
 
@@ -819,8 +825,8 @@ export default function ArienzoLandingPremium() {
           <span className="text-[11px] font-bold tracking-[0.25em] text-[#964B36] uppercase mb-4 block">Inversión Temprana</span>
           <h3 className="text-3xl md:text-4xl font-medium text-neutral-900 mb-6 tracking-tight">Visión de Inversión</h3>
           
-          <p className="text-sm md:text-base text-neutral-600 font-medium leading-relaxed mb-8">
-            Arienzo representa una entrada estratégica en un sector premium consolidado. Ingresar en la etapa de <strong className="font-semibold text-[#964B36]">lanzamiento en planos</strong> permite capturar la mayor plusvalía del proyecto. Un formato íntimo que ofrece exclusividad y flexibilidad, ideal tanto para residencia principal como para modelo de renta.
+          <p className="text-sm md:text-base text-neutral-500 font-medium leading-relaxed mb-8">
+            Arienzo representa una entrada estratégica en un sector premium consolidado. Ingresar en la etapa de <strong className="font-bold text-[#964B36]">lanzamiento en planos</strong> permite capturar la mayor plusvalía del proyecto. Un formato íntimo que ofrece exclusividad y flexibilidad, ideal tanto para residencia principal como para modelo de renta.
           </p>
 
           <button 
@@ -874,10 +880,8 @@ export default function ArienzoLandingPremium() {
           <h2 className="text-[11px] font-bold tracking-[0.3em] text-[#964B36] uppercase mb-4">Colección Limitada</h2>
           <h3 className="text-3xl md:text-4xl font-medium tracking-tight text-neutral-900 mb-4">Sé uno de los pocos privilegiados.</h3>
           
-          <div className="text-sm md:text-lg text-neutral-500 font-medium mb-10 leading-relaxed max-w-2xl">
-            <p className="mb-3">El privilegio de pertenecer está limitado a <strong className="font-bold text-neutral-800">solo 22 departamentos</strong>.</p>
-            
-            {/* EL PRECIO TAMBIÉN SE ELIMINÓ DE AQUÍ */}
+          <div className="text-sm md:text-base text-neutral-500 font-medium mb-10 leading-relaxed max-w-2xl">
+            <p className="mb-2">El privilegio de pertenecer está limitado a <strong className="font-bold text-neutral-800">solo 22 departamentos</strong>.</p>
             <p>Oportunidades en etapa de pre-lanzamiento. Solicita tu registro para descubrir tipologías y disponibilidad en tiempo real.</p>
           </div>
           
@@ -1007,7 +1011,7 @@ export default function ArienzoLandingPremium() {
 
       {/* MODAL DESCARGA BROCHURE */}
       {mostrarModalBrochure && (
-        <div className="fixed inset-0 bg-[#21242E]/95 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
+        <div className="fixed inset-0 bg-[#21242E]/95 z-[60] flex items-center justify-center p-4 backdrop-blur-md animate-in fade-in">
           <div className="bg-white w-full max-w-md p-10 rounded-2xl relative shadow-2xl animate-in zoom-in-95">
             <button 
               onClick={() => { setMostrarModalBrochure(false); setBrochureDescargado(false); }}
