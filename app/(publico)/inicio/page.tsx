@@ -218,9 +218,9 @@ export default function ArienzoLandingPremium() {
         nombres: formData.nombres,
         telefono: formData.telefono,
         email: correoLimpio,
-        ciudad: formData.ciudad,
+        ciudad_residencia: formData.ciudad,
         tipo: 'prospecto',
-        origen: origenDinamico,
+        origen_captacion: origenDinamico,
         campana: campanaDinamica,
         estado: 'Interesado',
         temperatura: '☀️ Tibio',
@@ -229,6 +229,7 @@ export default function ArienzoLandingPremium() {
       }], { onConflict: 'email' }); 
 
       if (errorUpsert) {
+        console.error("Error al insertar Lead VIP:", errorUpsert);
         alert("Hubo un problema al registrar tus datos en la base. Inténtalo de nuevo.");
         setCargando(false);
         return;
@@ -243,6 +244,7 @@ export default function ArienzoLandingPremium() {
 
       setSolicitudEnviada(true);
     } catch (error) {
+      console.error(error);
       alert("Ocurrió un error inesperado.");
     } finally {
       setCargando(false);
@@ -265,9 +267,9 @@ export default function ArienzoLandingPremium() {
         nombres: formBrochure.nombres,
         telefono: formBrochure.telefono,
         email: correoLimpio,
-        ciudad: formBrochure.ciudad,
+        ciudad_residencia: formBrochure.ciudad,
         tipo: 'prospecto',
-        origen: 'Landing - Descarga Brochure',
+        origen_captacion: 'Landing - Descarga Brochure',
         campana: 'Tráfico Web General',
         estado: 'Interesado',
         temperatura: '☀️ Tibio',
@@ -275,6 +277,7 @@ export default function ArienzoLandingPremium() {
       }], { onConflict: 'email' });
 
       if (errorDescarga) {
+        console.error("Error al descargar brochure:", errorDescarga);
         alert("Hubo un problema al procesar tu descarga. Inténtalo de nuevo.");
         setCargando(false);
         return;
@@ -297,6 +300,7 @@ export default function ArienzoLandingPremium() {
       }, 4000);
       
     } catch (error) {
+      console.error(error);
       alert("Ocurrió un error inesperado.");
     } finally {
       setCargando(false);
@@ -354,7 +358,7 @@ export default function ArienzoLandingPremium() {
         <div className="relative z-10 text-center px-6 w-full max-w-4xl mx-auto pt-20">
           <div className="inline-block px-5 py-2 border border-[#D1C292]/60 backdrop-blur-md rounded-full mb-6 md:mb-8 shadow-[0_0_15px_rgba(209,194,146,0.3)] bg-black/10">
             <span className="text-[11px] md:text-[13px] font-bold tracking-[0.35em] text-[#D1C292] uppercase drop-shadow-md">
-              Barbasquillo, Manta
+              Manta <span className="opacity-60 font-light mx-1">|</span> Barbasquillo
             </span>
           </div>
           <h1 className="text-[2rem] leading-tight md:text-5xl lg:text-[4rem] font-medium text-white md:leading-tight mb-6 tracking-tight drop-shadow-[0_5px_15px_rgba(0,0,0,0.6)] max-w-3xl mx-auto">
@@ -363,12 +367,9 @@ export default function ArienzoLandingPremium() {
           </h1>
           
           <div className="mb-8 md:mb-10 space-y-3">
-            <p className="text-sm md:text-xl text-neutral-100 font-semibold max-w-2xl mx-auto leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-              Colección exclusiva de solo <strong className="text-white">22 departamentos premium</strong> de 1, 2 y 3 dormitorios.
+            <p className="text-sm md:text-xl text-neutral-100 font-medium max-w-2xl mx-auto leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+              Colección exclusiva de solo <strong className="text-white font-bold">22 departamentos premium</strong> de 1, 2 y 3 dormitorios, con opciones desde <strong className="text-[#D1C292] font-bold">$129.500</strong>.
             </p>
-            <div className="inline-block bg-white/10 backdrop-blur-md border border-white/20 text-white px-5 py-2 rounded-full text-xs md:text-sm font-bold tracking-widest uppercase shadow-sm">
-              Inversión inicial desde <span className="text-[#D1C292]">$129.500</span>
-            </div>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4">
@@ -548,7 +549,7 @@ export default function ArienzoLandingPremium() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 4.5. ESPACIOS DE AUTOR (CON ETIQUETA SOLD OUT Y COMPORTAMIENTO ADAPTADO) */}
+      {/* 4.5. ESPACIOS DE AUTOR */}
       {/* ========================================================================= */}
       <section className="py-24 md:py-32 px-4 md:px-8 bg-[#FDFCFB] border-y border-[#EAE3DC] font-sans relative overflow-hidden">
         
@@ -574,7 +575,7 @@ export default function ArienzoLandingPremium() {
               Tipologías <span className="font-light italic text-neutral-400">de Autor</span>
             </h2>
             <p className="max-w-2xl mx-auto text-sm md:text-lg text-neutral-500 font-medium leading-relaxed">
-              Explore nuestra colección limitada. Oportunidades en etapa de pre-lanzamiento <strong className="text-[#964B36] font-semibold">desde $129.500</strong>. Seleccione el modelo ideal para cotizar su inversión en tiempo real.
+              Explore nuestra colección limitada. Oportunidades en etapa de pre-lanzamiento <strong className="text-[#964B36] font-bold">desde $129.500</strong>. Seleccione el modelo ideal para cotizar su inversión en tiempo real.
             </p>
           </div>
 
@@ -875,7 +876,7 @@ export default function ArienzoLandingPremium() {
           
           <div className="text-sm md:text-lg text-neutral-500 font-medium mb-10 leading-relaxed max-w-2xl">
             <p className="mb-3">El privilegio de pertenecer está limitado a <strong className="font-bold text-neutral-800">solo 22 departamentos</strong>.</p>
-            <p>Aprovecha la etapa de pre-lanzamiento con opciones <strong className="font-bold text-[#964B36]">desde $129.500</strong>. Solicita tu registro para descubrir tipologías y disponibilidad en tiempo real.</p>
+            <p>Oportunidades en etapa de pre-lanzamiento <strong className="font-bold text-[#964B36]">desde $129.500</strong>. Solicita tu registro para descubrir tipologías y disponibilidad en tiempo real.</p>
           </div>
           
           <div className="flex flex-col sm:flex-row justify-center gap-4 w-full sm:w-auto">
@@ -883,6 +884,7 @@ export default function ArienzoLandingPremium() {
               onClick={abrirCalendly}
               className="group w-full sm:w-auto bg-[#964B36] text-white px-6 py-3.5 md:px-8 md:py-4 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] transition-all duration-300 shadow-[0_4px_20px_rgba(150,75,54,0.4)] hover:shadow-[0_8px_30px_rgba(150,75,54,0.6)] hover:-translate-y-1 flex items-center justify-center gap-2"
             >
+              <svg className="w-3.5 h-3.5 opacity-90 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
               Agendar Presentación
             </button>
             <button 
@@ -901,7 +903,7 @@ export default function ArienzoLandingPremium() {
           <div className="bg-white w-full max-w-md p-10 rounded-2xl relative shadow-2xl animate-in zoom-in-95">
             <button 
               onClick={() => { setMostrarModalVip(false); setSolicitudEnviada(false); setFormData({...formData, modeloCotizado: ''}); }}
-              className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-900 font-bold w-8 h-8 flex items-center justify-center bg-neutral-100 rounded-full transition-colors"
+              className="absolute top-4 right-4 text-neutral-400 hover:text-[#964B36] font-bold w-8 h-8 flex items-center justify-center bg-neutral-100 rounded-full transition-colors"
             >
               &times;
             </button>
@@ -974,7 +976,7 @@ export default function ArienzoLandingPremium() {
                   <button 
                     type="submit" 
                     disabled={cargando}
-                    className="w-full bg-[#964B36] text-white py-4 rounded-xl text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-[#7d3e2c] transition-all mt-4 shadow-lg disabled:opacity-70 flex justify-center items-center"
+                    className="w-full bg-[#964B36] text-white py-4 rounded-xl text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-[#7d3e2c] transition-all mt-4 shadow-lg disabled:opacity-70 flex justify-center items-center glow-button"
                   >
                     {cargando ? 'Enviando...' : (formData.modeloCotizado ? 'Enviar Solicitud' : 'Registrarse')}
                   </button>
@@ -1003,11 +1005,11 @@ export default function ArienzoLandingPremium() {
 
       {/* MODAL DESCARGA BROCHURE */}
       {mostrarModalBrochure && (
-        <div className="fixed inset-0 bg-[#21242E]/95 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
+        <div className="fixed inset-0 bg-[#21242E]/95 z-[60] flex items-center justify-center p-4 backdrop-blur-md animate-in fade-in">
           <div className="bg-white w-full max-w-md p-10 rounded-2xl relative shadow-2xl animate-in zoom-in-95">
             <button 
               onClick={() => { setMostrarModalBrochure(false); setBrochureDescargado(false); }}
-              className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-900 font-bold w-8 h-8 flex items-center justify-center bg-neutral-100 rounded-full transition-colors"
+              className="absolute top-4 right-4 text-neutral-400 hover:text-[#964B36] font-bold w-8 h-8 flex items-center justify-center bg-neutral-100 rounded-full transition-colors"
             >
               &times;
             </button>
