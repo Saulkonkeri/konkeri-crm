@@ -2,19 +2,19 @@ import type { Metadata } from 'next';
 import Script from 'next/script';
 import "../../globals.css";
 
-// 1. SEO y OPEN GRAPH exclusivo para la Landing Page
+// 1. SEO y OPEN GRAPH Premium para Arienzo Living
 export const metadata: Metadata = {
-  title: 'Arienzo Living | Departamentos Exclusivos en Manta',
-  description: 'Colección exclusiva de solo 22 departamentos de 1, 2 y 3 dormitorios en Barbasquillo, Manta. Diseño de autor, alta plusvalía e inversión estratégica en planos.',
-  keywords: 'Arienzo, departamentos Manta, Barbasquillo, inmobiliaria Manta, Konkeri, Diez Muller, inversión inmobiliaria Ecuador, bienes raíces lujo Manta',
+  title: 'Arienzo Living | Departamentos Premium en Manta',
+  description: 'Colección exclusiva de solo 22 departamentos de 1, 2 y 3 dormitorios en Barbasquillo, Manta. Diseño de autor por Diez + Muller. Inversión desde $129.000.',
+  keywords: ['Arienzo Living', 'Departamentos en Manta', 'Bienes raíces Manta', 'Barbasquillo', 'Inmobiliaria Manta', 'Konkeri', 'Departamentos de lujo Ecuador', 'Diez Muller', 'Inversión inmobiliaria'],
   openGraph: {
     title: 'Arienzo Living | Lanzamiento en Planos',
-    description: 'Sé uno de los 22 propietarios. Departamentos exclusivos en la zona de mayor plusvalía de Manta (Barbasquillo).',
+    description: 'Sé uno de los 22 propietarios. Departamentos exclusivos en la zona de mayor plusvalía de Manta (Barbasquillo). Opciones desde $129.000.',
     url: 'https://arienzoliving.com',
     siteName: 'Arienzo Living',
     images: [
       {
-        url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Fronta.jpg',
+        url: 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Frontal.jpg',
         width: 1200,
         height: 630,
         alt: 'Fachada Arienzo Living Manta',
