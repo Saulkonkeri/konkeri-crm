@@ -367,9 +367,9 @@ export default function ArienzoLandingPremium() {
             <span className="font-light italic text-[#F9F7F5]">una buena ubicación.</span>
           </h1>
           
-          {/* TEXTOS SECUNDARIOS Y PRECIO ULTRA LIMPIO */}
+          {/* TEXTOS SECUNDARIOS Y PRECIO ULTRA LIMPIO Y LEÍBLE */}
           <div className="mb-10 md:mb-12 flex flex-col items-center gap-3">
-            <p className="text-sm md:text-[16px] text-white/90 font-medium max-w-2xl mx-auto leading-relaxed drop-shadow-md">
+            <p className="text-base md:text-lg text-white/90 font-medium max-w-2xl mx-auto leading-relaxed drop-shadow-md">
               Colección exclusiva de solo <strong className="text-white font-bold">22 departamentos premium</strong> de 1, 2 y 3 dormitorios.
             </p>
             <p className="text-2xl md:text-3xl text-[#D1C292] font-bold tracking-wide drop-shadow-[0_0_15px_rgba(209,194,146,0.4)]">
@@ -419,7 +419,7 @@ export default function ArienzoLandingPremium() {
               <h3 className="text-3xl md:text-4xl font-medium text-neutral-900 leading-tight mb-6 md:mb-8 tracking-tight">
                 La mejor zona <br className="hidden md:block"/> de la ciudad.
               </h3>
-              <p className="text-sm md:text-base text-neutral-500 font-medium leading-relaxed mb-6">
+              <p className="text-[15px] md:text-[17px] text-neutral-600 font-medium leading-relaxed mb-6">
                 Vivir en Arienzo es disfrutar de una ubicación estratégica. A pasos de La Quadra y del nuevo Riocentro Plaza Barbasquillo, con acceso inmediato a hoteles, restaurantes y las principales vías de conexión.
               </p>
             </div>
@@ -437,7 +437,7 @@ export default function ArienzoLandingPremium() {
                   </div>
                   <div className="flex flex-col">
                     <span className="text-[9px] md:text-[10px] font-bold tracking-[0.25em] text-[#964B36] uppercase">Ubicación Privilegiada</span>
-                    <span className="text-[12px] md:text-[13px] font-medium text-neutral-900 tracking-tight">Alta Plusvalía Garantizada</span>
+                    <span className="text-[12px] md:text-[13px] font-semibold text-neutral-900 tracking-tight">Alta Plusvalía Garantizada</span>
                   </div>
                 </div>
 
@@ -487,7 +487,7 @@ export default function ArienzoLandingPremium() {
             <h3 className="text-3xl md:text-4xl font-medium text-neutral-900 tracking-tight mb-6">
               Espacios pensados para vivir.
             </h3>
-            <p className="max-w-2xl mx-auto text-sm md:text-base text-neutral-500 font-medium leading-relaxed">
+            <p className="max-w-2xl mx-auto text-[15px] md:text-[17px] text-neutral-500 font-medium leading-relaxed">
               El rooftop reúne las áreas comunes en un solo nivel, organizadas para una circulación fluida y funcionamiento eficiente, elevando tu experiencia diaria.
             </p>
           </div>
@@ -506,7 +506,7 @@ export default function ArienzoLandingPremium() {
               <div className="p-8">
                 <div className="w-8 h-[2px] bg-[#D1C292] mb-4 transition-all duration-300 group-hover:w-16"></div>
                 <h4 className="text-xl font-medium text-neutral-900 mb-3">Piscina & Rooftop</h4>
-                <p className="text-sm text-neutral-500 font-medium leading-relaxed">
+                <p className="text-[14px] md:text-[15px] text-neutral-500 font-medium leading-relaxed">
                   Concebida desde la experiencia de uso. Un ambiente donde el bienestar, el diseño y la comodidad encuentran el equilibrio perfecto, incluyendo un área de BBQ.
                 </p>
               </div>
@@ -525,7 +525,7 @@ export default function ArienzoLandingPremium() {
               <div className="p-8">
                 <div className="w-8 h-[2px] bg-[#D1C292] mb-4 transition-all duration-300 group-hover:w-16"></div>
                 <h4 className="text-xl font-medium text-neutral-900 mb-3">Social Living & Gym</h4>
-                <p className="text-sm text-neutral-500 font-medium leading-relaxed">
+                <p className="text-[14px] md:text-[15px] text-neutral-500 font-medium leading-relaxed">
                   Un ambiente flexible que integra áreas de descanso, coworking y un gimnasio panorámico. Pensado para entrenar o trabajar de forma remota.
                 </p>
               </div>
@@ -544,7 +544,7 @@ export default function ArienzoLandingPremium() {
               <div className="p-8">
                 <div className="w-8 h-[2px] bg-[#D1C292] mb-4 transition-all duration-300 group-hover:w-16"></div>
                 <h4 className="text-xl font-medium text-neutral-900 mb-3">Área Comercial</h4>
-                <p className="text-sm text-neutral-500 font-medium leading-relaxed">
+                <p className="text-[14px] md:text-[15px] text-neutral-500 font-medium leading-relaxed">
                   Un retail de planta baja curado para complementar tu experiencia. Marcas seleccionadas por su calidad, conveniencia y afinidad con el proyecto.
                 </p>
               </div>
@@ -580,7 +580,7 @@ export default function ArienzoLandingPremium() {
               Tipologías <span className="font-light italic text-neutral-400">de Autor</span>
             </h2>
             
-            <p className="max-w-2xl mx-auto text-sm md:text-[15px] text-neutral-500 font-medium leading-relaxed">
+            <p className="max-w-2xl mx-auto text-[15px] md:text-lg text-neutral-500 font-medium leading-relaxed">
               Explore nuestra exclusiva colección de <strong className="text-neutral-800 font-bold">departamentos de 1, 2 y 3 dormitorios</strong>. Seleccione el modelo ideal para visualizar sus detalles y cotizar su inversión en tiempo real.
             </p>
           </div>
@@ -663,7 +663,7 @@ export default function ArienzoLandingPremium() {
                     <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 stroke-current text-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18M3 16h18M5 12V8a2 2 0 012-2h10a2 2 0 012 2v4M7 16v2m10-2v2"></path>
                     </svg>
-                    <span className="text-[10px] sm:text-xs md:text-sm font-medium leading-tight">{modeloActivo.dorms} Dorm.</span>
+                    <span className="text-[10px] sm:text-[13px] md:text-[15px] font-medium leading-tight">{modeloActivo.dorms} Dorm.</span>
                   </div>
                   
                   <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-center">
@@ -671,14 +671,14 @@ export default function ArienzoLandingPremium() {
                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v6m-4 0h8m-6 4v1m4-1v1m-2 2v1"></path>
                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 2a4 4 0 00-4 4"></path>
                     </svg>
-                    <span className="text-[10px] sm:text-xs md:text-sm font-medium leading-tight">{modeloActivo.banos}</span>
+                    <span className="text-[10px] sm:text-[13px] md:text-[15px] font-medium leading-tight">{modeloActivo.banos}</span>
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-center">
                     <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 stroke-current text-[#964B36]" fill="none" viewBox="0 0 24 24" strokeWidth="1.2">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4 21v-4a2 2 0 012-2h12a2 2 0 012 2v4M4 15V8a2 2 0 012-2h12a2 2 0 012 2v7M8 15v6M16 15v6"></path>
                     </svg>
-                    <span className="text-[10px] sm:text-xs md:text-sm font-medium leading-tight">{modeloActivo.extras}</span>
+                    <span className="text-[10px] sm:text-[13px] md:text-[15px] font-medium leading-tight">{modeloActivo.extras}</span>
                   </div>
                   
                   {modeloActivo.lavanderia && (
@@ -688,7 +688,7 @@ export default function ArienzoLandingPremium() {
                         <circle cx="12" cy="13" r="4" strokeLinecap="round" strokeLinejoin="round"></circle>
                         <path d="M8 7h3" strokeLinecap="round" strokeLinejoin="round"></path>
                       </svg>
-                      <span className="text-[10px] sm:text-xs md:text-sm font-medium leading-tight">Lavandería</span>
+                      <span className="text-[10px] sm:text-[13px] md:text-[15px] font-medium leading-tight">Lavandería</span>
                     </div>
                   )}
 
@@ -775,7 +775,7 @@ export default function ArienzoLandingPremium() {
         </div>
       </section>
 
-      {/* LIGHTBOX GALERÍA (Click en pantalla para ZOOM OUT) */}
+      {/* LIGHTBOX GALERÍA */}
       {imagenIndex !== null && (
         <div 
           className="fixed inset-0 bg-[#21242E]/98 z-[70] flex items-center justify-center p-4 md:p-8 backdrop-blur-md animate-in fade-in cursor-zoom-out" 
@@ -796,7 +796,7 @@ export default function ArienzoLandingPremium() {
         </div>
       )}
 
-      {/* LIGHTBOX ZOOM PLANOS (Click en pantalla para ZOOM OUT) */}
+      {/* LIGHTBOX ZOOM PLANOS */}
       {planoZoom && (
         <div 
           className="fixed inset-0 bg-white/95 z-[80] flex items-center justify-center p-8 md:p-24 backdrop-blur-md animate-in fade-in cursor-zoom-out" 
@@ -825,7 +825,7 @@ export default function ArienzoLandingPremium() {
           <span className="text-[11px] font-bold tracking-[0.25em] text-[#964B36] uppercase mb-4 block">Inversión Temprana</span>
           <h3 className="text-3xl md:text-4xl font-medium text-neutral-900 mb-6 tracking-tight">Visión de Inversión</h3>
           
-          <p className="text-sm md:text-base text-neutral-500 font-medium leading-relaxed mb-8">
+          <p className="text-[15px] md:text-[17px] text-neutral-600 font-medium leading-relaxed mb-8">
             Arienzo representa una entrada estratégica en un sector premium consolidado. Ingresar en la etapa de <strong className="font-bold text-[#964B36]">lanzamiento en planos</strong> permite capturar la mayor plusvalía del proyecto. Un formato íntimo que ofrece exclusividad y flexibilidad, ideal tanto para residencia principal como para modelo de renta.
           </p>
 
@@ -850,21 +850,21 @@ export default function ArienzoLandingPremium() {
             <div className="md:px-8 text-center group">
               <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#D1C292] block mb-3">Diseño Arquitectónico</span>
               <h4 className="text-xl md:text-2xl font-medium text-white mb-5">DIEZ + MULLER</h4>
-              <p className="text-sm text-neutral-400 font-medium leading-relaxed">
+              <p className="text-[14px] md:text-[15px] text-neutral-400 font-medium leading-relaxed">
                 Estudio quiteño reconocido, considerado entre los más destacados del Ecuador por su trayectoria y la calidad de sus proyectos. Con una amplia experiencia en proyectos residenciales y corporativos, son los autores de Serene en Marina Blue, un proyecto que refleja su arquitectura contemporánea y atención al detalle.
               </p>
             </div>
             <div className="md:px-8 text-center group border-t border-white/10 md:border-t-0 pt-8 md:pt-0">
               <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#D1C292] block mb-3">Construcción</span>
               <h4 className="text-xl md:text-2xl font-medium text-white mb-5">CARRASCO SUAREZ</h4>
-              <p className="text-sm text-neutral-400 font-medium leading-relaxed">
+              <p className="text-[14px] md:text-[15px] text-neutral-400 font-medium leading-relaxed">
                 Constructora con sólida trayectoria desde 1992. Amplia experiencia ejecutando obras residenciales premium en la costa ecuatoriana, garantizando altos estándares de calidad, seguridad y cumplimiento en cada proyecto asignado.
               </p>
             </div>
             <div className="md:px-8 text-center group border-t border-white/10 md:border-t-0 pt-8 md:pt-0">
               <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#D1C292] block mb-3">Desarrollo y Ventas</span>
               <h4 className="text-xl md:text-2xl font-medium text-white mb-5">KONKERI</h4>
-              <p className="text-sm text-neutral-400 font-medium leading-relaxed">
+              <p className="text-[14px] md:text-[15px] text-neutral-400 font-medium leading-relaxed">
                 Promotora inmobiliaria con base en Manta que concibe, estructura y desarrolla proyectos bajo una visión integral. Nuestra experiencia en el sector y enfoque en innovación tecnológica nos permite entregar desarrollos sólidos, bien planificados y alineados con las verdaderas necesidades del mercado.
               </p>
             </div>
@@ -880,7 +880,7 @@ export default function ArienzoLandingPremium() {
           <h2 className="text-[11px] font-bold tracking-[0.3em] text-[#964B36] uppercase mb-4">Colección Limitada</h2>
           <h3 className="text-3xl md:text-4xl font-medium tracking-tight text-neutral-900 mb-4">Sé uno de los pocos privilegiados.</h3>
           
-          <div className="text-sm md:text-base text-neutral-500 font-medium mb-10 leading-relaxed max-w-2xl">
+          <div className="text-[15px] md:text-[17px] text-neutral-500 font-medium mb-10 leading-relaxed max-w-2xl">
             <p className="mb-2">El privilegio de pertenecer está limitado a <strong className="font-bold text-neutral-800">solo 22 departamentos</strong>.</p>
             <p>Oportunidades en etapa de pre-lanzamiento. Solicita tu registro para descubrir tipologías y disponibilidad en tiempo real.</p>
           </div>
@@ -938,7 +938,7 @@ export default function ArienzoLandingPremium() {
                       autoComplete="name"
                       value={formData.nombres} 
                       onChange={e => setFormData({...formData, nombres: e.target.value.replace(/[0-9!@#\$%^&*()_+=\[\]{};':"\\|,.<>/?]/g, '')})} 
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#964B36] transition-colors" 
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-[14px] font-medium focus:outline-none focus:border-[#964B36] transition-colors" 
                     />
                   </div>
                   <div>
@@ -949,7 +949,7 @@ export default function ArienzoLandingPremium() {
                       autoComplete="tel"
                       value={formData.telefono} 
                       onChange={e => setFormData({...formData, telefono: e.target.value.replace(/\D/g, '').slice(0, 15)})} 
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#964B36] transition-colors" 
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-[14px] font-medium focus:outline-none focus:border-[#964B36] transition-colors" 
                     />
                   </div>
                   <div>
@@ -960,7 +960,7 @@ export default function ArienzoLandingPremium() {
                       autoComplete="email"
                       value={formData.email} 
                       onChange={e => setFormData({...formData, email: e.target.value})} 
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#964B36] transition-colors" 
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-[14px] font-medium focus:outline-none focus:border-[#964B36] transition-colors" 
                     />
                   </div>
                   <div>
@@ -968,7 +968,7 @@ export default function ArienzoLandingPremium() {
                       required
                       value={formData.ciudad}
                       onChange={e => setFormData({...formData, ciudad: e.target.value})}
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium text-neutral-600 focus:outline-none focus:border-[#964B36] transition-colors cursor-pointer"
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-[14px] font-medium text-neutral-600 focus:outline-none focus:border-[#964B36] transition-colors cursor-pointer"
                     >
                       <option value="" disabled>Selecciona tu ciudad de residencia</option>
                       <option value="Manta">Manta</option>
@@ -1037,7 +1037,7 @@ export default function ArienzoLandingPremium() {
                       autoComplete="name"
                       value={formBrochure.nombres} 
                       onChange={e => setFormBrochure({...formBrochure, nombres: e.target.value.replace(/[0-9!@#\$%^&*()_+=\[\]{};':"\\|,.<>/?]/g, '')})} 
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#D1C292] transition-colors" 
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-[14px] font-medium focus:outline-none focus:border-[#D1C292] transition-colors" 
                     />
                   </div>
                   <div>
@@ -1048,7 +1048,7 @@ export default function ArienzoLandingPremium() {
                       autoComplete="tel"
                       value={formBrochure.telefono} 
                       onChange={e => setFormBrochure({...formBrochure, telefono: e.target.value.replace(/\D/g, '').slice(0, 15)})} 
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#D1C292] transition-colors" 
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-[14px] font-medium focus:outline-none focus:border-[#D1C292] transition-colors" 
                     />
                   </div>
                   <div>
@@ -1059,7 +1059,7 @@ export default function ArienzoLandingPremium() {
                       autoComplete="email"
                       value={formBrochure.email} 
                       onChange={e => setFormBrochure({...formBrochure, email: e.target.value})} 
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-[#D1C292] transition-colors" 
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-[14px] font-medium focus:outline-none focus:border-[#D1C292] transition-colors" 
                     />
                   </div>
                   <div>
@@ -1067,7 +1067,7 @@ export default function ArienzoLandingPremium() {
                       required
                       value={formBrochure.ciudad}
                       onChange={e => setFormBrochure({...formBrochure, ciudad: e.target.value})}
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-sm font-medium text-neutral-600 focus:outline-none focus:border-[#D1C292] transition-colors cursor-pointer"
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-[14px] font-medium text-neutral-600 focus:outline-none focus:border-[#D1C292] transition-colors cursor-pointer"
                     >
                       <option value="" disabled>Selecciona tu ciudad de residencia</option>
                       <option value="Manta">Manta</option>
