@@ -23,6 +23,8 @@ interface Cliente {
   detalle_accion?: string | null;
   tipo?: string; 
   created_at?: string;
+  // NUEVO: Relación cruzada para medir toques (Touchpoints)
+  registro_llamadas?: { tipo_contacto: string }[];
 }
 
 interface Cotizacion {
@@ -97,6 +99,12 @@ const IMAGENES_GALERIA = {
   piscina: "https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/Arienzo-Piscina-1.jpg"
 };
 
+const estados = ['Interesado', 'Contactado', 'Cotizado', 'En Negociación', 'Standby', 'Reserva', 'Cierre (Ganado)', 'Descartado'];
+const origenes = ['Página Web / Landing Page', 'Referido / Directo', 'Llamada Telefónica', 'WhatsApp Orgánico', 'Instagram / Facebook', 'Meta Ads', 'Feria / Evento', 'Otro'];
+const motivos = ['Por definir', 'Para Vivir', 'Para Invertir', 'Segunda Residencia'];
+const intereses = ['Por definir', 'Suite', '2 Dormitorios', '3 Dormitorios', 'Local Comercial', 'Penthouse'];
+const tiposAccion = ['Llamada Telefónica', 'Reunión Presencial', 'Mensaje WhatsApp', 'Enviar Cotización', 'Enviar Correo'];
+
 export default function CRMPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -110,7 +118,7 @@ export default function CRMPage() {
 
   const [vista, setVista] = useState<'lista' | 'kanban' | 'actividad'>('kanban');
   const [columnasExpandidas, setColumnasExpandidas] = useState<Record<string, boolean>>({
-    'Interesado': true, 'Contactado': true, 'Cotizado': false, 'En Negociación': false, 'Reserva': false, 'Cierre (Ganado)': false, 'Descartado': false
+    'Interesado': true, 'Contactado': true, 'Cotizado': false, 'En Negociación': false, 'Standby': false, 'Reserva': false, 'Cierre (Ganado)': false, 'Descartado': false
   });
 
   const toggleColumna = (estado: string) => {
@@ -122,6 +130,17 @@ export default function CRMPage() {
   const [mostrarModalPlantilla, setMostrarModalPlantilla] = useState(false);
   const [mostrarModalHistorial, setMostrarModalHistorial] = useState(false);
   const [clienteSeleccionado, setClienteSeleccionado] = useState<Cliente | null>(null);
+  
+  const [duplicadoDetectado, setDuplicadoDetectado] = useState<Cliente | null>(null);
+
+  const [mostrarModalStandby, setMostrarModalStandby] = useState(false);
+  const [standbyClienteId, setStandbyClienteId] = useState('');
+  const [standbyMotivo, setStandbyMotivo] = useState('');
+  const [standbyFechaReact, setStandbyFechaReact] = useState('');
+
+  const [mostrarModalDescarte, setMostrarModalDescarte] = useState(false);
+  const [descarteClienteId, setDescarteClienteId] = useState('');
+  const [descarteMotivo, setDescarteMotivo] = useState('');
 
   const [mostrarModalPreviewCorreo, setMostrarModalPreviewCorreo] = useState(false);
   const [plantillaActivaId, setPlantillaActivaId] = useState('seguimiento_premium');
@@ -186,12 +205,6 @@ export default function CRMPage() {
   const [activandoVIP, setActivandoVIP] = useState(false);
   const [tiempoVIP, setTiempoVIP] = useState<number>(24);
 
-  const estados = ['Interesado', 'Contactado', 'Cotizado', 'En Negociación', 'Reserva', 'Cierre (Ganado)', 'Descartado'];
-  const origenes = ['Página Web / Landing Page', 'Referido / Directo', 'Llamada Telefónica', 'WhatsApp Orgánico', 'Instagram / Facebook', 'Meta Ads', 'Feria / Evento', 'Otro'];
-  const motivos = ['Por definir', 'Para Vivir', 'Para Invertir', 'Segunda Residencia'];
-  const intereses = ['Por definir', 'Suite', '2 Dormitorios', '3 Dormitorios', 'Local Comercial', 'Penthouse'];
-  const tiposAccion = ['Llamada Telefónica', 'Reunión Presencial', 'Mensaje WhatsApp', 'Enviar Cotización', 'Enviar Correo'];
-
   useEffect(() => {
     cargarClientes();
     const pG = localStorage.getItem('plantilla_bienvenida_arienzo');
@@ -230,7 +243,11 @@ export default function CRMPage() {
 
   const cargarClientes = async () => {
     try {
-      const { data, error } = await supabase.from('clientes').select('*').order('created_at', { ascending: false });
+      // NUEVO: Traemos clientes Y su conteo de llamadas/actividades (Touchpoints) cruzadas
+      const { data, error } = await supabase.from('clientes').select(`
+        *,
+        registro_llamadas(tipo_contacto)
+      `).order('created_at', { ascending: false });
       if (error) throw error;
       if (data) setClientes(data);
     } catch (e) { console.error(e); } finally { setCargando(false); }
@@ -258,6 +275,13 @@ export default function CRMPage() {
       const { data, error } = await supabase.from('registro_llamadas').insert([payload]).select('*, clientes(nombres, apellidos)');
       if (error) throw error;
       if (filtroTiempo === 'hoy' && data) setActividadesDia([data[0], ...actividadesDia]);
+      
+      // NUEVO: Sumar el toque en tiempo real a la interfaz sin recargar
+      setClientes(prev => prev.map(c => c.id === llamadaClienteId ? {
+        ...c,
+        registro_llamadas: [...(c.registro_llamadas || []), { tipo_contacto: tipoContacto }]
+      } : c));
+
       setLlamadaClienteId(''); setBusquedaLlamada(''); setLlamadaNota('');
     } catch (e: any) { alert(`Error: ${e.message}`); } finally { setGuardandoActividadRapida(false); }
   };
@@ -280,6 +304,11 @@ export default function CRMPage() {
     if (!ultima) return 999;
     const hoy = new Date(); hoy.setHours(0,0,0,0); ultima.setHours(0,0,0,0);
     return Math.max(0, Math.floor((hoy.getTime() - ultima.getTime()) / (1000 * 60 * 60 * 24)));
+  };
+  
+  const esSinContactar = (notas: string | null) => {
+    if (!notas) return true;
+    return notas.split('\n\n').length <= 1 && !notas.includes('💬') && !notas.includes('📧') && !notas.includes('Standby') && !notas.includes('Descartado');
   };
 
   const obtenerInfoUltimoCorreo = (notas: string | null) => {
@@ -314,8 +343,13 @@ export default function CRMPage() {
 
   const esFechaVencida = (fecha?: string | null) => {
     if (!fecha) return false;
-    const hoy = new Date(); hoy.setHours(0,0,0,0);
-    return new Date(fecha + 'T00:00:00') < hoy;
+    const hoy = new Date();
+    return new Date(fecha) < hoy;
+  };
+
+  const formatearFechaAgendada = (fechaStr: string) => {
+    const d = new Date(fechaStr);
+    return `${d.toLocaleDateString('es-EC', {day:'2-digit', month:'short'})} ${d.toLocaleTimeString('es-EC', {hour:'2-digit', minute:'2-digit'})}`;
   };
 
   const clientesFiltrados = useMemo(() => {
@@ -345,8 +379,9 @@ export default function CRMPage() {
         if (!c.proximo_contacto) {
           coincideTarea = false;
         } else {
-          const tareaMs = new Date(c.proximo_contacto + 'T00:00:00').getTime();
-          if (filtroTareas === 'vencidas') coincideTarea = tareaMs < hoyMs;
+          const dateOnly = c.proximo_contacto.split('T')[0];
+          const tareaMs = new Date(dateOnly + 'T00:00:00').getTime();
+          if (filtroTareas === 'vencidas') coincideTarea = esFechaVencida(c.proximo_contacto);
           if (filtroTareas === 'hoy') coincideTarea = tareaMs === hoyMs;
           if (filtroTareas === 'proximas') coincideTarea = tareaMs > hoyMs;
         }
@@ -380,14 +415,65 @@ export default function CRMPage() {
     e.preventDefault();
     const clienteId = e.dataTransfer.getData('clienteId');
     if (!clienteId) return;
-    setClientes(prev => prev.map(c => c.id === clienteId ? { ...c, estado: nuevoEstado } : c));
-    if (clienteSeleccionado?.id === clienteId) setClienteSeleccionado(prev => prev ? { ...prev, estado: nuevoEstado } : prev);
-    await supabase.from('clientes').update({ estado: nuevoEstado }).eq('id', clienteId);
+
+    if (nuevoEstado === 'Standby') {
+      setStandbyClienteId(clienteId);
+      setStandbyMotivo('');
+      setStandbyFechaReact('');
+      setMostrarModalStandby(true);
+      return;
+    }
+
+    if (nuevoEstado === 'Descartado') {
+      setDescarteClienteId(clienteId);
+      setDescarteMotivo('');
+      setMostrarModalDescarte(true);
+      return;
+    }
+
+    ejecutarCambioEstado(clienteId, nuevoEstado);
+  };
+
+  const ejecutarCambioEstado = async (id: string, nuevoEstado: string, notaExtra?: string) => {
+    const updates: any = { estado: nuevoEstado };
+    
+    if (notaExtra) {
+      const cliente = clientes.find(c => c.id === id);
+      if (cliente) {
+        const ahora = new Date();
+        const fechaFormateada = `${String(ahora.getDate()).padStart(2, '0')}/${String(ahora.getMonth() + 1).padStart(2, '0')}/${ahora.getFullYear()} ${ahora.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}`;
+        updates.notas = `[${fechaFormateada}] 🔄 Estado cambiado a ${nuevoEstado}:\n${notaExtra}\n\n${cliente.notas || ''}`;
+      }
+    }
+
+    setClientes(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+    if (clienteSeleccionado?.id === id) setClienteSeleccionado(prev => prev ? { ...prev, ...updates } : prev);
+    await supabase.from('clientes').update(updates).eq('id', id);
+  };
+
+  const confirmarStandby = () => {
+    if (!standbyMotivo) { alert('Ingresa el motivo del Standby'); return; }
+    const nota = `Motivo: ${standbyMotivo} | Reactivación sugerida: ${standbyFechaReact || 'Sin definir'}`;
+    ejecutarCambioEstado(standbyClienteId, 'Standby', nota);
+    setMostrarModalStandby(false);
+  };
+
+  const confirmarDescarte = () => {
+    if (!descarteMotivo) { alert('Ingresa el motivo de pérdida'); return; }
+    const nota = `Motivo de Pérdida: ${descarteMotivo}`;
+    ejecutarCambioEstado(descarteClienteId, 'Descartado', nota);
+    setMostrarModalDescarte(false);
+  };
+
+  const limpiarFormularioNuevo = () => {
+    setNuevoNombre(''); setNuevoApellido(''); setNuevoTelefono(''); setNuevoEmail(''); 
+    setNuevaCiudad(''); setNuevoCampana(''); setDuplicadoDetectado(null);
   };
 
   const guardarNuevoCliente = async (e: React.FormEvent) => {
     e.preventDefault();
     setGuardandoCliente(true);
+    setDuplicadoDetectado(null);
     try {
       const ahora = new Date();
       const dia = String(ahora.getDate()).padStart(2, '0');
@@ -407,23 +493,20 @@ export default function CRMPage() {
       if (error) throw error;
       
       if (data && data.length > 0) {
-        setClientes([data[0], ...clientes]);
+        setClientes([{...data[0], registro_llamadas: []}, ...clientes]);
         setMostrarModalNuevo(false);
-        setNuevoNombre(''); setNuevoApellido(''); setNuevoTelefono(''); setNuevoEmail(''); setNuevaCiudad(''); setNuevoCampana('');
+        limpiarFormularioNuevo();
       }
     } catch (e: any) {
       if (e.message?.includes('duplicate key') || e.message?.includes('unique constraint')) {
         const { data: clienteDuplicado } = await supabase
           .from('clientes')
-          .select('nombres, apellidos, telefono')
+          .select('*')
           .eq('email', nuevoEmail.trim().toLowerCase())
           .maybeSingle();
 
-        if (clienteDuplicado) {
-          alert(`🚨 ALERTA DE DUPLICADO\n\nEl sistema bloqueó el guardado porque el correo "${nuevoEmail}" ya le pertenece a este prospecto en tu base:\n\n👤 Nombre: ${clienteDuplicado.nombres} ${clienteDuplicado.apellidos || ''}\n📱 Teléfono: ${clienteDuplicado.telefono}\n\n👉 El prospecto se registró en la web usando esos datos. Cierra esta ventana y búscalo en el CRM escribiendo ese nombre exacto o el teléfono en la barra superior para actualizar su ficha.`);
-        } else {
-          alert("🚨 Este correo electrónico ya está registrado en el sistema. Búscalo en la barra superior.");
-        }
+        if (clienteDuplicado) setDuplicadoDetectado(clienteDuplicado as Cliente);
+        else alert("🚨 Este correo electrónico ya está registrado en el sistema.");
       } else {
         alert(`Error al guardar: ${e.message}`);
       }
@@ -483,11 +566,8 @@ export default function CRMPage() {
           .eq('email', editFormData.email?.trim().toLowerCase())
           .maybeSingle();
           
-        if (clienteDuplicado) {
-          alert(`🚨 ALERTA DE DUPLICADO\n\nNo puedes asignarle este correo porque ya le pertenece a otro cliente:\n\n👤 ${clienteDuplicado.nombres} ${clienteDuplicado.apellidos || ''}\n📱 ${clienteDuplicado.telefono}`);
-        } else {
-          alert("🚨 Ya existe OTRO cliente registrado con este mismo correo.");
-        }
+        if (clienteDuplicado) alert(`🚨 ALERTA DE DUPLICADO\n\nNo puedes asignarle este correo porque ya le pertenece a otro cliente:\n\n👤 ${clienteDuplicado.nombres} ${clienteDuplicado.apellidos || ''}\n📱 ${clienteDuplicado.telefono}`);
+        else alert("🚨 Ya existe OTRO cliente registrado con este mismo correo.");
       } else {
         alert(`Error al actualizar: ${err.message}`);
       }
@@ -503,6 +583,11 @@ export default function CRMPage() {
   };
 
   const actualizarCampoRapido = async (id: string, campo: string, valor: string) => {
+    if (campo === 'estado') {
+       if (valor === 'Standby') { setStandbyClienteId(id); setStandbyMotivo(''); setStandbyFechaReact(''); setMostrarModalStandby(true); return; }
+       if (valor === 'Descartado') { setDescarteClienteId(id); setDescarteMotivo(''); setMostrarModalDescarte(true); return; }
+    }
+    
     setClientes(prev => prev.map(c => c.id === id ? { ...c, [campo]: valor } : c));
     if (clienteSeleccionado?.id === id) setClienteSeleccionado(prev => prev ? { ...prev, [campo]: valor } : prev);
     await supabase.from('clientes').update({ [campo]: valor }).eq('id', id);
@@ -516,7 +601,7 @@ export default function CRMPage() {
       await supabase.from('clientes').update(updates).eq('id', clienteSeleccionado.id);
       setClientes(prev => prev.map(c => c.id === clienteSeleccionado.id ? { ...c, ...updates } as any : c));
       setClienteSeleccionado(prev => prev ? { ...prev, ...updates } : prev);
-      alert("¡Tarea y fecha agendadas correctamente!");
+      alert("¡Tarea agendada correctamente!");
     } catch (e: any) { alert(`Error: ${e.message}`); } finally { setGuardandoTarea(false); }
   };
 
@@ -550,7 +635,6 @@ export default function CRMPage() {
     
     window.open(`https://wa.me/${num}${txt}`, '_blank');
 
-    // Registrar en Actividad Global y Notas
     try {
       const ahora = new Date();
       const dia = String(ahora.getDate()).padStart(2, '0');
@@ -563,8 +647,19 @@ export default function CRMPage() {
       const notaFinal = `[${fechaFormateada}] 💬 WhatsApp Iniciado: ${textoAccion}\n\n${cliente.notas || ''}`;
 
       await supabase.from('clientes').update({ notas: notaFinal }).eq('id', cliente.id);
-      setClientes(prev => prev.map(c => c.id === cliente.id ? { ...c, notas: notaFinal } : c));
-      if (clienteSeleccionado?.id === cliente.id) setClienteSeleccionado(prev => prev ? { ...prev, notas: notaFinal } : prev);
+      
+      // NUEVO: Agregar toque instantáneo al UI
+      setClientes(prev => prev.map(c => c.id === cliente.id ? { 
+        ...c, 
+        notas: notaFinal,
+        registro_llamadas: [...(c.registro_llamadas || []), { tipo_contacto: 'WhatsApp' }]
+      } : c));
+      
+      if (clienteSeleccionado?.id === cliente.id) setClienteSeleccionado(prev => prev ? { 
+        ...prev, 
+        notas: notaFinal,
+        registro_llamadas: [...(prev.registro_llamadas || []), { tipo_contacto: 'WhatsApp' }]
+      } : prev);
 
       await supabase.from('registro_llamadas').insert([{
         cliente_id: cliente.id,
@@ -574,7 +669,7 @@ export default function CRMPage() {
         notas: `Se inició contacto por WhatsApp (${textoAccion}).`
       }]);
       
-      cargarBitacoraRango(); // Actualiza la pestaña de actividad en vivo
+      cargarBitacoraRango();
     } catch (e) {
       console.error("Error al registrar actividad WA:", e);
     }
@@ -603,14 +698,12 @@ export default function CRMPage() {
     const plantillaConfig = PLANTILLAS_CORREO.find(p => p.id === plantillaActivaId) || PLANTILLAS_CORREO[0];
     const nombreCliente = clienteSeleccionado?.nombres || 'Cliente';
     
-    // Soporte para variables y para transformar **negritas** a <strong>negritas</strong>
     const cuerpoFormateado = textoIntroPersonalizado
       .replace(/{nombre}/g, nombreCliente)
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\n/g, '<br/>');
       
     const urlPortada = IMAGENES_GALERIA[imagenPortada] || IMAGENES_GALERIA.fachada;
-    
     const enlaceWhatsApp = `https://wa.me/593979469472?text=${encodeURIComponent(`Hola Saúl, recibí tu correo sobre Arienzo y me gustaría más información.`)}`;
     const enlaceCalendly = `https://calendly.com/saul-intriago/asesoria-inmobiliaria`;
 
@@ -620,144 +713,69 @@ export default function CRMPage() {
     let colorTextoBoton = '#ffffff';
     let logoCabecera = 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/arienzo-logo-blanco.svg';
 
-    if (temaColor === 'terracota') { 
-      colorFondoCabecera = '#964B36'; 
-      colorAcento = '#964B36'; 
-      colorBoton = '#21242E'; 
-    } 
-    else if (temaColor === 'dorado') { 
-      colorFondoCabecera = '#D1C292';
-      colorAcento = '#D1C292'; 
-      colorBoton = '#21242E'; 
-      colorTextoBoton = '#ffffff';
-      logoCabecera = 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/logo%20arienzo%20living%20dorado_Mesa%20de%20trabajo%201.svg';
-    } 
-    else if (temaColor === 'navy') { 
-      colorFondoCabecera = '#21242E'; 
-      colorAcento = '#21242E'; 
-      colorBoton = '#964B36'; 
-    }
+    if (temaColor === 'terracota') { colorFondoCabecera = '#964B36'; colorAcento = '#964B36'; colorBoton = '#21242E'; } 
+    else if (temaColor === 'dorado') { colorFondoCabecera = '#D1C292'; colorAcento = '#D1C292'; colorBoton = '#21242E'; colorTextoBoton = '#ffffff'; logoCabecera = 'https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/logo%20arienzo%20living%20dorado_Mesa%20de%20trabajo%201.svg'; } 
+    else if (temaColor === 'navy') { colorFondoCabecera = '#21242E'; colorAcento = '#21242E'; colorBoton = '#964B36'; }
 
-    const htmlCabecera = `
-      <!DOCTYPE html>
-      <html>
-      <body style="margin: 0; padding: 0; background-color: #F9F7F5; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #F9F7F5; padding: 20px 10px;">
-          <tr>
-            <td align="center">
-              <table width="100%" max-width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 600px;">
-                <tr><td align="center" style="background-color: ${colorFondoCabecera}; padding: 35px 20px;"><img src="${logoCabecera}" alt="Arienzo" width="180" style="display: block; margin: 0 auto;"></td></tr>
-                <tr><td><img src="${urlPortada}" width="100%" style="display: block; width: 100%; max-height: 280px; object-fit: cover;"></td></tr>
-                <tr><td style="padding: 40px; color: #415364; font-size: 16px; line-height: 1.6;">${cuerpoFormateado}</td></tr>
-    `;
-
-    const htmlPilares = `
-                <tr><td align="center" style="padding: 0 40px;"><hr style="border: none; border-top: 1px solid ${colorAcento}; margin: 0;"><h3 style="color: ${colorAcento}; font-size: 15px; text-transform: uppercase; letter-spacing: 2px; margin-top: 25px;">El privilegio de vivir bien</h3></td></tr>
-                <tr><td style="padding: 20px 40px;"><img src="${IMAGENES_GALERIA.ubicacion}" width="100%" style="border-radius: 8px; display: block; margin-bottom: 15px;"><h4 style="margin: 0 0 10px 0; color: #21242E; font-size: 18px;">Ubicación Estratégica</h4><p style="margin: 0; color: #415364; font-size: 15px; line-height: 1.5;">${textoUbicacion}</p></td></tr>
-                <tr><td style="padding: 20px 40px;"><img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Derecho-A4.jpg" width="100%" style="border-radius: 8px; display: block; margin-bottom: 15px;"><h4 style="margin: 0 0 10px 0; color: #21242E; font-size: 18px;">Arquitectura de Autor</h4><p style="margin: 0; color: #415364; font-size: 15px; line-height: 1.5;">${textoArquitectura}</p></td></tr>
-                <tr><td style="padding: 20px 40px 40px 40px;"><img src="${IMAGENES_GALERIA.piscina}" width="100%" style="border-radius: 8px; display: block; margin-bottom: 15px;"><h4 style="margin: 0 0 10px 0; color: #21242E; font-size: 18px;">Rooftop y Amenidades Exclusivas</h4><p style="margin: 0; color: #415364; font-size: 15px; line-height: 1.5;">${textoAmenidades}</p></td></tr>
-    `;
-
+    const htmlCabecera = `<!DOCTYPE html><html><body style="margin: 0; padding: 0; background-color: #F9F7F5; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #F9F7F5; padding: 20px 10px;"><tr><td align="center"><table width="100%" max-width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 600px;"><tr><td align="center" style="background-color: ${colorFondoCabecera}; padding: 35px 20px;"><img src="${logoCabecera}" alt="Arienzo" width="180" style="display: block; margin: 0 auto;"></td></tr><tr><td><img src="${urlPortada}" width="100%" style="display: block; width: 100%; max-height: 280px; object-fit: cover;"></td></tr><tr><td style="padding: 40px; color: #415364; font-size: 16px; line-height: 1.6;">${cuerpoFormateado}</td></tr>`;
+    const htmlPilares = `<tr><td align="center" style="padding: 0 40px;"><hr style="border: none; border-top: 1px solid ${colorAcento}; margin: 0;"><h3 style="color: ${colorAcento}; font-size: 15px; text-transform: uppercase; letter-spacing: 2px; margin-top: 25px;">El privilegio de vivir bien</h3></td></tr><tr><td style="padding: 20px 40px;"><img src="${IMAGENES_GALERIA.ubicacion}" width="100%" style="border-radius: 8px; display: block; margin-bottom: 15px;"><h4 style="margin: 0 0 10px 0; color: #21242E; font-size: 18px;">Ubicación Estratégica</h4><p style="margin: 0; color: #415364; font-size: 15px; line-height: 1.5;">${textoUbicacion}</p></td></tr><tr><td style="padding: 20px 40px;"><img src="https://ijzqqbybubruthargcnq.supabase.co/storage/v1/object/public/imagenes%20para%20web%20arienzo/render-Exterior-Derecho-A4.jpg" width="100%" style="border-radius: 8px; display: block; margin-bottom: 15px;"><h4 style="margin: 0 0 10px 0; color: #21242E; font-size: 18px;">Arquitectura de Autor</h4><p style="margin: 0; color: #415364; font-size: 15px; line-height: 1.5;">${textoArquitectura}</p></td></tr><tr><td style="padding: 20px 40px 40px 40px;"><img src="${IMAGENES_GALERIA.piscina}" width="100%" style="border-radius: 8px; display: block; margin-bottom: 15px;"><h4 style="margin: 0 0 10px 0; color: #21242E; font-size: 18px;">Rooftop y Amenidades Exclusivas</h4><p style="margin: 0; color: #415364; font-size: 15px; line-height: 1.5;">${textoAmenidades}</p></td></tr>`;
     const htmlBotonWhatsApp = `<tr><td align="center" style="background-color: #FDFCFB; padding: 40px 20px; border-top: 1px solid #EAE3DC; border-bottom: 1px solid #EAE3DC;"><h2 style="margin: 0 0 15px 0; color: ${colorAcento}; font-size: 24px;">Asegura tu unidad en Planos</h2><p style="margin: 0 0 25px 0; color: #415364; font-size: 16px; font-weight: bold;">Reservas abiertas con solo $2,500 USD</p><a href="${enlaceWhatsApp}" style="background-color: #25D366; color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 30px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: inline-block;">Hablar por WhatsApp</a></td></tr>`;
     const htmlBotonZoom = `<tr><td align="center" style="background-color: #FDFCFB; padding: 40px 20px; border-top: 1px solid #EAE3DC; border-bottom: 1px solid #EAE3DC;"><h2 style="margin: 0 0 15px 0; color: #21242E; font-size: 22px;">Conoce los planos y disponibilidad</h2><p style="margin: 0 0 25px 0; color: #415364; font-size: 15px;">Selecciona la fecha y hora que mejor se adapte a tu agenda.</p><a href="${enlaceCalendly}" style="background-color: ${colorBoton}; color: ${colorTextoBoton}; text-decoration: none; padding: 15px 30px; border-radius: 8px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: inline-block;">🗓️ Agendar Videollamada</a></td></tr>`;
     const htmlBotonWhatsAppContacto = `<tr><td align="center" style="background-color: #FDFCFB; padding: 40px 20px; border-top: 1px solid #EAE3DC; border-bottom: 1px solid #EAE3DC;"><h2 style="margin: 0 0 15px 0; color: ${colorAcento}; font-size: 22px;">Escríbenos directamente</h2><p style="margin: 0 0 25px 0; color: #415364; font-size: 15px;">También puedes hacer clic en el botón para abrir el chat con nosotros.</p><a href="${enlaceWhatsApp}" style="background-color: #25D366; color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 30px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: inline-block;">Hablar por WhatsApp</a></td></tr>`;
-    
-    const htmlFirma = incluirFirma ? `
-                <tr>
-                  <td style="padding: 40px;">
-                    <p style="margin: 0; font-size: 15px; font-weight: bold; color: #21242E;">${nombreRemitente}</p>
-                    <p style="margin: 3px 0 0 0; font-size: 12px; color: ${temaColor === 'dorado' ? '#964B36' : colorAcento}; letter-spacing: 1px; text-transform: uppercase; font-weight: bold;">${cargoRemitente}</p>
-                    <p style="margin: 3px 0 0 0; font-size: 12px; color: #415364;">arienzoliving.com | Konkeri Real Estate</p>
-                  </td>
-                </tr>
-    ` : `
-                <tr>
-                  <td style="padding: 30px 40px; text-align: center;">
-                    <p style="margin: 0; font-size: 13px; font-weight: bold; color: #21242E; text-transform: uppercase; letter-spacing: 2px;">Arienzo Living</p>
-                    <p style="margin: 4px 0 0 0; font-size: 11px; color: ${temaColor === 'dorado' ? '#964B36' : colorAcento};">arienzoliving.com</p>
-                  </td>
-                </tr>
-    `;
-
-    const htmlFooter = `
-                <tr><td align="center" style="background-color: #21242E; padding: 20px; text-align: center;"><p style="margin: 0; font-size: 10px; color: #ffffff; opacity: 0.5; text-transform: uppercase; letter-spacing: 1px;">© ${new Date().getFullYear()} Arienzo Living. Manta, Ecuador.</p></td></tr>
-              </table>
-            </td>
-          </tr>
-        </table>
-      </body>
-      </html>
-    `;
+    const htmlFirma = incluirFirma ? `<tr><td style="padding: 40px;"><p style="margin: 0; font-size: 15px; font-weight: bold; color: #21242E;">${nombreRemitente}</p><p style="margin: 3px 0 0 0; font-size: 12px; color: ${temaColor === 'dorado' ? '#964B36' : colorAcento}; letter-spacing: 1px; text-transform: uppercase; font-weight: bold;">${cargoRemitente}</p><p style="margin: 3px 0 0 0; font-size: 12px; color: #415364;">arienzoliving.com | Konkeri Real Estate</p></td></tr>` : `<tr><td style="padding: 30px 40px; text-align: center;"><p style="margin: 0; font-size: 13px; font-weight: bold; color: #21242E; text-transform: uppercase; letter-spacing: 2px;">Arienzo Living</p><p style="margin: 4px 0 0 0; font-size: 11px; color: ${temaColor === 'dorado' ? '#964B36' : colorAcento};">arienzoliving.com</p></td></tr>`;
+    const htmlFooter = `<tr><td align="center" style="background-color: #21242E; padding: 20px; text-align: center;"><p style="margin: 0; font-size: 10px; color: #ffffff; opacity: 0.5; text-transform: uppercase; letter-spacing: 1px;">© ${new Date().getFullYear()} Arienzo Living. Manta, Ecuador.</p></td></tr></table></td></tr></table></body></html>`;
 
     let htmlCompleto = '';
-    if (plantillaConfig.layout === 'full') {
-      htmlCompleto = htmlCabecera + htmlPilares + htmlBotonWhatsApp + htmlFirma + htmlFooter;
-    } else if (plantillaActivaId === 'invitacion_zoom') {
-      htmlCompleto = htmlCabecera + htmlBotonZoom + htmlFirma + htmlFooter;
-    } else if (plantillaActivaId === 'solicitar_numero') {
-      htmlCompleto = htmlCabecera + htmlBotonWhatsAppContacto + htmlFirma + htmlFooter;
-    } else {
-      htmlCompleto = htmlCabecera + htmlBotonWhatsApp + htmlFirma + htmlFooter;
-    }
-
+    if (plantillaConfig.layout === 'full') htmlCompleto = htmlCabecera + htmlPilares + htmlBotonWhatsApp + htmlFirma + htmlFooter;
+    else if (plantillaActivaId === 'invitacion_zoom') htmlCompleto = htmlCabecera + htmlBotonZoom + htmlFirma + htmlFooter;
+    else if (plantillaActivaId === 'solicitar_numero') htmlCompleto = htmlCabecera + htmlBotonWhatsAppContacto + htmlFirma + htmlFooter;
+    else htmlCompleto = htmlCabecera + htmlBotonWhatsApp + htmlFirma + htmlFooter;
     return htmlCompleto;
   };
 
   const enviarCorreoFinal = async () => {
     if (!clienteSeleccionado) return;
-    
     const confirmarEnvio = window.confirm(`¿Estás seguro de que deseas enviar este correo a ${clienteSeleccionado.email}?`);
     if (!confirmarEnvio) return;
-
     setEnviandoCorreoCRM(true);
     try {
       const htmlAEnviar = generarCodigoHTMLCorreo();
       const plantillaConfig = PLANTILLAS_CORREO.find(p => p.id === plantillaActivaId) || PLANTILLAS_CORREO[0];
-      const asunto = plantillaConfig.asunto;
       
       const response = await fetch('/api/enviar-correo-crm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: clienteSeleccionado.email, asunto, htmlCuerpo: htmlAEnviar })
+        body: JSON.stringify({ email: clienteSeleccionado.email, asunto: plantillaConfig.asunto, htmlCuerpo: htmlAEnviar })
       });
 
       if (response.ok) {
         alert("¡Correo enviado con éxito!");
         setMostrarModalPreviewCorreo(false);
-        
         const ahora = new Date();
-        const dia = String(ahora.getDate()).padStart(2, '0');
-        const mes = String(ahora.getMonth() + 1).padStart(2, '0');
-        const anio = ahora.getFullYear();
-        const hora = ahora.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
-        const fechaFormateada = `${dia}/${mes}/${anio} ${hora}`;
-        
+        const fechaFormateada = `${String(ahora.getDate()).padStart(2, '0')}/${String(ahora.getMonth() + 1).padStart(2, '0')}/${ahora.getFullYear()} ${ahora.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}`;
         const detalleTipo = incluirFirma ? `De: ${nombreRemitente} (${cargoRemitente})` : 'Envío Masivo';
         const notaFinal = `[${fechaFormateada}] 📧 Correo Enviado: "${plantillaConfig.nombre}" [${detalleTipo}]\n\n${clienteSeleccionado.notas || ''}`;
         
-        // 1. Guardar en Notas del Cliente
+        // NUEVO: Agregar toque instantáneo al UI
         await supabase.from('clientes').update({ notas: notaFinal }).eq('id', clienteSeleccionado.id);
-        setClientes(prev => prev.map(c => c.id === clienteSeleccionado.id ? { ...c, notas: notaFinal } : c));
-        setClienteSeleccionado(prev => prev ? { ...prev, notas: notaFinal } : prev);
+        setClientes(prev => prev.map(c => c.id === clienteSeleccionado.id ? { 
+          ...c, 
+          notas: notaFinal,
+          registro_llamadas: [...(c.registro_llamadas || []), { tipo_contacto: 'Email' }] 
+        } : c));
+        
+        setClienteSeleccionado(prev => prev ? { 
+          ...prev, 
+          notas: notaFinal,
+          registro_llamadas: [...(prev.registro_llamadas || []), { tipo_contacto: 'Email' }]
+        } : prev);
 
-        // 2. Guardar en Tabla de Actividades (Productividad)
         await supabase.from('registro_llamadas').insert([{
-          cliente_id: clienteSeleccionado.id,
-          agente: nombreRemitente,
-          tipo_contacto: 'Email',
-          resultado: 'Enviado',
-          notas: `Se envió campaña/correo: ${plantillaConfig.nombre}`
+          cliente_id: clienteSeleccionado.id, agente: nombreRemitente, tipo_contacto: 'Email', resultado: 'Enviado', notas: `Se envió campaña/correo: ${plantillaConfig.nombre}`
         }]);
-
-        cargarBitacoraRango(); // Actualiza la pestaña de actividad
-      } else {
-        alert("Error al enviar desde el servidor.");
-      }
-    } catch (e) {
-      alert("Error de conexión.");
-    } finally {
-      setEnviandoCorreoCRM(false);
-    }
+        cargarBitacoraRango();
+      } else { alert("Error al enviar desde el servidor."); }
+    } catch (e) { alert("Error de conexión."); } finally { setEnviandoCorreoCRM(false); }
   };
 
   const tituloActividad = { hoy: 'Actividad de Hoy', ayer: 'Actividad de Ayer', semana: 'Últimos 7 Días', mes: 'Últimos 30 Días' };
@@ -767,6 +785,7 @@ export default function CRMPage() {
   return (
     <div className="min-h-screen bg-[#dce3eb] p-4 md:p-6 font-sans text-[#415364] flex flex-col h-screen overflow-hidden">
       
+      {/* HEADER PRINCIPAL */}
       <div className="w-full flex-shrink-0 mb-4 space-y-3">
         <div className="bg-white rounded-2xl border border-neutral-200/60 p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -794,14 +813,14 @@ export default function CRMPage() {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
               Mensajes Rápidos
             </button>
-            <button onClick={() => setMostrarModalNuevo(true)} className="px-5 py-2.5 bg-[#415364] text-white text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-[#21242E] transition-colors shadow-md flex items-center gap-2">
+            <button onClick={() => { limpiarFormularioNuevo(); setMostrarModalNuevo(true); }} className="px-5 py-2.5 bg-[#415364] text-white text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-[#21242E] transition-colors shadow-md flex items-center gap-2">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
               Prospecto
             </button>
           </div>
         </div>
 
-        {/* BARRA DE BÚSQUEDA Y FILTROS INTELIGENTES */}
+        {/* BARRA DE BÚSQUEDA Y FILTROS */}
         <div className="bg-white p-4 rounded-2xl border border-neutral-200/60 shadow-sm flex flex-wrap items-center gap-4">
           <div className="relative flex-1 min-w-[220px]">
             <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-[#415364]/40">
@@ -824,7 +843,6 @@ export default function CRMPage() {
             </select>
           </div>
 
-          {/* NUEVOS FILTROS DE AGENDA Y PRIORIDAD */}
           <div className="flex items-center border-l border-[#415364]/10 pl-4 gap-2">
             <button 
               onClick={() => setFiltroCalientes(!filtroCalientes)}
@@ -835,38 +853,22 @@ export default function CRMPage() {
             </button>
             
             <div className="flex bg-neutral-100 rounded-xl p-1 border border-neutral-200">
-              <button 
-                onClick={() => setFiltroTareas('todas')}
-                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${filtroTareas === 'todas' ? 'bg-white text-[#415364] shadow-sm' : 'text-[#415364]/50 hover:text-[#415364]'}`}
-              >
-                Todas
-              </button>
-              <button 
-                onClick={() => setFiltroTareas('vencidas')}
-                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all flex items-center gap-1 ${filtroTareas === 'vencidas' ? 'bg-[#ea0029] text-white shadow-sm' : 'text-[#ea0029]/70 hover:text-[#ea0029]'}`}
-              >
+              <button onClick={() => setFiltroTareas('todas')} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${filtroTareas === 'todas' ? 'bg-white text-[#415364] shadow-sm' : 'text-[#415364]/50 hover:text-[#415364]'}`}>Todas</button>
+              <button onClick={() => setFiltroTareas('vencidas')} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all flex items-center gap-1 ${filtroTareas === 'vencidas' ? 'bg-[#ea0029] text-white shadow-sm' : 'text-[#ea0029]/70 hover:text-[#ea0029]'}`}>
                 {filtroTareas === 'vencidas' && <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>}
                 Atrasadas
               </button>
-              <button 
-                onClick={() => setFiltroTareas('hoy')}
-                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${filtroTareas === 'hoy' ? 'bg-[#21242E] text-white shadow-sm' : 'text-[#415364]/50 hover:text-[#415364]'}`}
-              >
-                Para Hoy
-              </button>
-              <button 
-                onClick={() => setFiltroTareas('proximas')}
-                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${filtroTareas === 'proximas' ? 'bg-[#415364] text-white shadow-sm' : 'text-[#415364]/50 hover:text-[#415364]'}`}
-              >
-                Próximas
-              </button>
+              <button onClick={() => setFiltroTareas('hoy')} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${filtroTareas === 'hoy' ? 'bg-[#21242E] text-white shadow-sm' : 'text-[#415364]/50 hover:text-[#415364]'}`}>Para Hoy</button>
+              <button onClick={() => setFiltroTareas('proximas')} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${filtroTareas === 'proximas' ? 'bg-[#415364] text-white shadow-sm' : 'text-[#415364]/50 hover:text-[#415364]'}`}>Próximas</button>
             </div>
           </div>
         </div>
       </div>
 
+      {/* CONTENEDOR DE VISTAS */}
       <div className="w-full flex-1 min-h-0 overflow-hidden relative">
         
+        {/* VISTA KANBAN */}
         {vista === 'kanban' && (
           <div className="flex flex-col md:flex-row md:overflow-x-auto md:snap-x gap-3 md:gap-4 h-full pb-4 custom-scrollbar px-1 items-start overflow-y-auto md:overflow-y-hidden">
             {estados.map(estado => {
@@ -877,10 +879,7 @@ export default function CRMPage() {
                 <div key={estado} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, estado)} 
                      className={`w-full md:w-[280px] lg:w-[22vw] xl:w-[280px] flex-shrink-0 md:snap-center bg-white/50 backdrop-blur-sm rounded-2xl p-3 flex flex-col overflow-hidden border border-[#415364]/10 shadow-sm transition-all duration-300 ${estaExpandida ? 'max-h-[60vh] md:max-h-full md:h-full' : 'h-auto md:h-full'}`}>
                   
-                  <div 
-                    onClick={() => toggleColumna(estado)}
-                    className="flex justify-between items-center px-1.5 flex-shrink-0 cursor-pointer select-none"
-                  >
+                  <div onClick={() => toggleColumna(estado)} className="flex justify-between items-center px-1.5 flex-shrink-0 cursor-pointer select-none">
                     <div className="flex items-center gap-2">
                       <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#415364] truncate pr-2">{estado}</h3>
                       <span className="bg-[#415364] text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">{leads.length}</span>
@@ -893,17 +892,35 @@ export default function CRMPage() {
                   <div className={`space-y-3 overflow-y-auto flex-1 pr-1 custom-scrollbar transition-all duration-300 ${estaExpandida ? 'mt-3 opacity-100 block' : 'hidden opacity-0 md:block md:mt-3 md:opacity-100'}`}>
                     {leads.map(cliente => {
                       const diasInactivos = obtenerDiasInactivos(cliente.notas);
-                      const abandonado = diasInactivos > 4 && cliente.estado !== 'Descartado' && cliente.estado !== 'Cierre (Ganado)';
+                      const abandonado = diasInactivos > 4 && cliente.estado !== 'Descartado' && cliente.estado !== 'Cierre (Ganado)' && cliente.estado !== 'Standby';
                       const agendadoVencido = esFechaVencida(cliente.proximo_contacto);
                       const infoCorreo = obtenerInfoUltimoCorreo(cliente.notas);
+                      
+                      // LOGICA DEL CONTADOR DE TOQUES
+                      const toques = cliente.registro_llamadas || [];
+                      const countLlamadas = toques.filter(t => ['Llamada', 'Zoom', 'Reunión'].includes(t.tipo_contacto)).length;
+                      const countWa = toques.filter(t => t.tipo_contacto === 'WhatsApp').length;
+                      const countEmail = toques.filter(t => t.tipo_contacto === 'Email').length;
+                      const totalToques = toques.length;
+
+                      // ALERTA DE NUEVO LEAD SIN CONTACTO MANUAL
+                      const esNuevoSinTocar = esSinContactar(cliente.notas) && totalToques === 0;
 
                       return (
                         <div 
                           key={cliente.id} draggable onDragStart={(e) => handleDragStart(e, cliente.id)} onClick={() => setClienteSeleccionado(cliente)} 
-                          className={`bg-white p-3.5 rounded-xl shadow-sm cursor-pointer transition-all relative cursor-grab border-[1.5px] group hover:shadow-md ${agendadoVencido ? 'border-[#ea0029]/60' : abandonado ? 'border-amber-400' : 'border-transparent hover:border-[#ea0029]/30'}`}
+                          className={`bg-white p-3.5 rounded-xl shadow-sm cursor-pointer transition-all relative cursor-grab border-[1.5px] group hover:shadow-md ${esNuevoSinTocar ? 'border-[#ea0029] bg-[#FFF5F2]' : agendadoVencido ? 'border-[#ea0029]/60' : abandonado ? 'border-amber-400' : 'border-transparent hover:border-[#ea0029]/30'}`}
                         >
-                          {cliente.temperatura && <span className="absolute top-3 right-3 text-[10px] bg-[#dce3eb]/50 rounded-full px-1.5 py-0.5">{cliente.temperatura.split(' ')[0]}</span>}
-                          <h4 className="font-bold text-[#415364] text-[12px] pr-5 leading-tight group-hover:text-[#ea0029] transition-colors">{cliente.nombres} {cliente.apellidos}</h4>
+                          {cliente.temperatura && !esNuevoSinTocar && <span className="absolute top-3 right-3 text-[10px] bg-[#dce3eb]/50 rounded-full px-1.5 py-0.5">{cliente.temperatura.split(' ')[0]}</span>}
+                          
+                          {/* BADGE DE NUEVO */}
+                          {esNuevoSinTocar && (
+                             <span className="absolute -top-2 -right-1 bg-[#ea0029] text-white text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full shadow-md animate-pulse">
+                               🔴 Nuevo - Sin Contactar
+                             </span>
+                          )}
+
+                          <h4 className={`font-bold text-[12px] pr-5 leading-tight transition-colors ${esNuevoSinTocar ? 'text-[#ea0029]' : 'text-[#415364] group-hover:text-[#ea0029]'}`}>{cliente.nombres} {cliente.apellidos}</h4>
                           <p className="text-[9px] text-[#415364]/60 font-mono mt-1 mb-2 font-medium">{cliente.telefono || 'Sin celular'}</p>
                           
                           {cliente.tipologia_interes && cliente.tipologia_interes !== 'Por definir' && (
@@ -913,19 +930,17 @@ export default function CRMPage() {
                           {cliente.proximo_contacto && (
                             <div className={`mt-2 text-[9px] font-bold px-2.5 py-1 flex items-center gap-1.5 rounded-md border ${agendadoVencido ? 'bg-[#ea0029]/10 text-[#ea0029] border-[#ea0029]/20' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                              <span>Agendado: {new Date(cliente.proximo_contacto + 'T00:00:00').toLocaleDateString('es-EC', {day:'2-digit', month:'short'})}</span>
+                              <span>{formatearFechaAgendada(cliente.proximo_contacto)}</span>
                             </div>
                           )}
 
-                          {infoCorreo && (
-                            <div className="mt-2 text-[9px] font-bold px-2 py-1.5 flex items-center justify-between rounded-md bg-[#FFF5F2] border border-[#964B36]/40 shadow-sm">
-                              <div className="flex items-center gap-1 text-[#964B36]">
-                                <span className="text-[12px]">✉️</span>
-                                <span className="uppercase tracking-wider">Correo</span>
-                              </div>
-                              <span className="bg-[#964B36] text-white px-2 py-0.5 rounded-[4px] uppercase tracking-wider">{infoCorreo}</span>
-                            </div>
-                          )}
+                          {/* CONTADOR VISUAL DE TOQUES */}
+                          <div className="flex gap-1.5 mt-2.5">
+                            {countLlamadas > 0 && <span className="bg-[#415364]/10 text-[#415364] text-[9px] px-1.5 py-0.5 rounded font-bold" title="Llamadas / Zoom / Reunión">📞 {countLlamadas}</span>}
+                            {countWa > 0 && <span className="bg-[#25D366]/20 text-[#128C7E] text-[9px] px-1.5 py-0.5 rounded font-bold" title="WhatsApp">💬 {countWa}</span>}
+                            {countEmail > 0 && <span className="bg-[#ea0029]/15 text-[#ea0029] text-[9px] px-1.5 py-0.5 rounded font-bold" title="Email">📧 {countEmail}</span>}
+                            {totalToques === 0 && !esNuevoSinTocar && <span className="bg-neutral-100 text-neutral-400 text-[8px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">0 Toques</span>}
+                          </div>
 
                           <div className="mt-2.5 pt-2 border-t border-[#415364]/5 flex justify-between items-center">
                             <span className={`text-[9px] font-bold tracking-wide ${abandonado ? 'text-amber-600' : 'text-[#415364]/40'}`}>
@@ -943,6 +958,7 @@ export default function CRMPage() {
           </div>
         )}
 
+        {/* VISTA LISTA */}
         {vista === 'lista' && (
           <div className="bg-white rounded-2xl border border-neutral-200/60 shadow-sm h-full overflow-auto w-full custom-scrollbar">
             <table className="w-full text-left text-sm border-collapse min-w-[800px]">
@@ -957,15 +973,29 @@ export default function CRMPage() {
               </thead>
               <tbody className="divide-y divide-neutral-100 text-[#415364]">
                 {clientesFiltrados.map((cliente) => {
-                  const infoCorreo = obtenerInfoUltimoCorreo(cliente.notas);
+                  const toques = cliente.registro_llamadas || [];
+                  const countLlamadas = toques.filter(t => ['Llamada', 'Zoom', 'Reunión'].includes(t.tipo_contacto)).length;
+                  const countWa = toques.filter(t => t.tipo_contacto === 'WhatsApp').length;
+                  const countEmail = toques.filter(t => t.tipo_contacto === 'Email').length;
+                  const totalToques = toques.length;
+                  
+                  const esNuevoSinTocar = esSinContactar(cliente.notas) && totalToques === 0;
+                  
                   return (
-                    <tr key={cliente.id} onClick={() => setClienteSeleccionado(cliente)} className="hover:bg-[#dce3eb]/30 cursor-pointer transition-colors">
+                    <tr key={cliente.id} onClick={() => setClienteSeleccionado(cliente)} className={`hover:bg-[#dce3eb]/30 cursor-pointer transition-colors ${esNuevoSinTocar ? 'bg-[#FFF5F2]' : ''}`}>
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-[#415364] text-[13px]">{cliente.nombres} {cliente.apellidos}</span>
-                          {infoCorreo && <span className="text-[9px] font-bold bg-[#964B36]/10 border border-[#964B36]/20 text-[#964B36] px-2 py-0.5 rounded shadow-sm">✉️ {infoCorreo}</span>}
+                          <span className={`font-bold text-[13px] ${esNuevoSinTocar ? 'text-[#ea0029]' : 'text-[#415364]'}`}>{cliente.nombres} {cliente.apellidos}</span>
+                          {esNuevoSinTocar && <span className="text-[8px] font-bold bg-[#ea0029] text-white px-1.5 py-0.5 rounded shadow-sm uppercase">NUEVO</span>}
                         </div>
-                        <div className="text-[10px] text-[#415364]/60 font-mono mt-0.5 font-medium">{cliente.telefono}</div>
+                        <div className="flex gap-2 items-center mt-1">
+                          <div className="text-[10px] text-[#415364]/60 font-mono font-medium">{cliente.telefono}</div>
+                          <div className="flex gap-1 border-l border-neutral-200 pl-2">
+                            {countLlamadas > 0 && <span className="text-[10px]" title="Llamadas">📞{countLlamadas}</span>}
+                            {countWa > 0 && <span className="text-[10px]" title="WhatsApp">💬{countWa}</span>}
+                            {countEmail > 0 && <span className="text-[10px]" title="Email">📧{countEmail}</span>}
+                          </div>
+                        </div>
                       </td>
                       <td className="px-5 py-4 text-xs font-bold text-[#ea0029]">{cliente.tipologia_interes}</td>
                       <td className="px-5 py-4"><div className="text-[10px] font-bold text-[#415364] bg-[#415364]/10 inline-block px-2.5 py-1 rounded-md uppercase tracking-wider">{cliente.estado}</div></td>
@@ -973,7 +1003,7 @@ export default function CRMPage() {
                       <td className="px-5 py-4">
                         {cliente.proximo_contacto ? (
                            <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider ${esFechaVencida(cliente.proximo_contacto) ? 'bg-[#ea0029]/10 text-[#ea0029]' : 'bg-blue-50 text-blue-700'}`}>
-                             {new Date(cliente.proximo_contacto + 'T00:00:00').toLocaleDateString('es-EC')} - {cliente.tipo_accion}
+                             {formatearFechaAgendada(cliente.proximo_contacto)} - {cliente.tipo_accion}
                            </span>
                         ) : <span className="text-[10px] text-[#415364]/40 font-bold uppercase tracking-wider">Sin agendar</span>}
                       </td>
@@ -985,9 +1015,10 @@ export default function CRMPage() {
           </div>
         )}
 
+        {/* VISTA ACTIVIDAD */}
         {vista === 'actividad' && (
           <div className="flex flex-col h-full gap-5 overflow-y-auto">
-            <div className="bg-white p-5 rounded-2xl border border-neutral-200/60 shadow-sm flex flex-col md:flex-row items-center justify-between flex-shrink-0 gap-4">
+             <div className="bg-white p-5 rounded-2xl border border-neutral-200/60 shadow-sm flex flex-col md:flex-row items-center justify-between flex-shrink-0 gap-4">
                <div>
                  <h2 className="text-lg font-bold text-[#415364] tracking-tight">Reporte de Productividad</h2>
                  <p className="text-[11px] text-[#415364]/60 mt-0.5">Analiza el rendimiento del equipo de ventas.</p>
@@ -1180,7 +1211,6 @@ export default function CRMPage() {
                 </div>
               </div>
 
-              {/* PASE VIP */}
               <div className="bg-white border border-[#D1C292] p-5 rounded-2xl shadow-sm relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-1.5 h-full bg-[#D1C292]"></div>
                 <h3 className="text-[11px] font-bold text-[#21242E] flex items-center gap-2 uppercase tracking-widest mb-1">Pase VIP: Inventario</h3>
@@ -1195,23 +1225,20 @@ export default function CRMPage() {
                 </div>
               </div>
 
-              {/* AGENDAR SIGUIENTE PASO */}
               <div className="bg-white border border-neutral-200/60 p-5 rounded-2xl shadow-sm space-y-3">
                 <h3 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest border-b border-neutral-100 pb-2">Agendar Siguiente Paso</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Fecha</label>
-                    <input type="date" value={fechaAccion} onChange={(e) => setFechaAccion(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]" />
-                  </div>
-                  <div>
-                    <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Acción</label>
-                    <select value={tipoAccion} onChange={(e) => setTipoAccion(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029] cursor-pointer">
-                      {tiposAccion.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                  </div>
+                <div>
+                    <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Fecha y Hora <span className="text-[#ea0029]">*</span></label>
+                    <input type="datetime-local" value={fechaAccion} onChange={(e) => setFechaAccion(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]" />
                 </div>
                 <div>
-                  <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Objetivo</label>
+                  <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Acción</label>
+                  <select value={tipoAccion} onChange={(e) => setTipoAccion(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029] cursor-pointer">
+                    {tiposAccion.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Objetivo / Detalle</label>
                   <input type="text" value={detalleAccion} onChange={(e) => setDetalleAccion(e.target.value)} placeholder="Ej: Llamar para confirmar cita..." className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg p-2 text-[11px] text-[#415364] outline-none focus:border-[#ea0029]" />
                 </div>
                 <div className="flex justify-end pt-1">
@@ -1219,7 +1246,6 @@ export default function CRMPage() {
                 </div>
               </div>
 
-              {/* LOG DE SEGUIMIENTO */}
               <div className="bg-white border border-neutral-200/60 p-5 rounded-2xl shadow-sm">
                 <label className="block text-[11px] font-bold text-[#415364] tracking-widest mb-3 uppercase border-b border-neutral-100 pb-2">Log de Seguimiento</label>
                 <div className="flex flex-col gap-3 mb-4">
@@ -1231,7 +1257,6 @@ export default function CRMPage() {
                 </div>
               </div>
 
-              {/* ACCIONES DE COTIZADOR */}
               <div className="pb-6 space-y-3">
                 <button onClick={() => window.location.href = `/cotizador?clienteId=${clienteSeleccionado.id}`} className="w-full py-3.5 bg-[#ea0029] text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-[#c90022] transition-colors shadow-md flex items-center justify-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
@@ -1247,14 +1272,39 @@ export default function CRMPage() {
         )}
       </div>
 
-      {/* MODAL NUEVO PROSPECTO */}
+      {/* MODAL NUEVO PROSPECTO CON BOTÓN LIMPIAR Y REBOTE */}
       {mostrarModalNuevo && (
         <div className="fixed inset-0 bg-[#21242E]/80 z-[80] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-t-3xl md:rounded-2xl shadow-2xl w-full max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
+          <div className="bg-white rounded-t-3xl md:rounded-2xl shadow-2xl w-full max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto custom-scrollbar relative">
             <div className="flex justify-between items-center mb-6 border-b border-neutral-100 pb-4 sticky top-0 bg-white z-10 pt-2 -mt-2">
               <h2 className="text-xl font-bold text-[#415364]">Registro de Prospecto</h2>
-              <button onClick={() => setMostrarModalNuevo(false)} className="text-[#415364]/40 hover:text-[#ea0029] text-4xl font-light">&times;</button>
+              <div className="flex items-center gap-4">
+                <button type="button" onClick={limpiarFormularioNuevo} className="text-[#415364]/60 hover:text-[#ea0029] text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 transition-colors">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg> Limpiar Pantalla
+                </button>
+                <button onClick={() => setMostrarModalNuevo(false)} className="text-[#415364]/40 hover:text-[#ea0029] text-4xl font-light">&times;</button>
+              </div>
             </div>
+
+            {duplicadoDetectado && (
+              <div className="mb-6 p-4 bg-[#FFF5F2] border border-[#ea0029]/30 rounded-xl shadow-sm">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="text-xs font-bold text-[#ea0029] uppercase tracking-wider mb-1 flex items-center gap-1.5">🚨 Este prospecto ya existe</h3>
+                    <p className="text-[11px] text-[#415364] font-medium leading-relaxed">
+                      El sistema detectó que <strong>{duplicadoDetectado.nombres} {duplicadoDetectado.apellidos}</strong> ya está registrado con ese mismo correo.
+                    </p>
+                  </div>
+                  <button 
+                    onClick={() => { setClienteSeleccionado(duplicadoDetectado); setMostrarModalNuevo(false); setDuplicadoDetectado(null); }}
+                    className="flex-shrink-0 px-4 py-2 bg-[#ea0029] text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-[#c90022] shadow-sm transition-colors"
+                  >
+                    Ir a su Ficha ➔
+                  </button>
+                </div>
+              </div>
+            )}
+
             <form onSubmit={guardarNuevoCliente} className="space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
@@ -1375,6 +1425,55 @@ export default function CRMPage() {
         </div>
       )}
 
+      {/* MODAL MÚLTIPLE: STANDBY */}
+      {mostrarModalStandby && (
+        <div className="fixed inset-0 bg-[#21242E]/80 z-[90] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
+           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+              <h2 className="text-lg font-bold text-[#415364] border-b border-neutral-100 pb-3 mb-4">Pausar Prospecto (Standby)</h2>
+              <div className="space-y-4">
+                 <div>
+                    <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Motivo del Standby <span className="text-[#ea0029]">*</span></label>
+                    <input type="text" value={standbyMotivo} onChange={e => setStandbyMotivo(e.target.value)} placeholder="Ej: Esperando pre-aprobación del banco..." className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg p-2.5 text-xs text-[#415364] font-medium outline-none focus:border-[#ea0029]" />
+                 </div>
+                 <div>
+                    <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Reactivación sugerida (Fecha)</label>
+                    <input type="date" value={standbyFechaReact} onChange={e => setStandbyFechaReact(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg p-2.5 text-xs text-[#415364] font-medium outline-none focus:border-[#ea0029]" />
+                 </div>
+              </div>
+              <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-neutral-100">
+                 <button onClick={() => setMostrarModalStandby(false)} className="px-4 py-2 text-[10px] font-bold text-[#415364] border border-[#415364]/20 rounded-lg">Cancelar</button>
+                 <button onClick={confirmarStandby} className="px-4 py-2 bg-amber-500 text-white rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-amber-600">Pausar Prospecto</button>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* MODAL MÚLTIPLE: DESCARTE */}
+      {mostrarModalDescarte && (
+        <div className="fixed inset-0 bg-[#21242E]/80 z-[90] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
+           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+              <h2 className="text-lg font-bold text-[#ea0029] border-b border-neutral-100 pb-3 mb-4">Descartar Prospecto</h2>
+              <div className="space-y-4">
+                 <div>
+                    <label className="block text-[10px] font-bold text-[#415364]/60 uppercase mb-1.5">Motivo de Pérdida <span className="text-[#ea0029]">*</span></label>
+                    <select value={descarteMotivo} onChange={e => setDescarteMotivo(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg p-2.5 text-xs text-[#415364] font-medium outline-none focus:border-[#ea0029]">
+                       <option value="">-- Selecciona --</option>
+                       <option value="Compró en la competencia">Compró en la competencia</option>
+                       <option value="No califica a crédito">No califica a crédito</option>
+                       <option value="Precio muy alto / Falta liquidez">Precio muy alto / Falta liquidez</option>
+                       <option value="Solo era curiosidad">Solo era curiosidad / Spam</option>
+                       <option value="Ya no contesta (Ghosting)">Ya no contesta (Ghosting)</option>
+                    </select>
+                 </div>
+              </div>
+              <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-neutral-100">
+                 <button onClick={() => setMostrarModalDescarte(false)} className="px-4 py-2 text-[10px] font-bold text-[#415364] border border-[#415364]/20 rounded-lg">Cancelar</button>
+                 <button onClick={confirmarDescarte} disabled={!descarteMotivo} className="px-4 py-2 bg-[#ea0029] text-white rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-[#c90022] disabled:opacity-50">Descartar Definitivamente</button>
+              </div>
+           </div>
+        </div>
+      )}
+
       {/* MODAL MENSAJES RÁPIDOS */}
       {mostrarModalPlantilla && (
         <div className="fixed inset-0 bg-[#21242E]/80 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
@@ -1434,7 +1533,7 @@ export default function CRMPage() {
         </div>
       )}
 
-      {/* === ESTUDIO DE DISEÑO PROFESIONAL === */}
+      {/* ESTUDIO DE DISEÑO PROFESIONAL */}
       {mostrarModalPreviewCorreo && clienteSeleccionado && (() => {
         const htmlAEnviar = generarCodigoHTMLCorreo();
 
@@ -1451,8 +1550,6 @@ export default function CRMPage() {
               </div>
 
               <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
-                
-                {/* PANEL IZQUIERDO */}
                 <div className="w-full md:w-[380px] bg-white border-r border-neutral-200 p-5 flex flex-col gap-5 overflow-y-auto custom-scrollbar flex-shrink-0">
                   <div className="space-y-2">
                     <label className="block text-[10px] font-bold text-[#415364] uppercase tracking-widest">1. Seleccionar Estrategia</label>
@@ -1476,7 +1573,6 @@ export default function CRMPage() {
                       <button onClick={()=>setIncluirFirma(true)} className={`p-2 rounded-lg border-2 text-[9px] font-bold uppercase ${incluirFirma ? 'border-[#ea0029] bg-[#ea0029]/10 text-[#ea0029]' : 'border-neutral-200 text-neutral-600'}`}>Con Firma</button>
                       <button onClick={()=>setIncluirFirma(false)} className={`p-2 rounded-lg border-2 text-[9px] font-bold uppercase ${!incluirFirma ? 'border-[#ea0029] bg-[#ea0029]/10 text-[#ea0029]' : 'border-neutral-200 text-neutral-600'}`}>Sin Firma (Masivo)</button>
                     </div>
-
                     {incluirFirma && (
                       <div className="space-y-2 pt-2 border-t border-neutral-200">
                         <div>
@@ -1533,7 +1629,6 @@ export default function CRMPage() {
                   </div>
                 </div>
 
-                {/* PANEL DERECHO: VISTA PREVIA EXACTA */}
                 <div className="flex-1 bg-[#dce3eb] p-0 md:p-6 overflow-hidden flex justify-center">
                   <div className="w-full max-w-[600px] h-full bg-white shadow-2xl overflow-y-auto custom-scrollbar border border-neutral-300">
                      <div dangerouslySetInnerHTML={{ __html: htmlAEnviar }} />
@@ -1541,7 +1636,6 @@ export default function CRMPage() {
                 </div>
               </div>
 
-              {/* Footer de Acciones del Modal */}
               <div className="bg-white p-5 border-t border-neutral-200 flex justify-end gap-4 flex-shrink-0">
                 <button onClick={() => setMostrarModalPreviewCorreo(false)} className="px-6 py-2.5 text-xs font-bold text-[#415364] border border-[#415364]/20 rounded-xl hover:bg-[#415364]/5">Cancelar</button>
                 <button onClick={enviarCorreoFinal} disabled={enviandoCorreoCRM} className="px-8 py-3 bg-[#ea0029] text-white text-xs font-bold uppercase tracking-widest rounded-xl shadow-md hover:bg-[#c90022] disabled:opacity-50">
