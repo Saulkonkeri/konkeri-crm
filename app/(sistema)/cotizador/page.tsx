@@ -106,7 +106,19 @@ export default function CotizadorPage() {
           setPropiedades(datosOrdenados);
         }
         const { data: dataCli } = await supabase.from('clientes').select('id, nombres, apellidos, tipo, telefono, email').order('nombres', { ascending: true });
-        if (dataCli) setClientes(dataCli);
+        if (dataCli) {
+          setClientes(dataCli);
+          
+          // Leer clienteId de la URL si viene desde el CRM
+          const params = new URLSearchParams(window.location.search);
+          const clienteIdUrl = params.get('clienteId');
+          if (clienteIdUrl) {
+            const existe = dataCli.find(c => c.id.toString() === clienteIdUrl.toString());
+            if (existe) {
+              setClienteSeleccionado(existe.id.toString());
+            }
+          }
+        }
       } catch (err) {
         console.error("Error cargando datos:", err);
       } finally {
