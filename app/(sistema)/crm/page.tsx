@@ -23,7 +23,6 @@ interface Cliente {
   detalle_accion?: string | null;
   tipo?: string; 
   created_at?: string;
-  // NUEVO: Relación cruzada para medir toques (Touchpoints)
   registro_llamadas?: { tipo_contacto: string }[];
 }
 
@@ -243,7 +242,6 @@ export default function CRMPage() {
 
   const cargarClientes = async () => {
     try {
-      // NUEVO: Traemos clientes Y su conteo de llamadas/actividades (Touchpoints) cruzadas
       const { data, error } = await supabase.from('clientes').select(`
         *,
         registro_llamadas(tipo_contacto)
@@ -276,7 +274,6 @@ export default function CRMPage() {
       if (error) throw error;
       if (filtroTiempo === 'hoy' && data) setActividadesDia([data[0], ...actividadesDia]);
       
-      // NUEVO: Sumar el toque en tiempo real a la interfaz sin recargar
       setClientes(prev => prev.map(c => c.id === llamadaClienteId ? {
         ...c,
         registro_llamadas: [...(c.registro_llamadas || []), { tipo_contacto: tipoContacto }]
@@ -648,7 +645,6 @@ export default function CRMPage() {
 
       await supabase.from('clientes').update({ notas: notaFinal }).eq('id', cliente.id);
       
-      // NUEVO: Agregar toque instantáneo al UI
       setClientes(prev => prev.map(c => c.id === cliente.id ? { 
         ...c, 
         notas: notaFinal,
@@ -756,7 +752,6 @@ export default function CRMPage() {
         const detalleTipo = incluirFirma ? `De: ${nombreRemitente} (${cargoRemitente})` : 'Envío Masivo';
         const notaFinal = `[${fechaFormateada}] 📧 Correo Enviado: "${plantillaConfig.nombre}" [${detalleTipo}]\n\n${clienteSeleccionado.notas || ''}`;
         
-        // NUEVO: Agregar toque instantáneo al UI
         await supabase.from('clientes').update({ notas: notaFinal }).eq('id', clienteSeleccionado.id);
         setClientes(prev => prev.map(c => c.id === clienteSeleccionado.id ? { 
           ...c, 
@@ -934,6 +929,17 @@ export default function CRMPage() {
                             </div>
                           )}
 
+                          {/* INDICADOR DE ÚLTIMO CORREO ENVIADO (RESTAURADO) */}
+                          {infoCorreo && (
+                            <div className="mt-2 text-[9px] font-bold px-2 py-1.5 flex items-center justify-between rounded-md bg-[#FFF5F2] border border-[#964B36]/40 shadow-sm">
+                              <div className="flex items-center gap-1 text-[#964B36]">
+                                <span className="text-[12px]">✉️</span>
+                                <span className="uppercase tracking-wider">Correo</span>
+                              </div>
+                              <span className="bg-[#964B36] text-white px-2 py-0.5 rounded-[4px] uppercase tracking-wider">{infoCorreo}</span>
+                            </div>
+                          )}
+
                           {/* CONTADOR VISUAL DE TOQUES */}
                           <div className="flex gap-1.5 mt-2.5">
                             {countLlamadas > 0 && <span className="bg-[#415364]/10 text-[#415364] text-[9px] px-1.5 py-0.5 rounded font-bold" title="Llamadas / Zoom / Reunión">📞 {countLlamadas}</span>}
@@ -973,6 +979,7 @@ export default function CRMPage() {
               </thead>
               <tbody className="divide-y divide-neutral-100 text-[#415364]">
                 {clientesFiltrados.map((cliente) => {
+                  const infoCorreo = obtenerInfoUltimoCorreo(cliente.notas);
                   const toques = cliente.registro_llamadas || [];
                   const countLlamadas = toques.filter(t => ['Llamada', 'Zoom', 'Reunión'].includes(t.tipo_contacto)).length;
                   const countWa = toques.filter(t => t.tipo_contacto === 'WhatsApp').length;
@@ -984,9 +991,10 @@ export default function CRMPage() {
                   return (
                     <tr key={cliente.id} onClick={() => setClienteSeleccionado(cliente)} className={`hover:bg-[#dce3eb]/30 cursor-pointer transition-colors ${esNuevoSinTocar ? 'bg-[#FFF5F2]' : ''}`}>
                       <td className="px-5 py-4">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className={`font-bold text-[13px] ${esNuevoSinTocar ? 'text-[#ea0029]' : 'text-[#415364]'}`}>{cliente.nombres} {cliente.apellidos}</span>
                           {esNuevoSinTocar && <span className="text-[8px] font-bold bg-[#ea0029] text-white px-1.5 py-0.5 rounded shadow-sm uppercase">NUEVO</span>}
+                          {infoCorreo && <span className="text-[9px] font-bold bg-[#964B36]/10 border border-[#964B36]/20 text-[#964B36] px-2 py-0.5 rounded shadow-sm">✉️ {infoCorreo}</span>}
                         </div>
                         <div className="flex gap-2 items-center mt-1">
                           <div className="text-[10px] text-[#415364]/60 font-mono font-medium">{cliente.telefono}</div>
