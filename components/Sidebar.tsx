@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -7,9 +8,30 @@ import { supabase } from '@/lib/supabase';
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const [autenticado, setAutenticado] = useState(false);
+
+  useEffect(() => {
+    // 1. Verificar sesión actual al cargar
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setAutenticado(!!session);
+    });
+
+    // 2. Escuchar cambios (login / logout) en tiempo real
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAutenticado(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Si no hay sesión activa o está en /login, no renderizar el menú
+  if (!autenticado || pathname === '/login') {
+    return null;
+  }
 
   const cerrarSesion = async () => {
     await supabase.auth.signOut();
+    setAutenticado(false);
     router.push('/login');
   };
 
@@ -18,7 +40,7 @@ export default function Sidebar() {
     { name: '📊 CRM / Pipeline', path: '/crm' },
     { name: '📄 Cotizador', path: '/cotizador' },
     { name: '📦 Inventario', path: '/inventario' },
-    { name: '📡 Radar en Vivo', path: '/radar' }, // <-- AQUÍ ESTÁ EL NUEVO BOTÓN
+    { name: '📡 Radar en Vivo', path: '/radar' },
     { name: '👥 Clientes', path: '/clientes' },
     { name: '🤝 Registrar Operación', path: '/ventas' },
     { name: '📈 Reportes BI', path: '/reportes' },
