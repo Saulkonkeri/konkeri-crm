@@ -2,13 +2,32 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter(); 
   const [menuAbierto, setMenuAbierto] = useState(false);
+  const [autenticado, setAutenticado] = useState(false);
+  const [verificando, setVerificando] = useState(true);
+
+  useEffect(() => {
+    // Verificar sesión actual al cargar
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setAutenticado(!!session);
+      setVerificando(false);
+    });
+
+    // Escuchar cambios de sesión en tiempo real
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAutenticado(!!session);
+      setVerificando(false);
+      if (!session) setMenuAbierto(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const menuItems = [
     { 
@@ -68,6 +87,11 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     }
   ];
 
+  // Si no hay sesión activa, está verificando o está en /login, mostrar solo la página sin menús
+  if (verificando || !autenticado || pathname === '/login') {
+    return <>{children}</>;
+  }
+
   // Función para matar la sesión de forma segura y redirigir
   const handleCerrarSesion = async () => {
     const confirmar = window.confirm("¿Seguro que deseas cerrar la sesión?");
@@ -75,6 +99,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
     try {
       await supabase.auth.signOut();
+      setAutenticado(false);
+      setMenuAbierto(false);
       router.push('/login'); 
     } catch (error) {
       console.error('Error cerrando sesión:', error);
