@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 
 interface Cliente {
@@ -22,6 +22,7 @@ interface Cliente {
   tipo_accion?: string;
   detalle_accion?: string | null;
   tipo?: string; 
+  etiquetas?: string[];
   created_at?: string;
   registro_llamadas?: { tipo_contacto: string }[];
 }
@@ -45,6 +46,15 @@ interface Actividad {
   created_at: string;
   clientes?: { nombres: string; apellidos: string };
 }
+
+const ETIQUETAS_RAPIDAS = [
+  '🏖️ Viene en Feriado',
+  '📍 Quiere Visita',
+  '🏦 Espera Crédito',
+  '💰 Listo para Reservar',
+  '🔥 Muy Interesado',
+  '📞 Volver a Llamar'
+];
 
 const PLANTILLAS_CORREO = [
   {
@@ -112,6 +122,7 @@ export default function CRMPage() {
   const [filtroCiudad, setFiltroCiudad] = useState('Todas');
   const [filtroTipologia, setFiltroTipologia] = useState('Todas');
   const [filtroOrigen, setFiltroOrigen] = useState('Todos');
+  const [filtroEtiqueta, setFiltroEtiqueta] = useState('Todas');
   const [filtroCalientes, setFiltroCalientes] = useState(false);
   const [filtroTareas, setFiltroTareas] = useState<'todas' | 'vencidas' | 'hoy' | 'proximas'>('todas');
 
@@ -129,6 +140,7 @@ export default function CRMPage() {
   const [mostrarModalPlantilla, setMostrarModalPlantilla] = useState(false);
   const [mostrarModalHistorial, setMostrarModalHistorial] = useState(false);
   const [clienteSeleccionado, setClienteSeleccionado] = useState<Cliente | null>(null);
+  const clienteUrlAbiertoRef = useRef(false);
   
   const [duplicadoDetectado, setDuplicadoDetectado] = useState<Cliente | null>(null);
 
@@ -174,6 +186,12 @@ export default function CRMPage() {
 
   const [nuevaNotaTexto, setNuevaNotaTexto] = useState('');
   const [guardandoNota, setGuardandoNota] = useState(false);
+
+  const [nuevaEtiquetaTexto, setNuevaEtiquetaTexto] = useState('');
+  const [fichaCanal, setFichaCanal] = useState('Llamada');
+  const [fichaResultado, setFichaResultado] = useState('Contestó');
+  const [fichaNota, setFichaNota] = useState('');
+  const [guardandoGestionFicha, setGuardandoGestionFicha] = useState(false);
   
   const [fechaAccion, setFechaAccion] = useState('');
   const [tipoAccion, setTipoAccion] = useState('Llamada Telefónica');
@@ -212,6 +230,20 @@ export default function CRMPage() {
     if (cG) setPlantillaCampana(cG);
   }, []);
 
+  useEffect(() => {
+    if (!cargando && clientes.length > 0 && !clienteUrlAbiertoRef.current && typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const idUrl = params.get('clienteId');
+      if (idUrl) {
+        const encontrado = clientes.find(c => c.id === idUrl);
+        if (encontrado) {
+          setClienteSeleccionado(encontrado);
+          clienteUrlAbiertoRef.current = true;
+        }
+      }
+    }
+  }, [cargando, clientes]);
+
   useEffect(() => { cargarBitacoraRango(); }, [filtroTiempo]);
 
   useEffect(() => {
@@ -220,6 +252,8 @@ export default function CRMPage() {
       setTipoAccion(clienteSeleccionado.tipo_accion || 'Llamada Telefónica');
       setDetalleAccion(clienteSeleccionado.detalle_accion || '');
       setNuevaNotaTexto('');
+      setFichaNota('');
+      setNuevaEtiquetaTexto('');
     }
   }, [clienteSeleccionado]);
 
@@ -264,6 +298,72 @@ export default function CRMPage() {
     } catch (e) { console.error(e); }
   };
 
+  const toggleEtiqueta = async (etiqueta: string) => {
+    if (!clienteSeleccionado) return;
+    const actuales = clienteSeleccionado.etiquetas || [];
+    const nuevas = actuales.includes(etiqueta)
+      ? actuales.filter(e => e !== etiqueta)
+      : [...actuales, etiqueta];
+
+    setClientes(prev => prev.map(c => c.id === clienteSeleccionado.id ? { ...c, etiquetas: nuevas } : c));
+    setClienteSeleccionado(prev => prev ? { ...prev, etiquetas: nuevas } : prev);
+
+    const { error } = await supabase.from('clientes').update({ etiquetas: nuevas }).eq('id', clienteSeleccionado.id);
+    if (error) alert(`Error al guardar etiqueta: ${error.message}`);
+  };
+
+  const agregarEtiquetaPersonalizada = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const limpia = nuevaEtiquetaTexto.trim();
+    if (!limpia || !clienteSeleccionado) return;
+    if (!(clienteSeleccionado.etiquetas || []).includes(limpia)) {
+      await toggleEtiqueta(limpia);
+    }
+    setNuevaEtiquetaTexto('');
+  };
+
+  const registrarGestionDesdeFicha = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!clienteSeleccionado) return;
+    setGuardandoGestionFicha(true);
+    try {
+      const { error: errReg } = await supabase.from('registro_llamadas').insert([{
+        cliente_id: clienteSeleccionado.id,
+        agente: nombreRemitente,
+        tipo_contacto: fichaCanal,
+        resultado: fichaResultado,
+        notas: fichaNota.trim() || `${fichaCanal} - ${fichaResultado}`
+      }]);
+      if (errReg) throw errReg;
+
+      const ahora = new Date();
+      const fechaFormateada = `${String(ahora.getDate()).padStart(2, '0')}/${String(ahora.getMonth() + 1).padStart(2, '0')}/${ahora.getFullYear()} ${ahora.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}`;
+      const icono = fichaCanal === 'WhatsApp' ? '💬' : fichaCanal === 'Email' ? '📧' : fichaCanal === 'Zoom' ? '📹' : fichaCanal === 'Reunión' ? '🤝' : '📞';
+      const notaFinal = `[${fechaFormateada}] ${icono} ${fichaCanal} (${fichaResultado})${fichaNota.trim() ? `: ${fichaNota.trim()}` : ''}\n\n${clienteSeleccionado.notas || ''}`;
+
+      await supabase.from('clientes').update({ notas: notaFinal }).eq('id', clienteSeleccionado.id);
+
+      setClientes(prev => prev.map(c => c.id === clienteSeleccionado.id ? {
+        ...c,
+        notas: notaFinal,
+        registro_llamadas: [...(c.registro_llamadas || []), { tipo_contacto: fichaCanal }]
+      } : c));
+
+      setClienteSeleccionado(prev => prev ? {
+        ...prev,
+        notas: notaFinal,
+        registro_llamadas: [...(prev.registro_llamadas || []), { tipo_contacto: fichaCanal }]
+      } : prev);
+
+      setFichaNota('');
+      cargarBitacoraRango();
+    } catch (e: any) {
+      alert(`Error al registrar gestión: ${e.message}`);
+    } finally {
+      setGuardandoGestionFicha(false);
+    }
+  };
+
   const registrarActividadRapida = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!llamadaClienteId) { alert("Selecciona un prospecto."); return; }
@@ -305,7 +405,7 @@ export default function CRMPage() {
   
   const esSinContactar = (notas: string | null) => {
     if (!notas) return true;
-    return notas.split('\n\n').length <= 1 && !notas.includes('💬') && !notas.includes('📧') && !notas.includes('Standby') && !notas.includes('Descartado');
+    return notas.split('\n\n').length <= 1 && !notas.includes('💬') && !notas.includes('📧') && !notas.includes('📞') && !notas.includes('Standby') && !notas.includes('Descartado');
   };
 
   const obtenerInfoUltimoCorreo = (notas: string | null) => {
@@ -349,6 +449,12 @@ export default function CRMPage() {
     return `${d.toLocaleDateString('es-EC', {day:'2-digit', month:'short'})} ${d.toLocaleTimeString('es-EC', {hour:'2-digit', minute:'2-digit'})}`;
   };
 
+  const etiquetasDisponibles = useMemo(() => {
+    const s = new Set<string>(ETIQUETAS_RAPIDAS);
+    clientes.forEach(c => { if (c.etiquetas) c.etiquetas.forEach(tag => s.add(tag)); });
+    return Array.from(s);
+  }, [clientes]);
+
   const clientesFiltrados = useMemo(() => {
     const hoyStr = new Date().toISOString().split('T')[0];
     const hoyMs = new Date(hoyStr + 'T00:00:00').getTime();
@@ -360,11 +466,14 @@ export default function CRMPage() {
         `${c.nombres || ''} ${c.apellidos || ''}`.toLowerCase().includes(b) || 
         (c.email && c.email.toLowerCase().includes(b)) ||
         (c.telefono && c.telefono.includes(b)) ||
-        (c.telefono && busquedaNum.length > 4 && c.telefono.replace(/\D/g, '').includes(busquedaNum));
+        (c.telefono && busquedaNum.length > 4 && c.telefono.replace(/\D/g, '').includes(busquedaNum)) ||
+        (c.notas && c.notas.toLowerCase().includes(b)) ||
+        (c.etiquetas && c.etiquetas.some(t => t.toLowerCase().includes(b)));
         
       const coincideCiudad = filtroCiudad === 'Todas' || (c.ciudad_residencia && c.ciudad_residencia.toLowerCase().trim() === filtroCiudad.toLowerCase().trim());
       const coincideTipologia = filtroTipologia === 'Todas' || (c.tipologia_interes && c.tipologia_interes.toLowerCase().trim() === filtroTipologia.toLowerCase().trim());
       const coincideOrigen = filtroOrigen === 'Todos' || (c.origen_captacion && c.origen_captacion.toLowerCase().trim() === filtroOrigen.toLowerCase().trim());
+      const coincideEtiqueta = filtroEtiqueta === 'Todas' || (c.etiquetas && c.etiquetas.includes(filtroEtiqueta));
       
       let coincideCaliente = true;
       if (filtroCalientes) {
@@ -384,9 +493,9 @@ export default function CRMPage() {
         }
       }
 
-      return coincidenciaBusqueda && coincideCiudad && coincideTipologia && coincideOrigen && coincideCaliente && coincideTarea;
+      return coincidenciaBusqueda && coincideCiudad && coincideTipologia && coincideOrigen && coincideEtiqueta && coincideCaliente && coincideTarea;
     });
-  }, [clientes, busqueda, filtroCiudad, filtroTipologia, filtroOrigen, filtroCalientes, filtroTareas]);
+  }, [clientes, busqueda, filtroCiudad, filtroTipologia, filtroOrigen, filtroEtiqueta, filtroCalientes, filtroTareas]);
 
   const prospectosFiltradosParaLlamada = useMemo(() => {
     if (!busquedaLlamada) return clientes.slice(0, 50);
@@ -483,7 +592,8 @@ export default function CRMPage() {
         nombres: nuevoNombre.trim(), apellidos: nuevoApellido.trim(), telefono: nuevoTelefono.trim(),
         email: nuevoEmail ? nuevoEmail.trim().toLowerCase() : null, ciudad_residencia: nuevaCiudad.trim() || null, 
         motivo_compra: nuevoMotivo, tipologia_interes: nuevoInteres, origen_captacion: nuevoOrigen, campana: nuevoCampana.trim() || null,
-        notas: notaInicial, estado: 'Interesado', tipo: 'prospecto', temperatura: '❄️ Frío', ingresado_por: nuevoIngresadoPor.trim()
+        notas: notaInicial, estado: 'Interesado', tipo: 'prospecto', temperatura: '❄️ Frío', ingresado_por: nuevoIngresadoPor.trim(),
+        etiquetas: []
       };
       
       const { data, error } = await supabase.from('clientes').insert([payload]).select();
@@ -599,6 +709,20 @@ export default function CRMPage() {
       setClientes(prev => prev.map(c => c.id === clienteSeleccionado.id ? { ...c, ...updates } as any : c));
       setClienteSeleccionado(prev => prev ? { ...prev, ...updates } : prev);
       alert("¡Tarea agendada correctamente!");
+    } catch (e: any) { alert(`Error: ${e.message}`); } finally { setGuardandoTarea(false); }
+  };
+
+  const marcarTareaResuelta = async () => {
+    if (!clienteSeleccionado) return;
+    setGuardandoTarea(true);
+    try {
+      const updates = { proximo_contacto: null, tipo_accion: null, detalle_accion: null };
+      await supabase.from('clientes').update(updates).eq('id', clienteSeleccionado.id);
+      setClientes(prev => prev.map(c => c.id === clienteSeleccionado.id ? { ...c, ...updates } as any : c));
+      setClienteSeleccionado(prev => prev ? { ...prev, ...updates } as any : prev);
+      setFechaAccion('');
+      setDetalleAccion('');
+      alert("✅ Tarea marcada como resuelta.");
     } catch (e: any) { alert(`Error: ${e.message}`); } finally { setGuardandoTarea(false); }
   };
 
@@ -816,18 +940,26 @@ export default function CRMPage() {
         </div>
 
         {/* BARRA DE BÚSQUEDA Y FILTROS */}
-        <div className="bg-white p-4 rounded-2xl border border-neutral-200/60 shadow-sm flex flex-wrap items-center gap-4">
+        <div className="bg-white p-4 rounded-2xl border border-neutral-200/60 shadow-sm flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[220px]">
             <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-[#415364]/40">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             </span>
             <input 
               type="text" 
-              placeholder="Buscar prospecto por nombre, email o teléfono..." 
+              placeholder="Buscar por nombre, teléfono, etiqueta o nota (ej: feriado)..." 
               value={busqueda} 
               onChange={(e) => setBusqueda(e.target.value)} 
               className="w-full bg-[#dce3eb]/30 border border-[#415364]/10 rounded-xl py-2.5 pl-10 pr-4 text-xs font-medium focus:outline-none focus:border-[#ea0029] focus:ring-1 focus:ring-[#ea0029]/20 transition-all text-[#415364]" 
             />
+          </div>
+
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-[#415364]/50 font-bold text-[10px] uppercase tracking-widest">Etiqueta:</span>
+            <select value={filtroEtiqueta} onChange={(e) => setFiltroEtiqueta(e.target.value)} className="bg-amber-50/60 border border-amber-300/70 rounded-lg py-2 px-3 text-xs font-bold text-[#415364] outline-none focus:border-[#ea0029] cursor-pointer">
+              <option value="Todas">Todas</option>
+              {etiquetasDisponibles.map(tag => <option key={tag} value={tag}>{tag}</option>)}
+            </select>
           </div>
 
           <div className="flex items-center gap-2 text-xs">
@@ -838,7 +970,7 @@ export default function CRMPage() {
             </select>
           </div>
 
-          <div className="flex items-center border-l border-[#415364]/10 pl-4 gap-2">
+          <div className="flex items-center border-l border-[#415364]/10 pl-3 gap-2">
             <button 
               onClick={() => setFiltroCalientes(!filtroCalientes)}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all border ${filtroCalientes ? 'bg-amber-50 text-amber-600 border-amber-300 shadow-sm' : 'bg-white text-[#415364]/60 border-[#415364]/20 hover:bg-amber-50/50'}`}
@@ -891,14 +1023,12 @@ export default function CRMPage() {
                       const agendadoVencido = esFechaVencida(cliente.proximo_contacto);
                       const infoCorreo = obtenerInfoUltimoCorreo(cliente.notas);
                       
-                      // LOGICA DEL CONTADOR DE TOQUES
                       const toques = cliente.registro_llamadas || [];
                       const countLlamadas = toques.filter(t => ['Llamada', 'Zoom', 'Reunión'].includes(t.tipo_contacto)).length;
                       const countWa = toques.filter(t => t.tipo_contacto === 'WhatsApp').length;
                       const countEmail = toques.filter(t => t.tipo_contacto === 'Email').length;
                       const totalToques = toques.length;
 
-                      // ALERTA DE NUEVO LEAD SIN CONTACTO MANUAL
                       const esNuevoSinTocar = esSinContactar(cliente.notas) && totalToques === 0;
 
                       return (
@@ -908,7 +1038,6 @@ export default function CRMPage() {
                         >
                           {cliente.temperatura && !esNuevoSinTocar && <span className="absolute top-3 right-3 text-[10px] bg-[#dce3eb]/50 rounded-full px-1.5 py-0.5">{cliente.temperatura.split(' ')[0]}</span>}
                           
-                          {/* BADGE DE NUEVO */}
                           {esNuevoSinTocar && (
                              <span className="absolute -top-2 -right-1 bg-[#ea0029] text-white text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full shadow-md animate-pulse">
                                🔴 Nuevo - Sin Contactar
@@ -922,6 +1051,16 @@ export default function CRMPage() {
                             <span className="inline-block bg-[#415364]/5 text-[#415364] border border-[#415364]/10 text-[9px] font-bold px-2 py-0.5 rounded-md mr-1 uppercase tracking-wider">{cliente.tipologia_interes}</span>
                           )}
 
+                          {cliente.etiquetas && cliente.etiquetas.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1.5">
+                              {cliente.etiquetas.map((tag, i) => (
+                                <span key={i} className="inline-block bg-amber-50 text-amber-800 border border-amber-200 text-[9px] font-bold px-2 py-0.5 rounded-md">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
                           {cliente.proximo_contacto && (
                             <div className={`mt-2 text-[9px] font-bold px-2.5 py-1 flex items-center gap-1.5 rounded-md border ${agendadoVencido ? 'bg-[#ea0029]/10 text-[#ea0029] border-[#ea0029]/20' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
@@ -929,7 +1068,6 @@ export default function CRMPage() {
                             </div>
                           )}
 
-                          {/* INDICADOR DE ÚLTIMO CORREO ENVIADO (RESTAURADO) */}
                           {infoCorreo && (
                             <div className="mt-2 text-[9px] font-bold px-2 py-1.5 flex items-center justify-between rounded-md bg-[#FFF5F2] border border-[#964B36]/40 shadow-sm">
                               <div className="flex items-center gap-1 text-[#964B36]">
@@ -940,7 +1078,6 @@ export default function CRMPage() {
                             </div>
                           )}
 
-                          {/* CONTADOR VISUAL DE TOQUES */}
                           <div className="flex gap-1.5 mt-2.5">
                             {countLlamadas > 0 && <span className="bg-[#415364]/10 text-[#415364] text-[9px] px-1.5 py-0.5 rounded font-bold" title="Llamadas / Zoom / Reunión">📞 {countLlamadas}</span>}
                             {countWa > 0 && <span className="bg-[#25D366]/20 text-[#128C7E] text-[9px] px-1.5 py-0.5 rounded font-bold" title="WhatsApp">💬 {countWa}</span>}
@@ -1005,7 +1142,18 @@ export default function CRMPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-5 py-4 text-xs font-bold text-[#ea0029]">{cliente.tipologia_interes}</td>
+                      <td className="px-5 py-4">
+                        <div className="text-xs font-bold text-[#ea0029]">{cliente.tipologia_interes}</div>
+                        {cliente.etiquetas && cliente.etiquetas.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {cliente.etiquetas.map((tag, i) => (
+                              <span key={i} className="bg-amber-50 text-amber-800 border border-amber-200 text-[9px] font-bold px-1.5 py-0.5 rounded">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </td>
                       <td className="px-5 py-4"><div className="text-[10px] font-bold text-[#415364] bg-[#415364]/10 inline-block px-2.5 py-1 rounded-md uppercase tracking-wider">{cliente.estado}</div></td>
                       <td className="px-5 py-4 text-xs">{cliente.temperatura || '❄️ Frío'}</td>
                       <td className="px-5 py-4">
@@ -1150,7 +1298,7 @@ export default function CRMPage() {
 
       {/* --- PANEL LATERAL DEL CLIENTE --- */}
       {clienteSeleccionado && <div className="fixed inset-0 bg-[#21242E]/80 z-40 transition-opacity backdrop-blur-sm" onClick={() => setClienteSeleccionado(null)}></div>}
-      <div className={`fixed top-0 right-0 h-full w-full max-w-[400px] bg-[#F9F7F5] shadow-2xl border-l border-neutral-200 transform transition-transform duration-300 z-50 flex flex-col ${clienteSeleccionado ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div className={`fixed top-0 right-0 h-full w-full max-w-[420px] bg-[#F9F7F5] shadow-2xl border-l border-neutral-200 transform transition-transform duration-300 z-50 flex flex-col ${clienteSeleccionado ? 'translate-x-0' : 'translate-x-full'}`}>
         {clienteSeleccionado && (
           <>
             <div className="p-6 bg-[#21242E] relative flex-shrink-0 shadow-md">
@@ -1170,7 +1318,81 @@ export default function CRMPage() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar">
+
+              {/* ETIQUETAS RÁPIDAS DEL LEAD */}
+              <div className="bg-white p-4 rounded-xl border border-amber-200/80 shadow-sm space-y-3">
+                <p className="text-[10px] font-bold text-amber-800 uppercase tracking-widest border-b border-amber-100 pb-2">
+                  🏷️ Etiquetas / Recordatorios Visibles
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {Array.from(new Set([...ETIQUETAS_RAPIDAS, ...(clienteSeleccionado.etiquetas || [])])).map((tag) => {
+                    const activa = (clienteSeleccionado.etiquetas || []).includes(tag);
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => toggleEtiqueta(tag)}
+                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full border transition-all ${
+                          activa
+                            ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
+                            : 'bg-neutral-50 text-[#415364]/70 border-neutral-200 hover:bg-amber-50 hover:text-amber-800'
+                        }`}
+                      >
+                        {activa ? '✓ ' : '+ '}{tag}
+                      </button>
+                    );
+                  })}
+                </div>
+                <form onSubmit={agregarEtiquetaPersonalizada} className="flex gap-2 pt-1">
+                  <input
+                    type="text"
+                    value={nuevaEtiquetaTexto}
+                    onChange={(e) => setNuevaEtiquetaTexto(e.target.value)}
+                    placeholder="Otra etiqueta (ej: Viene en Carnaval)..."
+                    className="flex-1 bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg px-2.5 py-1.5 text-[11px] text-[#415364] outline-none focus:border-[#ea0029]"
+                  />
+                  <button type="submit" className="px-3 py-1.5 bg-[#415364] text-white text-[10px] font-bold uppercase rounded-lg hover:bg-[#21242E]">
+                    Añadir
+                  </button>
+                </form>
+              </div>
+
+              {/* REGISTRO RÁPIDO DE GESTIÓN INCRUSTADO */}
+              <div className="bg-white p-4 rounded-xl border border-[#ea0029]/20 shadow-sm space-y-3">
+                <p className="text-[10px] font-bold text-[#ea0029] uppercase tracking-widest border-b border-neutral-100 pb-2">
+                  ⚡ Registrar Gestión Realizada
+                </p>
+                <form onSubmit={registrarGestionDesdeFicha} className="space-y-2.5">
+                  <div className="grid grid-cols-2 gap-2">
+                    <select value={fichaCanal} onChange={(e) => setFichaCanal(e.target.value)} className="bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]">
+                      <option value="Llamada">📞 Llamada</option>
+                      <option value="WhatsApp">💬 WhatsApp</option>
+                      <option value="Zoom">📹 Zoom</option>
+                      <option value="Reunión">🤝 Presencial</option>
+                      <option value="Email">📧 Email</option>
+                    </select>
+                    <select value={fichaResultado} onChange={(e) => setFichaResultado(e.target.value)} className="bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]">
+                      <option value="Contestó">✅ Contestó / Efectivo</option>
+                      <option value="No contestó">❌ No contestó</option>
+                      <option value="Respondio">💬 Respondió</option>
+                      <option value="Enviado">✔️ Enviado</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={fichaNota}
+                      onChange={(e) => setFichaNota(e.target.value)}
+                      placeholder="¿Qué hablaron? (suma a toques e historial)..."
+                      className="flex-1 bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg px-3 py-2 text-[11px] text-[#415364] outline-none focus:border-[#ea0029]"
+                    />
+                    <button type="submit" disabled={guardandoGestionFicha} className="px-3.5 py-2 bg-[#ea0029] text-white text-[10px] font-bold uppercase tracking-wider rounded-lg hover:bg-[#c90022] disabled:opacity-50">
+                      {guardandoGestionFicha ? '...' : 'Guardar'}
+                    </button>
+                  </div>
+                </form>
+              </div>
               
               <div className="bg-white p-4 rounded-xl border border-neutral-200/60 shadow-sm relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-1.5 h-full bg-[#415364]"></div>
@@ -1234,7 +1456,14 @@ export default function CRMPage() {
               </div>
 
               <div className="bg-white border border-neutral-200/60 p-5 rounded-2xl shadow-sm space-y-3">
-                <h3 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest border-b border-neutral-100 pb-2">Agendar Siguiente Paso</h3>
+                <div className="flex justify-between items-center border-b border-neutral-100 pb-2">
+                  <h3 className="text-[11px] font-bold text-[#ea0029] uppercase tracking-widest">Agendar Siguiente Paso</h3>
+                  {clienteSeleccionado.proximo_contacto && (
+                    <button onClick={marcarTareaResuelta} disabled={guardandoTarea} className="text-[9px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-lg hover:bg-emerald-600 hover:text-white transition-colors">
+                      ✅ Marcar Resuelta
+                    </button>
+                  )}
+                </div>
                 <div>
                     <label className="block text-[9px] font-bold text-[#415364]/60 uppercase mb-1">Fecha y Hora <span className="text-[#ea0029]">*</span></label>
                     <input type="datetime-local" value={fechaAccion} onChange={(e) => setFechaAccion(e.target.value)} className="w-full bg-[#dce3eb]/30 border border-[#415364]/20 rounded-lg p-2 text-[11px] font-bold text-[#415364] outline-none focus:border-[#ea0029]" />
