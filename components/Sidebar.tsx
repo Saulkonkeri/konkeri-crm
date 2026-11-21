@@ -1,5 +1,6 @@
 'use client';
 
+// v2.1 - Validación estricta de sesión para escritorio y móvil
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -9,23 +10,26 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [autenticado, setAutenticado] = useState(false);
+  const [verificando, setVerificando] = useState(true);
 
   useEffect(() => {
     // 1. Verificar sesión actual al cargar
     supabase.auth.getSession().then(({ data: { session } }) => {
       setAutenticado(!!session);
+      setVerificando(false);
     });
 
     // 2. Escuchar cambios (login / logout) en tiempo real
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setAutenticado(!!session);
+      setVerificando(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  // Si no hay sesión activa o está en /login, no renderizar el menú
-  if (!autenticado || pathname === '/login') {
+  // No renderizar mientras verifica, si no hay sesión activa o si está en /login
+  if (verificando || !autenticado || pathname === '/login') {
     return null;
   }
 
