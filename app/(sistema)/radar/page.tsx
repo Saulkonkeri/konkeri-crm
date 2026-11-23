@@ -11,12 +11,14 @@ type SesionCliente = {
   idSesion: string;
   email: string;
   nombre?: string;
+  clienteId?: string;
   inicio: Date;
   fin: Date;
   minutos: number;
   eventos: any[];
   ultimaAccion: string;
   unidadesVistas: string[];
+  accesoDenegado: boolean;
 };
 
 type EventoWeb = {
@@ -59,23 +61,27 @@ type ItemFeed = {
 // ==========================================
 // 2. DICCIONARIO DE SEPARACIÓN WEB VS VIP
 // ==========================================
-const ACCIONES_LANDING_PUBLICA = [
-  'VISITA_LANDING', 
-  'SCROLL_50', 
-  'SCROLL_90', 
+const ACCIONES_SOLO_LANDING = [
+  'VISITA_LANDING',
+  'SCROLL_50',
+  'SCROLL_90',
   'VIO_ARQUITECTURA',
-  'CLIC_DISPONIBILIDAD', 
-  'VIO_PLANO', 
-  'INICIO_COTIZACION', 
-  'ABRIO_FORMULARIO', 
-  'ABRIO_CALENDLY', 
+  'ABRIO_FORMULARIO',
+  'ABRIO_CALENDLY',
   'ABRIO_MODAL_BROCHURE',
-  'REGISTRO_COMPLETADO', 
-  'DESCARGA_BROCHURE', 
-  'CLIC_WHATSAPP', 
-  'CLIC_WHATSAPP_PLANO', 
-  'SOLICITUD_ACCESO_VIP', 
+  'REGISTRO_COMPLETADO',
+  'DESCARGA_BROCHURE',
+  'SOLICITUD_ACCESO_VIP',
   'VISITA_CAPTURA'
+];
+
+const ACCIONES_LANDING_PUBLICA = [
+  ...ACCIONES_SOLO_LANDING,
+  'CLIC_DISPONIBILIDAD',
+  'VIO_PLANO',
+  'INICIO_COTIZACION',
+  'CLIC_WHATSAPP',
+  'CLIC_WHATSAPP_PLANO'
 ];
 
 // ==========================================
@@ -93,7 +99,7 @@ const formatTiempoAtras = (fecha: Date) => {
   if (diffHrs < 24) return `Hace ${diffHrs} ${diffHrs === 1 ? 'hora' : 'horas'}`;
   if (diffDias === 1) return 'Ayer';
   if (diffDias < 7) return `Hace ${diffDias} días`;
-  
+
   return new Date(fecha).toLocaleDateString('es-EC', { day: '2-digit', month: 'short' });
 };
 
@@ -116,10 +122,21 @@ const obtenerIconoFeed = (accion: string) => {
   return { icon: '👁️', color: 'bg-neutral-100 text-neutral-600 border-neutral-200' };
 };
 
+const extraerMetadataLegible = (metadata: any): { clave: string; valor: string }[] => {
+  if (!metadata || typeof metadata !== 'object') return [];
+  const ignorar = ['visitor_id', 'session_id', 'user_agent', 'userAgent', 'timestamp', 'url', 'path'];
+  return Object.entries(metadata)
+    .filter(([k, v]) => !ignorar.includes(k) && v !== null && v !== undefined && v !== '' && typeof v !== 'object')
+    .map(([k, v]) => ({
+      clave: k.replace(/_/g, ' '),
+      valor: String(v)
+    }));
+};
+
 export default function RadarCentral() {
-  const [pestañaActiva, setPestañaActiva] = useState('feed'); 
-  const [ticker, setTicker] = useState(0); 
-  
+  const [pestañaActiva, setPestañaActiva] = useState('feed');
+  const [ticker, setTicker] = useState(0);
+
   // ESTADOS FEED EN VIVO
   const [feedEnVivo, setFeedEnVivo] = useState<ItemFeed[]>([]);
   const [cargandoFeed, setCargandoFeed] = useState(true);
@@ -144,7 +161,7 @@ export default function RadarCentral() {
 
   useEffect(() => {
     cargarDatos();
-    const intervalo = setInterval(() => setTicker(t => t + 1), 60000); 
+    const intervalo = setInterval(() => setTicker(t => t + 1), 60000);
     return () => clearInterval(intervalo);
   }, [filtroTiempo]);
 
@@ -160,12 +177,12 @@ export default function RadarCentral() {
     let numLimpio = telefono.split('').filter(char => char >= '0' && char <= '9').join('');
     if (numLimpio.startsWith('0') && numLimpio.length === 10) numLimpio = '593' + numLimpio.substring(1);
     else if (numLimpio.length === 9) numLimpio = '593' + numLimpio;
-    const mensaje = `Hola ${nombres}, soy Saúl de Konkeri. Acabo de ver tu interés en el proyecto Arienzo Boutique Living...`;
+    const mensaje = `Hola ${nombres}, soy Saúl de Konkeri. Acabo de ver tu interés en el proyecto Arienzo Living...`;
     window.open(`https://wa.me/${numLimpio}?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
 
   // ==========================================
-  // LÓGICA PESTAÑA 1: FEED EN VIVO (PULSO DEL NEGOCIO)
+  // LÓGICA PESTAÑA 1: FEED EN VIVO
   // ==========================================
   const cargarFeedEnVivo = async () => {
     setCargandoFeed(true);
@@ -176,20 +193,18 @@ export default function RadarCentral() {
         .order('created_at', { ascending: false })
         .limit(100);
 
-      // 🔥 AHORA TRAEMOS TODOS LOS DATOS VALIOSOS DEL CLIENTE
       const { data: clientData } = await supabase.from('clientes')
         .select('id, nombres, apellidos, telefono, email, origen_captacion, origen, campana, created_at')
         .order('created_at', { ascending: false })
         .limit(50);
 
-      // Cruzamos los correos del tracking web para ponerles nombre y teléfono
-      const emails = Array.from(new Set(trackData?.map(t => t.email_cliente).filter(e => e && e.includes('@'))));
-      let lookup: Record<string, { nombre: string, telefono: string, id: string }> = {};
-      
+      const emails = Array.from(new Set(trackData?.map(t => t.email_cliente?.toLowerCase().trim()).filter(e => e && e.includes('@'))));
+      let lookup: Record<string, { nombre: string; telefono: string; id: string }> = {};
+
       if (emails.length > 0) {
         const { data: cData } = await supabase.from('clientes').select('id, email, nombres, apellidos, telefono').in('email', emails);
         cData?.forEach(c => {
-          lookup[c.email.toLowerCase()] = {
+          lookup[c.email.toLowerCase().trim()] = {
             nombre: `${c.nombres} ${c.apellidos || ''}`.trim(),
             telefono: c.telefono || '',
             id: c.id
@@ -198,11 +213,12 @@ export default function RadarCentral() {
       }
 
       const feedUnificado: ItemFeed[] = [];
-      
+
       trackData?.forEach(t => {
-        const info = t.email_cliente ? lookup[t.email_cliente.toLowerCase()] : null;
+        const emailNorm = t.email_cliente?.toLowerCase().trim();
+        const info = emailNorm ? lookup[emailNorm] : null;
         const isAnon = !t.email_cliente || t.email_cliente === 'Anónimo';
-        
+
         feedUnificado.push({
           id: `trk-${t.id}`,
           fecha: new Date(t.created_at),
@@ -231,9 +247,9 @@ export default function RadarCentral() {
         });
       });
 
-      feedUnificado.sort((a,b) => b.fecha.getTime() - a.fecha.getTime());
-      
-      const feedFiltrado = feedUnificado.filter((v,i,a) => 
+      feedUnificado.sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
+
+      const feedFiltrado = feedUnificado.filter((v, i, a) =>
         a.findIndex(t => (t.nombre === v.nombre && Math.abs(t.fecha.getTime() - v.fecha.getTime()) < 60000 && (t.accion.includes('LEAD') || t.accion.includes('REGISTRO')))) === i
       );
 
@@ -252,17 +268,17 @@ export default function RadarCentral() {
     setCargandoAccesos(true);
     try {
       const { data: accesos } = await supabase.from('accesos_inventario').select('*').order('expira_en', { ascending: false });
-      
+
       if (!accesos || accesos.length === 0) {
         setAccesosVip([]);
         return;
       }
 
-      const emails = accesos.map(a => a.email);
+      const emails = accesos.map(a => a.email.toLowerCase().trim());
       const { data: clientes } = await supabase.from('clientes').select('id, nombres, apellidos, telefono, email').in('email', emails);
 
       const combinados = accesos.map(acc => {
-        const cli = clientes?.find(c => c.email?.toLowerCase() === acc.email.toLowerCase());
+        const cli = clientes?.find(c => c.email?.toLowerCase().trim() === acc.email.toLowerCase().trim());
         return {
           id: cli?.id || acc.email,
           email: acc.email,
@@ -273,11 +289,10 @@ export default function RadarCentral() {
       });
 
       setAccesosVip(combinados);
-      
+
       const tiemposInit: Record<string, string> = {};
       combinados.forEach(c => { tiemposInit[c.id] = '24'; });
       setTiemposSeleccionados(tiemposInit);
-
     } catch (error) {
       console.error("Error al cargar accesos:", error);
     } finally {
@@ -289,10 +304,10 @@ export default function RadarCentral() {
     if (!expiraEn) return { estado: 'sin_pase', texto: 'Sin pase' };
     const diff = new Date(expiraEn).getTime() - new Date().getTime();
     if (diff <= 0) return { estado: 'caducado', texto: 'Caducado' };
-    
+
     const horas = Math.floor(diff / 3600000);
     const min = Math.floor((diff % 3600000) / 60000);
-    
+
     if (horas > 800) return { estado: 'activo', texto: 'Acceso Ilimitado' };
     return { estado: 'activo', texto: `Vence en ${horas}h ${min}m` };
   };
@@ -306,15 +321,15 @@ export default function RadarCentral() {
     const horasNum = parseInt(horasStr, 10);
     const statusTiempo = calcularTiempoRestante(cliente.expira_en);
     const esRenovacion = statusTiempo.estado === 'caducado' || statusTiempo.estado === 'activo';
-    
-    const mensaje = horasStr === '999' 
+
+    const mensaje = horasStr === '999'
       ? `¿Darle acceso ILIMITADO a ${cliente.nombres}?`
-      : esRenovacion 
+      : esRenovacion
         ? `¿Renovar el acceso de ${cliente.nombres} por ${horasStr} horas?`
         : `¿Aprobar el acceso a ${cliente.nombres} por ${horasStr} horas?`;
 
     const confirmar = window.confirm(mensaje);
-    if (!confirmar) return; 
+    if (!confirmar) return;
 
     try {
       const fechaExpiracion = new Date();
@@ -323,9 +338,8 @@ export default function RadarCentral() {
       await supabase.from('accesos_inventario').upsert({ email: cliente.email.toLowerCase().trim(), expira_en: fechaExpiracion.toISOString() });
       await supabase.from('clientes').update({ estado_acceso: 'aprobado' }).eq('email', cliente.email.toLowerCase().trim());
 
-      cargarAccesos(); 
+      cargarAccesos();
       alert(`Acceso activado correctamente para ${cliente.nombres}.`);
-      
     } catch (error) {
       alert("Hubo un error de conexión.");
     }
@@ -334,7 +348,7 @@ export default function RadarCentral() {
   const revocarAcceso = async (cliente: any) => {
     const confirmar = window.confirm(`🚨 ¿Estás seguro que deseas revocar y eliminar el pase VIP de ${cliente.nombres}? Ya no podrá ver los precios.`);
     if (!confirmar) return;
-    
+
     try {
       await supabase.from('accesos_inventario').delete().eq('email', cliente.email.toLowerCase().trim());
       await supabase.from('clientes').update({ estado_acceso: 'revocado' }).eq('email', cliente.email.toLowerCase().trim());
@@ -356,10 +370,14 @@ export default function RadarCentral() {
   };
 
   // ==========================================
-  // LÓGICA PESTAÑA 2: RADAR INVENTARIO
+  // LÓGICA PESTAÑA 2: RADAR INVENTARIO (CON DETALLE INTERNO COMPLETO)
   // ==========================================
   const generarAnalisisComercial = (sesion: SesionCliente) => {
     if (sesion.eventos.length === 0) return "Sin datos suficientes.";
+    if (sesion.accesoDenegado && sesion.eventos.length === 1) {
+      return "Intentó ingresar al inventario privado sin pase VIP activo (posible link compartido). Puedes aprobarle acceso desde el CRM si es un prospecto calificado.";
+    }
+
     let analisis = "";
     if (sesion.minutos < 2) analisis += "Vistazo rápido. Exploró superficialmente. ";
     else if (sesion.minutos < 10) analisis += "Exploración moderada. Navegó por el inventario fluidamente. ";
@@ -371,6 +389,11 @@ export default function RadarCentral() {
       analisis += `Mostró inclinación por la tipología de ${ultFiltro}. `;
     }
 
+    const cotizaciones = sesion.eventos.filter(e => e.accion === 'INICIO_COTIZACION' || e.accion.includes('COTIZ'));
+    if (cotizaciones.length > 0) {
+      analisis += `Simuló/inició cotización (${cotizaciones.length} ${cotizaciones.length === 1 ? 'vez' : 'veces'}). `;
+    }
+
     if (sesion.unidadesVistas.length === 1) analisis += `Se enfocó exclusivamente en la unidad ${sesion.unidadesVistas[0]}. `;
     else if (sesion.unidadesVistas.length > 1) analisis += `Comparó ${sesion.unidadesVistas.length} unidades (${sesion.unidadesVistas.join(', ')}). `;
     return analisis;
@@ -379,30 +402,74 @@ export default function RadarCentral() {
   const cargarRadar = async () => {
     setCargandoRadar(true);
     try {
-      const { data } = await supabase.from('tracking_inventario').select('*').order('created_at', { ascending: false }).limit(2000); 
+      const { data } = await supabase.from('tracking_inventario').select('*').order('created_at', { ascending: false }).limit(2500);
       if (data) {
-        const dataFiltrada = data.filter(row => !ACCIONES_LANDING_PUBLICA.includes(row.accion));
+        // 1. Mapear session_id y visitor_id a correos identificados para no perder ningún clic interno
+        const sessionToEmail: Record<string, string> = {};
+        const visitorToEmail: Record<string, string> = {};
+        data.forEach(row => {
+          const em = (row.email_cliente || '').toLowerCase().trim();
+          if (em && em.includes('@')) {
+            if (row.session_id) sessionToEmail[row.session_id] = em;
+            if (row.visitor_id) visitorToEmail[row.visitor_id] = em;
+          }
+        });
+
+        // 2. Filtrar solo eventos que pertenecen al inventario VIP (conservando VIO_PLANO, INICIO_COTIZACION, etc.)
+        const dataFiltrada = data.filter(row => {
+          if (ACCIONES_SOLO_LANDING.includes(row.accion)) return false;
+          const emDirecto = (row.email_cliente || '').toLowerCase().trim();
+          const emResuelto = (emDirecto && emDirecto.includes('@'))
+            ? emDirecto
+            : (row.session_id && sessionToEmail[row.session_id]) || (row.visitor_id && visitorToEmail[row.visitor_id]) || '';
+
+          // Solo incluir en Radar Inventario si tiene correo identificado o es explícitamente un evento de inventario
+          const esEventoInventarioExplicito =
+            row.accion.includes('INVENTARIO') ||
+            row.accion.includes('VIP') ||
+            row.accion === 'USO_FILTRO' ||
+            Boolean(row.unidad_id);
+
+          return Boolean(emResuelto) || esEventoInventarioExplicito;
+        });
 
         const datosCronologicos = [...dataFiltrada].reverse();
         const sesionesList: SesionCliente[] = [];
         const sesionesActivas: Record<string, SesionCliente> = {};
 
         datosCronologicos.forEach(row => {
-          const email = row.email_cliente;
+          const emDirecto = (row.email_cliente || '').toLowerCase().trim();
+          const email = (emDirecto && emDirecto.includes('@'))
+            ? emDirecto
+            : (row.session_id && sessionToEmail[row.session_id]) || (row.visitor_id && visitorToEmail[row.visitor_id]) || row.email_cliente || 'Anónimo';
+
           const fechaRow = new Date(row.created_at);
           const tiempoActual = fechaRow.getTime();
+          const unidadDetectada = row.unidad_id || row.metadata?.unidad || row.metadata?.unidad_numero || null;
+          const esDenegado =
+            row.accion.includes('DENEGADO') ||
+            row.accion.includes('RECHAZADO') ||
+            (row.detalle || '').toLowerCase().includes('no autorizado');
 
           if (sesionesActivas[email] && (tiempoActual - sesionesActivas[email].fin.getTime()) < 45 * 60000) {
             const sesion = sesionesActivas[email];
             sesion.fin = fechaRow;
-            sesion.eventos.unshift(row); 
-            if (row.unidad_id && !sesion.unidadesVistas.includes(row.unidad_id)) {
-              sesion.unidadesVistas.push(row.unidad_id);
+            sesion.eventos.unshift(row);
+            if (esDenegado) sesion.accesoDenegado = true;
+            if (unidadDetectada && !sesion.unidadesVistas.includes(String(unidadDetectada))) {
+              sesion.unidadesVistas.push(String(unidadDetectada));
             }
           } else {
             const nuevaSesion: SesionCliente = {
-              idSesion: `${email}-${tiempoActual}`, email: email, inicio: fechaRow, fin: fechaRow, minutos: 0,
-              eventos: [row], ultimaAccion: '', unidadesVistas: row.unidad_id ? [row.unidad_id] : []
+              idSesion: `${email}-${tiempoActual}`,
+              email,
+              inicio: fechaRow,
+              fin: fechaRow,
+              minutos: 0,
+              eventos: [row],
+              ultimaAccion: '',
+              unidadesVistas: unidadDetectada ? [String(unidadDetectada)] : [],
+              accesoDenegado: esDenegado
             };
             sesionesList.push(nuevaSesion);
             sesionesActivas[email] = nuevaSesion;
@@ -412,16 +479,29 @@ export default function RadarCentral() {
         sesionesList.forEach(s => {
           const diffMs = s.fin.getTime() - s.inicio.getTime();
           s.minutos = Math.round(diffMs / 60000);
-          s.ultimaAccion = s.eventos[0]?.detalle || s.eventos[0]?.accion || 'Desconocido';
+          s.ultimaAccion = s.eventos[0]?.detalle || formatAccionTexto(s.eventos[0]?.accion) || 'Desconocido';
         });
 
-        const correosUnicos = Array.from(new Set(sesionesList.map(s => s.email)));
+        const correosUnicos = Array.from(new Set(sesionesList.map(s => s.email).filter(e => e.includes('@'))));
         if (correosUnicos.length > 0) {
-          const { data: clientesData } = await supabase.from('clientes').select('email, nombres, apellidos').in('email', correosUnicos);
+          const { data: clientesData } = await supabase.from('clientes').select('id, email, nombres, apellidos').in('email', correosUnicos);
           if (clientesData) {
-            const mapaNombres: Record<string, string> = {};
-            clientesData.forEach(c => { if (c.email) mapaNombres[c.email.toLowerCase()] = `${c.nombres || ''} ${c.apellidos || ''}`.trim(); });
-            sesionesList.forEach(s => { s.nombre = mapaNombres[s.email.toLowerCase()]; });
+            const mapaClientes: Record<string, { nombre: string; id: string }> = {};
+            clientesData.forEach(c => {
+              if (c.email) {
+                mapaClientes[c.email.toLowerCase().trim()] = {
+                  nombre: `${c.nombres || ''} ${c.apellidos || ''}`.trim(),
+                  id: c.id
+                };
+              }
+            });
+            sesionesList.forEach(s => {
+              const info = mapaClientes[s.email.toLowerCase().trim()];
+              if (info) {
+                s.nombre = info.nombre;
+                s.clienteId = info.id;
+              }
+            });
           }
         }
         sesionesList.sort((a, b) => b.fin.getTime() - a.fin.getTime());
@@ -437,7 +517,7 @@ export default function RadarCentral() {
   // ==========================================
   const PESOS_EVENTOS: Record<string, number> = {
     'VISITA_LANDING': 1, 'SCROLL_50': 2, 'SCROLL_90': 3, 'VIO_ARQUITECTURA': 2, 'VIO_PLANO': 3,
-    'ABRIO_FORMULARIO': 6, 'ABRIO_CALENDLY': 8, 'CLIC_WHATSAPP': 10, 'CLIC_WHATSAPP_PLANO': 10, 
+    'ABRIO_FORMULARIO': 6, 'ABRIO_CALENDLY': 8, 'CLIC_WHATSAPP': 10, 'CLIC_WHATSAPP_PLANO': 10,
     'DESCARGA_BROCHURE': 12, 'REGISTRO_COMPLETADO': 15, 'INICIO_COTIZACION': 10
   };
 
@@ -447,13 +527,12 @@ export default function RadarCentral() {
       const fechaLimite = new Date();
       if (filtroTiempo === '7d') fechaLimite.setDate(fechaLimite.getDate() - 7);
       if (filtroTiempo === '30d') fechaLimite.setDate(fechaLimite.getDate() - 30);
-      if (filtroTiempo === 'hoy') fechaLimite.setHours(0,0,0,0);
+      if (filtroTiempo === 'hoy') fechaLimite.setHours(0, 0, 0, 0);
 
-      const { data } = await supabase.from('tracking_inventario').select('*').gte('created_at', fechaLimite.toISOString()).order('created_at', { ascending: false }).limit(3000); 
+      const { data } = await supabase.from('tracking_inventario').select('*').gte('created_at', fechaLimite.toISOString()).order('created_at', { ascending: false }).limit(3000);
 
       if (data) {
         const dataFiltrada = data.filter(row => ACCIONES_LANDING_PUBLICA.includes(row.accion));
-        
         const datosCronologicos = [...dataFiltrada].reverse();
         setEventosWeb(datosCronologicos);
         procesarVisitantes(datosCronologicos);
@@ -487,7 +566,7 @@ export default function RadarCentral() {
       const visitante = mapa.get(safeVisitorId)!;
       visitante.eventos.push(ev);
       if (ev.session_id) visitante.sesiones.add(ev.session_id);
-      
+
       const fechaEvento = new Date(ev.created_at);
       if (fechaEvento > visitante.ultimaActividad) visitante.ultimaActividad = fechaEvento;
       if (ev.email_cliente && ev.email_cliente.includes('@')) visitante.email = ev.email_cliente;
@@ -504,11 +583,11 @@ export default function RadarCentral() {
       let minAcumulados = 0;
       Object.values(sesionesAgrupadas).forEach(tiempos => {
         if (tiempos.length > 1) minAcumulados += (Math.max(...tiempos) - Math.min(...tiempos)) / 60000;
-        else minAcumulados += 1; 
+        else minAcumulados += 1;
       });
-      
+
       v.tiempoAcumuladoMin = Math.round(minAcumulados);
-      if (v.sesiones.size > 1) v.score += 5; 
+      if (v.sesiones.size > 1) v.score += 5;
 
       if (v.score >= 20) v.nivelInteraccion = 'ALTO';
       else if (v.score >= 8) v.nivelInteraccion = 'MEDIO';
@@ -528,7 +607,7 @@ export default function RadarCentral() {
     const recurrentes = visitantesAgrupados.filter(v => v.sesiones.size > 1).length;
     const altoInteres = visitantesAgrupados.filter(v => v.nivelInteraccion === 'ALTO').length;
     const conversiones = visitantesAgrupados.filter(v => v.email !== null).length;
-    
+
     const funnel = {
       visitas: eventosWeb.filter(e => e.accion === 'VISITA_LANDING').length,
       scroll50: eventosWeb.filter(e => e.accion === 'SCROLL_50').length,
@@ -541,7 +620,7 @@ export default function RadarCentral() {
 
   return (
     <div className="p-4 md:p-8 w-full max-w-7xl mx-auto bg-[#dce3eb] min-h-screen font-sans text-[#415364]">
-      
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4 border-b border-[#415364]/10 pb-6">
         <div>
           <span className="text-[10px] font-bold tracking-widest text-[#ea0029] uppercase">Analítica y Accesos</span>
@@ -574,7 +653,7 @@ export default function RadarCentral() {
       </div>
 
       {/* ============================================================== */}
-      {/* PESTAÑA FEED EN VIVO CON TARJETAS EXPANDIBLES Y PUENTE AL CRM */}
+      {/* PESTAÑA 1: FEED EN VIVO                                        */}
       {/* ============================================================== */}
       {pestañaActiva === 'feed' && (
         <div className="bg-white rounded-2xl shadow-sm border border-neutral-200/60 overflow-hidden animate-in fade-in slide-in-from-bottom-2 w-full max-w-4xl mx-auto">
@@ -583,7 +662,7 @@ export default function RadarCentral() {
               🚨 Pulso del Negocio en Vivo
             </h3>
           </div>
-          
+
           <div className="p-6 md:p-8 overflow-y-auto max-h-[70vh] custom-scrollbar bg-[#F9F7F5]">
             {cargandoFeed ? (
               <div className="text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px] py-10 animate-pulse">Sincronizando feed en vivo...</div>
@@ -601,13 +680,11 @@ export default function RadarCentral() {
                       <div className="flex items-center justify-center w-8 h-8 rounded-full border-[3px] border-[#F9F7F5] z-10 ml-[2px] mr-4 shrink-0 shadow-sm bg-white mt-2">
                         <span className="text-xs">{style.icon}</span>
                       </div>
-                      
-                      {/* CONTENEDOR DE LA TARJETA (HACER CLIC PARA EXPANDIR) */}
-                      <div 
+
+                      <div
                         onClick={() => isLeadInfo && setFeedExpandido(isExpanded ? null : item.id)}
                         className={`w-full bg-white p-4 rounded-xl border shadow-sm flex flex-col transition-all ${style.color.split(' ')[0]} ${style.color.split(' ')[2]} ${isLeadInfo ? 'cursor-pointer hover:shadow-md' : ''}`}
                       >
-                        {/* VISTA RESUMIDA */}
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
                           <div>
                             <div className="flex items-center gap-2 mb-1">
@@ -628,7 +705,6 @@ export default function RadarCentral() {
                           </div>
                         </div>
 
-                        {/* VISTA EXPANDIDA CON DATOS Y BOTONES (PUENTE AL CRM) */}
                         {isExpanded && (
                           <div className="mt-4 pt-4 border-t border-neutral-100 grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in duration-200">
                             <div>
@@ -636,7 +712,7 @@ export default function RadarCentral() {
                               <p className="text-[11px] font-mono font-medium text-neutral-700">{item.email || 'Sin correo registrado'}</p>
                               <p className="text-[11px] font-mono font-medium text-neutral-700 mt-0.5">{item.telefono || 'Sin teléfono registrado'}</p>
                             </div>
-                            
+
                             {(item.origen || item.campana) && (
                               <div>
                                 <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest mb-1">Procedencia</p>
@@ -647,7 +723,7 @@ export default function RadarCentral() {
 
                             <div className="sm:col-span-2 flex flex-wrap gap-2 mt-2">
                               {item.telefono && (
-                                <button 
+                                <button
                                   onClick={(e) => { e.stopPropagation(); abrirWhatsApp(item.telefono!, item.nombre); }}
                                   className="bg-[#25D366] text-white hover:bg-[#128C7E] px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm flex items-center gap-1.5"
                                 >
@@ -655,9 +731,9 @@ export default function RadarCentral() {
                                   Responder Inmediato
                                 </button>
                               )}
-                              
-                              <Link href="/crm" passHref>
-                                <button 
+
+                              <Link href={item.cliente_id ? `/crm?clienteId=${item.cliente_id}` : '/crm'} passHref>
+                                <button
                                   onClick={(e) => e.stopPropagation()}
                                   className="bg-[#21242E] text-white hover:bg-black px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm flex items-center gap-1.5"
                                 >
@@ -678,6 +754,9 @@ export default function RadarCentral() {
         </div>
       )}
 
+      {/* ============================================================== */}
+      {/* PESTAÑA 4: ACCESOS VIP                                         */}
+      {/* ============================================================== */}
       {pestañaActiva === 'accesos' && (
         <div className="bg-white rounded-2xl shadow-sm border border-neutral-200/60 overflow-hidden animate-in fade-in slide-in-from-bottom-2 w-full">
           <div className="px-6 py-5 border-b border-neutral-100 flex justify-between items-center bg-[#21242E]">
@@ -685,7 +764,7 @@ export default function RadarCentral() {
               🔑 Control de Seguridad y Accesos VIP
             </h3>
           </div>
-          
+
           <div className="overflow-x-auto custom-scrollbar w-full">
             <table className="w-full min-w-[950px] text-left text-sm text-[#415364]">
               <thead className="bg-neutral-50/50 text-[#415364]/60 text-[10px] uppercase tracking-widest border-b border-neutral-100">
@@ -729,7 +808,7 @@ export default function RadarCentral() {
                               <option value="48">48 hrs</option>
                               <option value="999">Ilimitado</option>
                             </select>
-                            
+
                             {activo ? (
                               <>
                                 <button onClick={() => aprobarAcceso(cliente)} className="px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm text-white whitespace-nowrap bg-[#415364] hover:bg-[#21242E]">
@@ -763,6 +842,9 @@ export default function RadarCentral() {
         </div>
       )}
 
+      {/* ============================================================== */}
+      {/* PESTAÑA 2: RADAR INVENTARIO (DETALLE INTERNO COMPLETO)          */}
+      {/* ============================================================== */}
       {pestañaActiva === 'inventario' && (
         <div className="bg-white border border-neutral-200/60 rounded-2xl shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2 w-full">
           {cargandoRadar && sesiones.length === 0 && (
@@ -781,85 +863,148 @@ export default function RadarCentral() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
-                  {sesiones.map((sesion) => (
-                    <React.Fragment key={sesion.idSesion}>
-                      <tr className="hover:bg-[#dce3eb]/30 transition-colors">
-                        <td className="p-5">
-                          {sesion.nombre && (
-                            <span className="font-bold text-[#415364] flex items-center gap-1.5 text-sm whitespace-nowrap">
-                              {sesion.nombre} <svg className="w-3.5 h-3.5 text-[#1DA851]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
-                            </span>
-                          )}
-                          {!sesion.nombre && (
-                            <span className="font-bold text-[#415364] flex items-center gap-1.5 text-sm whitespace-nowrap">
-                              Visitante Anónimo
-                            </span>
-                          )}
-                          <span className="text-[10px] text-[#415364]/60 font-mono block mt-1">{sesion.email}</span>
-                          <span className="text-[9px] text-[#ea0029] mt-1.5 block font-bold uppercase tracking-wider bg-[#ea0029]/10 px-2 py-0.5 rounded-md w-fit">
-                            {formatTiempoAtras(sesion.fin)}
-                          </span>
-                        </td>
-                        <td className="p-5">
-                          <span className="bg-[#dce3eb]/50 text-[#415364] border border-[#415364]/10 px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider whitespace-nowrap">
-                            {formatMinutos(sesion.minutos)}
-                          </span>
-                        </td>
-                        <td className="p-5">
-                          <div className="flex gap-1.5 flex-wrap min-w-[150px]">
-                            {sesion.unidadesVistas.length > 0 && sesion.unidadesVistas.map(u => (
-                              <span key={u} className="bg-white border border-[#415364]/20 text-[#415364] text-[9px] font-bold px-2 py-1 rounded-md shadow-sm">U-{u}</span>
-                            ))}
-                            {sesion.unidadesVistas.length === 0 && (
-                              <span className="text-xs text-[#415364]/30">-</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="p-5">
-                          <span className="text-xs font-medium text-[#415364]/80 whitespace-nowrap">{sesion.ultimaAccion}</span>
-                        </td>
-                        <td className="p-5 text-center">
-                          <button onClick={() => setSesionExpandida(sesionExpandida === sesion.idSesion ? null : sesion.idSesion)} className="text-[10px] font-bold text-[#ea0029] hover:text-[#c90022] bg-[#ea0029]/10 hover:bg-[#ea0029]/20 px-3 py-1.5 rounded-lg uppercase tracking-widest transition-colors whitespace-nowrap">
-                            {sesionExpandida === sesion.idSesion ? 'Ocultar' : 'Ver Recorrido'}
-                          </button>
-                        </td>
-                      </tr>
-                      
-                      {sesionExpandida === sesion.idSesion && (
-                        <tr className="bg-[#F9F7F5] shadow-inner">
-                          <td colSpan={5} className="p-6 md:p-8">
-                            <div className="mb-8 bg-white border border-[#ea0029]/20 rounded-2xl p-5 shadow-sm flex items-start gap-4">
-                              <div className="bg-[#ea0029]/10 text-[#ea0029] w-12 h-12 rounded-full flex items-center justify-center shrink-0">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                              </div>
-                              <div>
-                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#ea0029] mb-1.5">Inteligencia Comercial</h4>
-                                <p className="text-sm text-[#415364] leading-relaxed font-medium">{generarAnalisisComercial(sesion)}</p>
-                              </div>
+                  {sesiones.map((sesion) => {
+                    const abierta = sesionExpandida === sesion.idSesion;
+                    return (
+                      <React.Fragment key={sesion.idSesion}>
+                        <tr
+                          onClick={() => setSesionExpandida(abierta ? null : sesion.idSesion)}
+                          className={`hover:bg-[#dce3eb]/30 transition-colors cursor-pointer ${sesion.accesoDenegado ? 'bg-red-50/40' : ''}`}
+                        >
+                          <td className="p-5">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {sesion.nombre ? (
+                                <span className="font-bold text-[#415364] flex items-center gap-1.5 text-sm whitespace-nowrap">
+                                  {sesion.nombre} <svg className="w-3.5 h-3.5 text-[#1DA851]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                                </span>
+                              ) : (
+                                <span className="font-bold text-[#415364] flex items-center gap-1.5 text-sm whitespace-nowrap">
+                                  Visitante Externo
+                                </span>
+                              )}
+                              {sesion.accesoDenegado && (
+                                <span className="text-[9px] font-bold bg-[#ea0029] text-white px-2 py-0.5 rounded uppercase tracking-wider">
+                                  🚫 Sin Pase VIP
+                                </span>
+                              )}
                             </div>
-                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#415364]/40 mb-5 pl-2">Línea de tiempo de navegación VIP</h4>
-                            <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-[#415364]/20 before:to-transparent">
-                              {sesion.eventos.map((evento, i) => (
-                                <div key={i} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                                  <div className="flex items-center justify-center w-2.5 h-2.5 rounded-full border-[2px] border-white bg-[#ea0029] shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm sm:mx-0 mx-4 z-10"></div>
-                                  <div className="w-full md:w-1/2 bg-white p-4 rounded-xl border border-[#415364]/10 shadow-sm flex flex-col hover:border-[#ea0029]/40 hover:shadow-md transition-all">
-                                    <div className="flex items-center justify-between mb-2">
-                                      <span className="text-[10px] font-bold text-[#415364]/50">{new Date(evento.created_at).toLocaleTimeString('es-EC')}</span>
-                                      {evento.unidad_id && (
-                                        <span className="text-[9px] bg-[#dce3eb]/50 text-[#415364] border border-[#415364]/10 font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">Unidad {evento.unidad_id}</span>
-                                      )}
-                                    </div>
-                                    <span className="text-xs font-bold text-[#415364]">{formatAccionTexto(evento.accion)}</span>
-                                    <span className="text-[11px] text-[#415364]/70 mt-1 font-medium">{evento.detalle}</span>
-                                  </div>
-                                </div>
-                              ))}
+                            <span className="text-[10px] text-[#415364]/60 font-mono block mt-1">{sesion.email}</span>
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <span className="text-[9px] text-[#ea0029] font-bold uppercase tracking-wider bg-[#ea0029]/10 px-2 py-0.5 rounded-md">
+                                {formatTiempoAtras(sesion.fin)}
+                              </span>
+                              <span className="text-[9px] text-[#415364]/60 font-bold bg-neutral-100 px-2 py-0.5 rounded-md">
+                                {sesion.eventos.length} {sesion.eventos.length === 1 ? 'acción' : 'acciones'}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="p-5">
+                            <span className="bg-[#dce3eb]/50 text-[#415364] border border-[#415364]/10 px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider whitespace-nowrap">
+                              {formatMinutos(sesion.minutos)}
+                            </span>
+                          </td>
+                          <td className="p-5">
+                            <div className="flex gap-1.5 flex-wrap min-w-[150px]">
+                              {sesion.unidadesVistas.length > 0 ? sesion.unidadesVistas.map(u => (
+                                <span key={u} className="bg-white border border-[#415364]/20 text-[#415364] text-[9px] font-bold px-2 py-1 rounded-md shadow-sm">U-{u}</span>
+                              )) : (
+                                <span className="text-xs text-[#415364]/30">-</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-5">
+                            <span className="text-xs font-medium text-[#415364]/80 line-clamp-2 max-w-xs">{sesion.ultimaAccion}</span>
+                          </td>
+                          <td className="p-5 text-center" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => setSesionExpandida(abierta ? null : sesion.idSesion)}
+                                className="text-[10px] font-bold text-[#ea0029] hover:text-[#c90022] bg-[#ea0029]/10 hover:bg-[#ea0029]/20 px-3 py-1.5 rounded-lg uppercase tracking-widest transition-colors whitespace-nowrap"
+                              >
+                                {abierta ? 'Ocultar ▲' : 'Ver Recorrido ▼'}
+                              </button>
+                              {sesion.clienteId && (
+                                <Link
+                                  href={`/crm?clienteId=${sesion.clienteId}`}
+                                  className="text-[10px] font-bold text-white bg-[#21242E] hover:bg-black px-3 py-1.5 rounded-lg uppercase tracking-widest transition-colors whitespace-nowrap"
+                                >
+                                  CRM ➔
+                                </Link>
+                              )}
                             </div>
                           </td>
                         </tr>
-                      )}
-                    </React.Fragment>
-                  ))}
+
+                        {abierta && (
+                          <tr className="bg-[#F9F7F5] shadow-inner">
+                            <td colSpan={5} className="p-6 md:p-8">
+                              <div className="mb-6 bg-white border border-[#ea0029]/20 rounded-2xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div className="flex items-start gap-4">
+                                  <div className="bg-[#ea0029]/10 text-[#ea0029] w-12 h-12 rounded-full flex items-center justify-center shrink-0">
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                                  </div>
+                                  <div>
+                                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#ea0029] mb-1.5">Inteligencia Comercial</h4>
+                                    <p className="text-sm text-[#415364] leading-relaxed font-medium">{generarAnalisisComercial(sesion)}</p>
+                                  </div>
+                                </div>
+                                {sesion.clienteId && (
+                                  <Link
+                                    href={`/crm?clienteId=${sesion.clienteId}`}
+                                    className="px-4 py-2.5 bg-[#ea0029] text-white text-[10px] font-bold uppercase tracking-widest rounded-xl hover:bg-[#c90022] transition-colors shrink-0 text-center"
+                                  >
+                                    Abrir Ficha en CRM ➔
+                                  </Link>
+                                )}
+                              </div>
+
+                              <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#415364]/50 mb-5 pl-2">
+                                Detalle interno paso a paso ({sesion.eventos.length} {sesion.eventos.length === 1 ? 'evento' : 'eventos'})
+                              </h4>
+
+                              <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-[#415364]/20 before:to-transparent">
+                                {sesion.eventos.map((evento, i) => {
+                                  const extras = extraerMetadataLegible(evento.metadata);
+                                  const unidadEv = evento.unidad_id || evento.metadata?.unidad || evento.metadata?.unidad_numero;
+
+                                  return (
+                                    <div key={i} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                                      <div className="flex items-center justify-center w-2.5 h-2.5 rounded-full border-[2px] border-white bg-[#ea0029] shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm sm:mx-0 mx-4 z-10"></div>
+                                      <div className="w-full md:w-[46%] bg-white p-4 rounded-xl border border-[#415364]/15 shadow-sm flex flex-col hover:border-[#ea0029]/40 hover:shadow-md transition-all">
+                                        <div className="flex items-center justify-between mb-2 gap-2">
+                                          <span className="text-[10px] font-mono font-bold text-[#415364]/60">
+                                            {new Date(evento.created_at).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                          </span>
+                                          {unidadEv && (
+                                            <span className="text-[9px] bg-[#21242E] text-white font-bold px-2.5 py-0.5 rounded-md uppercase tracking-wider">
+                                              Unidad {unidadEv}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <span className="text-xs font-bold text-[#415364]">{formatAccionTexto(evento.accion)}</span>
+                                        {evento.detalle && (
+                                          <span className="text-[11px] text-[#415364]/80 mt-1 font-medium leading-relaxed">{evento.detalle}</span>
+                                        )}
+                                        {extras.length > 0 && (
+                                          <div className="flex flex-wrap gap-1.5 mt-2.5 pt-2 border-t border-neutral-100">
+                                            {extras.map((ex, idxEx) => (
+                                              <span key={idxEx} className="text-[9px] bg-[#dce3eb]/40 text-[#415364] border border-[#415364]/10 px-2 py-0.5 rounded font-semibold capitalize">
+                                                {ex.clave}: <strong>{ex.valor}</strong>
+                                              </span>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
                   {sesiones.length === 0 && !cargandoRadar && (
                     <tr><td colSpan={5} className="p-10 text-center text-[#415364]/40 font-bold uppercase tracking-widest text-[10px]">Aún no hay actividad de clientes en el inventario.</td></tr>
                   )}
@@ -870,6 +1015,9 @@ export default function RadarCentral() {
         </div>
       )}
 
+      {/* ============================================================== */}
+      {/* PESTAÑA 3: TRAZABILIDAD WEB                                    */}
+      {/* ============================================================== */}
       {pestañaActiva === 'web' && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 w-full">
           <div className="flex justify-end gap-2 bg-white w-fit ml-auto p-1.5 rounded-xl shadow-sm border border-neutral-200/60">
@@ -960,7 +1108,7 @@ export default function RadarCentral() {
                               <span className="text-green-700 bg-green-50 px-2.5 py-1 rounded-md border border-green-200 text-xs">✓ {v.email}</span>
                             )}
                             {!v.email && (
-                              <span className="text-neutral-500">Anónimo #{v.visitor_id.substring(0,6)}</span>
+                              <span className="text-neutral-500">Anónimo #{v.visitor_id.substring(0, 6)}</span>
                             )}
                           </div>
                           <div className="text-[10px] text-[#415364]/50 mt-2 font-medium">Últ. Act: {v.ultimaActividad.toLocaleString('es-EC')}</div>
