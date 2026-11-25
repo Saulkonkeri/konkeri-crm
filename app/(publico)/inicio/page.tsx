@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import Script from 'next/script';
+import PopupVallaQR from './PopupVallaQR';
 
 // Generador de UUID matemático (Para que no falle el radar)
 const generateUUID = () => {
@@ -57,6 +58,16 @@ export default function ArienzoLandingPremium() {
   }, [imagenesGaleria]);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const utmSource = params.get('utm_source') || '';
+    const utmMedium = params.get('utm_medium') || '';
+    const utmCampaign = params.get('utm_campaign') || '';
+
+    if (utmSource.toLowerCase().startsWith('qr')) {
+      sessionStorage.setItem('arienzo_qr_source', utmSource);
+      sessionStorage.setItem('arienzo_qr_tracked', '1');
+    }
+
     if (!sessionStorage.getItem('visita_registrada_landing')) {
       let visitorId = localStorage.getItem('arienzo_visitor_id');
       if (!visitorId) { visitorId = generateUUID(); localStorage.setItem('arienzo_visitor_id', visitorId); }
@@ -70,8 +81,13 @@ export default function ArienzoLandingPremium() {
             session_id: sessionId,
             email_cliente: 'Anónimo',
             accion: 'VISITA_LANDING',
-            detalle: 'Ingresó a la página principal de Arienzo',
-            metadata: { referrer: document.referrer || 'Directo' }
+            detalle: utmSource ? `Ingresó a la página principal (${utmSource})` : 'Ingresó a la página principal de Arienzo',
+            metadata: {
+              referrer: document.referrer || 'Directo',
+              ...(utmSource ? { utm_source: utmSource } : {}),
+              ...(utmMedium ? { utm_medium: utmMedium } : {}),
+              ...(utmCampaign ? { utm_campaign: utmCampaign } : {})
+            }
           }]);
           sessionStorage.setItem('visita_registrada_landing', 'true');
         } catch (err) {
@@ -210,8 +226,13 @@ export default function ArienzoLandingPremium() {
       return;
     }
 
-    const origenDinamico = formData.modeloCotizado ? `Landing - Cotización Específica` : 'Landing - Registro General';
-    const campanaDinamica = formData.modeloCotizado ? formData.modeloCotizado : 'Tráfico Web General';
+    const qrSourceGuardado = typeof window !== 'undefined' ? sessionStorage.getItem('arienzo_qr_source') : null;
+    const origenDinamico = formData.modeloCotizado
+      ? 'Landing - Cotización Específica'
+      : qrSourceGuardado
+        ? 'QR Valla Obra'
+        : 'Landing - Registro General';
+    const campanaDinamica = formData.modeloCotizado || qrSourceGuardado || 'Tráfico Web General';
 
     try {
       const { error: errorUpsert } = await supabase.from('clientes').upsert([{
@@ -262,6 +283,8 @@ export default function ArienzoLandingPremium() {
       return;
     }
 
+    const qrSourceGuardado = typeof window !== 'undefined' ? sessionStorage.getItem('arienzo_qr_source') : null;
+
     try {
       const { error: errorDescarga } = await supabase.from('clientes').upsert([{
         nombres: formBrochure.nombres,
@@ -269,8 +292,8 @@ export default function ArienzoLandingPremium() {
         email: correoLimpio,
         ciudad_residencia: formBrochure.ciudad,
         tipo: 'prospecto',
-        origen_captacion: 'Landing - Descarga Brochure',
-        campana: 'Tráfico Web General',
+        origen_captacion: qrSourceGuardado ? 'QR Valla Obra' : 'Landing - Descarga Brochure',
+        campana: qrSourceGuardado || 'Tráfico Web General',
         estado: 'Interesado',
         temperatura: '☀️ Tibio',
         created_at: new Date().toISOString()
@@ -704,7 +727,7 @@ export default function ArienzoLandingPremium() {
                   </button>
                   
                   <a 
-                    href={modeloActivo.agotado ? '#' : `https://wa.me/593979469472?text=${encodeURIComponent(`Hola, quiero cotizar el modelo de ${modeloActivo.area} de${modeloActivo.dorms} dormitorio(s) en el proyecto Arienzo.`)}`}
+                    href={modeloActivo.agotado ? '#' : `https://wa.me/593979469472?text=${encodeURIComponent(`Hola, quiero cotizar el modelo de ${modeloActivo.area} de ${modeloActivo.dorms} dormitorio(s) en el proyecto Arienzo.`)}`}
                     target={modeloActivo.agotado ? '_self' : '_blank'}
                     rel="noopener noreferrer"
                     onClick={(e) => { 
@@ -1150,6 +1173,8 @@ export default function ArienzoLandingPremium() {
           </div>
         </div>
       </footer>
+
+      <PopupVallaQR />
 
     </div>
   );
