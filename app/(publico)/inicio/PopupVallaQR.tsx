@@ -84,7 +84,7 @@ export default function PopupVallaQR() {
       }
 
       if (existente) {
-        const notaActualizada = `[${fechaStr}] 📍 Escaneó QR (${utmSource}) y solicitó planos/precios.\n\n${existente.notas || ''}`;
+        const notaActualizada = `[${fechaStr}] 📍 Escaneó QR (${utmSource}) y pidió contacto para planos y precios.\n\n${existente.notas || ''}`;
         await supabase
           .from('clientes')
           .update({ notas: notaActualizada, campana: utmSource })
@@ -100,7 +100,7 @@ export default function PopupVallaQR() {
           temperatura: '🔥 Caliente',
           tipo: 'prospecto',
           ingresado_por: 'QR Valla Web',
-          notas: `[${fechaStr}] 📍 Registrado desde QR de valla (${utmSource}). Solicitó planos y precios.`
+          notas: `[${fechaStr}] 📍 Registrado desde QR de valla (${utmSource}). Solicitó contacto para planos y valores de preventa.`
         }]);
       }
 
@@ -127,30 +127,35 @@ export default function PopupVallaQR() {
   if (!visible) return null;
 
   const linkWhatsAppDirecto = `https://wa.me/593985750640?text=${encodeURIComponent(
-    `Hola, soy ${nombres || 'un interesado'}. Acabo de escanear el QR frente a Arienzo Living y me gustaría recibir los planos y precios de preventa.`
+    `Hola, soy ${nombres || 'un interesado'}. Vi la valla de Arienzo Living en Barbasquillo y me gustaría conversar para ver los planos y precios de preventa.`
   )}`;
 
   return (
     <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:bottom-6 md:w-[390px] z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
-      <div className="bg-[#FDFCFB] border border-[#974932]/30 rounded-2xl shadow-2xl p-5 relative text-[#21242E]">
+      <div className="bg-gradient-to-b from-[#FFFDFB] to-[#F7F2EC] border border-[#D1C292] rounded-2xl shadow-[0_20px_50px_rgba(33,36,46,0.22)] p-5 relative text-[#21242E]">
+        <div className="h-1 w-12 bg-[#974932] rounded-full mb-3" />
+
         <button
           onClick={cerrarPopup}
           aria-label="Cerrar ventana"
-          className="absolute top-3.5 right-3.5 w-7 h-7 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-500 hover:text-[#21242E] flex items-center justify-center text-xs font-bold transition-colors"
+          className="absolute top-3.5 right-3.5 w-7 h-7 rounded-full bg-white/90 hover:bg-[#EFE7DD] border border-[#D1C292]/60 text-[#415364] hover:text-[#21242E] flex items-center justify-center text-xs font-bold transition-colors shadow-xs"
         >
           ✕
         </button>
 
         {!enviado ? (
           <>
-            <span className="text-[9px] font-bold uppercase tracking-widest text-[#974932] block mb-1">
+            <span className="text-[9px] font-semibold uppercase tracking-[0.28em] text-[#974932] block mb-1">
               Arienzo Living · Barbasquillo
             </span>
-            <h3 className="text-base font-bold text-[#21242E] leading-snug pr-6">
-              ¿Estás frente a nuestro proyecto?
+            <h3
+              className="text-lg text-[#21242E] leading-snug pr-6 font-medium"
+              style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
+            >
+              ¿Pasaste frente a <span className="italic text-[#974932]">Arienzo</span>?
             </h3>
-            <p className="text-xs text-[#415364] mt-1 mb-4 leading-relaxed">
-              Déjanos tu nombre y WhatsApp para enviarte al instante los planos, disponibilidad y precios de preventa.
+            <p className="text-xs text-[#415364] mt-1.5 mb-4 leading-relaxed">
+              Déjanos tu nombre y WhatsApp para contactarte y compartirte los planos y valores de preventa.
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-2.5">
@@ -160,41 +165,44 @@ export default function PopupVallaQR() {
                 placeholder="Tu nombre"
                 value={nombres}
                 onChange={(e) => setNombres(e.target.value)}
-                className="w-full bg-white border border-neutral-300 focus:border-[#974932] rounded-xl px-3.5 py-2.5 text-xs outline-none text-[#21242E]"
+                className="w-full bg-white border border-[#DFD5C7] focus:border-[#974932] rounded-xl px-3.5 py-2.5 text-xs outline-none text-[#21242E] transition-colors"
               />
               <input
                 type="tel"
                 required
-                placeholder="Tu número de WhatsApp (ej: 099...)"
+                placeholder="Tu WhatsApp (ej: 099...)"
                 value={telefono}
                 onChange={(e) => setTelefono(e.target.value)}
-                className="w-full bg-white border border-neutral-300 focus:border-[#974932] rounded-xl px-3.5 py-2.5 text-xs outline-none text-[#21242E]"
+                className="w-full bg-white border border-[#DFD5C7] focus:border-[#974932] rounded-xl px-3.5 py-2.5 text-xs outline-none text-[#21242E] transition-colors"
               />
               <button
                 type="submit"
                 disabled={enviando}
-                className="w-full bg-[#974932] hover:bg-[#7d3b27] text-white font-bold text-xs uppercase tracking-widest py-3 rounded-xl shadow-md transition-colors disabled:opacity-50"
+                className="w-full bg-[#974932] hover:bg-[#21242E] text-white font-semibold text-[11px] uppercase tracking-[0.18em] py-3 rounded-xl shadow-md transition-colors disabled:opacity-50"
               >
-                {enviando ? 'Enviando...' : 'Recibir Planos y Precios'}
+                {enviando ? 'Enviando...' : 'Solicitar Planos y Precios'}
               </button>
             </form>
           </>
         ) : (
           <div className="text-center py-2 space-y-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto font-bold text-lg">
+            <div className="w-10 h-10 rounded-full bg-[#974932]/10 border border-[#974932]/30 text-[#974932] flex items-center justify-center mx-auto font-bold text-base">
               ✓
             </div>
-            <h3 className="text-sm font-bold text-[#21242E]">
-              ¡Gracias, {nombres}!
+            <h3
+              className="text-base text-[#21242E] font-medium"
+              style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
+            >
+              Gracias, {nombres}
             </h3>
             <p className="text-xs text-[#415364] leading-relaxed">
-              Ya registramos tu solicitud. También puedes abrir nuestro chat directo ahora mismo:
+              Ya quedó registrado en nuestro equipo para contactarte. Si prefieres escribirnos de una vez:
             </p>
             <a
               href={linkWhatsAppDirecto}
               target="_blank"
               rel="noopener noreferrer"
-              className="block w-full bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold text-xs uppercase tracking-widest py-3 rounded-xl shadow-sm transition-colors"
+              className="block w-full bg-[#25D366] hover:bg-[#1ebe5d] text-white font-semibold text-[11px] uppercase tracking-[0.18em] py-3 rounded-xl shadow-sm transition-colors"
             >
               Abrir WhatsApp Ahora
             </a>
