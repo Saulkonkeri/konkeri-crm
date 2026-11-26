@@ -14,6 +14,7 @@ interface TareaHoy {
   temperatura: string;
   proximo_contacto: string;
   estado?: string;
+  tipo?: string;
   notas?: string;
   etiquetas?: string[];
 }
@@ -73,9 +74,19 @@ export default function CentroOperacionesPage() {
       if (clientesActivos) {
         setTotalLeads(clientesActivos.length);
 
+        const estadosExcluidos = ['cerrad', 'vendid', 'reservad', 'descartad', 'perdid'];
+
         const calientes = clientesActivos
-          .filter(c => c.temperatura?.includes('Caliente'))
+          .filter(c => {
+            const esCaliente = c.temperatura?.includes('Caliente');
+            const estado = (c.estado || '').toLowerCase();
+            const esClienteFinal = (c.tipo || '').toLowerCase() === 'cliente';
+            const yaCerradoOReservado = estadosExcluidos.some(est => estado.includes(est));
+
+            return esCaliente && !esClienteFinal && !yaCerradoOReservado;
+          })
           .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+
         setListaLeadsCalientes(calientes);
 
         const tareasConFecha = clientesActivos.filter(c => c.proximo_contacto);
@@ -316,7 +327,7 @@ export default function CentroOperacionesPage() {
           </div>
         </Link>
 
-        {/* TARJETA INTERÉS ALTO (CLICKEABLE PARA VER QUIÉNES SON) */}
+        {/* TARJETA INTERÉS ALTO (CLICKEABLE - SOLO NEGOCIACIONES ABIERTAS) */}
         <button
           type="button"
           onClick={() => setMostrarModalCalientes(true)}
@@ -569,7 +580,7 @@ export default function CentroOperacionesPage() {
         </div>
       </div>
 
-      {/* MODAL: LISTA DE LEADS EN INTERÉS ALTO (CALIENTES) */}
+      {/* MODAL: LISTA DE LEADS EN INTERÉS ALTO (CALIENTES ABIERTOS) */}
       {mostrarModalCalientes && (
         <div
           className="fixed inset-0 bg-[#21242E]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
@@ -599,7 +610,7 @@ export default function CentroOperacionesPage() {
             <div className="p-4 overflow-y-auto custom-scrollbar space-y-3 bg-[#F9F7F5]">
               {listaLeadsCalientes.length === 0 ? (
                 <div className="py-12 text-center text-xs text-neutral-400 font-bold uppercase tracking-widest">
-                  No hay prospectos marcados como Calientes en este momento.
+                  No hay prospectos abiertos en Interés Alto en este momento.
                 </div>
               ) : (
                 listaLeadsCalientes.map((lead) => (
