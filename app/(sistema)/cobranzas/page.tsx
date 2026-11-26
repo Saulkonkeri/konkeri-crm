@@ -90,7 +90,7 @@ export default function CobranzasPage() {
     return { totalCobrado, saldoPendiente, porcentaje, vencidas };
   }, [ventaActiva]);
 
-  // Lista global de todos los recibos para la pestaña Auditoría Recibos
+  // Lista global de todos los recibos
   const todosLosRecibos = useMemo(() => {
     const lista: any[] = [];
     ventas.forEach(v => {
@@ -108,7 +108,6 @@ export default function CobranzasPage() {
       });
     });
 
-    // Ordenar del cobro más reciente al más antiguo
     lista.sort((a, b) => {
       const fA = a.datos_pago.fecha_pago_real || '';
       const fB = b.datos_pago.fecha_pago_real || '';
@@ -118,10 +117,20 @@ export default function CobranzasPage() {
     return lista;
   }, [ventas, clientes]);
 
+  // Filtra solo los recibos del cliente seleccionado (o todos si no hay cliente escogido)
+  const recibosPorCliente = useMemo(() => {
+    if (!ventaActiva) return todosLosRecibos;
+    return todosLosRecibos.filter(item =>
+      ventaActiva.cliente_id
+        ? item.venta.cliente_id === ventaActiva.cliente_id
+        : item.venta.id === ventaActiva.id
+    );
+  }, [todosLosRecibos, ventaActiva]);
+
   const recibosFiltrados = useMemo(() => {
     const q = busquedaAuditoria.trim().toLowerCase();
-    if (!q) return todosLosRecibos;
-    return todosLosRecibos.filter(item => {
+    if (!q) return recibosPorCliente;
+    return recibosPorCliente.filter(item => {
       const nombreCliente = item.cliente ? `${item.cliente.nombres} ${item.cliente.apellidos || ''}`.toLowerCase() : '';
       const reciboId = (item.datos_pago.recibo_id || '').toLowerCase();
       const banco = (item.datos_pago.banco || '').toLowerCase();
@@ -137,7 +146,7 @@ export default function CobranzasPage() {
         concepto.includes(q)
       );
     });
-  }, [todosLosRecibos, busquedaAuditoria]);
+  }, [recibosPorCliente, busquedaAuditoria]);
 
   const totalAuditado = useMemo(() => {
     return recibosFiltrados.reduce((acc, item) => acc + Number(item.datos_pago.monto_cobrado || 0), 0);
@@ -357,7 +366,7 @@ export default function CobranzasPage() {
               className={`px-5 py-2.5 text-xs font-bold tracking-wider uppercase rounded-lg transition-all flex items-center gap-2 ${activeTab === 'historial' ? 'bg-white text-[#ea0029] shadow-sm' : 'text-[#415364]/70 hover:text-[#415364]'}`}
             >
               Auditoría Recibos
-              <span className="bg-[#415364] text-white text-[9px] px-1.5 py-0.5 rounded-full">{todosLosRecibos.length}</span>
+              <span className="bg-[#415364] text-white text-[9px] px-1.5 py-0.5 rounded-full">{recibosPorCliente.length}</span>
             </button>
           </div>
         </div>
@@ -582,10 +591,29 @@ export default function CobranzasPage() {
         )}
 
         {/* ============================================================ */}
-        {/* PESTAÑA 2: AUDITORÍA DE RECIBOS (HISTORIAL GLOBAL)           */}
+        {/* PESTAÑA 2: AUDITORÍA DE RECIBOS                              */}
         {/* ============================================================ */}
         {activeTab === 'historial' && (
           <div className="space-y-5 animate-in fade-in">
+            {ventaActiva && (
+              <div className="bg-white border border-[#ea0029]/20 rounded-2xl px-5 py-3.5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 text-xs">
+                  <span className="bg-[#ea0029]/10 text-[#ea0029] font-bold px-2.5 py-1 rounded-md text-[10px] uppercase tracking-wider">
+                    Cliente Activo
+                  </span>
+                  <span className="font-bold text-[#415364]">
+                    Mostrando solo los recibos de {clienteActivo ? `${clienteActivo.nombres} ${clienteActivo.apellidos || ''}` : `Dpto. ${ventaActiva.unidad_numero}`}
+                  </span>
+                </div>
+                <button
+                  onClick={() => { setVentaSeleccionadaId(''); setReciboGenerado(null); }}
+                  className="text-[10px] font-bold uppercase tracking-wider text-[#ea0029] hover:text-white bg-[#ea0029]/10 hover:bg-[#ea0029] px-3.5 py-2 rounded-lg transition-colors self-start sm:self-auto"
+                >
+                  Ver todos los clientes ({todosLosRecibos.length})
+                </button>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2 bg-white rounded-2xl border border-neutral-200/60 p-4 shadow-sm flex items-center">
                 <div className="relative w-full">
@@ -596,7 +624,11 @@ export default function CobranzasPage() {
                     type="text"
                     value={busquedaAuditoria}
                     onChange={(e) => setBusquedaAuditoria(e.target.value)}
-                    placeholder="Buscar por N° recibo, cliente, departamento, banco o referencia..."
+                    placeholder={
+                      ventaActiva
+                        ? 'Buscar por N° recibo, concepto, banco o referencia...'
+                        : 'Buscar por N° recibo, cliente, departamento, banco o referencia...'
+                    }
                     className="w-full bg-[#F9F7F5] border border-neutral-200 rounded-xl py-2.5 pl-10 pr-4 text-xs font-medium text-[#415364] outline-none focus:border-[#ea0029]"
                   />
                 </div>
@@ -631,7 +663,9 @@ export default function CobranzasPage() {
                     {recibosFiltrados.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="px-6 py-12 text-center text-neutral-400 font-bold uppercase tracking-widest text-[10px]">
-                          No se encontraron recibos registrados.
+                          {ventaActiva
+                            ? 'Este cliente aún no tiene recibos cobrados.'
+                            : 'No se encontraron recibos registrados.'}
                         </td>
                       </tr>
                     ) : (
